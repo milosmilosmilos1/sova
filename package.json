@@ -6,7 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "typecheck": "tsc --noEmit",
+    "test:db": "node --env-file=.env.local scripts/test-db.mjs",
+    "test:auth": "node --env-file=.env.local scripts/test-auth.mjs",
+    "test:generate": "node --env-file=.env.local scripts/test-generate.mjs --no-image",
+    "test:generate:full": "node --env-file=.env.local scripts/test-generate.mjs",
+    "test:stripe": "node --env-file=.env.local scripts/test-stripe.mjs",
+    "test:admin": "node --env-file=.env.local scripts/test-admin.mjs",
+    "test:all": "npm run test:db && npm run test:auth && npm run test:generate && npm run test:stripe && npm run test:admin",
+    "check:gemini": "node --env-file=.env.local scripts/check-gemini.mjs",
+    "make-admin": "node --env-file=.env.local scripts/make-admin.mjs"
   },
   "dependencies": {
     "@google/genai": "^2.30.0",
