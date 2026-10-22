@@ -25,6 +25,9 @@ const schema = z.object({
 
   // Opcion do faze 8.
   IMPERSONATION_SECRET: z.string().min(32).optional(),
+
+  // Vercel Cron šalje ovaj secret u Authorization zaglavlju.
+  CRON_SECRET: z.string().min(16).optional(),
 });
 
 const parsed = schema.safeParse(process.env);

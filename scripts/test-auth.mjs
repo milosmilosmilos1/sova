@@ -148,7 +148,18 @@ try {
   check("forgot-password za nepostojeći mejl → 200 (ne otkriva)", forgot.status === 200 && forgot.json?.data?.sent === true, `status ${forgot.status}`);
 
   const notFound = await call("/ova-strana-ne-postoji");
-  check("nepostojeća strana → 404", notFound.status === 404, `status ${notFound.status}`);
+  check("nepostojeća strana → 404 sa porukom", notFound.status === 404 && notFound.text.includes("Strana ne postoji"), `status ${notFound.status}`);
+
+  for (const p of ["/terms", "/privacy"]) {
+    const r = await call(p);
+    check(`GET ${p} javno → 200`, r.status === 200, `status ${r.status}`);
+  }
+
+  const cronNo = await call("/api/cron/cleanup");
+  check("GET /api/cron/cleanup bez secret-a → 401", cronNo.status === 401, `status ${cronNo.status}`);
+  const cronRes = await fetch(BASE + "/api/cron/cleanup", { headers: { Authorization: `Bearer ${process.env.CRON_SECRET}` } });
+  const cronJson = await cronRes.json().catch(() => null);
+  check("GET /api/cron/cleanup sa secret-om → 200 sa izveštajem", cronRes.status === 200 && cronJson?.ok === true && typeof cronJson.data.stuckFailed === "number", `status ${cronRes.status}`);
 } catch (e) {
   console.error("Test je pukao:", e);
   failed++;
