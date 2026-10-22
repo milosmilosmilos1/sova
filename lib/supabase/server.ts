@@ -2,13 +2,14 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { env } from "@/lib/env";
+import type { Database } from "@/types/database";
 
 // Klijent za server komponente i route handler-e. Radi kao ulogovani
 // korisnik (sesija iz cookie-ja), pa RLS politike važe.
 export async function createClient() {
   const cookieStore = await cookies();
 
-  return createServerClient(
+  return createServerClient<Database>(
     env.NEXT_PUBLIC_SUPABASE_URL,
     env.NEXT_PUBLIC_SUPABASE_ANON_KEY,
     {

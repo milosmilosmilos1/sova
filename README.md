@@ -26,6 +26,14 @@ Provera Gemini ključa i modela:
 node --env-file=.env.local scripts/check-gemini.mjs
 ```
 
+Test baze (RLS, tokeni, rate limit, storage; pravi i briše dva test korisnika):
+
+```
+node --env-file=.env.local scripts/test-db.mjs
+```
+
+Posle promene migracija: `npx supabase db reset` pa `npx supabase gen types typescript --local > types/database.ts`.
+
 Supabase Studio lokalno: http://127.0.0.1:54323. Mejlovi koje lokalni auth šalje: http://127.0.0.1:54324.
 
 ## Sredine

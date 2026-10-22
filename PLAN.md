@@ -33,7 +33,7 @@ Dve odvojene sredine od prvog dana:
 
 | | DEV | PROD |
 |---|---|---|
-| Supabase projekat | `sova-dev` | `sova-prod` |
+| Supabase projekat | lokalni Docker (`npx supabase start`) | `sova-prod` |
 | Stripe | test ključevi | live ključevi |
 | Vercel okruženje | Preview + Development | Production |
 | Env fajl lokalno | `.env.local` | nikad lokalno, samo u Vercel-u |
@@ -446,12 +446,12 @@ Imena modela su u env promenljivama, ne u kodu, jer se menjaju:
 
 | Namena | Primarni | Rezervni |
 |---|---|---|
-| Tekst | `gemini-2.5-flash` | `gemini-2.5-flash-lite` |
-| Slika iz opisa | `gemini-2.5-flash-image` | `gemini-3-pro-image-preview` |
+| Tekst | `gemini-3.6-flash` | `gemini-3.5-flash-lite` |
+| Slika iz opisa | `gemini-3.1-flash-image` | `gemini-3.1-flash-lite-image` |
 | Slika iz fotografije | isti kao gore, sa slikom kao ulazom | isti rezervni |
-| Tekst uz fotografiju | `gemini-2.5-flash` sa slikom kao ulazom | `gemini-2.5-flash-lite` |
+| Tekst uz fotografiju | `gemini-3.6-flash` sa slikom kao ulazom | `gemini-3.5-flash-lite` |
 
-Tačna imena se potvrđuju u fazi 2 pozivom `models.list` sa tvojim ključem. Ključ koji si poslao počinje sa `AQ.`, što liči na novi Google Cloud format, a ne na AI Studio format (`AIza...`). SDK podržava oba, ali u fazi 2 prvo proveravamo na koji endpoint ključ prolazi. Ključ ide samo u `.env.local` i Vercel, nikad u kod ni u repo. Pošto je prošao kroz chat, predlažem da ga posle faze 2 rotiraš u Google konzoli.
+Imena su potvrđena 22.10.2026 živim pozivima (faza 2): `gemini-2.5-flash` Google više ne daje novim nalozima, `gemini-3.8-flash` stalno vraća 503. Slika traje 40–75 s po pozivu. Ključ koji si poslao počinje sa `AQ.`, što liči na novi Google Cloud format, a ne na AI Studio format (`AIza...`). SDK podržava oba, ali u fazi 2 prvo proveravamo na koji endpoint ključ prolazi. Ključ ide samo u `.env.local` i Vercel, nikad u kod ni u repo. Pošto je prošao kroz chat, predlažem da ga posle faze 2 rotiraš u Google konzoli.
 
 ### 8.2 Prompt
 
@@ -626,7 +626,7 @@ Promeni bilo šta pre nego što potvrdiš fazu:
 4. Upload: max 10 MB, jpg/png/webp, smanjujemo na 2048 px.
 5. Rate limit: 10 generisanja u minutu, 20 upload-a, 5 checkout-a.
 6. Potvrda mejla: isključena u DEV, uključena u PROD.
-7. DEV baza je hostovani Supabase projekat, ne lokalni Docker.
+7. DEV baza je lokalni Supabase u Docker-u (`npx supabase start`); hostovani `sova-dev` dolazi uz deploy. Promenjeno u fazi 2 jer Supabase CLI nije bio prijavljen.
 8. UI je na srpskom (latinica); generisani tekst na jeziku koji korisnik izabere (sr/en).
 9. Stripe Checkout i Portal su hostovani kod Stripe-a, bez sopstvene forme za karticu.
 10. Rate limit u Postgres-u, bez Redis-a.
