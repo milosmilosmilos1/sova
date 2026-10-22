@@ -18,6 +18,7 @@ import type { Database } from "@/types/database";
 // rezerviši tokene → AI → sačuvaj → potvrdi tokene → vrati.
 
 export type GenerationRow = Database["public"]["Tables"]["generations"]["Row"];
+export type GenerationStatus = "pending" | "processing" | "completed" | "failed";
 
 export type RunInput =
   | { type: "text"; prompt: string; platform: Platform; tone: string | null; inputImagePath: string | null; fromGenerationId: string | null; idempotencyKey: string }
@@ -27,7 +28,7 @@ export type RunInput =
 export type GenerationDTO = {
   id: string;
   type: GenerationType;
-  status: GenerationRow["status"];
+  status: GenerationStatus;
   prompt: string;
   platform: string | null;
   tone: string | null;
@@ -54,7 +55,7 @@ export async function toDTO(row: GenerationRow): Promise<GenerationDTO> {
   return {
     id: row.id,
     type: row.type as GenerationType,
-    status: row.status,
+    status: row.status as GenerationStatus,
     prompt: row.prompt,
     platform: row.platform,
     tone: row.tone,

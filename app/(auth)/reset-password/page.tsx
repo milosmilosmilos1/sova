@@ -2,6 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { apiFetch, errorMessage } from "@/lib/client/api";
 import { Field, Input, SubmitButton, FormError } from "@/components/forms/form-ui";
 
@@ -24,6 +25,7 @@ export default function ResetPasswordPage() {
     setError(null);
     try {
       const { redirect } = await apiFetch<{ redirect: string }>("/api/auth/reset-password", { body: { password } });
+      toast.success("Lozinka je promenjena.");
       router.push(redirect);
       router.refresh();
     } catch (err) {
@@ -33,8 +35,11 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
-      <h1 className="text-lg font-semibold">Nova lozinka</h1>
+    <form onSubmit={onSubmit} className="space-y-5" noValidate>
+      <div>
+        <h1 className="text-xl font-semibold text-ink-900">Nova lozinka</h1>
+        <p className="mt-1 text-sm text-ink-500">Izaberi novu lozinku za svoj nalog.</p>
+      </div>
       <FormError message={error} />
       <Field label="Nova lozinka" hint="Bar 8 znakova.">
         <Input name="password" type="password" autoComplete="new-password" required minLength={8} disabled={loading} />

@@ -15,7 +15,7 @@ const PUBLIC_PAGES = new Set([
   "/privacy",
 ]);
 
-const PUBLIC_PREFIXES = ["/auth/", "/api/auth/register", "/api/auth/login", "/api/auth/forgot-password", "/api/stripe/webhook", "/api/health", "/api/cron/"];
+const PUBLIC_PREFIXES = ["/auth/", "/api/auth/register", "/api/auth/login", "/api/auth/forgot-password", "/api/stripe/webhook", "/api/health", "/api/cron/", "/api/dev/"];
 
 function isPublic(path: string) {
   if (PUBLIC_PAGES.has(path)) return true;

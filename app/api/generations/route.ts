@@ -5,7 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { listGenerationsSchema } from "@/lib/validation/generate";
 import { AppError } from "@/lib/errors";
 import { signedUrls } from "@/lib/storage";
-import type { GenerationDTO, GenerationRow } from "@/lib/generation";
+import type { GenerationDTO, GenerationRow, GenerationStatus } from "@/lib/generation";
 
 // GET /api/generations?cursor=&type=&limit= — kursor paginacija po created_at.
 export const GET = withApi(async (req: NextRequest) => {
@@ -41,7 +41,7 @@ export const GET = withApi(async (req: NextRequest) => {
     return {
       id: row.id,
       type: row.type as GenerationDTO["type"],
-      status: row.status,
+      status: row.status as GenerationStatus,
       prompt: row.prompt,
       platform: row.platform,
       tone: row.tone,

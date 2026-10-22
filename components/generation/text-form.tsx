@@ -2,21 +2,14 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { apiFetch, errorMessage, ApiClientError } from "@/lib/client/api";
 import { PLATFORMS, TONES } from "@/lib/validation/generate";
-import { Field, Textarea, Select, SubmitButton, FormError } from "@/components/forms/form-ui";
+import { Field, Textarea, Select, SubmitButton, FormError, Button } from "@/components/forms/form-ui";
 import { UploadField, type Uploaded } from "@/components/generation/upload-field";
 import { GenerationView } from "@/components/generation/generation-view";
+import { PLATFORM_LABELS, TONE_LABELS } from "@/components/generation/labels";
 import type { GenerationDTO } from "@/lib/generation";
-
-const PLATFORM_LABELS: Record<(typeof PLATFORMS)[number], string> = {
-  instagram: "Instagram",
-  facebook: "Facebook",
-  linkedin: "LinkedIn",
-  tiktok: "TikTok",
-  x: "X (Twitter)",
-  general: "Opšte",
-};
 
 export function TextForm({ cost, fromGeneration }: { cost: number; fromGeneration: GenerationDTO | null }) {
   const router = useRouter();
@@ -46,28 +39,29 @@ export function TextForm({ cost, fromGeneration }: { cost: number; fromGeneratio
       });
       setResult(generation);
       setKey(crypto.randomUUID());
-      router.refresh(); // osveži stanje tokena u navigaciji
+      toast.success(`Tekst je spreman. Skinuto ${cost} tokena.`);
+      router.refresh();
     } catch (err) {
       if (err instanceof ApiClientError && err.code === "CONFLICT") {
         setError("Zahtev je već poslat, sačekaj rezultat.");
       } else {
         setError(errorMessage(err));
+        setKey(crypto.randomUUID());
       }
-      if (!(err instanceof ApiClientError && err.code === "CONFLICT")) setKey(crypto.randomUUID());
     } finally {
       setLoading(false);
     }
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-2">
-      <form onSubmit={onSubmit} className="space-y-4" noValidate>
+    <div className="grid gap-6 lg:grid-cols-2">
+      <form onSubmit={onSubmit} className="card card-pad space-y-5" noValidate>
         <FormError message={error} />
         {fromGeneration?.output_image_url ? (
-          <div className="space-y-1">
-            <span className="block text-sm font-medium">Slika za koju pišemo tekst</span>
+          <div className="space-y-1.5">
+            <span className="label">Slika za koju pišemo tekst</span>
             {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src={fromGeneration.output_image_url} alt="" className="h-32 w-32 rounded border border-gray-200 object-cover" />
+            <img src={fromGeneration.output_image_url} alt="" className="h-28 w-28 rounded-lg object-cover ring-1 ring-ink-200" />
           </div>
         ) : (
           <UploadField value={image} onChange={setImage} disabled={loading} label="Fotografija uz tekst" />
@@ -99,27 +93,34 @@ export function TextForm({ cost, fromGeneration }: { cost: number; fromGeneratio
               <option value="">Kao u podešavanjima</option>
               {TONES.map((t) => (
                 <option key={t} value={t}>
-                  {t}
+                  {TONE_LABELS[t]}
                 </option>
               ))}
             </Select>
           </Field>
         </div>
-        <SubmitButton loading={loading} disabled={prompt.trim().length < 3}>
+        <SubmitButton loading={loading} disabled={prompt.trim().length < 3} className="w-full sm:w-auto">
           {loading ? "Pišem…" : `Generiši (${cost} tokena)`}
         </SubmitButton>
       </form>
 
-      <div>
-        <h2 className="mb-2 text-sm font-medium">Rezultat</h2>
-        {loading && <p className="text-sm text-gray-500">Pišem objavu, obično traje do 10 sekundi…</p>}
-        {!loading && !result && <p className="text-sm text-gray-500">Ovde se pojavljuje tekst kad ga napravimo.</p>}
+      <div className="card card-pad">
+        <h2 className="mb-3 text-sm font-medium text-ink-700">Rezultat</h2>
+        {loading && (
+          <div className="space-y-2">
+            <div className="skeleton h-4 w-5/6" />
+            <div className="skeleton h-4 w-full" />
+            <div className="skeleton h-4 w-2/3" />
+            <p className="pt-2 text-xs text-ink-500">Pišem objavu, obično traje do 10 sekundi…</p>
+          </div>
+        )}
+        {!loading && !result && <p className="text-sm text-ink-500">Ovde se pojavljuje tekst kad ga napravimo.</p>}
         {!loading && result && (
-          <div className="space-y-3">
+          <div className="space-y-4">
             <GenerationView g={result} />
-            <button type="button" onClick={() => setResult(null)} className="text-sm underline">
+            <Button variant="ghost" size="sm" onClick={() => setResult(null)}>
               Generiši ponovo
-            </button>
+            </Button>
           </div>
         )}
       </div>

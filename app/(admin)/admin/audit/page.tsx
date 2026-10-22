@@ -25,9 +25,9 @@ export default async function AdminAuditPage(props: PageProps<"/admin/audit">) {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Audit log</h1>
+      <h1 className="page-title">Audit log</h1>
       <form method="get" className="flex flex-wrap gap-2 text-sm">
-        <select name="action" defaultValue={q.action ?? ""} className="rounded border border-gray-300 px-2 py-1">
+        <select name="action" defaultValue={q.action ?? ""} className="input w-auto">
           <option value="">Sve akcije</option>
           {["tokens_adjust", "impersonate_start", "impersonate_stop", "user_block", "user_unblock", "role_change", "user_delete", "generation_delete"].map((a) => (
             <option key={a} value={a}>
@@ -35,50 +35,50 @@ export default async function AdminAuditPage(props: PageProps<"/admin/audit">) {
             </option>
           ))}
         </select>
-        <button type="submit" className="rounded border border-gray-300 px-3 py-1">
+        <button type="submit" className="btn btn-secondary btn-sm">
           Filtriraj
         </button>
       </form>
       {error ? (
-        <p className="text-sm text-red-600">Greška: {error.message}</p>
+        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">Greška: {error.message}</p>
       ) : page.length === 0 ? (
-        <p className="text-sm text-gray-600">Nema zapisa.</p>
+        <p className="text-sm text-ink-500">Nema zapisa.</p>
       ) : (
-        <table className="w-full text-sm">
+        <div className="card card-pad overflow-x-auto"><table className="table">
           <thead>
-            <tr className="text-left text-gray-500">
-              <th className="py-1">Vreme</th>
-              <th className="py-1">Admin</th>
-              <th className="py-1">Akcija</th>
-              <th className="py-1">Korisnik</th>
-              <th className="py-1">Detalji</th>
-              <th className="py-1">IP</th>
+            <tr>
+              <th className="">Vreme</th>
+              <th className="">Admin</th>
+              <th className="">Akcija</th>
+              <th className="">Korisnik</th>
+              <th className="">Detalji</th>
+              <th className="">IP</th>
             </tr>
           </thead>
           <tbody>
             {page.map((r) => (
-              <tr key={r.id} className="border-t border-gray-200 align-top">
-                <td className="py-1 text-gray-500">{new Date(r.created_at).toLocaleString("sr-RS")}</td>
-                <td className="py-1">{emails.get(r.admin_id) ?? r.admin_id}</td>
-                <td className="py-1">{r.action}</td>
-                <td className="py-1">
+              <tr key={r.id}>
+                <td className="text-ink-500">{new Date(r.created_at).toLocaleString("sr-RS")}</td>
+                <td className="">{emails.get(r.admin_id) ?? r.admin_id}</td>
+                <td className="">{r.action}</td>
+                <td className="">
                   {r.target_user_id ? (
-                    <Link href={`/admin/users/${r.target_user_id}`} className="underline">
+                    <Link href={`/admin/users/${r.target_user_id}`} className="text-brand-700 hover:underline">
                       {emails.get(r.target_user_id) ?? "obrisan"}
                     </Link>
                   ) : (
                     "—"
                   )}
                 </td>
-                <td className="max-w-md truncate py-1 font-mono text-xs">{JSON.stringify(r.details)}</td>
-                <td className="py-1 text-gray-500">{r.ip ?? "—"}</td>
+                <td className="max-w-md truncate font-mono text-xs text-ink-500">{JSON.stringify(r.details)}</td>
+                <td className="text-ink-500">{r.ip ?? "—"}</td>
               </tr>
             ))}
           </tbody>
-        </table>
+        </table></div>
       )}
       {hasMore && (
-        <Link href={`/admin/audit?${new URLSearchParams({ ...(q.action ? { action: q.action } : {}), cursor: String(page[page.length - 1].id) })}`} className="inline-block rounded border border-gray-300 px-3 py-1 text-sm">
+        <Link href={`/admin/audit?${new URLSearchParams({ ...(q.action ? { action: q.action } : {}), cursor: String(page[page.length - 1].id) })}`} className="btn btn-secondary btn-sm">
           Sledeća strana
         </Link>
       )}

@@ -29,21 +29,21 @@ export default function ForgotPasswordPage() {
   if (done) {
     return (
       <div className="space-y-4">
-        <h1 className="text-lg font-semibold">Proveri mejl</h1>
+        <h1 className="text-xl font-semibold text-ink-900">Proveri mejl</h1>
         <FormSuccess message="Ako nalog postoji, poslali smo link za novu lozinku. Link važi 1 sat." />
-        <p className="text-sm text-gray-600">
-          <Link href="/login" className="underline">
-            Nazad na prijavu
-          </Link>
-        </p>
+        <Link href="/login" className="btn btn-secondary w-full">
+          Nazad na prijavu
+        </Link>
       </div>
     );
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
-      <h1 className="text-lg font-semibold">Zaboravljena lozinka</h1>
-      <p className="text-sm text-gray-600">Unesi mejl i poslaćemo ti link za novu lozinku.</p>
+    <form onSubmit={onSubmit} className="space-y-5" noValidate>
+      <div>
+        <h1 className="text-xl font-semibold text-ink-900">Zaboravljena lozinka</h1>
+        <p className="mt-1 text-sm text-ink-500">Unesi mejl i poslaćemo ti link za novu lozinku.</p>
+      </div>
       <FormError message={error} />
       <Field label="Mejl">
         <Input name="email" type="email" autoComplete="email" required disabled={loading} />
@@ -51,9 +51,9 @@ export default function ForgotPasswordPage() {
       <SubmitButton loading={loading} className="w-full">
         Pošalji link
       </SubmitButton>
-      <p className="text-sm text-gray-600">
-        <Link href="/login" className="underline">
-          Nazad na prijavu
+      <p className="text-sm text-ink-500">
+        <Link href="/login" className="hover:text-brand-700">
+          ← Nazad na prijavu
         </Link>
       </p>
     </form>

@@ -2,20 +2,14 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { apiFetch, errorMessage, ApiClientError } from "@/lib/client/api";
 import { ASPECT_RATIOS } from "@/lib/validation/generate";
-import { Field, Textarea, Select, SubmitButton, FormError } from "@/components/forms/form-ui";
+import { Field, Textarea, Select, SubmitButton, FormError, Button } from "@/components/forms/form-ui";
 import { UploadField, type Uploaded } from "@/components/generation/upload-field";
 import { GenerationView } from "@/components/generation/generation-view";
+import { RATIO_LABELS } from "@/components/generation/labels";
 import type { GenerationDTO } from "@/lib/generation";
-
-const RATIO_LABELS: Record<(typeof ASPECT_RATIOS)[number], string> = {
-  "1:1": "1:1 (kvadrat, Instagram post)",
-  "3:4": "3:4 (portret, Instagram feed)",
-  "4:3": "4:3 (pejzaž)",
-  "9:16": "9:16 (Story, Reels, TikTok)",
-  "16:9": "16:9 (YouTube, LinkedIn)",
-};
 
 export function ImageForm({ mode, cost }: { mode: "image" | "photo"; cost: number }) {
   const router = useRouter();
@@ -51,6 +45,7 @@ export function ImageForm({ mode, cost }: { mode: "image" | "photo"; cost: numbe
       });
       setResult(generation);
       setKey(crypto.randomUUID());
+      toast.success(`Slika je spremna. Skinuto ${cost} tokena.`);
       router.refresh();
     } catch (err) {
       if (err instanceof ApiClientError && err.code === "CONFLICT") {
@@ -66,8 +61,8 @@ export function ImageForm({ mode, cost }: { mode: "image" | "photo"; cost: numbe
   }
 
   return (
-    <div className="grid gap-8 lg:grid-cols-2">
-      <form onSubmit={onSubmit} className="space-y-4" noValidate>
+    <div className="grid gap-6 lg:grid-cols-2">
+      <form onSubmit={onSubmit} className="card card-pad space-y-5" noValidate>
         <FormError message={error} />
         {mode === "photo" && <UploadField value={image} onChange={setImage} disabled={loading} label="Tvoja fotografija" required />}
         <Field label={mode === "photo" ? "Kakvu sliku želiš od ove fotografije" : "Opiši sliku"} hint={`${prompt.length}/1000`}>
@@ -95,22 +90,29 @@ export function ImageForm({ mode, cost }: { mode: "image" | "photo"; cost: numbe
             ))}
           </Select>
         </Field>
-        <SubmitButton loading={loading} disabled={prompt.trim().length < 3 || (mode === "photo" && !image)}>
-          {loading ? `Pravim sliku… ${elapsed}s` : `Generiši (${cost} tokena)`}
-        </SubmitButton>
-        {loading && <p className="text-xs text-gray-500">Slika obično traje 40 do 90 sekundi. Ne zatvaraj stranu.</p>}
+        <div className="space-y-2">
+          <SubmitButton loading={loading} disabled={prompt.trim().length < 3 || (mode === "photo" && !image)} className="w-full sm:w-auto">
+            {loading ? `Pravim sliku… ${elapsed}s` : `Generiši (${cost} tokena)`}
+          </SubmitButton>
+          {loading && <p className="text-xs text-ink-500">Slika obično traje 40 do 90 sekundi. Ne zatvaraj stranu.</p>}
+        </div>
       </form>
 
-      <div>
-        <h2 className="mb-2 text-sm font-medium">Rezultat</h2>
-        {loading && <p className="text-sm text-gray-500">Radim…</p>}
-        {!loading && !result && <p className="text-sm text-gray-500">Ovde se pojavljuje slika kad je napravimo.</p>}
-        {!loading && result && (
+      <div className="card card-pad">
+        <h2 className="mb-3 text-sm font-medium text-ink-700">Rezultat</h2>
+        {loading && (
           <div className="space-y-3">
+            <div className="skeleton aspect-square w-full max-w-sm" />
+            <p className="text-xs text-ink-500">Radim…</p>
+          </div>
+        )}
+        {!loading && !result && <p className="text-sm text-ink-500">Ovde se pojavljuje slika kad je napravimo.</p>}
+        {!loading && result && (
+          <div className="space-y-4">
             <GenerationView g={result} />
-            <button type="button" onClick={() => setResult(null)} className="text-sm underline">
+            <Button variant="ghost" size="sm" onClick={() => setResult(null)}>
               Generiši ponovo
-            </button>
+            </Button>
           </div>
         )}
       </div>

@@ -3,7 +3,7 @@ import { getCurrentUser } from "@/lib/auth/get-user";
 import { createClient } from "@/lib/supabase/server";
 import { signedUrls } from "@/lib/storage";
 import { HistoryList } from "@/components/generation/history-list";
-import type { GenerationDTO } from "@/lib/generation";
+import type { GenerationDTO, GenerationStatus } from "@/lib/generation";
 
 const TYPES = [
   { value: null, label: "Sve" },
@@ -20,20 +20,15 @@ export default async function HistoryPage(props: PageProps<"/history">) {
   const type = TYPES.some((t) => t.value === rawType) ? (rawType as string) : null;
 
   const supabase = await createClient();
-  let query = supabase
-    .from("generations")
-    .select("*")
-    .eq("user_id", user.id)
-    .order("created_at", { ascending: false })
-    .limit(PAGE + 1);
+  let query = supabase.from("generations").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(PAGE + 1);
   if (type) query = query.eq("type", type);
   const { data, error } = await query;
 
   if (error) {
     return (
       <div className="space-y-2">
-        <h1 className="text-xl font-semibold">Istorija</h1>
-        <p className="text-sm text-red-600">Ne mogu da učitam istoriju. Osveži stranu.</p>
+        <h1 className="page-title">Istorija</h1>
+        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">Ne mogu da učitam istoriju. Osveži stranu.</p>
       </div>
     );
   }
@@ -49,7 +44,7 @@ export default async function HistoryPage(props: PageProps<"/history">) {
     return {
       id: row.id,
       type: row.type as GenerationDTO["type"],
-      status: row.status,
+      status: row.status as GenerationStatus,
       prompt: row.prompt,
       platform: row.platform,
       tone: row.tone,
@@ -69,14 +64,17 @@ export default async function HistoryPage(props: PageProps<"/history">) {
   });
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Istorija</h1>
-      <div className="flex flex-wrap gap-2 text-sm">
+    <div className="space-y-6">
+      <div>
+        <h1 className="page-title">Istorija</h1>
+        <p className="page-sub">Sve što si napravio, najnovije prvo.</p>
+      </div>
+      <div className="flex flex-wrap gap-2">
         {TYPES.map((t) => (
           <Link
             key={t.label}
             href={t.value ? `/history?type=${t.value}` : "/history"}
-            className={`rounded border px-3 py-1 ${type === t.value ? "border-blue-600 text-blue-700" : "border-gray-300"}`}
+            className={`btn btn-sm ${type === t.value ? "btn-primary" : "btn-secondary"}`}
           >
             {t.label}
           </Link>

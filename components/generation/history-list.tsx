@@ -2,9 +2,10 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { toast } from "sonner";
 import { apiFetch, errorMessage } from "@/lib/client/api";
-import { Spinner } from "@/components/forms/form-ui";
-import { TYPE_LABELS, STATUS_LABELS } from "@/components/generation/generation-view";
+import { Button, EmptyState } from "@/components/forms/form-ui";
+import { TYPE_LABELS, STATUS_LABELS, statusBadge } from "@/components/generation/labels";
 import type { GenerationDTO } from "@/lib/generation";
 
 type Page = { items: GenerationDTO[]; nextCursor: string | null };
@@ -14,12 +15,10 @@ export function HistoryList({ initial, type }: { initial: Page; type: string | n
   const [items, setItems] = useState(initial.items);
   const [cursor, setCursor] = useState(initial.nextCursor);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function loadMore() {
     if (!cursor || loading) return;
     setLoading(true);
-    setError(null);
     try {
       const q = new URLSearchParams({ cursor });
       if (type) q.set("type", type);
@@ -27,7 +26,7 @@ export function HistoryList({ initial, type }: { initial: Page; type: string | n
       setItems((prev) => [...prev, ...page.items]);
       setCursor(page.nextCursor);
     } catch (e) {
-      setError(errorMessage(e));
+      toast.error(errorMessage(e));
     } finally {
       setLoading(false);
     }
@@ -38,66 +37,68 @@ export function HistoryList({ initial, type }: { initial: Page; type: string | n
     try {
       await apiFetch(`/api/generations/${id}`, { method: "DELETE" });
       setItems((prev) => prev.filter((g) => g.id !== id));
+      toast.success("Obrisano.");
     } catch (e) {
-      setError(errorMessage(e));
+      toast.error(errorMessage(e));
     }
   }
 
   if (items.length === 0) {
     return (
-      <div className="rounded border border-dashed border-gray-300 p-8 text-center text-sm text-gray-600">
-        <p>Još nema ničega{type ? " u ovom filteru" : ""}.</p>
-        <Link href="/create/text" className="mt-2 inline-block underline">
-          Napravi prvu objavu
-        </Link>
-      </div>
+      <EmptyState
+        title={type ? "Nema ničega u ovom filteru" : "Još nema ničega"}
+        text="Sve što napraviš ostaje ovde: tekstovi, slike, i šta je koštalo."
+        action={
+          <Link href="/create/text" className="btn btn-primary btn-sm">
+            Napravi prvu objavu
+          </Link>
+        }
+      />
     );
   }
 
   return (
-    <div className="space-y-3">
-      {error && (
-        <p role="alert" className="text-sm text-red-600">
-          {error}
-        </p>
-      )}
-      <ul className="divide-y divide-gray-200 rounded border border-gray-200">
+    <div className="space-y-4">
+      <ul className="grid gap-3 sm:grid-cols-2">
         {items.map((g) => (
-          <li key={g.id} className="flex gap-3 px-3 py-3 text-sm">
-            <Link href={`/history/${g.id}`} className="flex flex-1 gap-3">
+          <li key={g.id} className="card flex gap-3 p-3">
+            <Link href={`/history/${g.id}`} className="shrink-0">
               {g.output_image_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
-                <img src={g.output_image_url} alt="" className="h-16 w-16 shrink-0 rounded object-cover" />
+                <img src={g.output_image_url} alt="" className="h-20 w-20 rounded-lg object-cover" />
               ) : (
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded bg-gray-100 text-xs text-gray-500">
-                  {g.type === "text" ? "Aa" : "—"}
-                </div>
+                <div className="flex h-20 w-20 items-center justify-center rounded-lg bg-brand-50 text-sm font-semibold text-brand-700">Aa</div>
               )}
-              <div className="min-w-0 flex-1">
-                <p className="truncate font-medium">{g.prompt}</p>
-                <p className="text-gray-500">
-                  {TYPE_LABELS[g.type]} · {STATUS_LABELS[g.status]} · {g.tokens_cost} tokena ·{" "}
-                  {new Date(g.created_at).toLocaleString("sr-RS")}
-                </p>
-                {g.type === "text" && g.output_text && <p className="truncate text-gray-700">{g.output_text}</p>}
-              </div>
             </Link>
-            <button type="button" onClick={() => remove(g.id)} className="self-start text-gray-500 underline">
-              Obriši
-            </button>
+            <div className="min-w-0 flex-1">
+              <div className="flex items-start justify-between gap-2">
+                <Link href={`/history/${g.id}`} className="truncate text-sm font-medium text-ink-900 hover:text-brand-700">
+                  {g.prompt}
+                </Link>
+                <span className={statusBadge(g.status)}>{STATUS_LABELS[g.status]}</span>
+              </div>
+              <p className="mt-0.5 text-xs text-ink-500">
+                {TYPE_LABELS[g.type]} · {g.tokens_cost} tokena · {new Date(g.created_at).toLocaleString("sr-RS")}
+              </p>
+              {g.type === "text" && g.output_text && <p className="mt-1 line-clamp-2 text-sm text-ink-700">{g.output_text}</p>}
+              <div className="mt-2 flex gap-3 text-xs">
+                <Link href={`/history/${g.id}`} className="text-brand-700 hover:underline">
+                  Otvori
+                </Link>
+                <button type="button" onClick={() => remove(g.id)} className="text-ink-500 hover:text-red-700">
+                  Obriši
+                </button>
+              </div>
+            </div>
           </li>
         ))}
       </ul>
       {cursor && (
-        <button
-          type="button"
-          onClick={loadMore}
-          disabled={loading}
-          className="inline-flex items-center gap-2 rounded border border-gray-300 px-4 py-2 text-sm disabled:opacity-60"
-        >
-          {loading && <Spinner />}
-          Učitaj još
-        </button>
+        <div className="flex justify-center">
+          <Button variant="secondary" loading={loading} onClick={loadMore}>
+            Učitaj još
+          </Button>
+        </div>
       )}
     </div>
   );

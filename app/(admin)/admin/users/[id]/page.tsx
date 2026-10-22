@@ -23,17 +23,17 @@ export default async function AdminUserPage(props: PageProps<"/admin/users/[id]"
 
   return (
     <div className="space-y-6">
-      <Link href="/admin/users" className="text-sm underline">
+      <Link href="/admin/users" className="text-sm text-brand-700 hover:underline">
         ← Korisnici
       </Link>
       <div>
-        <h1 className="text-xl font-semibold">{profile.email}</h1>
-        <p className="text-sm text-gray-600">
+        <h1 className="page-title">{profile.email}</h1>
+        <p className="page-sub">
           {profile.full_name ?? "bez imena"} · {profile.role} · {profile.token_balance} tokena · {profile.is_blocked ? "BLOKIRAN" : "aktivan"} ·
           registrovan {new Date(profile.created_at).toLocaleDateString("sr-RS")}
         </p>
         {business && (
-          <p className="text-sm text-gray-600">
+          <p className="page-sub">
             Biznis: {business.name} ({business.industry ?? "—"}, {business.language})
           </p>
         )}
@@ -41,10 +41,10 @@ export default async function AdminUserPage(props: PageProps<"/admin/users/[id]"
 
       <UserActions userId={profile.id} isSelf={profile.id === meId} role={profile.role as "user" | "admin"} isBlocked={profile.is_blocked} balance={profile.token_balance} />
 
-      <section className="text-sm">
-        <h2 className="mb-1 font-medium">Pretplate</h2>
+      <section className="card card-pad text-sm">
+        <h2 className="mb-2 font-semibold text-ink-900">Pretplate</h2>
         {!subs?.length ? (
-          <p className="text-gray-600">Nema pretplata.</p>
+          <p className="text-ink-500">Nema pretplata.</p>
         ) : (
           <ul className="list-disc pl-5">
             {subs.map((s, i) => (
@@ -57,20 +57,20 @@ export default async function AdminUserPage(props: PageProps<"/admin/users/[id]"
         )}
       </section>
 
-      <section className="text-sm">
-        <h2 className="mb-1 font-medium">Uplate</h2>
+      <section className="card card-pad text-sm">
+        <h2 className="mb-2 font-semibold text-ink-900">Uplate</h2>
         {!payments?.length ? (
-          <p className="text-gray-600">Nema uplata.</p>
+          <p className="text-ink-500">Nema uplata.</p>
         ) : (
-          <table className="w-full">
+          <table className="table">
             <tbody>
               {payments.map((p) => (
-                <tr key={p.stripe_invoice_id} className="border-t border-gray-200">
-                  <td className="py-1 text-gray-500">{p.paid_at ? new Date(p.paid_at).toLocaleDateString("sr-RS") : "—"}</td>
-                  <td className="py-1">{(p.amount_paid / 100).toFixed(2)} {p.currency?.toUpperCase()}</td>
-                  <td className="py-1">{p.status}</td>
-                  <td className="py-1">+{p.tokens_granted} tokena</td>
-                  <td className="py-1 text-gray-500">{p.stripe_invoice_id}</td>
+                <tr key={p.stripe_invoice_id} className="">
+                  <td className="text-ink-500">{p.paid_at ? new Date(p.paid_at).toLocaleDateString("sr-RS") : "—"}</td>
+                  <td className="">{(p.amount_paid / 100).toFixed(2)} {p.currency?.toUpperCase()}</td>
+                  <td className="">{p.status}</td>
+                  <td className="">+{p.tokens_granted} tokena</td>
+                  <td className="text-ink-500">{p.stripe_invoice_id}</td>
                 </tr>
               ))}
             </tbody>
@@ -78,20 +78,20 @@ export default async function AdminUserPage(props: PageProps<"/admin/users/[id]"
         )}
       </section>
 
-      <section className="text-sm">
-        <h2 className="mb-1 font-medium">Poslednje generacije</h2>
+      <section className="card card-pad text-sm">
+        <h2 className="mb-2 font-semibold text-ink-900">Poslednje generacije</h2>
         {!gens?.length ? (
-          <p className="text-gray-600">Nema generacija.</p>
+          <p className="text-ink-500">Nema generacija.</p>
         ) : (
-          <table className="w-full">
+          <table className="table">
             <tbody>
               {gens.map((g) => (
-                <tr key={g.id} className="border-t border-gray-200">
-                  <td className="py-1 text-gray-500">{new Date(g.created_at).toLocaleString("sr-RS")}</td>
-                  <td className="py-1">{g.type}</td>
-                  <td className="py-1">{g.status}{g.error_code ? ` (${g.error_code})` : ""}</td>
-                  <td className="max-w-md truncate py-1">{g.prompt}</td>
-                  <td className="py-1 text-gray-500">{g.model ?? "—"}</td>
+                <tr key={g.id} className="">
+                  <td className="text-ink-500">{new Date(g.created_at).toLocaleString("sr-RS")}</td>
+                  <td className="">{g.type}</td>
+                  <td className="">{g.status}{g.error_code ? ` (${g.error_code})` : ""}</td>
+                  <td className="max-w-md truncate">{g.prompt}</td>
+                  <td className="text-ink-500">{g.model ?? "—"}</td>
                 </tr>
               ))}
             </tbody>
@@ -99,20 +99,20 @@ export default async function AdminUserPage(props: PageProps<"/admin/users/[id]"
         )}
       </section>
 
-      <section className="text-sm">
-        <h2 className="mb-1 font-medium">Tokeni, poslednjih 30 promena</h2>
+      <section className="card card-pad text-sm">
+        <h2 className="mb-2 font-semibold text-ink-900">Tokeni, poslednjih 30 promena</h2>
         {!ledger?.length ? (
-          <p className="text-gray-600">Nema promena.</p>
+          <p className="text-ink-500">Nema promena.</p>
         ) : (
-          <table className="w-full">
+          <table className="table">
             <tbody>
               {ledger.map((t) => (
-                <tr key={t.id} className="border-t border-gray-200">
-                  <td className="py-1 text-gray-500">{new Date(t.created_at).toLocaleString("sr-RS")}</td>
-                  <td className="py-1">{t.type}{t.status !== "completed" ? ` (${t.status})` : ""}</td>
-                  <td className={`py-1 text-right ${t.amount > 0 ? "text-green-700" : ""}`}>{t.amount > 0 ? "+" : ""}{t.amount}</td>
-                  <td className="py-1 text-right text-gray-500">{t.balance_after}</td>
-                  <td className="py-1 text-gray-500">{t.note ?? ""}</td>
+                <tr key={t.id} className="">
+                  <td className="text-ink-500">{new Date(t.created_at).toLocaleString("sr-RS")}</td>
+                  <td className="">{t.type}{t.status !== "completed" ? ` (${t.status})` : ""}</td>
+                  <td className={`text-right font-medium ${t.amount > 0 ? "text-emerald-700" : ""}`}>{t.amount > 0 ? "+" : ""}{t.amount}</td>
+                  <td className="text-right text-ink-500">{t.balance_after}</td>
+                  <td className="text-ink-500">{t.note ?? ""}</td>
                 </tr>
               ))}
             </tbody>

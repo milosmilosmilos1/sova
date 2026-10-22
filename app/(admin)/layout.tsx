@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { getCurrentUser } from "@/lib/auth/get-user";
 import { LogoutButton } from "@/components/app/logout-button";
+import { LogoMark } from "@/components/ui/logo";
 
 // Admin panel. Ko nije admin dobija 404 (ne otkrivamo da panel postoji).
 // Radi kao PRAVI admin i kad traje impersonacija.
@@ -14,21 +15,29 @@ export default async function AdminLayout({ children }: LayoutProps<"/">) {
 
   return (
     <div className="flex min-h-full flex-1 flex-col">
-      <header className="border-b border-gray-200 bg-gray-50">
-        <nav className="mx-auto flex max-w-6xl flex-wrap items-center gap-4 px-4 py-3 text-sm">
-          <Link href="/admin" className="font-semibold">
+      <header className="border-b border-ink-800 bg-ink-900 text-white">
+        <nav className="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-4 py-3 text-sm sm:gap-4">
+          <Link href="/admin" className="mr-2 inline-flex items-center gap-2 font-semibold">
+            <LogoMark className="h-7 w-7" />
             Sova admin
           </Link>
-          <Link href="/admin/users">Korisnici</Link>
-          <Link href="/admin/audit">Audit</Link>
-          <Link href="/dashboard" className="ml-auto text-gray-600">
+          <Link href="/admin" className="rounded-lg px-3 py-1.5 hover:bg-white/10">
+            Statistike
+          </Link>
+          <Link href="/admin/users" className="rounded-lg px-3 py-1.5 hover:bg-white/10">
+            Korisnici
+          </Link>
+          <Link href="/admin/audit" className="rounded-lg px-3 py-1.5 hover:bg-white/10">
+            Audit
+          </Link>
+          <Link href="/dashboard" className="ml-auto rounded-lg px-3 py-1.5 text-ink-200 hover:bg-white/10">
             ← Aplikacija
           </Link>
-          <span className="text-gray-500">{real.email}</span>
-          <LogoutButton />
+          <span className="hidden text-ink-400 sm:inline">{real.email}</span>
+          <LogoutButton light />
         </nav>
       </header>
-      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">{children}</main>
+      <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-6 sm:px-6 lg:py-8">{children}</main>
     </div>
   );
 }

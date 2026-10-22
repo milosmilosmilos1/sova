@@ -2,8 +2,9 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { apiFetch, errorMessage } from "@/lib/client/api";
-import { Field, Input, SubmitButton, FormError, FormSuccess } from "@/components/forms/form-ui";
+import { Field, Input, SubmitButton, FormError, Button } from "@/components/forms/form-ui";
 
 export function AccountForm({ fullName, email }: { fullName: string | null; email: string }) {
   const router = useRouter();
@@ -11,18 +12,16 @@ export function AccountForm({ fullName, email }: { fullName: string | null; emai
   const [loadingPw, setLoadingPw] = useState(false);
   const [loadingDel, setLoadingDel] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   async function saveName(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (loadingName) return;
     setLoadingName(true);
     setError(null);
-    setSuccess(null);
     const f = new FormData(e.currentTarget);
     try {
       await apiFetch("/api/account", { method: "PATCH", body: { full_name: f.get("full_name") } });
-      setSuccess("Ime je sačuvano.");
+      toast.success("Ime je sačuvano.");
       router.refresh();
     } catch (err) {
       setError(errorMessage(err));
@@ -42,13 +41,9 @@ export function AccountForm({ fullName, email }: { fullName: string | null; emai
     }
     setLoadingPw(true);
     setError(null);
-    setSuccess(null);
     try {
-      await apiFetch("/api/account", {
-        method: "PATCH",
-        body: { current_password: f.get("current_password"), new_password: f.get("new_password") },
-      });
-      setSuccess("Lozinka je promenjena.");
+      await apiFetch("/api/account", { method: "PATCH", body: { current_password: f.get("current_password"), new_password: f.get("new_password") } });
+      toast.success("Lozinka je promenjena.");
       form.reset();
     } catch (err) {
       setError(errorMessage(err));
@@ -73,10 +68,10 @@ export function AccountForm({ fullName, email }: { fullName: string | null; emai
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <FormError message={error} />
-      <FormSuccess message={success} />
-      <form onSubmit={saveName} className="space-y-4" noValidate>
+      <form onSubmit={saveName} className="card card-pad space-y-4" noValidate>
+        <h3 className="font-semibold text-ink-900">Osnovno</h3>
         <Field label="Mejl">
           <Input value={email} disabled readOnly />
         </Field>
@@ -86,31 +81,28 @@ export function AccountForm({ fullName, email }: { fullName: string | null; emai
         <SubmitButton loading={loadingName}>Sačuvaj ime</SubmitButton>
       </form>
 
-      <form onSubmit={savePassword} className="space-y-4" noValidate>
-        <h3 className="font-medium">Promena lozinke</h3>
+      <form onSubmit={savePassword} className="card card-pad space-y-4" noValidate>
+        <h3 className="font-semibold text-ink-900">Promena lozinke</h3>
         <Field label="Trenutna lozinka">
           <Input name="current_password" type="password" autoComplete="current-password" required disabled={loadingPw} />
         </Field>
-        <Field label="Nova lozinka" hint="Bar 8 znakova.">
-          <Input name="new_password" type="password" autoComplete="new-password" required minLength={8} disabled={loadingPw} />
-        </Field>
-        <Field label="Ponovi novu lozinku">
-          <Input name="confirm" type="password" autoComplete="new-password" required minLength={8} disabled={loadingPw} />
-        </Field>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Nova lozinka" hint="Bar 8 znakova.">
+            <Input name="new_password" type="password" autoComplete="new-password" required minLength={8} disabled={loadingPw} />
+          </Field>
+          <Field label="Ponovi novu lozinku">
+            <Input name="confirm" type="password" autoComplete="new-password" required minLength={8} disabled={loadingPw} />
+          </Field>
+        </div>
         <SubmitButton loading={loadingPw}>Promeni lozinku</SubmitButton>
       </form>
 
-      <section className="space-y-2 rounded border border-red-200 p-4">
-        <h3 className="font-medium text-red-700">Brisanje naloga</h3>
-        <p className="text-sm text-gray-600">Briše nalog, biznis, sve slike i tekstove i preostale tokene. Aktivna pretplata se otkazuje.</p>
-        <button
-          type="button"
-          onClick={deleteAccount}
-          disabled={loadingDel}
-          className="rounded border border-red-600 px-3 py-1 text-sm text-red-700 disabled:opacity-60"
-        >
-          {loadingDel ? "Brišem…" : "Obriši nalog"}
-        </button>
+      <section className="card card-pad space-y-3 ring-red-200">
+        <h3 className="font-semibold text-red-700">Brisanje naloga</h3>
+        <p className="text-sm text-ink-500">Briše nalog, biznis, sve slike i tekstove i preostale tokene. Aktivna pretplata se otkazuje.</p>
+        <Button variant="danger" size="sm" loading={loadingDel} onClick={deleteAccount}>
+          Obriši nalog
+        </Button>
       </section>
     </div>
   );

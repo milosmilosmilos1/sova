@@ -27,18 +27,21 @@ export default async function AdminHome() {
   if (error || !data) {
     return (
       <div>
-        <h1 className="text-xl font-semibold">Statistike</h1>
-        <p className="text-sm text-red-600">Ne mogu da učitam statistike: {error?.message}</p>
+        <h1 className="page-title">Statistike</h1>
+        <p className="mt-3 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">Ne mogu da učitam statistike: {error?.message}</p>
       </div>
     );
   }
   const s = data as unknown as AdminStats;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-xl font-semibold">Statistike</h1>
+    <div className="space-y-8">
+      <div>
+        <h1 className="page-title">Statistike</h1>
+        <p className="page-sub">Pregled celog servisa.</p>
+      </div>
       <Section title="Korisnici">
-        <Tile label="Ukupno" value={s.users_total} />
+        <Tile label="Ukupno" value={s.users_total} accent />
         <Tile label="Novi, 30 dana" value={s.users_new_30d} />
         <Tile label="Završili onboarding" value={s.users_onboarded} />
         <Tile label="Blokirani" value={s.users_blocked} />
@@ -47,12 +50,12 @@ export default async function AdminHome() {
         <Tile label="Mesečne aktivne" value={s.subs_active_monthly} />
         <Tile label="Godišnje aktivne" value={s.subs_active_yearly} />
         <Tile label="Neuspela naplata" value={s.subs_past_due} />
-        <Tile label="MRR" value={usd(s.mrr_cents)} />
+        <Tile label="MRR" value={usd(s.mrr_cents)} accent />
         <Tile label="Prihod, 30 dana" value={usd(s.revenue_30d_cents)} />
         <Tile label="Prihod ukupno" value={usd(s.revenue_total_cents)} />
       </Section>
       <Section title="Generisanje">
-        <Tile label="Ukupno" value={s.generations_total} />
+        <Tile label="Ukupno" value={s.generations_total} accent />
         <Tile label="30 dana" value={s.generations_30d} />
         <Tile label="Neuspelo, 30 dana" value={s.generations_failed_30d} />
         <Tile label="Tekst" value={s.generations_by_type.text ?? 0} />
@@ -70,17 +73,17 @@ export default async function AdminHome() {
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
-      <h2 className="mb-2 text-sm font-medium text-gray-700">{title}</h2>
+      <h2 className="mb-3 text-sm font-medium text-ink-700">{title}</h2>
       <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-6">{children}</div>
     </section>
   );
 }
 
-function Tile({ label, value }: { label: string; value: number | string }) {
+function Tile({ label, value, accent }: { label: string; value: number | string; accent?: boolean }) {
   return (
-    <div className="rounded border border-gray-200 p-3">
-      <div className="text-xs text-gray-500">{label}</div>
-      <div className="text-lg font-semibold">{value}</div>
+    <div className="card p-4">
+      <div className="text-xs text-ink-500">{label}</div>
+      <div className={`mt-1 text-xl font-semibold tracking-tight ${accent ? "text-brand-700" : "text-ink-900"}`}>{value}</div>
     </div>
   );
 }

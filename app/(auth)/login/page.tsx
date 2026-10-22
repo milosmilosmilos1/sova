@@ -42,8 +42,11 @@ function LoginForm() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
-      <h1 className="text-lg font-semibold">Prijava</h1>
+    <form onSubmit={onSubmit} className="space-y-5" noValidate>
+      <div>
+        <h1 className="text-xl font-semibold text-ink-900">Prijava</h1>
+        <p className="mt-1 text-sm text-ink-500">Dobro došao nazad.</p>
+      </div>
       <FormError message={error} />
       <Field label="Mejl">
         <Input name="email" type="email" autoComplete="email" required disabled={loading} />
@@ -54,24 +57,21 @@ function LoginForm() {
       <SubmitButton loading={loading} className="w-full">
         Prijavi se
       </SubmitButton>
-      <p className="text-sm text-gray-600">
-        <Link href="/forgot-password" className="underline">
+      <div className="flex justify-between text-sm text-ink-500">
+        <Link href="/forgot-password" className="hover:text-brand-700">
           Zaboravljena lozinka?
         </Link>
-      </p>
-      <p className="text-sm text-gray-600">
-        Nemaš nalog?{" "}
-        <Link href="/register" className="underline">
+        <Link href="/register" className="text-brand-700 hover:underline">
           Registruj se
         </Link>
-      </p>
+      </div>
     </form>
   );
 }
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<p className="text-sm text-gray-500">Učitavanje…</p>}>
+    <Suspense fallback={<div className="skeleton h-40 w-full" />}>
       <LoginForm />
     </Suspense>
   );

@@ -16,8 +16,14 @@ export const LIMITS = {
 
 export type LimitName = keyof typeof LIMITS;
 
+// U razvoju auth limiti su 10x veći: test skripte registruju mnogo naloga sa iste IP adrese.
+const DEV_RELAXED: ReadonlySet<LimitName> = new Set(["register", "login", "forgotPassword"]);
+
 export async function enforceRateLimit(name: LimitName, subject: string) {
-  const { limit, windowSeconds } = LIMITS[name];
+  const base = LIMITS[name];
+  const relaxed = process.env.NODE_ENV !== "production" && DEV_RELAXED.has(name);
+  const limit = relaxed ? base.limit * 10 : base.limit;
+  const windowSeconds = base.windowSeconds;
   const admin = createAdminClient();
   const { data, error } = await admin.rpc("check_rate_limit", {
     p_key: `${name}:${subject}`,

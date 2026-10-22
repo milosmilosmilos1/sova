@@ -2,32 +2,25 @@
 
 import { useState, type FormEvent } from "react";
 import { useRouter } from "next/navigation";
+import { toast } from "sonner";
 import { apiFetch, errorMessage } from "@/lib/client/api";
 import { TONES, LANGUAGES } from "@/lib/validation/business";
-import { Field, Input, Textarea, Select, SubmitButton, FormError, FormSuccess } from "@/components/forms/form-ui";
+import { Field, Input, Textarea, Select, SubmitButton, FormError } from "@/components/forms/form-ui";
+import { TONE_LABELS } from "@/components/generation/labels";
 import type { Database } from "@/types/database";
 
 type Business = Database["public"]["Tables"]["businesses"]["Row"];
-
-const TONE_LABELS: Record<(typeof TONES)[number], string> = {
-  prijateljski: "Prijateljski",
-  profesionalan: "Profesionalan",
-  duhovit: "Duhovit",
-  luksuzan: "Luksuzan",
-};
 
 export function BusinessForm({ initial, mode }: { initial: Business | null; mode: "onboarding" | "settings" }) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [success, setSuccess] = useState<string | null>(null);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (loading) return;
     setLoading(true);
     setError(null);
-    setSuccess(null);
     const f = new FormData(e.currentTarget);
     const list = (name: string) =>
       String(f.get(name) ?? "")
@@ -51,11 +44,12 @@ export function BusinessForm({ initial, mode }: { initial: Business | null; mode
         },
       });
       if (redirect) {
+        toast.success("Dobrodošao u Sovu. Imaš 50 tokena.");
         router.push(redirect);
         router.refresh();
         return;
       }
-      setSuccess("Sačuvano.");
+      toast.success("Podaci o biznisu su sačuvani.");
       router.refresh();
     } catch (err) {
       setError(errorMessage(err));
@@ -65,31 +59,14 @@ export function BusinessForm({ initial, mode }: { initial: Business | null; mode
   }
 
   return (
-    <form onSubmit={onSubmit} className="space-y-4" noValidate>
+    <form onSubmit={onSubmit} className="space-y-5" noValidate>
       <FormError message={error} />
-      <FormSuccess message={success} />
       <Field label="Ime biznisa">
-        <Input name="name" required maxLength={100} defaultValue={initial?.name ?? ""} disabled={loading} />
-      </Field>
-      <Field label="Delatnost" hint="Npr. kafić, frizerski salon, teretana, agencija.">
-        <Input name="industry" maxLength={100} defaultValue={initial?.industry ?? ""} disabled={loading} />
-      </Field>
-      <Field label="Opis" hint="Šta nudite, po čemu ste posebni. Ide u svaki prompt.">
-        <Textarea name="description" rows={4} maxLength={1000} defaultValue={initial?.description ?? ""} disabled={loading} />
-      </Field>
-      <Field label="Publika" hint="Kome se obraćate.">
-        <Textarea name="target_audience" rows={2} maxLength={500} defaultValue={initial?.target_audience ?? ""} disabled={loading} />
+        <Input name="name" required maxLength={100} defaultValue={initial?.name ?? ""} disabled={loading} placeholder="Npr. Kafić Zrno" />
       </Field>
       <div className="grid gap-4 sm:grid-cols-2">
-        <Field label="Ton">
-          <Select name="tone_of_voice" defaultValue={initial?.tone_of_voice ?? ""} disabled={loading}>
-            <option value="">Nije važno</option>
-            {TONES.map((t) => (
-              <option key={t} value={t}>
-                {TONE_LABELS[t]}
-              </option>
-            ))}
-          </Select>
+        <Field label="Delatnost" hint="Kafić, frizerski salon, teretana, agencija…">
+          <Input name="industry" maxLength={100} defaultValue={initial?.industry ?? ""} disabled={loading} />
         </Field>
         <Field label="Jezik objava">
           <Select name="language" defaultValue={initial?.language ?? "sr"} disabled={loading}>
@@ -101,12 +78,28 @@ export function BusinessForm({ initial, mode }: { initial: Business | null; mode
           </Select>
         </Field>
       </div>
+      <Field label="Opis" hint="Šta nudite, po čemu ste posebni. Ide u svaki prompt.">
+        <Textarea name="description" rows={4} maxLength={1000} defaultValue={initial?.description ?? ""} disabled={loading} />
+      </Field>
+      <Field label="Publika" hint="Kome se obraćate.">
+        <Textarea name="target_audience" rows={2} maxLength={500} defaultValue={initial?.target_audience ?? ""} disabled={loading} />
+      </Field>
+      <Field label="Ton">
+        <Select name="tone_of_voice" defaultValue={initial?.tone_of_voice ?? ""} disabled={loading}>
+          <option value="">Nije važno</option>
+          {TONES.map((t) => (
+            <option key={t} value={t}>
+              {TONE_LABELS[t]}
+            </option>
+          ))}
+        </Select>
+      </Field>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Sajt">
-          <Input name="website" maxLength={200} defaultValue={initial?.website ?? ""} disabled={loading} />
+          <Input name="website" maxLength={200} defaultValue={initial?.website ?? ""} disabled={loading} placeholder="https://" />
         </Field>
         <Field label="Instagram">
-          <Input name="instagram" maxLength={100} defaultValue={initial?.instagram ?? ""} disabled={loading} />
+          <Input name="instagram" maxLength={100} defaultValue={initial?.instagram ?? ""} disabled={loading} placeholder="@profil" />
         </Field>
       </div>
       <Field label="Boje brenda" hint="Hex vrednosti odvojene zarezom, npr. #1D4ED8, #F59E0B. Najviše 5.">

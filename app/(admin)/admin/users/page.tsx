@@ -58,63 +58,63 @@ export default async function AdminUsersPage(props: PageProps<"/admin/users">) {
 
   return (
     <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Korisnici</h1>
+      <h1 className="page-title">Korisnici</h1>
       <form method="get" className="flex flex-wrap gap-2 text-sm">
-        <input name="q" defaultValue={q.q ?? ""} placeholder="Mejl ili ime" className="rounded border border-gray-300 px-3 py-1" />
+        <input name="q" defaultValue={q.q ?? ""} placeholder="Mejl ili ime" className="input w-64" />
         <input type="hidden" name="status" value={q.status} />
-        <button type="submit" className="rounded border border-gray-300 px-3 py-1">
+        <button type="submit" className="btn btn-secondary btn-sm">
           Traži
         </button>
       </form>
       <div className="flex flex-wrap gap-2 text-sm">
         {STATUS.map((s) => (
-          <Link key={s.key} href={link({ status: s.key, cursor: undefined })} className={`rounded border px-3 py-1 ${q.status === s.key ? "border-blue-600 text-blue-700" : "border-gray-300"}`}>
+          <Link key={s.key} href={link({ status: s.key, cursor: undefined })} className={`btn btn-sm ${q.status === s.key ? "btn-primary" : "btn-secondary"}`}>
             {s.label}
           </Link>
         ))}
       </div>
 
       {error ? (
-        <p className="text-sm text-red-600">Greška: {error.message}</p>
+        <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">Greška: {error.message}</p>
       ) : page.length === 0 ? (
-        <p className="text-sm text-gray-600">Nema korisnika za ovaj filter.</p>
+        <p className="text-sm text-ink-500">Nema korisnika za ovaj filter.</p>
       ) : (
-        <table className="w-full text-sm">
+        <div className="card card-pad overflow-x-auto"><table className="table">
           <thead>
-            <tr className="text-left text-gray-500">
-              <th className="py-1">Mejl</th>
-              <th className="py-1">Ime</th>
-              <th className="py-1">Rola</th>
-              <th className="py-1">Tokeni</th>
-              <th className="py-1">Plan</th>
-              <th className="py-1">Status</th>
-              <th className="py-1">Registrovan</th>
+            <tr>
+              <th className="">Mejl</th>
+              <th className="">Ime</th>
+              <th className="">Rola</th>
+              <th className="">Tokeni</th>
+              <th className="">Plan</th>
+              <th className="">Status</th>
+              <th className="">Registrovan</th>
             </tr>
           </thead>
           <tbody>
             {page.map((p) => {
               const sub = subMap.get(p.id);
               return (
-                <tr key={p.id} className="border-t border-gray-200">
-                  <td className="py-1">
-                    <Link href={`/admin/users/${p.id}`} className="underline">
+                <tr key={p.id}>
+                  <td className="">
+                    <Link href={`/admin/users/${p.id}`} className="font-medium text-brand-700 hover:underline">
                       {p.email}
                     </Link>
                   </td>
-                  <td className="py-1">{p.full_name ?? "—"}</td>
-                  <td className="py-1">{p.role}</td>
-                  <td className="py-1">{p.token_balance}</td>
-                  <td className="py-1">{sub ? `${sub.plan} (${sub.status})` : "besplatan"}</td>
-                  <td className="py-1">{p.is_blocked ? "blokiran" : p.onboarding_completed ? "aktivan" : "bez onboarding-a"}</td>
-                  <td className="py-1 text-gray-500">{new Date(p.created_at).toLocaleDateString("sr-RS")}</td>
+                  <td className="">{p.full_name ?? "—"}</td>
+                  <td className="">{p.role}</td>
+                  <td className="">{p.token_balance}</td>
+                  <td className="">{sub ? `${sub.plan} (${sub.status})` : "besplatan"}</td>
+                  <td className="">{p.is_blocked ? "blokiran" : p.onboarding_completed ? "aktivan" : "bez onboarding-a"}</td>
+                  <td className="text-ink-500">{new Date(p.created_at).toLocaleDateString("sr-RS")}</td>
                 </tr>
               );
             })}
           </tbody>
-        </table>
+        </table></div>
       )}
       {hasMore && (
-        <Link href={link({ cursor: page[page.length - 1].created_at })} className="inline-block rounded border border-gray-300 px-3 py-1 text-sm">
+        <Link href={link({ cursor: page[page.length - 1].created_at })} className="btn btn-secondary btn-sm">
           Sledeća strana
         </Link>
       )}

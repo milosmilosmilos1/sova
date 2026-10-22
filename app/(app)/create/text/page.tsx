@@ -23,13 +23,15 @@ export default async function CreateTextPage(props: PageProps<"/create/text">) {
   }
 
   return (
-    <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-semibold">Tekst za objavu</h1>
-        <p className="text-sm text-gray-600">
-          Opiši temu, izaberi mrežu i ton. Fotografija je opciona. Košta {TOKEN_COST.text} tokena, imaš{" "}
-          {user.profile.token_balance}.
-        </p>
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="page-title">Tekst za objavu</h1>
+          <p className="page-sub">Opiši temu, izaberi mrežu i ton. Fotografija je opciona.</p>
+        </div>
+        <span className="badge badge-blue">
+          {TOKEN_COST.text} tokena · imaš {user.profile.token_balance}
+        </span>
       </div>
       <TextForm cost={TOKEN_COST.text} fromGeneration={fromGeneration} />
     </div>

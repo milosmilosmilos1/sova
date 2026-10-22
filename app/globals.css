@@ -1,26 +1,159 @@
 @import "tailwindcss";
 
+/* Sova dizajn sistem. Plava kao primarna, puno belog, meke senke.
+   Sopstvene klase idu u @layer components da bi utility klase mogle
+   da ih nadjačaju. */
+
+@theme {
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+
+  --color-brand-50: #eff6ff;
+  --color-brand-100: #dbeafe;
+  --color-brand-200: #bfdbfe;
+  --color-brand-300: #93c5fd;
+  --color-brand-400: #60a5fa;
+  --color-brand-500: #3b82f6;
+  --color-brand-600: #2563eb;
+  --color-brand-700: #1d4ed8;
+  --color-brand-800: #1e40af;
+  --color-brand-900: #1e3a8a;
+  --color-brand-950: #172554;
+
+  --color-ink-900: #0f172a;
+  --color-ink-700: #334155;
+  --color-ink-500: #64748b;
+  --color-ink-400: #94a3b8;
+  --color-ink-200: #e2e8f0;
+  --color-ink-100: #f1f5f9;
+  --color-ink-50: #f8fafc;
+
+  --radius-card: 1rem;
+  --shadow-card: 0 1px 2px rgb(15 23 42 / 0.04), 0 8px 24px -12px rgb(15 23 42 / 0.12);
+  --shadow-pop: 0 12px 40px -12px rgb(37 99 235 / 0.35);
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: light;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+}
+
+@layer components {
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 text-sm font-medium transition
+      focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 focus-visible:ring-offset-2
+      disabled:cursor-not-allowed disabled:opacity-60;
+  }
+  .btn-sm {
+    @apply px-3 py-1.5 text-sm rounded-lg;
+  }
+  .btn-primary {
+    @apply bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:bg-brand-800;
+  }
+  .btn-secondary {
+    @apply bg-white text-ink-900 ring-1 ring-ink-200 hover:bg-ink-50;
+  }
+  .btn-ghost {
+    @apply text-ink-700 hover:bg-ink-100;
+  }
+  .btn-danger {
+    @apply bg-white text-red-700 ring-1 ring-red-200 hover:bg-red-50;
+  }
+
+  .card {
+    @apply rounded-[var(--radius-card)] bg-white shadow-[var(--shadow-card)] ring-1 ring-ink-200/70;
+  }
+  .card-pad {
+    @apply p-5 sm:p-6;
+  }
+
+  .input {
+    @apply w-full rounded-xl border border-ink-200 bg-white px-3.5 py-2.5 text-sm text-ink-900 placeholder:text-ink-400
+      transition focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-100
+      disabled:bg-ink-50 disabled:text-ink-500;
+  }
+  .label {
+    @apply block text-sm font-medium text-ink-700;
+  }
+  .hint {
+    @apply block text-xs text-ink-500;
+  }
+
+  .badge {
+    @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium;
+  }
+  .badge-blue {
+    @apply bg-brand-50 text-brand-700 ring-1 ring-brand-100;
+  }
+  .badge-gray {
+    @apply bg-ink-100 text-ink-700;
+  }
+  .badge-green {
+    @apply bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100;
+  }
+  .badge-red {
+    @apply bg-red-50 text-red-700 ring-1 ring-red-100;
+  }
+  .badge-yellow {
+    @apply bg-amber-50 text-amber-800 ring-1 ring-amber-100;
+  }
+
+  .nav-link {
+    @apply flex items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium text-ink-700 transition hover:bg-brand-50 hover:text-brand-700;
+  }
+  .nav-link-active {
+    @apply bg-brand-50 text-brand-700;
+  }
+
+  .page-title {
+    @apply text-2xl font-semibold tracking-tight text-ink-900;
+  }
+  .page-sub {
+    @apply mt-1 text-sm text-ink-500;
+  }
+
+  .table {
+    @apply w-full text-sm;
+  }
+  .table th {
+    @apply border-b border-ink-200 py-2 pr-3 text-left text-xs font-medium uppercase tracking-wide text-ink-500;
+  }
+  .table td {
+    @apply border-b border-ink-100 py-2.5 pr-3 align-top;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded-lg bg-ink-100;
+  }
+}
+
+/* Animacija ulaska rezultata */
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise {
+  animation: rise 0.25s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise {
+    animation: none;
+  }
 }

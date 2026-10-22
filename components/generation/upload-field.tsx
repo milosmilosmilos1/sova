@@ -9,8 +9,6 @@ export type Uploaded = { path: string; url: string | null; width: number; height
 const MAX_MB = 10;
 const ACCEPT = "image/jpeg,image/png,image/webp";
 
-// Upload fotografije: proverava veličinu i tip u browseru (brza poruka),
-// server opet proverava po bajtovima. Vraća putanju u storage-u.
 export function UploadField({
   value,
   onChange,
@@ -44,8 +42,7 @@ export function UploadField({
     try {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await apiFetch<Uploaded>("/api/uploads", { formData: fd });
-      onChange(res);
+      onChange(await apiFetch<Uploaded>("/api/uploads", { formData: fd }));
     } catch (e) {
       setError(errorMessage(e));
     } finally {
@@ -55,22 +52,22 @@ export function UploadField({
   }
 
   return (
-    <div className="space-y-2">
-      <span className="block text-sm font-medium">
+    <div className="space-y-1.5">
+      <span className="label">
         {label}
-        {required ? "" : " (opciono)"}
+        {required ? "" : <span className="font-normal text-ink-400"> (opciono)</span>}
       </span>
       {value ? (
-        <div className="flex items-start gap-3">
+        <div className="flex items-start gap-4 rounded-xl border border-ink-200 bg-white p-3">
           {value.url && (
             // eslint-disable-next-line @next/next/no-img-element
-            <img src={value.url} alt="Poslata fotografija" className="h-32 w-32 rounded border border-gray-200 object-cover" />
+            <img src={value.url} alt="Poslata fotografija" className="h-28 w-28 rounded-lg object-cover" />
           )}
-          <div className="space-y-1 text-sm">
-            <p className="text-gray-600">
-              {value.width}×{value.height}
+          <div className="space-y-2 text-sm">
+            <p className="text-ink-500">
+              {value.width}×{value.height} px
             </p>
-            <button type="button" onClick={() => onChange(null)} disabled={disabled} className="underline disabled:opacity-60">
+            <button type="button" onClick={() => onChange(null)} disabled={disabled} className="btn btn-secondary btn-sm">
               Ukloni
             </button>
           </div>
@@ -87,34 +84,27 @@ export function UploadField({
             setDragging(false);
             handleFile(e.dataTransfer.files?.[0]);
           }}
-          className={`flex flex-col items-center justify-center gap-2 rounded border-2 border-dashed p-6 text-sm ${dragging ? "border-blue-500 bg-blue-50" : "border-gray-300"}`}
+          className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 text-center text-sm transition ${
+            dragging ? "border-brand-500 bg-brand-50" : "border-ink-200 bg-ink-50/60 hover:border-brand-300"
+          }`}
         >
           {uploading ? (
-            <span className="inline-flex items-center gap-2 text-gray-600">
+            <span className="inline-flex items-center gap-2 text-ink-600">
               <Spinner /> Šaljem…
             </span>
           ) : (
             <>
-              <span className="text-gray-600">Prevuci fotografiju ovde ili</span>
-              <button
-                type="button"
-                onClick={() => inputRef.current?.click()}
-                disabled={disabled}
-                className="rounded border border-gray-300 px-3 py-1 disabled:opacity-60"
-              >
+              <svg viewBox="0 0 24 24" className="h-8 w-8 text-brand-500" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden>
+                <path d="M12 16V4M7 9l5-5 5 5M4 17v2a1 1 0 001 1h14a1 1 0 001-1v-2" />
+              </svg>
+              <span className="text-ink-600">Prevuci fotografiju ovde ili</span>
+              <button type="button" onClick={() => inputRef.current?.click()} disabled={disabled} className="btn btn-secondary btn-sm">
                 Izaberi fajl
               </button>
-              <span className="text-xs text-gray-500">jpg, png, webp, do {MAX_MB} MB</span>
+              <span className="text-xs text-ink-400">jpg, png, webp, do {MAX_MB} MB</span>
             </>
           )}
-          <input
-            ref={inputRef}
-            type="file"
-            accept={ACCEPT}
-            className="hidden"
-            disabled={disabled || uploading}
-            onChange={(e) => handleFile(e.target.files?.[0])}
-          />
+          <input ref={inputRef} type="file" accept={ACCEPT} className="hidden" disabled={disabled || uploading} onChange={(e) => handleFile(e.target.files?.[0])} />
         </div>
       )}
       {error && (

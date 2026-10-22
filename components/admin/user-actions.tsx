@@ -51,11 +51,11 @@ export function UserActions({
     });
   }
 
-  const btn = "inline-flex items-center gap-2 rounded border px-3 py-1 text-sm disabled:opacity-60";
+  const btn = "btn btn-sm";
 
   return (
-    <section className="space-y-4 rounded border border-gray-200 p-4">
-      <h2 className="font-medium">Akcije</h2>
+    <section className="card card-pad space-y-4">
+      <h2 className="font-semibold text-ink-900">Akcije</h2>
       <FormError message={error} />
       <FormSuccess message={success} />
 
@@ -80,7 +80,7 @@ export function UserActions({
               return isBlocked ? "Korisnik je odblokiran." : "Korisnik je blokiran.";
             })
           }
-          className={`${btn} ${isBlocked ? "border-gray-300" : "border-red-600 text-red-700"}`}
+          className={`${btn} ${isBlocked ? "btn-secondary" : "btn-danger"}`}
         >
           {busy === "block" && <Spinner />}
           {isBlocked ? "Odblokiraj" : "Blokiraj"}
@@ -97,7 +97,7 @@ export function UserActions({
               return `Rola je sada ${next}.`;
             })
           }
-          className={`${btn} border-gray-300`}
+          className={`${btn} btn-secondary`}
         >
           {busy === "role" && <Spinner />}
           {role === "admin" ? "Skini admin rolu" : "Postavi za admina"}
@@ -113,13 +113,13 @@ export function UserActions({
               return "Prebacujem…";
             })
           }
-          className={`${btn} border-blue-600 text-blue-700`}
+          className={`${btn} btn-primary`}
         >
           {busy === "imp" && <Spinner />}
           Uđi kao korisnik
         </button>
       </div>
-      {isSelf && <p className="text-xs text-gray-500">Ovo si ti: blokiranje, rola i impersonacija nisu dostupni za sopstveni nalog.</p>}
+      {isSelf && <p className="text-xs text-ink-500">Ovo si ti: blokiranje, rola i impersonacija nisu dostupni za sopstveni nalog.</p>}
     </section>
   );
 }

@@ -20,22 +20,25 @@ export default async function SettingsPage(props: PageProps<"/settings">) {
   const { data: business } = await supabase.from("businesses").select("*").eq("user_id", user.id).maybeSingle();
 
   return (
-    <div className="space-y-4">
-      <h1 className="text-xl font-semibold">Podešavanja</h1>
-      <div className="flex gap-2 text-sm">
+    <div className="space-y-6">
+      <div>
+        <h1 className="page-title">Podešavanja</h1>
+        <p className="page-sub">Biznis, nalog i pretplata.</p>
+      </div>
+      <div className="flex gap-2">
         {TABS.map((t) => (
-          <Link
-            key={t.key}
-            href={`/settings?tab=${t.key}`}
-            className={`rounded border px-3 py-1 ${tab === t.key ? "border-blue-600 text-blue-700" : "border-gray-300"}`}
-          >
+          <Link key={t.key} href={`/settings?tab=${t.key}`} className={`btn btn-sm ${tab === t.key ? "btn-primary" : "btn-secondary"}`}>
             {t.label}
           </Link>
         ))}
       </div>
 
-      <div className="max-w-xl">
-        {tab === "business" && <BusinessForm initial={business} mode="settings" />}
+      <div className="max-w-2xl">
+        {tab === "business" && (
+          <div className="card card-pad">
+            <BusinessForm initial={business} mode="settings" />
+          </div>
+        )}
         {tab === "account" && <AccountForm fullName={user.profile.full_name} email={user.email} />}
         {tab === "billing" && <BillingPanel userId={user.id} isImpersonating={user.isImpersonating} />}
       </div>
