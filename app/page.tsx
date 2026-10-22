@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo, LogoMark } from "@/components/ui/logo";
+import { getCurrentUser } from "@/lib/auth/get-user";
 
 const FEATURES = [
   {
@@ -33,7 +34,9 @@ const FAQ = [
   ["Na kom jeziku piše?", "Srpski ili engleski, biraš u podešavanjima biznisa."],
 ];
 
-export default function Home() {
+export default async function Home() {
+  const user = await getCurrentUser();
+  const loggedIn = Boolean(user);
   return (
     <div className="flex flex-1 flex-col">
       <header className="sticky top-0 z-20 border-b border-ink-200/60 bg-white/80 backdrop-blur">
@@ -43,12 +46,20 @@ export default function Home() {
             <a href="#cene" className="btn btn-ghost btn-sm hidden sm:inline-flex">
               Cene
             </a>
-            <Link href="/login" className="btn btn-ghost btn-sm">
-              Prijava
-            </Link>
-            <Link href="/register" className="btn btn-primary btn-sm">
-              Počni besplatno
-            </Link>
+            {loggedIn ? (
+              <Link href="/dashboard" className="btn btn-primary btn-sm">
+                Otvori aplikaciju
+              </Link>
+            ) : (
+              <>
+                <Link href="/login" className="btn btn-ghost btn-sm">
+                  Prijava
+                </Link>
+                <Link href="/register" className="btn btn-primary btn-sm">
+                  Počni besplatno
+                </Link>
+              </>
+            )}
           </nav>
         </div>
       </header>
@@ -65,8 +76,8 @@ export default function Home() {
               Sova pravi tekstove i slike za tvoj kafić, salon, teretanu ili radnju. Ti opišeš, Sova napiše i nacrta, ti objaviš.
             </p>
             <div className="mt-8 flex flex-col items-center justify-center gap-3 sm:flex-row">
-              <Link href="/register" className="btn btn-primary px-6 py-3 text-base shadow-[var(--shadow-pop)]">
-                Počni besplatno, 50 tokena
+              <Link href={loggedIn ? "/dashboard" : "/register"} className="btn btn-primary px-6 py-3 text-base shadow-[var(--shadow-pop)]">
+                {loggedIn ? "Otvori aplikaciju" : "Počni besplatno, 50 tokena"}
               </Link>
               <a href="#kako" className="btn btn-secondary px-6 py-3 text-base">
                 Kako radi
