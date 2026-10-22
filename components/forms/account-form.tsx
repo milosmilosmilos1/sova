@@ -9,6 +9,7 @@ export function AccountForm({ fullName, email }: { fullName: string | null; emai
   const router = useRouter();
   const [loadingName, setLoadingName] = useState(false);
   const [loadingPw, setLoadingPw] = useState(false);
+  const [loadingDel, setLoadingDel] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
 
@@ -56,6 +57,21 @@ export function AccountForm({ fullName, email }: { fullName: string | null; emai
     }
   }
 
+  async function deleteAccount() {
+    if (loadingDel) return;
+    if (!confirm("Obrisati nalog? Brišu se svi podaci, slike i tokeni. Ovo ne može da se vrati.")) return;
+    if (!confirm("Sigurno? Poslednja provera.")) return;
+    setLoadingDel(true);
+    setError(null);
+    try {
+      const { redirect } = await apiFetch<{ redirect: string }>("/api/account", { method: "DELETE" });
+      window.location.assign(redirect);
+    } catch (err) {
+      setError(errorMessage(err));
+      setLoadingDel(false);
+    }
+  }
+
   return (
     <div className="space-y-8">
       <FormError message={error} />
@@ -83,6 +99,19 @@ export function AccountForm({ fullName, email }: { fullName: string | null; emai
         </Field>
         <SubmitButton loading={loadingPw}>Promeni lozinku</SubmitButton>
       </form>
+
+      <section className="space-y-2 rounded border border-red-200 p-4">
+        <h3 className="font-medium text-red-700">Brisanje naloga</h3>
+        <p className="text-sm text-gray-600">Briše nalog, biznis, sve slike i tekstove i preostale tokene. Aktivna pretplata se otkazuje.</p>
+        <button
+          type="button"
+          onClick={deleteAccount}
+          disabled={loadingDel}
+          className="rounded border border-red-600 px-3 py-1 text-sm text-red-700 disabled:opacity-60"
+        >
+          {loadingDel ? "Brišem…" : "Obriši nalog"}
+        </button>
+      </section>
     </div>
   );
 }

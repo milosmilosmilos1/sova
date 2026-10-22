@@ -6,6 +6,9 @@ import { createClient } from "@/lib/supabase/server";
 import { requireUser } from "@/lib/auth/get-user";
 import { AppError } from "@/lib/errors";
 import { env } from "@/lib/env";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { getStripe } from "@/lib/stripe/client";
+import { isStripeConfigured } from "@/lib/stripe/plans";
 
 // PATCH /api/account: ime i/ili lozinka. Lozinka traži trenutnu lozinku.
 export const PATCH = withApi(async (req: NextRequest) => {
@@ -46,4 +49,45 @@ export const PATCH = withApi(async (req: NextRequest) => {
   }
 
   return ok({ updated: true });
+});
+
+// DELETE /api/account: otkaži Stripe pretplatu, obriši fajlove, obriši auth
+// korisnika (cascade briše profil, biznis, generacije, ledger). Nepovratno.
+export const DELETE = withApi(async () => {
+  const user = await requireUser({ allowUnonboarded: true, allowBlocked: true, denyImpersonation: true });
+  const admin = createAdminClient();
+
+  if (isStripeConfigured()) {
+    const { data: subs } = await admin
+      .from("subscriptions")
+      .select("stripe_subscription_id")
+      .eq("user_id", user.id)
+      .in("status", ["active", "trialing", "past_due", "unpaid", "incomplete"]);
+    const stripe = getStripe();
+    for (const s of subs ?? []) {
+      try {
+        await stripe.subscriptions.cancel(s.stripe_subscription_id);
+      } catch (e) {
+        console.error("[account] otkazivanje pretplate", s.stripe_subscription_id, e instanceof Error ? e.message : e);
+        throw new AppError("INTERNAL", "Nismo uspeli da otkažemo pretplatu. Pokušaj ponovo ili javi podršci.");
+      }
+    }
+  }
+
+  for (const bucket of ["uploads", "generated", "logos"] as const) {
+    const { data: files } = await admin.storage.from(bucket).list(user.id, { limit: 1000 });
+    if (files?.length) {
+      await admin.storage.from(bucket).remove(files.map((f) => `${user.id}/${f.name}`));
+    }
+  }
+
+  const { error } = await admin.auth.admin.deleteUser(user.id);
+  if (error) {
+    console.error("[account] brisanje", error.message);
+    throw new AppError("INTERNAL", "Brisanje naloga nije uspelo. Pokušaj ponovo.");
+  }
+
+  const supabase = await createClient();
+  await supabase.auth.signOut();
+  return ok({ deleted: true, redirect: "/" });
 });
