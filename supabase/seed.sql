@@ -1,2 +1,0 @@
--- Seed za lokalni razvoj. Korisnici se prave kroz auth (registracija ili
--- scripts/test-db.mjs), pa ovde za sada nema podataka.
