@@ -1,0 +1,160 @@
+# Sova — integracije
+
+Verzija 1.0 (faza 1, provereno 23.10.2026 na zvaničnim stranicama; izvori na dnu). Pre implementacije svake mreže u fazi 8 ponovo proveriti aktuelnu dokumentaciju i ažurirati ovu tabelu. Status prijava se vodi u sekciji 10.
+
+## 1. Zajednički SocialProvider interfejs
+
+```ts
+interface SocialProvider {
+  platform: SocialPlatform
+  getAuthUrl(ctx: { state: string; codeChallenge?: string; redirectUri: string }): string
+  exchangeCode(code: string, ctx: { codeVerifier?: string; redirectUri: string }): Promise<TokenSet>
+  refreshToken(tokens: TokenSet): Promise<TokenSet>                 // baca NonRefreshableError za mreže bez refresh-a
+  listAccounts(tokens: TokenSet): Promise<ExternalAccount[]>        // stranice, nalozi, kanali, lokacije, table
+  validatePost(input: NormalizedPost, account: SocialAccount): ValidationResult   // koristi config/platforms.ts
+  publish(input: NormalizedPost, account: SocialAccount): Promise<PublishResult>  // { externalId?, permalink?, pending?: PollHandle }
+  getPublishStatus(handle: PollHandle, account: SocialAccount): Promise<PublishStatus>
+  findExistingPost(key: string, account: SocialAccount): Promise<string | null>   // idempotentnost posle pada
+  deletePost(externalId: string, account: SocialAccount): Promise<void>
+  fetchHistory(account: SocialAccount, limit: number): Promise<HistoricalPost[]>
+  fetchPostMetrics(externalId: string, account: SocialAccount): Promise<NormalizedMetrics>
+  fetchAccountMetrics(account: SocialAccount, date: string): Promise<AccountMetrics>
+  revoke(tokens: TokenSet): Promise<void>
+  capabilities(account: SocialAccount): Capabilities                 // {image, carousel, video, reels, stories, link, text, firstComment, aiLabel}
+}
+```
+
+Greške se mapiraju u `ProviderError { code, retryable, userMessage (srpski), raw }`. Kodovi: `TOKEN_INVALID`, `PERMISSION_LOST`, `RATE_LIMITED`, `MEDIA_REJECTED`, `CONTENT_REJECTED`, `DUPLICATE`, `QUOTA_EXCEEDED`, `ACCOUNT_RESTRICTED`, `PROVIDER_DOWN`, `UNKNOWN`.
+
+## 2. Pregled po mreži
+
+| Mreža | Odabrani API | OAuth | Token | Objava | Metrike | Odobrenje |
+| --- | --- | --- | --- | --- | --- | --- |
+| Facebook | Graph API (Pages) | Facebook Login for Business, state | user token 60 dana → Page token bez fiksnog isteka | `/{page}/feed`, `/{page}/photos`, više slika kroz `attached_media`, video i Reels kroz Video API | Page Insights | App Review + Business Verification |
+| Instagram | Instagram API **with Facebook Login** (graph.facebook.com) | isti kao Facebook | isti | kontejner `/{ig}/media` → `/{ig}/media_publish`, polling `status_code` | Insights | isti App Review |
+| LinkedIn | Posts API `/rest/posts`, `LinkedIn-Version: YYYYMM` | OAuth 2.0 (3-legged), state | 60 dana, refresh token 365 dana (proveriti za 2026) | lični profil `w_member_social`; stranica firme `w_organization_social` | `r_organization_social` | lični: self-serve proizvod; stranice: Community Management API (Development → Standard) |
+| TikTok | Content Posting API (Direct Post) | OAuth 2.0 + PKCE | 24 h, refresh 365 dana | `/v2/post/publish/video/init/` (`FILE_UPLOAD` ili `PULL_FROM_URL`), foto `/content/init/`, status `/status/fetch/` | Display API | audit (do tada samo privatno, 5 korisnika/dan) |
+| X | API v2, pay-per-use | OAuth 2.0 + PKCE | 2 h, refresh sa `offline.access` | `POST /2/tweets`, media upload v2 | `/2/tweets?tweet.fields=public_metrics` | nema review; kartica i krediti |
+| YouTube | Data API v3 | Google OAuth | 1 h, refresh token | `videos.insert` (resumable), Shorts = vertikalan video ≤ 3 min sa #Shorts | `videos.list(statistics)`, Analytics API | Google OAuth verifikacija (sensitive scopes) + zahtev za kvotu |
+| Pinterest | API v5 | OAuth 2.0 | 30 dana, refresh 365 dana | `POST /v5/pins` sa `media_source` (image_url, multiple images, video) | `/v5/pins/{id}/analytics` | Trial (sandbox pinovi) → Standard (video demo) |
+| Google Business Profile | My Business API v4 `localPosts` | Google OAuth | 1 h, refresh | `POST /v4/accounts/{a}/locations/{l}/localPosts` | Performance API | zahtev za pristup (kontakt forma); kvota 0 → 300 QPM po odobrenju |
+
+## 3. Facebook (stranice)
+
+- **Scope-ovi**: `pages_show_list`, `pages_read_engagement`, `pages_manage_posts`, `pages_read_user_content` (za istoriju), `publish_video` (video i Reels), `business_management` (ako Page pripada Business portfoliju). Korisnik mora imati zadatke `CREATE_CONTENT`, `MANAGE`, `MODERATE` na stranici.
+- **Tokeni**: kratkotrajan user token → `oauth/access_token?grant_type=fb_exchange_token` (server) → dugotrajan user token 60 dana → `GET /{user}/accounts` daje Page tokene bez fiksnog isteka. Čuvamo Page token; ako Page token postane nevažeći (promena lozinke, uklonjen admin), `needs_reauth`.
+- **Endpointi**: tekst i link `POST /{page}/feed {message, link}`; jedna slika `POST /{page}/photos {url, caption}`; više slika: svaki `POST /{page}/photos {url, published: false}` pa `POST /{page}/feed {attached_media: [{media_fbid}]}`; video `POST /{page}/videos`; Reels `POST /{page}/video_reels` (dvofazno: start, upload, finish) — proveriti u fazi 8a.
+- **Ograničenja**: zakazivanje na strani Mete (`scheduled_publish_time`) važi 10 min–30 dana, ali Sova koristi sopstveni publisher da bi retry i statusi bili isti za sve mreže. Permalink: `https://www.facebook.com/{post_id}`.
+- **Webhook-ovi**: deauthorize callback i data deletion callback (potpisan `signed_request`, HMAC-SHA256 sa app secret; odgovor `{ url, confirmation_code }`). Uneti u App Dashboard → Facebook Login → Settings.
+- **App Review**: zahteva screencast svakog scope-a, javnu Politiku privatnosti, Uslove, Data deletion URL, ikonu 512–1024 px, Business Verification (dokument firme), kontakt DPO ako posluje u EU. Tech Provider podešavanje (aplikacija služi drugim firmama).
+
+## 4. Instagram (Business i Creator)
+
+- **Izbor**: *Instagram API with Facebook Login* jer Sova ionako povezuje Facebook stranicu, dobija Page token bez isteka i jedan OAuth tok za obe mreže. Varijanta *with Instagram Login* (graph.instagram.com, bez Facebook stranice, scope `instagram_business_content_publish`, token 60 dana sa refresh-om) ide iza feature flaga kasnije ako korisnici traže IG bez Facebook stranice. Pitanje 3 u izveštaju.
+- **Scope-ovi**: `instagram_basic`, `instagram_content_publish`, `instagram_manage_insights`, `instagram_manage_comments` (za prvi komentar), plus Facebook scope-ovi iznad.
+- **Tok**: `POST /{ig_user}/media {image_url | video_url, caption, media_type: IMAGE|VIDEO|REELS|STORIES|CAROUSEL, is_carousel_item, children, alt_text, is_ai_generated}` → `POST /{ig_user}/media_publish {creation_id}`. Ako nema media id, `GET /{container}?fields=status_code` jednom u minutu, najviše 5 min (`IN_PROGRESS`, `FINISHED`, `PUBLISHED`, `ERROR`, `EXPIRED`).
+- **Limiti**: 100 objava kroz API po nalogu u pokretnih 24 h (dokumentacija na jednom mestu kaže 50 za karusele; Sova proverava `GET /{ig_user}/content_publishing_limit` pre zakazivanja i upozorava na 80 %). Slike **samo JPEG** (Sharp konvertuje), karusel do 20 stavki, sve stavke se seku na odnos prve, `alt_text` samo za slike, `is_ai_generated` samo na kontejneru karusela ili pojedinačne objave. Mediji moraju biti na javnom HTTPS URL-u u trenutku objave: potpisani Supabase URL važi 24 h. Shopping tagovi i filteri nisu podržani.
+- **Istorija i metrike**: `GET /{ig_user}/media?fields=id,caption,media_type,media_product_type,permalink,timestamp,like_count,comments_count` i `GET /{media}/insights?metric=reach,impressions,saved,shares,total_interactions` (lista metrika zavisi od tipa; Reels imaju `plays`). Nalog: `GET /{ig_user}/insights?metric=follower_count,reach,profile_views&period=day`.
+
+## 5. LinkedIn
+
+- **Lični profil**: proizvod „Share on LinkedIn” + „Sign In with LinkedIn using OpenID Connect” (self-serve u Developer portalu, bez dodatnog odobrenja). Scope-ovi `openid profile email w_member_social`. Objava `POST /rest/posts` sa `author: urn:li:person:{id}`, `commentary`, `visibility: PUBLIC`, `distribution.feedDistribution: MAIN_FEED`, `content.media` (slika kroz `POST /rest/images?action=initializeUpload` pa PUT fajla) ili `content.article {source, title}`. Proveriti u fazi 8b da li se proizvod i dalje tako zove.
+- **Stranice firmi**: Community Management API. Zahtevi: registrovana firma, poslovni email (ne gmail), verifikovana stranica firme (super admin potvrđuje app), Politika privatnosti. Development tier: 500 poziva po app-u i 100 po članu u 24 h, 12 meseci, bez BATCH_GET. Standard tier: screencast < 5 min sa OAuth tokom, objavom i prikazom engagementa; test kredencijali na zahtev. Scope-ovi `r_organization_admin` (lista stranica gde je korisnik admin, `GET /rest/organizationAcls?q=roleAssignee`), `w_organization_social`, `r_organization_social`. Korisnik mora imati ulogu ADMINISTRATOR, DIRECT_SPONSORED_CONTENT_POSTER ili RECRUITING_POSTER.
+- **Verzije**: header `LinkedIn-Version: 202610` (format YYYYMM), `X-Restli-Protocol-Version: 2.0.0`. Verzija 202511 se gasi 16.11.2026; svaka verzija živi oko godinu dana. Env `LINKEDIN_API_VERSION`.
+- **Limiti**: tekst do 3.000 karaktera, do 20 slika (multi-image), link preview automatski iz prvog URL-a ako nema `content`. Metrike: `GET /rest/socialActions/{urn}` (lajkovi, komentari) i `organizationalEntityShareStatistics` za stranice; za lični profil statistika je ograničena.
+
+## 6. TikTok
+
+- **Scope-ovi**: `user.info.basic`, `video.publish`, `video.upload`, `video.list` (istorija). OAuth 2.0 sa PKCE (obavezan za web od 2024).
+- **Pre objave**: `POST /v2/post/publish/creator_info/query/` i prikaz nickname-a, dozvoljenih privacy opcija (dropdown, bez unapred izabrane), maksimalnog trajanja videa, onemogućenih interakcija (Comment, Duet, Stitch sivi); prekidač za komercijalni sadržaj (isključen po defaultu; ako je uključen bar jedno od „Your brand” / „Branded content”; branded content ne može biti privatan); saglasnost sa Music Usage Confirmation (i Branded Content Policy kad važi). Ovo su obavezni UX elementi za audit, pa composer za TikTok ima poseban panel.
+- **Objava**: `POST /v2/post/publish/video/init/` sa `post_info` i `source_info`. `PULL_FROM_URL` traži URL pod domenom koji je verifikovan u „Manage URL properties” — potpisani Supabase URL (`*.supabase.co`) to nije. Odluka: `FILE_UPLOAD` (chunkovi 5–64 MB) iz Inngest koraka; alternativa je proxy ruta na našem domenu. Foto objave: `/v2/post/publish/content/init/` sa `post_mode: DIRECT_POST`, `media_type: PHOTO`. Status: `POST /v2/post/publish/status/fetch/` do `PUBLISH_COMPLETE` ili `FAILED`.
+- **Limiti**: neauditovan klijent → samo `SELF_ONLY` i najviše 5 korisnika u 24 h, nalozi moraju biti privatni (greška `unaudited_client_can_only_post_to_private_accounts`). Po kreatoru oko 15 objava dnevno, deljeno sa svim aplikacijama. Audit: prijava preko formulara u TikTok for Developers, očekivano trajanje nedeljama.
+- **Metrike**: Display API `video.list` daje `like_count, comment_count, share_count, view_count` za sopstvene videe.
+
+## 7. X
+
+- **Pristup**: isključivo pay-per-use od 6.2.2026, bez pretplate; krediti se kupuju u Developer Console. Cene: objava $0.015, objava sa URL-om $0.200, čitanje $0.005 po objavi, korisnik $0.010. Promocija $20 kredita posle prve kupovine. Legacy Basic/Pro samo za postojeće pretplatnike.
+- **Scope-ovi**: `tweet.read tweet.write users.read offline.access media.write`. OAuth 2.0 PKCE, refresh token kroz `offline.access`.
+- **Objava**: `POST /2/tweets {text, media: {media_ids}, reply: {in_reply_to_tweet_id}}` za thread; upload medija kroz `POST /2/media/upload` (chunked za video). Tekst 280 karaktera (URL-ovi se broje kao 23), do 4 slike ili 1 video.
+- **Sova tokeni**: 1 bez linka, 3 sa linkom po brifu; napomena u ARCHITECTURE 8.2 (sa linkom trošak premašuje prihod na godišnjem planu).
+- **Metrike**: `public_metrics` (retweet, reply, like, quote, bookmark, impression) uz trošak čitanja; povlačenje 24 h i 7 d, ne 1 h i 30 d, da se štedi.
+
+## 8. YouTube Shorts
+
+- **Scope-ovi**: `https://www.googleapis.com/auth/youtube.upload`, `youtube.readonly`, `yt-analytics.readonly`. Sensitive scope-ovi → OAuth verifikacija aplikacije (brend, domen, video demo). Proveriti da nisu „restricted” (CASA procena).
+- **Upload**: `videos.insert` resumable, `snippet.title` (≤ 100), `description` (#Shorts), `status.privacyStatus`, `status.selfDeclaredMadeForKids`, `status.containsSyntheticMedia` (oznaka AI sadržaja). Shorts = vertikalan ili kvadratan video do 3 minuta.
+- **Kvota**: podrazumevano 10.000 jedinica dnevno po Google Cloud projektu; `videos.insert` košta 1.600 → ~6 uploada dnevno za sve korisnike. Zahtev za povećanje kvote (YouTube API Services compliance audit) odmah po verifikaciji. Do tada: feature flag, dnevni brojač u `platform_settings`, fallback na asistirano objavljivanje.
+- **Metrike**: `videos.list(part=statistics)` (1 jedinica), kanal `channels.list`.
+
+## 9. Pinterest
+
+- **Scope-ovi**: `boards:read boards:write pins:read pins:write user_accounts:read`.
+- **Tier**: Trial → pinovi vidljivi samo kreatoru (sandbox); Standard → javni, veći limiti; prijava kroz My apps → Upgrade sa videom OAuth toka i objave (terminal/Postman snimak prihvaćen), tačan opis aplikacije i dostupna Politika privatnosti.
+- **Objava**: `POST /v5/pins {board_id, title (≤100), description (≤800), link, alt_text, media_source: {source_type: image_url | multiple_image_urls | video_id}}`. Odnos slike 2:3 preporučen (1000×1500). Video kroz `POST /v5/media` pa `video_id`.
+- **Metrike**: `GET /v5/pins/{id}/analytics?metric_types=IMPRESSION,SAVE,PIN_CLICK,OUTBOUND_CLICK`.
+
+## 10. Google Business Profile
+
+- **Pristup**: formular „Application for Basic API Access” sa brojem Cloud projekta; email mora biti vlasnik ili menadžer profila; kompletan profil sa sajtom ubrzava pregled. Kvota 0 QPM = nije odobreno, 300 QPM = odobreno. Posle odobrenja uključiti svih 8 GBP API-ja u projektu.
+- **Scope**: `https://www.googleapis.com/auth/business.manage`.
+- **Objava**: `POST https://mybusiness.googleapis.com/v4/accounts/{account}/locations/{location}/localPosts` sa `languageCode`, `summary` (do 1.500 karaktera — proveriti), `topicType: STANDARD | EVENT | OFFER`, `callToAction {actionType: BOOK|ORDER|SHOP|LEARN_MORE|SIGN_UP|CALL, url}`, `media [{mediaFormat: PHOTO, sourceUrl}]`, za EVENT `event {title, schedule}`, za OFFER `offer {couponCode, redeemOnlineUrl, termsConditions}`. Lokacije: `GET https://mybusinessbusinessinformation.googleapis.com/v1/accounts/{a}/locations`.
+- **Metrike**: Business Profile Performance API (`locations.getDailyMetricsTimeSeries`); za pojedinačne objave nema metrika kroz API → `null`.
+
+## 11. Canva Connect
+
+- **OAuth**: Authorization Code + PKCE (obavezan), scope-ovi `design:content:read design:content:write design:meta:read asset:read asset:write brandtemplate:meta:read brandtemplate:content:read profile:read`. Access token 4 h, refresh token (jednokratan, rotira se). MFA na Canva nalogu je uslov za integraciju.
+- **Autofill**: zvanični vodič navodi Pro, Teams i Enterprise kao planove sa pristupom brand template-ima i Autofill-u (API referenca na drugom mestu kaže „Enterprise”). Sova proverava mogućnost u runtime-u: pokušaj `GET /v1/brand-templates` → 403 znači nema Autofill → `canva_connections.autofill_available = false`. Tok: `POST /v1/asset-uploads` (slika) → `GET /v1/brand-templates/{id}/dataset` → `POST /v1/autofills` → polling `GET /v1/autofills/{job}` → `POST /v1/exports` → polling → preuzimanje u `generated`.
+- **Bez Autofill-a**: `POST /v1/designs {design_type: {type: 'preset', name: 'instagram_post'} | custom {width,height}, asset_id, title}` → `edit_url` → korisnik dorađuje → `GET /api/canva/return?correlation_state=...` → `POST /v1/exports` (png/jpg/pdf/mp4). Canva traži da se `edit_url` otvori odmah po kreiranju (kratko važi).
+- **Napomena**: Canva najavljuje promenu ID-jeva brand template-a sa 6 meseci migracije. Čuvamo ID uz datum i spremni smo za remapiranje.
+
+## 12. Unsplash
+
+- **Limiti**: demo 50 zahteva/h, production 1.000/h posle prijave („Apply for Production” u developer portalu, aplikacija mora poštovati smernice; prijava čim UI radi, u fazi 7). Broje se samo pozivi ka `api.unsplash.com`, ne slike sa `images.unsplash.com`.
+- **Obaveze**: hotlink slika sa URL-ova iz odgovora (zadržati `ixid` pri resize-u); poziv `photo.links.download_location` kad korisnik zaista upotrebi fotografiju u objavi (ne pri prikazu rezultata); atribucija svuda gde se slika vidi: `Photo by <a href="https://unsplash.com/@{username}?utm_source=sova&utm_medium=referral">{name}</a> on <a href="https://unsplash.com/?utm_source=sova&utm_medium=referral">Unsplash</a>` (`utm_source` = naziv aplikacije kako je registrovana). Keš rezultata pretrage 1 h u Redisu smanjuje pozive.
+- **Pretraga**: `GET /search/photos?query&orientation&color&content_filter=high&per_page=12`, zatim Gemini vision rangira kandidate po relevantnosti i stilu brenda.
+
+## 13. Gemini
+
+Vidi ARCHITECTURE 8.1 za modele i cene. Dodatno: strukturisan izlaz kroz `responseMimeType: application/json` + `responseSchema`; safety podešavanja na podrazumevanim pragovima, blokiran odgovor → `AI_BLOCKED` sa porukom i bez naplate; `thinkingConfig` sa niskim budžetom za tekst objava radi cene; slike kroz `generateContent` sa `responseModalities: ['IMAGE']` i `imageConfig { aspectRatio, imageSize }`; embeddings `embedContent` sa `outputDimensionality: 1536` i `taskType: RETRIEVAL_DOCUMENT` / `RETRIEVAL_QUERY`.
+
+## 14. Checklista prijava (status se ažurira svake faze)
+
+| Stavka | Potrebno za | Preduslov | Status |
+| --- | --- | --- | --- |
+| Stranice Privatnost, Uslovi, Brisanje podataka na javnom domenu | sve mreže | faza 2 | nije počelo |
+| Meta app (Business), test stranica + IG Business nalog | Facebook, Instagram | faza 2 | nije počelo |
+| Meta Business Verification | App Review | dokumenti firme | nije počelo |
+| Meta App Review (scope-ovi iz sekcija 3 i 4, screencast) | produkcija | radna integracija (8a) | nije počelo |
+| Meta deauthorize + data deletion callback | App Review | faza 8a | nije počelo |
+| LinkedIn app + „Share on LinkedIn” | lični profil | faza 8b | nije počelo |
+| LinkedIn Community Management, Development tier | stranice firmi | firma, poslovni email, verifikovana stranica | nije počelo |
+| LinkedIn Standard tier (screencast) | produkcija | 8b gotova | nije počelo |
+| TikTok app + audit | javne objave | 8b gotova | nije počelo |
+| TikTok URL property verifikacija (ako proxy) | PULL_FROM_URL | domen | nije počelo |
+| X developer nalog + krediti | X | kartica | nije počelo |
+| Google Cloud: OAuth consent screen, verifikacija (YouTube scope-ovi) | YouTube | domen, politika, demo video | nije počelo |
+| YouTube kvota — zahtev za povećanje | YouTube | verifikacija | nije počelo |
+| GBP API pristup (formular) | GBP | GBP profil, Cloud projekat | nije počelo |
+| Pinterest app Trial → Standard (video) | Pinterest | 8c gotova | nije počelo |
+| Canva integracija (Developer portal, MFA) | Canva | faza 7 | nije počelo |
+| Unsplash production pristup | Unsplash | faza 7 | nije počelo |
+| Resend domen (SPF, DKIM, DMARC) | email | domen | nije počelo |
+| Paddle ili Stripe nalog + sandbox | naplata | odluka (pitanje 1) | nije počelo |
+
+## 15. Izvori (pročitano 23.10.2026)
+
+- Gemini modeli: https://ai.google.dev/gemini-api/docs/models · cene: https://ai.google.dev/gemini-api/docs/pricing · Embedding 2: https://ai.google.dev/gemini-api/docs/models/gemini-embedding-2
+- Next.js proxy: https://nextjs.org/docs/app/api-reference/file-conventions/proxy
+- Instagram content publishing: https://developers.facebook.com/docs/instagram-platform/content-publishing · pregled: https://developers.facebook.com/docs/instagram-platform/overview
+- Facebook Pages posts: https://developers.facebook.com/docs/pages-api/posts · tokeni: https://developers.facebook.com/docs/facebook-login/access-tokens/refreshing
+- LinkedIn Community Management: https://learn.microsoft.com/en-us/linkedin/marketing/community-management/community-management-api-migration-guide
+- TikTok content sharing guidelines: https://developers.tiktok.com/doc/content-sharing-guidelines
+- X pricing: https://docs.x.com/x-api/getting-started/pricing
+- YouTube kvota: https://developers.google.com/youtube/v3/determine_quota_cost
+- Pinterest access tiers: https://developers.pinterest.com/docs/key-concepts/access-tiers/
+- GBP prerequisites: https://developers.google.com/my-business/content/prereqs · posts: https://developers.google.com/my-business/content/posts-data
+- Canva Autofill: https://www.canva.dev/docs/connect/autofill-guide/
+- Unsplash: https://unsplash.com/documentation · atribucija: https://help.unsplash.com/en/articles/2511315-guideline-attribution
+- Supabase HNSW: https://supabase.com/docs/guides/ai/vector-indexes/hnsw-indexes
+- Inngest cancelOn: https://www.inngest.com/docs/features/inngest-functions/cancellation/cancel-on-events
+- Stripe zemlje: https://stripe.com/global · Paddle prodavci: https://www.paddle.com/help/start/intro-to-paddle/which-countries-are-supported-by-paddle · Lemon Squeezy isplate: https://docs.lemonsqueezy.com/help/getting-started/supported-countries
