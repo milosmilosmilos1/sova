@@ -1,56 +1,63 @@
 # Sova — runbook
 
-Skelet u fazi 1. Svaka faza dopunjava svoju sekciju. Ništa odavde još nije isprobano jer koda nema.
+Provereno 23.10.2026 na Windows 11 (Git Bash), Node 24, Docker Desktop.
 
-## 1. Lokalno pokretanje (popunjava faza 2)
+## 1. Lokalno pokretanje
 
-Preduslovi: Node 20.9+, Docker Desktop (za Supabase CLI), Git.
+Preduslovi: Node 20.9+ (koristi se 24), Docker Desktop, Git, gitleaks (`winget install Gitleaks.Gitleaks`).
 
 ```
 npm install
-cp .env.example .env.local        # pa unesi vrednosti
-npx supabase start                 # lokalni Postgres, Auth, Storage, Studio na :54323
-npx supabase db reset              # migracije + seed
+cp .env.example .env.local        # pa unesi vrednosti (vidi dole)
+npm run db:start                   # lokalni Supabase: API :54321, DB :54322, Studio :54323, Mailpit :54324
+npm run db:reset                   # migracije + seed
 npm run dev                        # Next.js na http://localhost:3001
-npx inngest-cli@latest dev         # Inngest dev server na :8288, sam nalazi /api/inngest
+npm run inngest:dev                # Inngest dev server na :8288 (poseban terminal)
 ```
 
-Pre prvog `supabase start` na ovoj mašini obrisati stare volumene: `docker volume ls | grep -i supabase` pa `docker volume rm` za one sa sufiksom „Social Media Automatizacija”.
+Vrednosti za `.env.local` lokalnog Supabase-a: `npx supabase status -o env` (ANON_KEY → NEXT_PUBLIC_SUPABASE_ANON_KEY, SERVICE_ROLE_KEY → SUPABASE_SERVICE_ROLE_KEY, JWT_SECRET → SUPABASE_JWT_SECRET). Tajne: `openssl rand -base64 32` za TOKEN_ENCRYPTION_KEY (sa prefiksom `v1:`), `openssl rand -hex 32` za CRON_SECRET i IMPERSONATION_SECRET.
 
-Provera: `GET http://localhost:3001/api/health` vraća `ok: true` za bazu, Redis, Inngest i Gemini.
+Provera: http://localhost:3001/api/health vraća `status: ok`; `database: ok`.
 
-## 2. Testovi (popunjavaju faze 3–15)
+Zamke:
+
+- Stari Supabase kontejneri drugog projekta na istim portovima: `docker ps -a | grep supabase`, pa `docker rm -f` i `docker volume rm` pre `db:start`.
+- Dva `supabase start` istovremeno se sudaraju oko imena kontejnera; pokreni samo jedan.
+- Port 3000 drži drugi projekat; Sova je na 3001 (D-011).
+
+## 2. Testovi
 
 ```
 npm run lint && npm run typecheck
-npm run test            # Vitest unit + integracioni (traži pokrenut lokalni Supabase)
-npm run test:db         # RLS i RPC testovi
-npm run test:e2e        # Playwright
+npm run test            # Vitest unit (25)
+npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (24); pravi i briše test korisnike
+npm run build           # produkcijski build
 ```
 
 ## 3. Migracije
 
-- Nova migracija: `npx supabase migration new <naziv>`; pisati unazad kompatibilno (expand → migrate → contract).
-- Lokalno: `npx supabase db reset`. Tipovi: `npm run db:types` (generiše `src/types/database.ts`).
-- Staging i prod: kroz GitHub Actions posle tvog odobrenja (ručni `workflow_dispatch`), nikad ručno iz lokalne mašine.
+- Nova migracija: `npx supabase migration new <naziv>` → fajl u `supabase/migrations/`. Do lansiranja se postojeće migracije menjaju u mestu i radi se `db:reset`; posle lansiranja samo nove migracije, unazad kompatibilne (expand → migrate → contract).
+- Posle promene šeme: `npm run db:reset`, `npm run test:db`, `npm run db:types` (regeneriše `src/types/database.ts`), `npm run typecheck`.
+- Security definer funkcije: `revoke all ... from public, anon, authenticated` pa `grant execute ... to service_role` (Supabase podrazumevano daje EXECUTE svim ulogama).
+- Staging i prod: kroz GitHub Actions posle odobrenja vlasnika (dodaje se u fazi 16), nikad `db push` sa lokalne mašine na prod.
 
-## 4. Rotacija ključeva (popunjava faza 5)
+## 4. Rotacija ključeva
 
-- `TOKEN_ENCRYPTION_KEY`: dodati `v2:` ključ, deploy, pokrenuti `scripts/reencrypt-tokens.ts`, ukloniti `v1` kad nema redova sa `key_version = 1`.
-- Gemini, Unsplash, Canva, mreže: zameniti u Vercel env, redeploy; stare vrednosti opozvati kod provajdera.
-- Supabase service role: rotirati u dashboardu, ažurirati Vercel i Inngest.
-- Ako ključ procuri: rotirati odmah, pregledati `admin_audit_log` i Sentry za neobične zahteve, zapisati incident u sekciju 7.
+- `TOKEN_ENCRYPTION_KEY`: dodaj `v2:` ključ u env, deploy, pokreni skriptu za reenkripciju (faza 5), ukloni `v1` kad nema redova sa `key_version = 1`.
+- Gemini, Unsplash, Canva, mreže: zameni u Vercel env, redeploy, stari ključ opozovi kod provajdera.
+- Supabase service role: rotiraj u dashboardu, ažuriraj Vercel i Inngest.
+- Ako ključ procuri: rotiraj odmah, pregledaj `admin_audit_log`, Sentry i logove za neobične zahteve, zapiši incident u sekciju 7.
 
-## 5. Deploy (popunjava faza 16)
+## 5. Deploy
 
-Vercel: `main` → Production, PR → Preview. Checklista pre lansiranja je u ARCHITECTURE 9 i brifu 19.2.
+Faza 16. Vercel: `main` → Production, PR → Preview. Checklista u ARCHITECTURE 9 i brifu 19.2.
 
-## 6. Incidenti (popunjavaju faze 9, 12, 16)
+## 6. Incidenti
 
-- **Objave kasne**: proveriti Inngest dashboard (zaostali run-ovi), `select count(*) from post_targets where status='scheduled' and scheduled_at < now() - interval '3 minutes'`, watchdog logove; ako je Inngest nedostupan, ručno `POST /api/admin/publish-monitor/retry`.
-- **Mreža vraća 401 masovno**: admin feature flag `platform.<mreža>` isključiti, obavestiti korisnike bannerom, proveriti promenu API verzije.
-- **Dupli tokeni ili ledger ne štima**: `select workspace_id, sum(delta) from token_ledger group by 1` naspram `sum(amount - remaining)` grantova; razlika znači bag u RPC-u, ne popravljati ručno bez zapisa.
-- **Webhook plaćanja ne stiže**: provajderov dashboard → ponovno slanje; `payment_events` UNIQUE garantuje da ponovljeno slanje ne duplira.
+- **Objave kasne**: Inngest dashboard (zaostali run-ovi), `select count(*) from post_targets where status='scheduled' and scheduled_at < now() - interval '3 minutes'`, logovi watchdog-a; ručni retry iz admin monitora (faza 13).
+- **Mreža vraća 401 masovno**: isključi feature flag `platform.<mreža>`, banner korisnicima, proveri promenu API verzije.
+- **Dupli tokeni ili ledger ne štima**: `select workspace_id, sum(delta) from token_ledger group by 1` naspram `sum(amount - remaining)` iz `token_grants`; razlika je bag u RPC-u, ne popravljati ručno bez zapisa.
+- **Webhook plaćanja ne stiže**: provajderov dashboard → ponovno slanje; `payment_events (provider, event_id)` UNIQUE sprečava dupliranje.
 - **Gemini pad**: circuit breaker preskače model 5 min; ako traje, admin u `platform_settings.allowed_models` menja primarni model bez deploya.
 
 ## 7. Dnevnik incidenata

@@ -1178,3 +1178,20 @@ Skripta `supabase/tests/rls.test.sql` (pgTAP) ili `scripts/test-db.mjs` sa dva k
 10. Update `token_ledger` → greška; brisanje korisnika iz `auth.users` → prolazi (kaskada), ledger redovi obrisani sa workspace-om.
 11. Prelaz `draft → published` direktno → greška; `scheduled → publishing → published` → prolazi.
 12. Upload u `uploads` na tuđu putanju → odbijeno.
+
+---
+
+## 10. Odstupanja implementacije od plana (faza 3, 23.10.2026)
+
+Implementacija je u `supabase/migrations/2026102300000{1..14}_*.sql` i `supabase/seed.sql`. Razlike u odnosu na sekcije 1–9:
+
+- Dodata tabela `platform_admin_allowlist` (D-019) i `status_transitions(scope, from_status, to_status, service_only)` kao jedna tabela za objave i targete. Ukupno 53 tabele.
+- `workspaces.owner_id` je `on delete cascade`, ne `restrict` (D-017).
+- Indeks `post_targets_no_same_minute` koristi `public.minute_bucket(scheduled_at)` (D-018).
+- Dodate kolone `brand_id` u `post_comments`, `approvals`, `publish_attempts`, `post_metrics_snapshots`, `account_metrics_daily` radi jednostavnijih RLS politika; `platform_settings.is_public` i view `platform_settings_public`; view `canva_connections_public`; view `ai_generations_public` (bez `input`).
+- `token_reservations.amount` dozvoljava 0 (potvrda sa stvarnim troškom 0).
+- RLS: bez `force row level security` (D-016). Tabele bez politika (samo service_role): `knowledge_chunks`, `oauth_states`, `payment_events`, `admin_audit_log`, `impersonation_sessions`, `idempotency_keys`, `user_flags`, `platform_admin_allowlist`, `post_versions` (insert), `historical_posts` (pisanje).
+- RPC: `workspace_token_totals` (interno), `decide_post` i `request_account_deletion` implementirani; `complete_upload` odložen za fazu 7.
+- Trigeri: `workspace_members_guard` spaja poslednjeg owner-a i dodelu owner uloge; `posts_guard` proverava zaključavanje, prelaze i verziju; `post_targets_guard` proverava prelaze; `brands_guard` traži potvrdu za nivo 3 i brani promenu workspace-a.
+- Storage: `exports` bucket ima posebnu politiku čitanja (`users/{user_id}/...` ili admin workspace-a); upload je dozvoljen samo u `uploads`, u `generated` i `brand-assets` piše samo server.
+- Testovi: `scripts/test-db.mjs`, 24 testa (svih 12 iz sekcije 9 plus uloge, teammate profili, FIFO po isteku, seed).

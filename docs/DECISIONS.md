@@ -88,3 +88,35 @@ Odluka: vlasnik je 23.10.2026 odobrio plan i rekao da se radi više faza zaredom
 Odluka: u `NODE_ENV=development` varijable za Upstash, Sentry, PostHog, Resend, Turnstile i sve OAuth aplikacije su opcione. Kad Upstash nedostaje, rate limiter koristi in-memory implementaciju i loguje upozorenje jednom pri startu; kad Resend nedostaje, emailovi idu u lokalni Mailpit Supabase CLI-ja (auth) ili u log (transakcioni). U `production` i `preview` su obavezne i aplikacija ne startuje bez njih.
 Alternative: sve obavezno uvek (brif); .env sa lažnim vrednostima.
 Razlog: vlasnik želi da se radi više faza zaredom bez čekanja na naloge; lažne vrednosti bi tiho prolazile u produkciju, a eksplicitna „dev fallback” grana se vidi u logu i testira se.
+
+## D-015 · 23.10.2026 · usvojeno · shadcn/ui stil `base-nova` (Base UI umesto Radix)
+
+Odluka: `npx shadcn init` je podrazumevano instalirao stil `base-nova` nad `@base-ui/react`. Zadržan je. Posledica: komponente nemaju `asChild`; za link-dugme se koristi `render={<Link href="..." />}`.
+Alternative: ručno prebaciti na Radix stil (`new-york`).
+Razlog: Base UI je trenutni podrazumevani stil shadcn-a i ima istu pristupačnost; nema razloga za borbu sa alatom.
+
+## D-016 · 23.10.2026 · usvojeno · RLS bez FORCE i privilegije na nivou kolona
+
+Odluka: RLS je uključen na svim tabelama (`enable`, bez `force`), jer `force` bi blokirao i vlasnika tabele (postgres) pri seed-u i migracijama; service_role zaobilazi RLS atributom `bypassrls`. Za kolone sa tokenima oduzet je SELECT na nivou tabele i vraćen samo na bezopasnim kolonama (`grant select (kolone)`), jer u Postgresu kolonsko `revoke` ne poništava tabelarno `grant`. Klijent čita kroz view sa `security_invoker = true`.
+Razlog: provereno testom: `select *` nad `social_accounts` pada sa permission denied, view radi, RLS važi.
+
+## D-017 · 23.10.2026 · usvojeno · `workspaces.owner_id` kaskadno brisanje
+
+Odluka: brisanje korisnika iz `auth.users` briše i workspace-ove čiji je on vlasnik (kaskada), umesto `restrict`.
+Razlog: GDPR brisanje naloga ne sme da pukne na nivou baze (test „brisanje korisnika” je padao sa `restrict`). Aplikacija pre brisanja traži prenos vlasništva kad workspace ima druge članove (stranica Brisanje podataka to i piše).
+
+## D-018 · 23.10.2026 · usvojeno · Jedinstvenost termina po minutu kroz `minute_bucket()`
+
+Odluka: parcijalni unique indeks nad `(social_account_id, minute_bucket(scheduled_at))` koristi sopstvenu IMMUTABLE funkciju (epoha / 60), jer `date_trunc` nad `timestamptz` nije immutable.
+Razlog: epoha ne zavisi od vremenske zone, pa je deklaracija IMMUTABLE tačna; Postgres ne dozvoljava stable funkcije u indeksu.
+
+## D-019 · 23.10.2026 · usvojeno · Admin uloga kroz `platform_admin_allowlist`
+
+Odluka: tabela `platform_admin_allowlist(email)` (samo service_role) koju seed puni emailom vlasnika; trigger na `auth.users` dodeljuje `platform_admin` pri registraciji, seed podiže ulogu ako je profil već postojao. UI i env poređenje emaila se ne koriste.
+Razlog: brif traži dodelu „samo kroz bazu (seed skripta sa mojim emailom)”; ovo je idempotentno i radi i kad se admin registruje posle seed-a.
+
+## D-020 · 23.10.2026 · usvojeno · Rezervacija tokena bez alokacija po grantu
+
+Odluka: `reserve_tokens` proverava ukupno dostupno (grantovi minus aktivne rezervacije) pod lock-om workspace reda i upisuje samo iznos; `confirm_reservation` tek tada troši grantove redom po isteku i beleži alokacije.
+Alternative: alokacija po grantu već pri rezervaciji.
+Razlog: dve rezervacije bi inače mogle da „obeleže” isti grant; ovako je potrošnja tačna u trenutku potvrde, a testovi paralelnih rezervacija i idempotentne potvrde prolaze.
