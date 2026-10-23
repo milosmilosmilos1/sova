@@ -9,18 +9,18 @@ interface SocialProvider {
   platform: SocialPlatform
   getAuthUrl(ctx: { state: string; codeChallenge?: string; redirectUri: string }): string
   exchangeCode(code: string, ctx: { codeVerifier?: string; redirectUri: string }): Promise<TokenSet>
-  refreshToken(tokens: TokenSet): Promise<TokenSet>                 // baca NonRefreshableError za mreže bez refresh-a
-  listAccounts(tokens: TokenSet): Promise<ExternalAccount[]>        // stranice, nalozi, kanali, lokacije, table
-  validatePost(input: NormalizedPost, account: SocialAccount): ValidationResult   // koristi config/platforms.ts
-  publish(input: NormalizedPost, account: SocialAccount): Promise<PublishResult>  // { externalId?, permalink?, pending?: PollHandle }
+  refreshToken(tokens: TokenSet): Promise<TokenSet> // baca NonRefreshableError za mreže bez refresh-a
+  listAccounts(tokens: TokenSet): Promise<ExternalAccount[]> // stranice, nalozi, kanali, lokacije, table
+  validatePost(input: NormalizedPost, account: SocialAccount): ValidationResult // koristi config/platforms.ts
+  publish(input: NormalizedPost, account: SocialAccount): Promise<PublishResult> // { externalId?, permalink?, pending?: PollHandle }
   getPublishStatus(handle: PollHandle, account: SocialAccount): Promise<PublishStatus>
-  findExistingPost(key: string, account: SocialAccount): Promise<string | null>   // idempotentnost posle pada
+  findExistingPost(key: string, account: SocialAccount): Promise<string | null> // idempotentnost posle pada
   deletePost(externalId: string, account: SocialAccount): Promise<void>
   fetchHistory(account: SocialAccount, limit: number): Promise<HistoricalPost[]>
   fetchPostMetrics(externalId: string, account: SocialAccount): Promise<NormalizedMetrics>
   fetchAccountMetrics(account: SocialAccount, date: string): Promise<AccountMetrics>
   revoke(tokens: TokenSet): Promise<void>
-  capabilities(account: SocialAccount): Capabilities                 // {image, carousel, video, reels, stories, link, text, firstComment, aiLabel}
+  capabilities(account: SocialAccount): Capabilities // {image, carousel, video, reels, stories, link, text, firstComment, aiLabel}
 }
 ```
 
@@ -28,16 +28,16 @@ Greške se mapiraju u `ProviderError { code, retryable, userMessage (srpski), ra
 
 ## 2. Pregled po mreži
 
-| Mreža | Odabrani API | OAuth | Token | Objava | Metrike | Odobrenje |
-| --- | --- | --- | --- | --- | --- | --- |
-| Facebook | Graph API (Pages) | Facebook Login for Business, state | user token 60 dana → Page token bez fiksnog isteka | `/{page}/feed`, `/{page}/photos`, više slika kroz `attached_media`, video i Reels kroz Video API | Page Insights | App Review + Business Verification |
-| Instagram | Instagram API **with Facebook Login** (graph.facebook.com) | isti kao Facebook | isti | kontejner `/{ig}/media` → `/{ig}/media_publish`, polling `status_code` | Insights | isti App Review |
-| LinkedIn | Posts API `/rest/posts`, `LinkedIn-Version: YYYYMM` | OAuth 2.0 (3-legged), state | 60 dana, refresh token 365 dana (proveriti za 2026) | lični profil `w_member_social`; stranica firme `w_organization_social` | `r_organization_social` | lični: self-serve proizvod; stranice: Community Management API (Development → Standard) |
-| TikTok | Content Posting API (Direct Post) | OAuth 2.0 + PKCE | 24 h, refresh 365 dana | `/v2/post/publish/video/init/` (`FILE_UPLOAD` ili `PULL_FROM_URL`), foto `/content/init/`, status `/status/fetch/` | Display API | audit (do tada samo privatno, 5 korisnika/dan) |
-| X | API v2, pay-per-use | OAuth 2.0 + PKCE | 2 h, refresh sa `offline.access` | `POST /2/tweets`, media upload v2 | `/2/tweets?tweet.fields=public_metrics` | nema review; kartica i krediti |
-| YouTube | Data API v3 | Google OAuth | 1 h, refresh token | `videos.insert` (resumable), Shorts = vertikalan video ≤ 3 min sa #Shorts | `videos.list(statistics)`, Analytics API | Google OAuth verifikacija (sensitive scopes) + zahtev za kvotu |
-| Pinterest | API v5 | OAuth 2.0 | 30 dana, refresh 365 dana | `POST /v5/pins` sa `media_source` (image_url, multiple images, video) | `/v5/pins/{id}/analytics` | Trial (sandbox pinovi) → Standard (video demo) |
-| Google Business Profile | My Business API v4 `localPosts` | Google OAuth | 1 h, refresh | `POST /v4/accounts/{a}/locations/{l}/localPosts` | Performance API | zahtev za pristup (kontakt forma); kvota 0 → 300 QPM po odobrenju |
+| Mreža                   | Odabrani API                                               | OAuth                              | Token                                               | Objava                                                                                                             | Metrike                                  | Odobrenje                                                                               |
+| ----------------------- | ---------------------------------------------------------- | ---------------------------------- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- | --------------------------------------------------------------------------------------- |
+| Facebook                | Graph API (Pages)                                          | Facebook Login for Business, state | user token 60 dana → Page token bez fiksnog isteka  | `/{page}/feed`, `/{page}/photos`, više slika kroz `attached_media`, video i Reels kroz Video API                   | Page Insights                            | App Review + Business Verification                                                      |
+| Instagram               | Instagram API **with Facebook Login** (graph.facebook.com) | isti kao Facebook                  | isti                                                | kontejner `/{ig}/media` → `/{ig}/media_publish`, polling `status_code`                                             | Insights                                 | isti App Review                                                                         |
+| LinkedIn                | Posts API `/rest/posts`, `LinkedIn-Version: YYYYMM`        | OAuth 2.0 (3-legged), state        | 60 dana, refresh token 365 dana (proveriti za 2026) | lični profil `w_member_social`; stranica firme `w_organization_social`                                             | `r_organization_social`                  | lični: self-serve proizvod; stranice: Community Management API (Development → Standard) |
+| TikTok                  | Content Posting API (Direct Post)                          | OAuth 2.0 + PKCE                   | 24 h, refresh 365 dana                              | `/v2/post/publish/video/init/` (`FILE_UPLOAD` ili `PULL_FROM_URL`), foto `/content/init/`, status `/status/fetch/` | Display API                              | audit (do tada samo privatno, 5 korisnika/dan)                                          |
+| X                       | API v2, pay-per-use                                        | OAuth 2.0 + PKCE                   | 2 h, refresh sa `offline.access`                    | `POST /2/tweets`, media upload v2                                                                                  | `/2/tweets?tweet.fields=public_metrics`  | nema review; kartica i krediti                                                          |
+| YouTube                 | Data API v3                                                | Google OAuth                       | 1 h, refresh token                                  | `videos.insert` (resumable), Shorts = vertikalan video ≤ 3 min sa #Shorts                                          | `videos.list(statistics)`, Analytics API | Google OAuth verifikacija (sensitive scopes) + zahtev za kvotu                          |
+| Pinterest               | API v5                                                     | OAuth 2.0                          | 30 dana, refresh 365 dana                           | `POST /v5/pins` sa `media_source` (image_url, multiple images, video)                                              | `/v5/pins/{id}/analytics`                | Trial (sandbox pinovi) → Standard (video demo)                                          |
+| Google Business Profile | My Business API v4 `localPosts`                            | Google OAuth                       | 1 h, refresh                                        | `POST /v4/accounts/{a}/locations/{l}/localPosts`                                                                   | Performance API                          | zahtev za pristup (kontakt forma); kvota 0 → 300 QPM po odobrenju                       |
 
 ## 3. Facebook (stranice)
 
@@ -50,7 +50,7 @@ Greške se mapiraju u `ProviderError { code, retryable, userMessage (srpski), ra
 
 ## 4. Instagram (Business i Creator)
 
-- **Izbor**: *Instagram API with Facebook Login* jer Sova ionako povezuje Facebook stranicu, dobija Page token bez isteka i jedan OAuth tok za obe mreže. Varijanta *with Instagram Login* (graph.instagram.com, bez Facebook stranice, scope `instagram_business_content_publish`, token 60 dana sa refresh-om) ide iza feature flaga kasnije ako korisnici traže IG bez Facebook stranice. Pitanje 3 u izveštaju.
+- **Izbor**: _Instagram API with Facebook Login_ jer Sova ionako povezuje Facebook stranicu, dobija Page token bez isteka i jedan OAuth tok za obe mreže. Varijanta _with Instagram Login_ (graph.instagram.com, bez Facebook stranice, scope `instagram_business_content_publish`, token 60 dana sa refresh-om) ide iza feature flaga kasnije ako korisnici traže IG bez Facebook stranice. Pitanje 3 u izveštaju.
 - **Scope-ovi**: `instagram_basic`, `instagram_content_publish`, `instagram_manage_insights`, `instagram_manage_comments` (za prvi komentar), plus Facebook scope-ovi iznad.
 - **Tok**: `POST /{ig_user}/media {image_url | video_url, caption, media_type: IMAGE|VIDEO|REELS|STORIES|CAROUSEL, is_carousel_item, children, alt_text, is_ai_generated}` → `POST /{ig_user}/media_publish {creation_id}`. Ako nema media id, `GET /{container}?fields=status_code` jednom u minutu, najviše 5 min (`IN_PROGRESS`, `FINISHED`, `PUBLISHED`, `ERROR`, `EXPIRED`).
 - **Limiti**: 100 objava kroz API po nalogu u pokretnih 24 h (dokumentacija na jednom mestu kaže 50 za karusele; Sova proverava `GET /{ig_user}/content_publishing_limit` pre zakazivanja i upozorava na 80 %). Slike **samo JPEG** (Sharp konvertuje), karusel do 20 stavki, sve stavke se seku na odnos prve, `alt_text` samo za slike, `is_ai_generated` samo na kontejneru karusela ili pojedinačne objave. Mediji moraju biti na javnom HTTPS URL-u u trenutku objave: potpisani Supabase URL važi 24 h. Shopping tagovi i filteri nisu podržani.
@@ -119,27 +119,27 @@ Vidi ARCHITECTURE 8.1 za modele i cene. Dodatno: strukturisan izlaz kroz `respon
 
 ## 14. Checklista prijava (status se ažurira svake faze)
 
-| Stavka | Potrebno za | Preduslov | Status |
-| --- | --- | --- | --- |
-| Stranice Privatnost, Uslovi, Brisanje podataka na javnom domenu | sve mreže | faza 2 | nije počelo |
-| Meta app (Business), test stranica + IG Business nalog | Facebook, Instagram | faza 2 | nije počelo |
-| Meta Business Verification | App Review | dokumenti firme | nije počelo |
-| Meta App Review (scope-ovi iz sekcija 3 i 4, screencast) | produkcija | radna integracija (8a) | nije počelo |
-| Meta deauthorize + data deletion callback | App Review | faza 8a | nije počelo |
-| LinkedIn app + „Share on LinkedIn” | lični profil | faza 8b | nije počelo |
-| LinkedIn Community Management, Development tier | stranice firmi | firma, poslovni email, verifikovana stranica | nije počelo |
-| LinkedIn Standard tier (screencast) | produkcija | 8b gotova | nije počelo |
-| TikTok app + audit | javne objave | 8b gotova | nije počelo |
-| TikTok URL property verifikacija (ako proxy) | PULL_FROM_URL | domen | nije počelo |
-| X developer nalog + krediti | X | kartica | nije počelo |
-| Google Cloud: OAuth consent screen, verifikacija (YouTube scope-ovi) | YouTube | domen, politika, demo video | nije počelo |
-| YouTube kvota — zahtev za povećanje | YouTube | verifikacija | nije počelo |
-| GBP API pristup (formular) | GBP | GBP profil, Cloud projekat | nije počelo |
-| Pinterest app Trial → Standard (video) | Pinterest | 8c gotova | nije počelo |
-| Canva integracija (Developer portal, MFA) | Canva | faza 7 | nije počelo |
-| Unsplash production pristup | Unsplash | faza 7 | nije počelo |
-| Resend domen (SPF, DKIM, DMARC) | email | domen | nije počelo |
-| Paddle ili Stripe nalog + sandbox | naplata | odluka (pitanje 1) | nije počelo |
+| Stavka                                                               | Potrebno za         | Preduslov                                    | Status      |
+| -------------------------------------------------------------------- | ------------------- | -------------------------------------------- | ----------- |
+| Stranice Privatnost, Uslovi, Brisanje podataka na javnom domenu      | sve mreže           | faza 2                                       | nije počelo |
+| Meta app (Business), test stranica + IG Business nalog               | Facebook, Instagram | faza 2                                       | nije počelo |
+| Meta Business Verification                                           | App Review          | dokumenti firme                              | nije počelo |
+| Meta App Review (scope-ovi iz sekcija 3 i 4, screencast)             | produkcija          | radna integracija (8a)                       | nije počelo |
+| Meta deauthorize + data deletion callback                            | App Review          | faza 8a                                      | nije počelo |
+| LinkedIn app + „Share on LinkedIn”                                   | lični profil        | faza 8b                                      | nije počelo |
+| LinkedIn Community Management, Development tier                      | stranice firmi      | firma, poslovni email, verifikovana stranica | nije počelo |
+| LinkedIn Standard tier (screencast)                                  | produkcija          | 8b gotova                                    | nije počelo |
+| TikTok app + audit                                                   | javne objave        | 8b gotova                                    | nije počelo |
+| TikTok URL property verifikacija (ako proxy)                         | PULL_FROM_URL       | domen                                        | nije počelo |
+| X developer nalog + krediti                                          | X                   | kartica                                      | nije počelo |
+| Google Cloud: OAuth consent screen, verifikacija (YouTube scope-ovi) | YouTube             | domen, politika, demo video                  | nije počelo |
+| YouTube kvota — zahtev za povećanje                                  | YouTube             | verifikacija                                 | nije počelo |
+| GBP API pristup (formular)                                           | GBP                 | GBP profil, Cloud projekat                   | nije počelo |
+| Pinterest app Trial → Standard (video)                               | Pinterest           | 8c gotova                                    | nije počelo |
+| Canva integracija (Developer portal, MFA)                            | Canva               | faza 7                                       | nije počelo |
+| Unsplash production pristup                                          | Unsplash            | faza 7                                       | nije počelo |
+| Resend domen (SPF, DKIM, DMARC)                                      | email               | domen                                        | nije počelo |
+| Paddle ili Stripe nalog + sandbox                                    | naplata             | odluka (pitanje 1)                           | nije počelo |
 
 ## 15. Izvori (pročitano 23.10.2026)
 

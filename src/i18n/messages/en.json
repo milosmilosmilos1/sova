@@ -1,0 +1,45 @@
+{
+  "common": {
+    "appName": "Sova",
+    "tagline": "Enter your website, Sova runs your social media.",
+    "retry": "Try again",
+    "back": "Back",
+    "backHome": "Back to home",
+    "loading": "Loading…",
+    "save": "Save",
+    "cancel": "Cancel",
+    "errorId": "Error ID for support: {id}"
+  },
+  "nav": {
+    "login": "Log in",
+    "register": "Create account",
+    "privacy": "Privacy policy",
+    "terms": "Terms of service",
+    "dataDeletion": "Data deletion",
+    "contact": "Contact"
+  },
+  "landing": {
+    "heroTitle": "Enter your website, Sova runs your social media.",
+    "heroText": "Sova learns your brand from your website, builds a strategy, writes posts, creates visuals, schedules and publishes, then learns from the results.",
+    "ctaPrimary": "Start for free",
+    "ctaSecondary": "How it works",
+    "stepsTitle": "How it works in three steps",
+    "step1Title": "Enter your website URL",
+    "step1Text": "Sova extracts your logo, colors, services, tone and audience. You only review and correct.",
+    "step2Title": "Connect your networks",
+    "step2Text": "Facebook, Instagram, LinkedIn, TikTok, X, YouTube, Pinterest and Google Business Profile.",
+    "step3Title": "Approve or turn on Autopilot",
+    "step3Text": "Sova publishes at the right time, tracks results and adjusts next month's plan.",
+    "statusNote": "The app is under construction. Sign-up is coming soon."
+  },
+  "errors": {
+    "notFoundTitle": "Page not found",
+    "notFoundText": "The link may be wrong or the page has moved.",
+    "errorTitle": "Something went wrong",
+    "errorText": "The error has been recorded. Try again, and if it keeps happening contact support with the ID below.",
+    "offline": "No internet connection. We will retry when the connection is back."
+  },
+  "health": {
+    "title": "System status"
+  }
+}

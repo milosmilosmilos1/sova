@@ -4,24 +4,24 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md).
 
 ## Stanje: faza 1 završena, čeka odobrenje (23.10.2026)
 
-| Faza | Status | Napomena |
-| --- | --- | --- |
-| 1 Plan i arhitektura | **gotovo, čeka odobrenje** | ARCHITECTURE, SCHEMA, INTEGRATIONS, DECISIONS, EDGE_CASES, RUNBOOK |
-| 2 Setup projekta | nije počelo | treba: GitHub secret scanning, Upstash, Inngest, Sentry, pravni podaci, domen |
-| 3 Baza i bezbednost | nije počelo | |
-| 4 Auth i workspace | nije počelo | treba: Google OAuth klijent, Resend, Turnstile |
-| 5 Token engine i AI jezgro | nije počelo | treba: GEMINI_API_KEY (nov), generisani tajni ključevi |
-| 6 Brand Brain | nije počelo | treba: test sajt |
-| 7 Vizuelni pipeline | nije počelo | treba: Unsplash, Canva |
-| 8a–8d Integracije mreža | nije počelo | treba: app-ovi i prijave iz INTEGRATIONS 14 |
-| 9a–9b Objave, kalendar, publisher | nije počelo | |
-| 10a–10c Strategija, analitika, Autopilot | nije počelo | |
-| 11 Edge case-ovi | nije počelo | |
-| 12 Plaćanje | nije počelo | treba: odluka D-001 |
-| 13a–13b Admin | nije počelo | |
-| 14a–14c Dizajn | nije počelo | treba: screenshot reference ako Dribbble link ne radi |
-| 15 Testiranje | nije počelo | |
-| 16 Deploy | nije počelo | |
+| Faza                                     | Status                     | Napomena                                                                      |
+| ---------------------------------------- | -------------------------- | ----------------------------------------------------------------------------- |
+| 1 Plan i arhitektura                     | **gotovo, čeka odobrenje** | ARCHITECTURE, SCHEMA, INTEGRATIONS, DECISIONS, EDGE_CASES, RUNBOOK            |
+| 2 Setup projekta                         | nije počelo                | treba: GitHub secret scanning, Upstash, Inngest, Sentry, pravni podaci, domen |
+| 3 Baza i bezbednost                      | nije počelo                |                                                                               |
+| 4 Auth i workspace                       | nije počelo                | treba: Google OAuth klijent, Resend, Turnstile                                |
+| 5 Token engine i AI jezgro               | nije počelo                | treba: GEMINI_API_KEY (nov), generisani tajni ključevi                        |
+| 6 Brand Brain                            | nije počelo                | treba: test sajt                                                              |
+| 7 Vizuelni pipeline                      | nije počelo                | treba: Unsplash, Canva                                                        |
+| 8a–8d Integracije mreža                  | nije počelo                | treba: app-ovi i prijave iz INTEGRATIONS 14                                   |
+| 9a–9b Objave, kalendar, publisher        | nije počelo                |                                                                               |
+| 10a–10c Strategija, analitika, Autopilot | nije počelo                |                                                                               |
+| 11 Edge case-ovi                         | nije počelo                |                                                                               |
+| 12 Plaćanje                              | nije počelo                | treba: odluka D-001                                                           |
+| 13a–13b Admin                            | nije počelo                |                                                                               |
+| 14a–14c Dizajn                           | nije počelo                | treba: screenshot reference ako Dribbble link ne radi                         |
+| 15 Testiranje                            | nije počelo                |                                                                               |
+| 16 Deploy                                | nije počelo                |                                                                               |
 
 ## Šta je urađeno u fazi 1
 

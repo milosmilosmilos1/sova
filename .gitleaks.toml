@@ -1,0 +1,18 @@
+# Gitleaks: podrazumevana pravila + izuzeci za test fixture-e.
+# Pravi ključevi NIKAD ne idu u repo; izuzeti su samo fajlovi sa očigledno lažnim vrednostima.
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Test fixture-i i primeri bez pravih vrednosti"
+paths = [
+  '''(^|/)vitest\.config\.mts$''',
+  '''\.test\.(ts|tsx|mjs)$''',
+  '''^tests/''',
+  '''^\.env\.example$''',
+]
+regexes = [
+  '''test-[a-z-]+-(secret|key)[a-z0-9-]*''',
+  '''YWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWFhYWE=''',
+]
