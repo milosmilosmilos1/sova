@@ -29,7 +29,8 @@ export function parseForm<T extends z.ZodType>(
   const raw: Record<string, unknown> = {}
   for (const [k, v] of formData.entries()) {
     if (k.startsWith('$')) continue
-    if (typeof v === 'string') raw[k] = v
+    // Prazno polje = nije uneto: opcione šeme dobijaju undefined, obavezne javljaju svoju poruku.
+    if (typeof v === 'string' && v.trim() !== '') raw[k] = v
   }
   const parsed = schema.safeParse(raw)
   if (parsed.success) return { success: true, data: parsed.data }

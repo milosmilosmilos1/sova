@@ -17,49 +17,49 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 
 ## Tokeni i naplata
 
-| #   | Slučaj                                      | Ponašanje                                                                                                                                                                           | Faza  | Status |
-| --- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ------ |
-| T1  | Tačno 0 tokena                              | 402 `INSUFFICIENT_TOKENS` sa linkom na kupovinu; UI unapred onemogućava dugme ako je stanje manje od cene                                                                           | 5     | plan   |
-| T2  | Tokeni potrošeni u drugom tabu              | Rezervacija pada → 402; stanje se osvežava kroz Realtime na `token_ledger`? Ne: kroz invalidaciju posle svake akcije i polling na 60 s                                              | 5     | plan   |
-| T3  | Istekla rezervacija (posao trajao > 15 min) | Cron oslobađa; ako posao ipak uspe, `confirm_reservation` vidi `expired` → pokušava novu rezervaciju; ako ne uspe, rezultat se čuva ali označava `unpaid` i admin dobija alarm      | 5     | plan   |
-| T4  | Pretplata istekla usred generisanja         | Rezervacija je već napravljena iz postojećih grantova; generisanje se završava; nova generisanja blokirana                                                                          | 5, 12 | plan   |
-| T5  | Refundacija                                 | `charge.refunded` → grant `refund` negativan? Ne: oduzimanje kroz `admin_adjust_tokens` sa negativnim delta, balance može u minus → nova generisanja blokirana do pozitivnog stanja | 12    | plan   |
-| T6  | Isti webhook dvaput                         | `payment_events (provider, event_id)` UNIQUE → drugi upis pada, ruta vraća 200                                                                                                      | 12    | plan   |
-| T7  | Webhook pre povratka sa Checkout-a          | Checkout stranica ne dodeljuje ništa; sve radi webhook; povratna stranica samo prikazuje stanje                                                                                     | 12    | plan   |
-| T8  | Webhook van redosleda                       | Za stanje pretplate uvek `getSubscription` od provajdera, ne payload                                                                                                                | 12    | plan   |
-| T9  | Odbijena kartica pri obnovi                 | `past_due`, grace 7 dana, email podsetnici dan 1, 3, 6; dan 8 blokada generisanja, zakazane objave ostaju                                                                           | 12    | plan   |
-| T10 | Otkazivanje pa obnova pre kraja perioda     | Provajder vraća `active`; nema novog granta dok ne stigne `invoice.paid`                                                                                                            | 12    | plan   |
-| T11 | Promena plana usred perioda                 | Upgrade: proracija kod provajdera, grant razlike tokena odmah; downgrade: na kraju perioda                                                                                          | 12    | plan   |
-| T12 | Chargeback                                  | `user_flags.chargeback`, workspace `past_due`, admin alarm                                                                                                                          | 12    | plan   |
-| T13 | Godišnji plan: 500 tokena mesečno           | Inngest cron pravi grant mesečno sa `reference = subscription_id:YYYY-MM` (UNIQUE štiti)                                                                                            | 12    | plan   |
+| #   | Slučaj                                      | Ponašanje                                                                                                                                                                           | Faza  | Status              |
+| --- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ------------------- |
+| T1  | Tačno 0 tokena                              | 402 `INSUFFICIENT_TOKENS` sa linkom na kupovinu; UI unapred onemogućava dugme ako je stanje manje od cene                                                                           | 5     | test                |
+| T2  | Tokeni potrošeni u drugom tabu              | Rezervacija pada → 402; stanje se osvežava kroz Realtime na `token_ledger`? Ne: kroz invalidaciju posle svake akcije i polling na 60 s                                              | 5     | plan                |
+| T3  | Istekla rezervacija (posao trajao > 15 min) | Cron oslobađa; ako posao ipak uspe, `confirm_reservation` vidi `expired` → pokušava novu rezervaciju; ako ne uspe, rezultat se čuva ali označava `unpaid` i admin dobija alarm      | 5     | kod (cron u fazi 9) |
+| T4  | Pretplata istekla usred generisanja         | Rezervacija je već napravljena iz postojećih grantova; generisanje se završava; nova generisanja blokirana                                                                          | 5, 12 | plan                |
+| T5  | Refundacija                                 | `charge.refunded` → grant `refund` negativan? Ne: oduzimanje kroz `admin_adjust_tokens` sa negativnim delta, balance može u minus → nova generisanja blokirana do pozitivnog stanja | 12    | plan                |
+| T6  | Isti webhook dvaput                         | `payment_events (provider, event_id)` UNIQUE → drugi upis pada, ruta vraća 200                                                                                                      | 12    | plan                |
+| T7  | Webhook pre povratka sa Checkout-a          | Checkout stranica ne dodeljuje ništa; sve radi webhook; povratna stranica samo prikazuje stanje                                                                                     | 12    | plan                |
+| T8  | Webhook van redosleda                       | Za stanje pretplate uvek `getSubscription` od provajdera, ne payload                                                                                                                | 12    | plan                |
+| T9  | Odbijena kartica pri obnovi                 | `past_due`, grace 7 dana, email podsetnici dan 1, 3, 6; dan 8 blokada generisanja, zakazane objave ostaju                                                                           | 12    | plan                |
+| T10 | Otkazivanje pa obnova pre kraja perioda     | Provajder vraća `active`; nema novog granta dok ne stigne `invoice.paid`                                                                                                            | 12    | plan                |
+| T11 | Promena plana usred perioda                 | Upgrade: proracija kod provajdera, grant razlike tokena odmah; downgrade: na kraju perioda                                                                                          | 12    | plan                |
+| T12 | Chargeback                                  | `user_flags.chargeback`, workspace `past_due`, admin alarm                                                                                                                          | 12    | plan                |
+| T13 | Godišnji plan: 500 tokena mesečno           | Inngest cron pravi grant mesečno sa `reference = subscription_id:YYYY-MM` (UNIQUE štiti)                                                                                            | 12    | plan                |
 
 ## AI
 
 | #   | Slučaj                                 | Ponašanje                                                                                                                         | Faza  | Status |
 | --- | -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----- | ------ |
-| AI1 | Timeout                                | Retry do 3x, zatim fallback model, zatim poruka i oslobađanje tokena                                                              | 5     | plan   |
-| AI2 | 429 od provajdera                      | Backoff sa jitter-om; breaker posle 50 % grešaka u 2 min                                                                          | 5     | plan   |
-| AI3 | Safety blokada                         | `AI_BLOCKED`, bez retry-a, bez naplate, poruka „Sadržaj nije prošao proveru, promeni opis”; brojač u `user_flags`                 | 5     | plan   |
-| AI4 | Prazan ili nevalidan JSON              | Jedan ponovni pokušaj sa porukom o grešci šeme u promptu; zatim fallback model                                                    | 5     | plan   |
-| AI5 | Slika generisana, upload u Storage pao | Retry uploada 3x unutar istog koraka; ako padne, rezervacija se oslobađa, generacija `failed`                                     | 5     | plan   |
-| AI6 | Model ugašen (404 za model)            | Trajna greška → odmah fallback model + alarm adminu + health crven                                                                | 5     | plan   |
+| AI1 | Timeout                                | Retry do 3x, zatim fallback model, zatim poruka i oslobađanje tokena                                                              | 5     | test   |
+| AI2 | 429 od provajdera                      | Backoff sa jitter-om; breaker posle 50 % grešaka u 2 min                                                                          | 5     | kod    |
+| AI3 | Safety blokada                         | `AI_BLOCKED`, bez retry-a, bez naplate, poruka „Sadržaj nije prošao proveru, promeni opis”; brojač u `user_flags`                 | 5     | test   |
+| AI4 | Prazan ili nevalidan JSON              | Jedan ponovni pokušaj sa porukom o grešci šeme u promptu; zatim fallback model                                                    | 5     | kod    |
+| AI5 | Slika generisana, upload u Storage pao | Retry uploada 3x unutar istog koraka; ako padne, rezervacija se oslobađa, generacija `failed`                                     | 5     | kod    |
+| AI6 | Model ugašen (404 za model)            | Trajna greška → odmah fallback model + alarm adminu + health crven                                                                | 5     | test   |
 | AI7 | Odgovor na pogrešnom jeziku ili pismu  | Detekcija pisma (udeo ćiriličnih karaktera) i jezika; jedan ponovni pokušaj sa pojačanom instrukcijom; zatim upozorenje korisniku | 5, 6  | plan   |
-| AI8 | Prompt injection iz sadržaja sajta     | Delimiteri + instrukcija + Zod; činjenice se proveravaju naspram profila                                                          | 6     | plan   |
+| AI8 | Prompt injection iz sadržaja sajta     | Delimiteri + instrukcija + Zod; činjenice se proveravaju naspram profila                                                          | 6     | kod    |
 | AI9 | Sličan tekst već objavljen u 90 dana   | Embedding sličnost > 0,92 → upozorenje i ponuda drugog ugla                                                                       | 6, 9a | plan   |
 
 ## Upload i mediji
 
-| #   | Slučaj                                     | Ponašanje                                                                                               | Faza  | Status |
-| --- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------- | ----- | ------ |
-| U1  | Fajl od 0 bajtova                          | 400 pre uploada (klijent) i pri `complete` (server)                                                     | 7     | plan   |
-| U2  | Pogrešna ekstenzija, pravi tip drugačiji   | Magic bytes odlučuju; ekstenzija se prepisuje                                                           | 7     | plan   |
-| U3  | HEIC                                       | Sharp konverzija u JPEG                                                                                 | 7     | plan   |
-| U4  | CMYK JPEG                                  | Sharp `toColorspace('srgb')`                                                                            | 7     | plan   |
-| U5  | Ogromna rezolucija                         | `limitInputPixels` 50 MP → 400 sa porukom                                                               | 7     | plan   |
-| U6  | Animirani GIF                              | Prva sličica kao slika; upozorenje da mreže GIF ne prikazuju kao animaciju kroz API                     | 7     | plan   |
-| U7  | Prekinut upload                            | Potpisan URL ističe za 1 h; `media_assets` red se pravi tek pri `complete`; cleanup cron briše siročiće | 7     | plan   |
-| U8  | Isti fajl dva puta                         | `sha256` poklapanje → ponuda postojećeg asseta umesto duplikata                                         | 7     | plan   |
-| U9  | Brisanje medija koji je u zakazanoj objavi | Trigger odbija; UI nudi zamenu                                                                          | 7, 9a | plan   |
+| #   | Slučaj                                     | Ponašanje                                                                                               | Faza  | Status            |
+| --- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------- | ----- | ----------------- |
+| U1  | Fajl od 0 bajtova                          | 400 pre uploada (klijent) i pri `complete` (server)                                                     | 7     | kod               |
+| U2  | Pogrešna ekstenzija, pravi tip drugačiji   | Magic bytes odlučuju; ekstenzija se prepisuje                                                           | 7     | test              |
+| U3  | HEIC                                       | Sharp konverzija u JPEG                                                                                 | 7     | kod (odbija HEIC) |
+| U4  | CMYK JPEG                                  | Sharp `toColorspace('srgb')`                                                                            | 7     | kod               |
+| U5  | Ogromna rezolucija                         | `limitInputPixels` 50 MP → 400 sa porukom                                                               | 7     | kod               |
+| U6  | Animirani GIF                              | Prva sličica kao slika; upozorenje da mreže GIF ne prikazuju kao animaciju kroz API                     | 7     | plan              |
+| U7  | Prekinut upload                            | Potpisan URL ističe za 1 h; `media_assets` red se pravi tek pri `complete`; cleanup cron briše siročiće | 7     | plan              |
+| U8  | Isti fajl dva puta                         | `sha256` poklapanje → ponuda postojećeg asseta umesto duplikata                                         | 7     | kod               |
+| U9  | Brisanje medija koji je u zakazanoj objavi | Trigger odbija; UI nudi zamenu                                                                          | 7, 9a | plan              |
 
 ## Mreže
 

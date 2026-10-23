@@ -34,6 +34,26 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - **Testovi**: 10 integracionih (`npm run test:integration`): 401 bez sesije, 400 sa poljima, srećan put, tuđ workspace 404, pogrešan Origin 403, limit brendova i članova (PLAN_LIMIT), pozivnica → prihvatanje → vidljivost, pogrešan email 403, editor ne menja uloge, owner menja.
 - Lokalni Supabase: `enable_confirmations = true`, `minimum_password_length = 10`, MFA TOTP uključen, Google provider sa env ključevima, `email_sent` limit podignut na 100/h za testiranje.
 
+## Faza 5 — šta je urađeno
+
+- **Token engine** (`src/lib/tokens/`): cene akcija i modela iz `platform_settings` sa 60 s kešom i podrazumevanim vrednostima; omotači oko RPC-a `reserve_tokens` → `confirm_reservation` / `release_reservation`; stanje kroz `workspace_token_totals`. `reserve_tokens` sada ima opcione parametre (brend, korisnik, posao) radi tipova.
+- **Idempotentnost** (`src/lib/idempotency.ts`, D-028) i `Idempotency-Key` header obavezan na AI rutama.
+- **Gemini sloj** (`src/lib/ai/`): `gemini.ts` (tekst sa JSON šemom i slikama, slike sa `responseModalities: IMAGE`, embeddings), `retry.ts` (3 pokušaja, oko 1/3/9 s, jitter), `breaker.ts` (više od 50 % grešaka od bar 4 poziva u 2 min → 5 min pauze; Redis ili memorija), `orchestrator.ts` (lanac modela: primarni → fallback; safety blokada i 400 se ne ponavljaju i ne idu na fallback; 404 modela loguje alarm i prelazi dalje), `cost.ts` (USD po cenovniku), `errors.ts` (klasifikacija i poruke na srpskom), `prompts/post-text.ts` (sistemski prompt, limiti mreža, delimiteri, Zod šema izlaza).
+- **Servisi**: `services/ai/text.ts` (tekst za objavu, sa fotografijom ili bez; validacija dužine po mreži iz `config/platforms.ts`), `services/ai/image.ts` (zahtev → 202; `runImageGeneration` kao idempotentan posao), `services/ai/generations.ts` (upis u `ai_generations`, dnevni limit besplatnog plana, status posla sa potpisanim URL-om), `services/media.ts` (upload: magic bytes, EXIF uklonjen, resize 4096, sRGB, dedup po SHA-256; čuvanje generisanih slika).
+- **Inngest**: funkcija `ai-generate-image` (concurrency 2 po workspace-u, idempotentna); `src/lib/jobs/enqueue.ts` daje jasnu poruku kad dev server nije pokrenut.
+- **API rute**: `POST /api/ai/text`, `POST /api/ai/image/from-prompt`, `POST /api/ai/image/from-photo`, `GET /api/ai/jobs/[id]`, `POST /api/media/upload`, `GET /api/media/[id]/url`, `GET /api/tokens/balance`.
+- **Studio** (`/app/studio`): tri kartice (tekst, slika iz fotografije, slika iz prompta), stanje tokena i cene, upload fotografije, prikaz varijanti sa proverom dužine, polling statusa posla, 4 stanja.
+- **Testovi**: 18 novih unit testova (retry, breaker, cena, limiti mreža, prompt i šema); 10 integracionih sa MSW mockom Gemini-ja: 400 bez ključa idempotentnosti, srećan put (50 → 48 tokena, trošak upisan, sistemska instrukcija i JSON šema poslate), ponovljen ključ bez nove naplate i 409 za drugo telo, 503 pa uspeh (retry), safety blokada (422, tokeni vraćeni), 404 modela → fallback, 402 bez poziva modela, upload (odbija ne-sliku, prima PNG), slika iz prompta (202 → posao → 8 tokena → potpisan URL, ponovno pokretanje preskočeno), slika iz fotografije (šalje sliku modelu, premium model, neuspeh vraća 15 tokena).
+
+## Kako da testiraš (faza 5)
+
+1. Unesi `GEMINI_API_KEY` u `.env.local` (nov ključ iz Google AI Studio), restartuj `npm run dev`; `/api/health` → `gemini: ok` sa nazivom modela.
+2. `npm run inngest:dev` u drugom terminalu (bez njega slike javljaju da pozadinski servis nije pokrenut).
+3. `/app/studio`: tekst za Instagram i Facebook → varijante sa brojem karaktera; stanje tokena pada za 2.
+4. Slika iz prompta → za 10–30 s slika i „AI generisano”; stanje pada za 8. Premium kvalitet troši 15.
+5. Slika iz fotografije → otpremi JPG/PNG, upiši uputstvo → rezultat.
+6. `npm run test`, `npm run test:integration` (MSW, bez pravog poziva), `npm run test:db`, `npm run test:e2e`.
+
 ## Kako da testiraš (faza 4)
 
 1. `npm run db:start`, `npm run dev` → http://localhost:3001/register: napravi nalog (lozinka ≥ 10 karaktera, štikliraj uslove).
@@ -47,13 +67,13 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 ## Šta čeka vlasnika
 
 - Google OAuth klijent (`GOOGLE_CLIENT_ID/SECRET`) da se pojavi Google dugme; Resend ključ da pozivnice i obaveštenja idu emailom; Turnstile ključevi za zaštitu registracije u produkciji.
-- Pre faze 5: nov `GEMINI_API_KEY` u `.env.local`.
+- `GEMINI_API_KEY` u `.env.local` (jedino što fali da AI Studio radi sa pravim modelom).
 - Adresa sedišta TangerineSEO LLC i merodavno pravo; email za privatnost na domenu sovaai.rs.
 - GitHub → Settings → Code security: uključiti secret scanning.
 
 ## Poznati bagovi
 
-- Nema poznatih.
+- Nema poznatih. Ispravljeno u fazi 5: onboarding tipa „Jedan biznis” je padao na validaciji jer je prazno skriveno polje `brandName` stizalo kao prazan string (sad `parseForm` prazna polja tretira kao neuneta).
 
 ## Tehnički dug
 
@@ -61,4 +81,6 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Prenos vlasništva radnog prostora i brisanje naloga iz aplikacije (izvoz, kaskada, opoziv tokena mreža) stižu uz GDPR deo (faza 11) i integracije (faza 8).
 - Sentry `withSentryConfig` samo sa `SENTRY_DSN`; upload source mapa tek sa `SENTRY_AUTH_TOKEN`.
 - CI pokreće samo unit testove; testovi baze i integracioni zahtevaju Supabase u CI-ju (faza 15).
-- `complete_upload` RPC odložen za fazu 7.
+- `complete_upload` RPC iz plana zamenjen serverskim uploadom (`POST /api/media/upload`); HEIC konverzija (WASM dekoder) i video upload idu u fazu 7.
+- Studio status posla kroz polling; Realtime pretplata uz dizajn (D-029).
+- Brand kontekst za promptove čita samo `brands.settings` dok Brand Brain (faza 6) ne popuni profil.

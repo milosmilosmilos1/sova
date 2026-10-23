@@ -156,3 +156,23 @@ Razlog: proxy preskače prefetch zahteve (matcher `missing`), pa `x-pathname` ne
 
 Odluka: Playwright testovi čitaju auth emailove iz Mailpit API-ja lokalnog Supabase-a (`tests/e2e/mailpit.ts`) i svaki run šalje nasumičnu `x-forwarded-for` adresu da rate limit registracije (3/h po IP) ne obara ponovljene runove.
 Razlog: potvrda emaila je obavezna, pa E2E mora da prođe kroz pravu poštu; u produkciji platforma prepisuje `x-forwarded-for`, pa header iz testa nema bezbednosni uticaj.
+
+## D-028 · 24.10.2026 · usvojeno · Idempotency-Key kroz tabelu `idempotency_keys`, obavezan na rutama koje troše tokene
+
+Odluka: rute `/api/ai/*` traže header `Idempotency-Key` (8–128 karaktera). Ključ se upisuje kao `in_progress` (UNIQUE po workspace+scope+key); drugi zahtev sa istim ključem vraća sačuvan odgovor (`idempotent-replayed: true`), zahtev u toku vraća 409, isti ključ sa drugim telom vraća 409 (hash tela). Neuspeh briše ključ da klijent može da ponovi.
+Razlog: brif 14.1 korak 5; test potvrđuje da dupli klik ne troši tokene dvaput.
+
+## D-029 · 24.10.2026 · usvojeno · Slike kao Inngest posao, status kroz polling `/api/ai/jobs/[id]`
+
+Odluka: rute za slike rade korake 1–6 sinhrono i vraćaju 202 sa `generationId`; Inngest funkcija `ai-generate-image` (concurrency 2 po workspace-u) poziva `runImageGeneration`, koja je idempotentna po statusu posla. Studio strana trenutno osvežava status svake 2 s; Supabase Realtime pretplata na `ai_generations` dolazi kad UI bude finalizovan (faza 14), tabela je već u publikaciji.
+Razlog: brif 6.4 (slike uvek u pozadini) i 14.1 (202 + ID posla); polling je dovoljan za test stranu i radi bez dodatnih zavisnosti.
+
+## D-030 · 24.10.2026 · usvojeno · Strukturisan izlaz kroz `responseJsonSchema` iz Zod šeme
+
+Odluka: Zod šema izlaza (`postTextOutputSchema`) se pretvara u JSON šemu (`z.toJSONSchema`, bez `$schema`) i šalje kao `responseJsonSchema` + `responseMimeType: application/json`; odgovor se ponovo validira istom Zod šemom. Prompt odvaja korisnički unos delimiterima `<<<PODACI>>>`.
+Razlog: jedan izvor istine za oblik izlaza (brif 6.1, 17.3 prompt injection); nevalidan JSON je privremena greška (retry), a nepoklapanje sa šemom pada na fallback model.
+
+## D-031 · 24.10.2026 · usvojeno · HEIC odložen, Gemini mock kroz MSW
+
+Odluka: upload prihvata JPG, PNG i WebP po magic bytes-u; HEIC vraća jasnu poruku jer prebuilt `sharp` nema libheif (konverzija kroz WASM dekoder ide u fazu 7). Integracioni testovi mockuju Gemini API MSW-om (`tests/integration/gemini-mock.ts`) sa redom odgovora (uspeh, 503 pa uspeh, 404 modela, safety blokada, slika).
+Razlog: brif 3 traži MSW za spoljne API-je; bez pravog ključa ceo tok (rezervacija → poziv → potvrda ili oslobađanje) je ipak testiran, uključujući retry, fallback i naplatu.

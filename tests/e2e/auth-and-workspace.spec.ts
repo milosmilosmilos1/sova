@@ -60,16 +60,17 @@ test.describe.serial('registracija, potvrda emaila, onboarding, tim, odjava', ()
     await page.getByRole('button', { name: 'Prijavite se' }).click()
     await expect(page).toHaveURL(/\/app\/onboarding/)
 
-    await page.getByText('Agencija ili freelancer').click()
-    await page.getByLabel('Naziv agencije').fill('E2E Agencija')
-    await page.getByLabel('Prvi klijent (brend)').fill('Klijent Jedan')
+    // podrazumevani tip „Jedan biznis”: brend dobija naziv firme (prazno skriveno polje brandName)
+    await page.getByLabel('Naziv firme').fill('E2E Firma')
     await page.getByLabel('Sajt brenda').fill('tangerineseo.rs')
     await page.getByRole('button', { name: 'Napravite radni prostor' }).click()
 
     await expect(page).toHaveURL(/\/app$/)
-    await expect(page.getByText(/Radni prostor/).first()).toContainText('E2E Agencija')
-    await expect(page.getByText('50', { exact: true }).first()).toBeVisible()
-    await expect(page.getByText('Klijent Jedan').first()).toBeVisible()
+    // naziv firme je i naziv brenda, pa se traži u glavnom sadržaju (ne u <select> opcijama bočne trake)
+    const main = page.getByRole('main')
+    await expect(main.getByText(/Radni prostor/).first()).toContainText('E2E Firma')
+    await expect(main.getByText('50', { exact: true }).first()).toBeVisible()
+    await expect(main.getByText('E2E Firma').first()).toBeVisible()
   })
 
   test('tim: pozivnica, limit plana, podešavanja', async ({ page }) => {

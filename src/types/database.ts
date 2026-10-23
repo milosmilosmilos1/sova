@@ -1787,7 +1787,7 @@ isOneToOne: false
 { Args: { "p_email"?: string,"p_external_user_id"?: string,"p_source": string,"p_user_id"?: string }; Returns: Json
                            },
 "reserve_tokens":
-{ Args: { "p_amount": number,"p_brand_id": string,"p_generation_id": string,"p_ttl_minutes"?: number,"p_user_id": string,"p_workspace_id": string }; Returns: string
+{ Args: { "p_amount": number,"p_brand_id"?: string,"p_generation_id"?: string,"p_ttl_minutes"?: number,"p_user_id"?: string,"p_workspace_id": string }; Returns: string
                            },
 "shares_workspace_with":
 { Args: { "other": string }; Returns: boolean

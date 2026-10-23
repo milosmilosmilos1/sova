@@ -37,10 +37,10 @@ $$;
 
 create or replace function public.reserve_tokens(
   p_workspace_id uuid,
-  p_brand_id uuid,
-  p_user_id uuid,
   p_amount integer,
-  p_generation_id uuid,
+  p_brand_id uuid default null,
+  p_user_id uuid default null,
+  p_generation_id uuid default null,
   p_ttl_minutes integer default 15
 )
 returns uuid
@@ -348,7 +348,7 @@ $$;
 revoke all on function public.workspace_token_totals(uuid) from public, anon, authenticated;
 revoke all on function public.workspace_token_balance(uuid) from public, anon;
 grant execute on function public.workspace_token_balance(uuid) to authenticated, service_role;
-revoke all on function public.reserve_tokens(uuid, uuid, uuid, integer, uuid, integer) from public, anon, authenticated;
+revoke all on function public.reserve_tokens(uuid, integer, uuid, uuid, uuid, integer) from public, anon, authenticated;
 revoke all on function public.confirm_reservation(uuid, integer) from public, anon, authenticated;
 revoke all on function public.release_reservation(uuid, text) from public, anon, authenticated;
 revoke all on function public.expire_reservations() from public, anon, authenticated;
@@ -357,7 +357,7 @@ revoke all on function public.expire_grants() from public, anon, authenticated;
 revoke all on function public.admin_adjust_tokens(uuid, integer, text, uuid) from public, anon, authenticated;
 grant execute on function
   public.workspace_token_totals(uuid),
-  public.reserve_tokens(uuid, uuid, uuid, integer, uuid, integer),
+  public.reserve_tokens(uuid, integer, uuid, uuid, uuid, integer),
   public.confirm_reservation(uuid, integer),
   public.release_reservation(uuid, text),
   public.expire_reservations(),
