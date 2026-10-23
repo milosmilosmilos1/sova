@@ -4,16 +4,16 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 
 ## Auth i nalog
 
-| #   | Slučaj                                              | Ponašanje                                                                                                 | Faza  | Status |
-| --- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----- | ------ |
-| A1  | Email već postoji                                   | Poruka bez otkrivanja da nalog postoji („Ako nalog postoji, poslali smo uputstvo”), link na login i reset | 4     | plan   |
-| A2  | Nepotvrđen email pokušava da troši tokene           | 403 `EMAIL_NOT_VERIFIED`, dugme „Pošalji ponovo” sa rate limitom 3/h                                      | 4, 5  | plan   |
-| A3  | Istekao magic link ili reset link                   | Stranica sa objašnjenjem i dugmetom za nov link                                                           | 4     | plan   |
-| A4  | Sesija istekla usred rada                           | Nacrt composera čuva se u localStorage po brand_id; posle prijave ponuda „Vrati nacrt”                    | 4, 9a | plan   |
-| A5  | Korisnik banovan dok je ulogovan                    | `is_banned` proverava `getViewer()` na svakom zahtevu; RLS funkcije vraćaju false; proxy odjavljuje       | 4     | plan   |
-| A6  | Korisnik obrisan dok je ulogovan                    | isto kao A5                                                                                               | 4     | plan   |
-| A7  | Više tabova, odjava u jednom                        | Supabase `onAuthStateChange` sinhronizuje; ostali tabovi preusmeravaju na login                           | 4     | plan   |
-| A8  | Google prijava emailom koji već postoji sa lozinkom | Supabase povezuje identitete ako je email potvrđen; inače poruka                                          | 4     | plan   |
+| #   | Slučaj                                              | Ponašanje                                                                                                 | Faza  | Status                 |
+| --- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----- | ---------------------- |
+| A1  | Email već postoji                                   | Poruka bez otkrivanja da nalog postoji („Ako nalog postoji, poslali smo uputstvo”), link na login i reset | 4     | kod                    |
+| A2  | Nepotvrđen email pokušava da troši tokene           | 403 `EMAIL_NOT_VERIFIED`, dugme „Pošalji ponovo” sa rate limitom 3/h                                      | 4, 5  | kod (handler verified) |
+| A3  | Istekao magic link ili reset link                   | Stranica sa objašnjenjem i dugmetom za nov link                                                           | 4     | kod                    |
+| A4  | Sesija istekla usred rada                           | Nacrt composera čuva se u localStorage po brand_id; posle prijave ponuda „Vrati nacrt”                    | 4, 9a | plan                   |
+| A5  | Korisnik banovan dok je ulogovan                    | `is_banned` proverava `getViewer()` na svakom zahtevu; RLS funkcije vraćaju false; proxy odjavljuje       | 4     | kod                    |
+| A6  | Korisnik obrisan dok je ulogovan                    | isto kao A5                                                                                               | 4     | plan                   |
+| A7  | Više tabova, odjava u jednom                        | Supabase `onAuthStateChange` sinhronizuje; ostali tabovi preusmeravaju na login                           | 4     | plan                   |
+| A8  | Google prijava emailom koji već postoji sa lozinkom | Supabase povezuje identitete ako je email potvrđen; inače poruka                                          | 4     | kod                    |
 
 ## Tokeni i naplata
 

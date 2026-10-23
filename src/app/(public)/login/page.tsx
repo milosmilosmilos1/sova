@@ -1,13 +1,29 @@
 import type { Metadata } from 'next'
 
+import { AuthCard } from '@/components/auth/auth-card'
+import { LoginForm } from '@/components/auth/login-form'
+import { configured } from '@/lib/env'
+import { nextPathSchema } from '@/lib/schemas/auth'
+
 export const metadata: Metadata = { title: 'Prijava' }
 
-/** Puna prijava stiže u fazi 4 (Supabase Auth). */
-export default function LoginPage() {
+const ERRORS: Record<string, string> = {
+  link: 'Link je nevažeći ili je istekao. Prijavite se ili zatražite nov link.',
+  provider: 'Prijava preko spoljnog naloga nije uspela. Pokušajte ponovo.',
+  google: 'Google prijava trenutno nije dostupna.',
+}
+
+export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
+  const params = await searchParams
+  const next = nextPathSchema.parse(typeof params.next === 'string' ? params.next : undefined)
+  const errorKey = typeof params.error === 'string' ? params.error : undefined
   return (
-    <div className="mx-auto w-full max-w-md px-4 py-20">
-      <h1 className="text-2xl font-semibold tracking-tight">Prijava</h1>
-      <p className="mt-2 text-sm text-muted-foreground">Prijava još nije dostupna. Aplikacija je u izradi.</p>
-    </div>
+    <AuthCard title="Prijava" description="Dobro došli nazad u Sovu.">
+      <LoginForm
+        next={next}
+        googleEnabled={configured.google}
+        initialError={errorKey ? (ERRORS[errorKey] ?? ERRORS.link) : undefined}
+      />
+    </AuthCard>
   )
 }

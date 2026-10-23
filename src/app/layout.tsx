@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from 'next'
 import { Geist_Mono, Inter } from 'next/font/google'
+import { headers } from 'next/headers'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale } from 'next-intl/server'
 
@@ -39,6 +40,8 @@ export const viewport: Viewport = {
 
 export default async function RootLayout({ children }: LayoutProps<'/'>) {
   const locale = await getLocale()
+  // CSP nonce iz proxy.ts: inline skripta next-themes-a mora da ga nosi.
+  const nonce = (await headers()).get('x-nonce') ?? undefined
   return (
     <html
       lang={locale}
@@ -47,7 +50,7 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
     >
       <body className="flex min-h-full flex-col">
         <NextIntlClientProvider>
-          <Providers>{children}</Providers>
+          <Providers nonce={nonce}>{children}</Providers>
         </NextIntlClientProvider>
       </body>
     </html>

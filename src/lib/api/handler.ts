@@ -4,7 +4,7 @@ import * as Sentry from '@sentry/nextjs'
 import { type NextRequest } from 'next/server'
 import { z } from 'zod'
 
-import { getViewer, type Viewer } from '@/lib/auth/viewer'
+import { getViewerFromRequest, type Viewer } from '@/lib/auth/viewer'
 import { env } from '@/lib/env'
 import { createLogger, type Logger } from '@/lib/logger'
 import { rateLimit } from '@/lib/ratelimit'
@@ -59,6 +59,12 @@ type RouteContext = { params: Promise<Record<string, string | string[]>> }
 type RouteHandler = (req: NextRequest, ctx: RouteContext) => Promise<Response>
 
 const MUTATING = new Set(['POST', 'PUT', 'PATCH', 'DELETE'])
+
+/** Za rute sa auth: 'user' | 'verified' | 'admin' viewer je uvek prisutan. */
+export function assertViewer(viewer: Viewer | null): Viewer {
+  if (!viewer) throw new ApiError('UNAUTHENTICATED')
+  return viewer
+}
 
 export function getRequestId(req: NextRequest): string {
   return req.headers.get('x-request-id') ?? crypto.randomUUID()
@@ -122,7 +128,7 @@ async function authenticate(mode: AuthMode, req: NextRequest): Promise<Viewer | 
     if (!env.CRON_SECRET || token !== env.CRON_SECRET) throw new ApiError('UNAUTHENTICATED')
     return null
   }
-  const viewer = await getViewer()
+  const viewer = await getViewerFromRequest(req)
   if (!viewer) throw new ApiError('UNAUTHENTICATED')
   if (viewer.profile.isBanned) throw new ApiError('FORBIDDEN', 'Nalog je blokiran.')
   if ((mode === 'verified' || mode === 'admin') && !viewer.profile.emailVerifiedAt) {

@@ -120,3 +120,39 @@ Razlog: brif traži dodelu „samo kroz bazu (seed skripta sa mojim emailom)”;
 Odluka: `reserve_tokens` proverava ukupno dostupno (grantovi minus aktivne rezervacije) pod lock-om workspace reda i upisuje samo iznos; `confirm_reservation` tek tada troši grantove redom po isteku i beleži alokacije.
 Alternative: alokacija po grantu već pri rezervaciji.
 Razlog: dve rezervacije bi inače mogle da „obeleže” isti grant; ovako je potrošnja tačna u trenutku potvrde, a testovi paralelnih rezervacija i idempotentne potvrde prolaze.
+
+## D-021 · 23.10.2026 · usvojeno · Aplikacija pod prefiksom `/app`, admin pod `/admin`
+
+Odluka: sve stranice za ulogovane su pod `/app/...` (početna `/app`, `/app/onboarding`, `/app/team`, `/app/settings`, `/app/settings/security`), admin panel pod `/admin`, javne stranice bez prefiksa.
+Alternative: `/dashboard`, `/calendar` itd. na korenu.
+Razlog: proxy štiti dva prefiksa jednim matcher-om, `x-robots-tag: noindex` važi za ceo prefiks, a javne i privatne putanje se ne mešaju.
+
+## D-022 · 23.10.2026 · usvojeno · Forme kroz Server Actions, API rute za sve ostalo
+
+Odluka: forme za prijavu, registraciju, onboarding, tim i podešavanja koriste Server Actions (`useActionState`) sa istim Zod šemama, rate limitom i porukama kao API. Mutacije koje klijentske aplikacije i testovi pozivaju idu kroz Route Handlers (`/api/...`) sa `createHandler`.
+Razlog: Server Actions rade bez JavaScript-a, imaju ugrađenu Origin proveru i jednostavnije stanje forme; brif traži API rute, koje postoje za iste operacije (`/api/workspaces`, `/api/brands`, `/api/invitations`, `/api/me`). Servisi u `src/services/` su zajednički sloj, pa nema dupliranja logike.
+
+## D-023 · 23.10.2026 · usvojeno · API prihvata i `Authorization: Bearer <access token>`
+
+Odluka: `getViewerFromRequest` čita Supabase access token iz Bearer headera (bez next/headers), inače cookie sesiju. Integracioni testovi zovu Route Handlers u procesu sa Bearer tokenima nad lokalnim Supabase-om (`npm run test:integration`, 10 testova).
+Razlog: isti kod služi budućim API klijentima i testovima bez dev servera; Origin provera ostaje za cookie mutacije.
+
+## D-024 · 23.10.2026 · usvojeno · Email potvrda obavezna, Google OAuth iza konfiguracije
+
+Odluka: lokalni Supabase ima `enable_confirmations = true` (potvrda emaila pre prve sesije), lozinka najmanje 10 karaktera, TOTP MFA uključen; Google prijava se prikazuje samo kad su `GOOGLE_CLIENT_ID/SECRET` podešeni. Registracija vraća isti ekran „proverite poštu” i za postojeći email (bez otkrivanja naloga).
+Razlog: brif 15.3 (potvrđen email pre trošenja tokena) i 17.4 A1; Google ključevi još ne postoje.
+
+## D-025 · 24.10.2026 · usvojeno · Admin 404 se odlučuje u proxy-ju, ne samo u layoutu
+
+Odluka: za `/admin/*` proxy čita `profiles.platform_role` korisnika i ne-adminu vraća rewrite na nepostojeću rutu (pravi HTTP 404). Admin layout i dalje proverava ulogu i MFA nivo (druga linija).
+Razlog: korenski `loading.tsx` pravi Suspense granicu, pa Next pošalje shell sa statusom 200 pre nego što layout stigne do `notFound()`; sadržaj je bio 404, ali status 200. E2E test to je otkrio.
+
+## D-026 · 24.10.2026 · usvojeno · Layout ne preusmerava po putanji; `x-pathname` samo informativno
+
+Odluka: `AppLayout` ne radi redirect na `/app/onboarding` po `x-pathname` headeru; svaka stranica koja traži workspace sama preusmerava kad ga nema. Aktivni link u navigaciji i `next` za promenu workspace-a računa klijent (`usePathname`).
+Razlog: proxy preskače prefetch zahteve (matcher `missing`), pa `x-pathname` nekad nije postavljen; layout je tada slao redirect na isti URL i router je ušao u beskonačnu RSC petlju (1.100 zahteva u minutu). CSP nonce se iz istog razloga prosleđuje `next-themes` provajderu iz root layouta.
+
+## D-027 · 24.10.2026 · usvojeno · E2E kroz Mailpit API i nasumičan `x-forwarded-for`
+
+Odluka: Playwright testovi čitaju auth emailove iz Mailpit API-ja lokalnog Supabase-a (`tests/e2e/mailpit.ts`) i svaki run šalje nasumičnu `x-forwarded-for` adresu da rate limit registracije (3/h po IP) ne obara ponovljene runove.
+Razlog: potvrda emaila je obavezna, pa E2E mora da prođe kroz pravu poštu; u produkciji platforma prepisuje `x-forwarded-for`, pa header iz testa nema bezbednosni uticaj.

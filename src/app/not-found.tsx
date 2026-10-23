@@ -10,7 +10,9 @@ export default async function NotFound() {
       <p className="font-mono text-sm text-muted-foreground">404</p>
       <h1 className="text-2xl font-semibold tracking-tight">{t('errors.notFoundTitle')}</h1>
       <p className="max-w-md text-muted-foreground">{t('errors.notFoundText')}</p>
-      <Button render={<Link href="/" />}>{t('common.backHome')}</Button>
+      <Button nativeButton={false} render={<Link href="/" />}>
+        {t('common.backHome')}
+      </Button>
     </main>
   )
 }

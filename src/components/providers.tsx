@@ -6,7 +6,7 @@ import { useState, type ReactNode } from 'react'
 
 import { Toaster } from '@/components/ui/sonner'
 
-export function Providers({ children }: { children: ReactNode }) {
+export function Providers({ children, nonce }: { children: ReactNode; nonce?: string }) {
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -16,7 +16,13 @@ export function Providers({ children }: { children: ReactNode }) {
       }),
   )
   return (
-    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+    <ThemeProvider
+      attribute="class"
+      defaultTheme="system"
+      enableSystem
+      disableTransitionOnChange
+      nonce={nonce}
+    >
       <QueryClientProvider client={queryClient}>
         {children}
         <Toaster richColors position="top-right" closeButton />

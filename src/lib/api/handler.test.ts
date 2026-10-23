@@ -2,7 +2,10 @@ import { NextRequest } from 'next/server'
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
 
-vi.mock('@/lib/auth/viewer', () => ({ getViewer: vi.fn(async () => null) }))
+vi.mock('@/lib/auth/viewer', () => ({
+  getViewer: vi.fn(async () => null),
+  getViewerFromRequest: vi.fn(async () => null),
+}))
 
 import { ApiError } from './errors'
 import { createHandler } from './handler'

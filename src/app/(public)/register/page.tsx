@@ -1,15 +1,35 @@
 import type { Metadata } from 'next'
 
+import { AuthCard } from '@/components/auth/auth-card'
+import { RegisterForm } from '@/components/auth/register-form'
+import { configured } from '@/lib/env'
+import { nextPathSchema } from '@/lib/schemas/auth'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+
 export const metadata: Metadata = { title: 'Registracija' }
 
-/** Puna registracija stiže u fazi 4 (Supabase Auth). */
-export default function RegisterPage() {
+async function registrationOpen(): Promise<boolean> {
+  const { data } = await createSupabaseAdminClient()
+    .from('feature_flags')
+    .select('enabled')
+    .eq('key', 'registration_open')
+    .maybeSingle()
+  return data?.enabled ?? true
+}
+
+export default async function RegisterPage({ searchParams }: PageProps<'/register'>) {
+  const params = await searchParams
+  const next = nextPathSchema.parse(typeof params.next === 'string' ? params.next : undefined)
+  const open = await registrationOpen()
   return (
-    <div className="mx-auto w-full max-w-md px-4 py-20">
-      <h1 className="text-2xl font-semibold tracking-tight">Napravite nalog</h1>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Registracija još nije dostupna. Aplikacija je u izradi.
-      </p>
-    </div>
+    <AuthCard title="Napravite nalog" description="Besplatno dobijate 50 tokena posle potvrde email adrese.">
+      {open ? (
+        <RegisterForm next={next} googleEnabled={configured.google} />
+      ) : (
+        <p className="text-sm text-muted-foreground">
+          Registracija je trenutno zatvorena. Pokušajte kasnije.
+        </p>
+      )}
+    </AuthCard>
   )
 }

@@ -1,0 +1,12 @@
+# LF svuda (Windows i Linux isto), bez CRLF upozorenja i razlika u diff-u.
+* text=auto eol=lf
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.ico binary
+*.woff binary
+*.woff2 binary
+*.mp4 binary
+*.pdf binary

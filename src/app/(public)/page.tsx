@@ -18,10 +18,10 @@ export default async function LandingPage() {
         </h1>
         <p className="max-w-2xl text-lg text-pretty text-muted-foreground">{t('heroText')}</p>
         <div className="flex flex-wrap gap-3">
-          <Button size="lg" render={<Link href="/register" />}>
+          <Button size="lg" nativeButton={false} render={<Link href="/register" />}>
             {t('ctaPrimary')}
           </Button>
-          <Button size="lg" variant="outline" render={<a href="#kako-radi" />}>
+          <Button size="lg" variant="outline" nativeButton={false} render={<a href="#kako-radi" />}>
             {t('ctaSecondary')}
           </Button>
         </div>
