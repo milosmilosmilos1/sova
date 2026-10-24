@@ -3,6 +3,8 @@ import { aiVisualTemplate } from './ai-visual-template'
 import { brandAnalyze } from './brand-analyze'
 import { brandSiteCheck } from './brand-site-check'
 import { ping } from './ping'
+import { publishTarget } from './publish-target'
+import { publishWatchdog } from './publish-watchdog'
 import { socialHistoryImport } from './social-history-import'
 import { socialTokenRefresh } from './social-token-refresh'
 
@@ -15,4 +17,6 @@ export const functions = [
   brandSiteCheck,
   socialHistoryImport,
   socialTokenRefresh,
+  publishTarget,
+  publishWatchdog,
 ]

@@ -94,9 +94,10 @@ export async function enqueueTargetScheduled(
   targetId: string,
   scheduledAt: string,
   version: number,
+  socialAccountId: string,
 ): Promise<void> {
   try {
-    await inngest.send(events.postTargetScheduled.create({ targetId, scheduledAt, version }))
+    await inngest.send(events.postTargetScheduled.create({ targetId, scheduledAt, version, socialAccountId }))
   } catch (error) {
     logger.error('enqueue_target_scheduled_failed', { targetId, error })
     throw new AiError(

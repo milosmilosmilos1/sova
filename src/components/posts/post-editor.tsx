@@ -1,6 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
@@ -11,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { PLATFORMS } from '@/config/platforms'
+import { targetStatusLabel } from '@/config/post-labels'
 import type { ApiResponse } from '@/lib/api/response'
 import type { WorkspaceRole } from '@/lib/auth/workspace'
 
@@ -44,6 +46,7 @@ interface Target {
   scheduledAt: string | null
   permalink: string | null
   lastErrorMessage: string | null
+  externalPostId: string | null
 }
 interface PostView {
   id: string
@@ -57,7 +60,12 @@ interface PostView {
   scheduledFor: string | null
   lockedAt: string | null
   targets: Target[]
-  media: Array<{ mediaAssetId: string; url: string | null; altText: string | null }>
+  media: Array<{
+    mediaAssetId: string
+    url: string | null
+    altText: string | null
+    socialAccountId: string | null
+  }>
   actions: string[]
 }
 interface Comment {
@@ -210,6 +218,9 @@ export function PostEditor({
     queryKey: ['post', postId],
     queryFn: () => api<PostView>(`/api/posts/${postId}`),
     enabled: Boolean(postId),
+    // dok se objavljuje (ili čeka termin) osvežavaj da korisnik vidi kad objava ode
+    refetchInterval: (q) =>
+      q.state.data?.status === 'publishing' || q.state.data?.status === 'scheduled' ? 15_000 : false,
   })
   if (postId && post.isPending) return <p className="text-sm text-muted-foreground">Učitavam objavu…</p>
   if (postId && post.isError) return <ErrorBox error={post.error} />
@@ -325,6 +336,22 @@ function EditorForm({
       if (vars.name === 'duplicate') router.push(`/app/posts/${result.id}`)
       else refresh()
     },
+  })
+  const targetAction = useMutation({
+    mutationFn: ({
+      targetId,
+      name,
+      extra,
+    }: {
+      targetId: string
+      name: string
+      extra?: Record<string, unknown>
+    }) =>
+      api<PostView>(`/api/posts/${postId}/targets/${targetId}/${name}`, {
+        method: 'POST',
+        json: extra ?? {},
+      }),
+    onSuccess: () => refresh(),
   })
   const del = useMutation({
     mutationFn: () => api(`/api/posts/${postId}`, { method: 'DELETE' }),
@@ -693,26 +720,24 @@ function EditorForm({
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               {p.targets.map((t) => (
-                <div key={t.id} className="rounded-md border p-2">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="truncate">{t.accountName ?? t.platform}</span>
-                    <Badge variant="outline">{t.status}</Badge>
-                  </div>
-                  {t.scheduledAt ? (
-                    <p className="text-xs text-muted-foreground">
-                      {new Date(t.scheduledAt).toLocaleString('sr-Latn-RS', { timeZone: timezone })}
-                    </p>
-                  ) : null}
-                  {t.permalink ? (
-                    <a href={t.permalink} target="_blank" rel="noreferrer" className="text-xs underline">
-                      Otvori objavu
-                    </a>
-                  ) : null}
-                  {t.lastErrorMessage ? (
-                    <p className="text-xs text-destructive">{t.lastErrorMessage}</p>
-                  ) : null}
-                </div>
+                <TargetCard
+                  key={t.id}
+                  t={t}
+                  media={p.media.filter((m) => !m.socialAccountId || m.socialAccountId === t.socialAccountId)}
+                  timezone={timezone}
+                  canEdit={canEdit}
+                  busy={targetAction.isPending}
+                  onRetry={() => targetAction.mutate({ targetId: t.id, name: 'retry' })}
+                  onAssistedDone={(permalink) =>
+                    targetAction.mutate({
+                      targetId: t.id,
+                      name: 'assisted-done',
+                      extra: { permalink: permalink || null },
+                    })
+                  }
+                />
               ))}
+              <ErrorBox error={targetAction.error} />
             </CardContent>
           </Card>
         ) : null}
@@ -792,6 +817,105 @@ function EditorForm({
           </Card>
         ) : null}
       </aside>
+    </div>
+  )
+}
+
+function TargetCard({
+  t,
+  media,
+  timezone,
+  canEdit,
+  busy,
+  onRetry,
+  onAssistedDone,
+}: {
+  t: Target
+  media: Array<{ url: string | null; altText: string | null }>
+  timezone: string
+  canEdit: boolean
+  busy: boolean
+  onRetry: () => void
+  onAssistedDone: (permalink: string) => void
+}) {
+  const [permalink, setPermalink] = useState('')
+  const [copied, setCopied] = useState(false)
+  const copy = async () => {
+    try {
+      await navigator.clipboard.writeText(t.text)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      setCopied(false)
+    }
+  }
+  const failed = t.status === 'failed' || t.status === 'needs_reauth'
+  const done = t.status === 'published' || t.status === 'assisted_done'
+  return (
+    <div className="space-y-1 rounded-md border p-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="truncate">{t.accountName ?? t.platform}</span>
+        <Badge variant={failed ? 'destructive' : done ? 'default' : 'outline'}>
+          {targetStatusLabel(t.status)}
+        </Badge>
+      </div>
+      {t.scheduledAt ? (
+        <p className="text-xs text-muted-foreground">
+          {new Date(t.scheduledAt).toLocaleString('sr-Latn-RS', { timeZone: timezone })}
+        </p>
+      ) : null}
+      {t.permalink ? (
+        <a href={t.permalink} target="_blank" rel="noreferrer" className="text-xs underline">
+          Otvori objavu
+        </a>
+      ) : null}
+      {t.lastErrorMessage ? <p className="text-xs text-destructive">{t.lastErrorMessage}</p> : null}
+      {failed && canEdit ? (
+        <div className="flex flex-wrap gap-2 pt-1">
+          <Button size="sm" variant="outline" onClick={onRetry} disabled={busy}>
+            Pokušaj ponovo
+          </Button>
+          {t.status === 'needs_reauth' ? (
+            <Button size="sm" variant="ghost" render={<Link href="/app/accounts" />} nativeButton={false}>
+              Mreže
+            </Button>
+          ) : null}
+        </div>
+      ) : null}
+      {t.status === 'assisted_pending' ? (
+        <div className="space-y-2 pt-1 text-xs">
+          <p className="text-muted-foreground">
+            Ova mreža se objavljuje ručno: kopirajte tekst, preuzmite medije, objavite na mreži pa označite
+            ovde.
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" variant="outline" onClick={copy}>
+              {copied ? 'Kopirano' : 'Kopiraj tekst'}
+            </Button>
+            {media.map((m, i) =>
+              m.url ? (
+                <a key={i} href={m.url} target="_blank" rel="noreferrer" className="self-center underline">
+                  Medij {i + 1}
+                </a>
+              ) : null,
+            )}
+          </div>
+          {canEdit ? (
+            <div className="space-y-1">
+              <Label htmlFor={`permalink-${t.id}`}>Link objave na mreži (opciono)</Label>
+              <Input
+                id={`permalink-${t.id}`}
+                value={permalink}
+                onChange={(e) => setPermalink(e.target.value)}
+                placeholder="https://"
+              />
+              <Button size="sm" onClick={() => onAssistedDone(permalink.trim())} disabled={busy}>
+                Označi kao objavljeno
+              </Button>
+            </div>
+          ) : null}
+        </div>
+      ) : null}
     </div>
   )
 }

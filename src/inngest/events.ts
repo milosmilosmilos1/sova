@@ -42,7 +42,12 @@ export const events = {
 
   // Faza 9
   postTargetScheduled: eventType('post/target.scheduled', {
-    schema: z.object({ targetId: uuid, scheduledAt: z.iso.datetime(), version: z.number().int() }),
+    schema: z.object({
+      targetId: uuid,
+      scheduledAt: z.iso.datetime(),
+      version: z.number().int(),
+      socialAccountId: uuid,
+    }),
   }),
   postTargetUnscheduled: eventType('post/target.unscheduled', {
     schema: z.object({ targetId: uuid }),

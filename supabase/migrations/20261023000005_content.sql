@@ -323,6 +323,7 @@ insert into public.status_transitions (scope, from_status, to_status, service_on
   ('post', 'publishing', 'published', true),
   ('post', 'publishing', 'failed', true),
   ('post', 'publishing', 'partially_published', true),
+  ('post', 'publishing', 'scheduled', true),
   ('post', 'failed', 'scheduled', false),
   ('post', 'failed', 'draft', false),
   ('post', 'failed', 'canceled', false),

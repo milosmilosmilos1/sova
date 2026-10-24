@@ -13,6 +13,10 @@ export const metaState = {
   userTokenValid: true,
   pagesVisible: true,
   codeValid: true,
+  /** koliko sledećih POST /feed poziva vraća 500 (privremena greška) */
+  feedFailuresLeft: 0,
+  /** svaki medij se odbija (MEDIA_REJECTED) */
+  mediaRejected: false,
 }
 
 export function resetMetaState(): void {
@@ -24,6 +28,8 @@ export function resetMetaState(): void {
   metaState.userTokenValid = true
   metaState.pagesVisible = true
   metaState.codeValid = true
+  metaState.feedFailuresLeft = 0
+  metaState.mediaRejected = false
 }
 
 const G = 'https://graph.facebook.com/:version'
@@ -142,12 +148,17 @@ export const metaHandlers = [
   http.post(`${G}/:target/feed`, async ({ request, params }) => {
     const body = Object.fromEntries(new URLSearchParams(await request.text()))
     metaState.publishes.push({ path: `${String(params.target)}/feed`, body })
+    if (metaState.feedFailuresLeft > 0) {
+      metaState.feedFailuresLeft -= 1
+      return err(2, 'Service temporarily unavailable', 500)
+    }
     return HttpResponse.json({ id: `${String(params.target)}_${900 + metaState.publishes.length}` })
   }),
   http.post(`${G}/:target/photos`, async ({ request, params }) => {
     const body = Object.fromEntries(new URLSearchParams(await request.text()))
     metaState.publishes.push({ path: `${String(params.target)}/photos`, body })
-    if (body.url?.includes('bad-image')) return err(100, 'Invalid image', 400, 2207003)
+    if (metaState.mediaRejected || body.url?.includes('bad-image'))
+      return err(100, 'Invalid image', 400, 2207003)
     const id = `${metaState.publishes.length}`
     return body.published === 'false'
       ? HttpResponse.json({ id: `photo-${id}` })
@@ -156,7 +167,7 @@ export const metaHandlers = [
   http.post(`${G}/ig-1/media`, async ({ request }) => {
     const body = Object.fromEntries(new URLSearchParams(await request.text()))
     metaState.publishes.push({ path: 'ig-1/media', body })
-    if (body.image_url?.includes('bad-image'))
+    if (metaState.mediaRejected || body.image_url?.includes('bad-image'))
       return err(9004, 'Only photo or video can be accepted as media type.')
     return HttpResponse.json({ id: `container-${metaState.publishes.length}` })
   }),

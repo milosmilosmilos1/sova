@@ -266,3 +266,33 @@ Razlog: ARCHITECTURE 3.3; zakazivanje i izmena termina rade isto bez obzira na m
 
 Odluka: `approval_links` čuva SHA-256 tokena (32 bajta base64url), rok (1–30 dana), `max_uses`, opoziv; link se pravi samo za objave u `in_review`. Javne rute `/api/public/approvals/[token]` (30/min po IP-u) daju tekst, medije (potpisani URL-ovi 24 h), platforme, komentare i odluke; odluka ide kroz `decide_post` sa `approval_link_id` i verzijom (zastarela → 409), komentar klijenta u `post_comments` sa `author_name`; autor dobija obaveštenje i email. Strana `/approve/[token]` je u javnoj grupi bez indeksiranja.
 Razlog: brif 8 (klijent bez naloga odobrava); ARCHITECTURE 5.2 (token samo kao hash).
+
+## D-050 · 24.10.2026 · usvojeno · Pokušaji prema mreži su u samom run-u (3, pauze 1/5/15 min); Inngest `retries` samo za naše greške
+
+Odluka: `runPublishTarget` sam vodi pokušaje: posle privremene greške target ide u `scheduled` sa porukom („novi pokušaj za 5 min”), `step.sleep`, pa novo zaključavanje; pre svakog ponovnog pokušaja `findExistingPost`. `retries: 3` Inngest-a pokriva pad baze ili mreže do Supabase-a, a `onFailure` otključava target (`failed`, kod `INTERNAL`). Orkestracija prima `StepRunner`, `sleep`, `sleepUntil` i `sendEvent` kao zavisnosti, pa se ceo tok testira bez Inngest-a.
+Razlog: stanje u bazi je u svakom trenutku tačno i vidljivo korisniku (K5, UI); pauze su determinističke i testirane; `RetryAfterError` bi ostavio target u `publishing` bez poruke.
+
+## D-051 · 24.10.2026 · usvojeno · Nov servisni prelaz objave `publishing → scheduled`
+
+Odluka: kad svi targeti objave ponovo čekaju (privremena greška, kvota → +24 h, watchdog vratio zaglavljen target), objava se vraća u `scheduled` i otključava; red `('post','publishing','scheduled', true)` dodat u `status_transitions` (postojeća migracija izmenjena u mestu, `db:reset`) i u TS matricu.
+Razlog: bez njega bi objava stajala zaključana u `publishing` i do 24 h; simetrično sa već postojećim `target: publishing → scheduled`.
+
+## D-052 · 24.10.2026 · usvojeno · Token ili dozvole padnu pri objavi: target `failed` + nalog `needs_reauth`, nastavak klikom
+
+Odluka: matrica nema `publishing → needs_reauth`, pa target ide u `failed` sa kodom `TOKEN_INVALID`/`PERMISSION_LOST` i uputstvom, a nalog u `needs_reauth`. Ako nalog nije aktivan već pre zaključavanja, target ide u `needs_reauth`. U oba slučaja korisnik posle ponovnog povezivanja klikće „Pokušaj ponovo” (`retry` prima `failed` i `needs_reauth`, odbija dok nalog nije aktivan).
+Razlog: jedno mesto za ručni nastavak; nema tihog ponovnog slanja sa starim tokenom.
+
+## D-053 · 24.10.2026 · usvojeno · Asistirano objavljivanje je status targeta, bez posebnog providera
+
+Odluka: nalog sa `assisted_only` ili bez `capabilities.publish` u terminu prelazi u `assisted_pending` (+ email sa linkom na objavu); korisnik kopira tekst i preuzima medije (potpisani URL 24 h) pa označava `assisted_done` sa opcionim linkom objave; rollup ga računa kao uspeh. Objava do tada ostaje `scheduled` (ne zaključava se).
+Razlog: brif traži fallback za mreže bez odobrenja; isti kalendar, statusi i obaveštenja kao za API objave; poseban `assisted` provider iz ARCHITECTURE 4 nije potreban.
+
+## D-054 · 24.10.2026 · usvojeno · Obaveštenja: katalog tipova sa podrazumevanim emailom, preferencije po kanalu, zvono kroz polling
+
+Odluka: `src/config/notifications.ts` nosi 11 tipova sa `emailDefault`; `notification_preferences` ima red samo kad korisnik promeni podrazumevano (isključen `in_app` preskače i red u `notifications`); zvono i strana `/app/notifications` osvežavaju na minut kroz `GET /api/notifications` (Realtime kanal se dodaje tek ako polling bude smetao).
+Razlog: brif 9; bez novih tabela; jasno gde se dodaje nov tip (jedan objekat, tipizovan).
+
+## D-055 · 24.10.2026 · usvojeno · `post-metrics` funkcija odložena za 10b
+
+Odluka: događaj `post/target.published` se šalje od 9b, a funkcija sa `sleepUntil` +1 h/+24 h/+7 d/+30 d i upisom u `post_metrics_snapshots` stiže uz analitiku (10b) gde se određuju i izvedene metrike.
+Razlog: 9b je publisher; snimci bez prikaza ne donose ništa korisniku, a provider metode (`fetchPostMetrics`) već postoje.

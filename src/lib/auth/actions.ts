@@ -16,6 +16,7 @@ import { setCurrentBrandCookie } from '@/lib/auth/brand'
 import { env } from '@/lib/env'
 import { LOCALE_COOKIE } from '@/i18n/config'
 import { logger } from '@/lib/logger'
+import { cancelScheduledPostsForBrand } from '@/services/posts/publisher'
 import { rateLimit } from '@/lib/ratelimit'
 import {
   forgotPasswordSchema,
@@ -421,6 +422,8 @@ export async function deleteBrandAction(formData: FormData): Promise<void> {
   const brandId = formData.get('brandId')?.toString() ?? ''
   try {
     await deleteBrand(viewer, brandId)
+    const canceled = await cancelScheduledPostsForBrand(brandId, viewer.user.id)
+    if (canceled) logger.info('brand_deleted_posts_canceled', { brandId, canceled })
   } catch (error) {
     logger.warn('delete_brand_failed', { error })
   }

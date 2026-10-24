@@ -16,7 +16,7 @@ export const POST_TRANSITIONS: Record<PostStatus, PostStatus[]> = {
   rejected: ['draft'],
   scheduled: ['publishing', 'paused', 'canceled', 'draft'],
   paused: ['scheduled', 'canceled'],
-  publishing: ['published', 'failed', 'partially_published'],
+  publishing: ['published', 'failed', 'partially_published', 'scheduled'],
   failed: ['scheduled', 'draft', 'canceled'],
   partially_published: ['published', 'failed'],
   published: [],
@@ -29,6 +29,7 @@ export const SERVICE_ONLY: Array<[PostStatus, PostStatus]> = [
   ['publishing', 'published'],
   ['publishing', 'failed'],
   ['publishing', 'partially_published'],
+  ['publishing', 'scheduled'],
   ['partially_published', 'published'],
   ['partially_published', 'failed'],
 ]

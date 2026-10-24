@@ -1,5 +1,6 @@
 import 'server-only'
 
+import type { NotificationType } from '@/config/notifications'
 import { validateText } from '@/config/platforms'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
@@ -155,7 +156,7 @@ async function notifyApprovers(post: PostRow, byUserId: string): Promise<void> {
 
 async function notifyAuthor(
   post: PostRow,
-  type: string,
+  type: NotificationType,
   title: string,
   body: string | null,
   byUserId: string | null,
@@ -281,7 +282,7 @@ export async function schedulePost(viewer: Viewer, postId: string, input: Schedu
     .select('id, status, social_account_id')
     .eq('post_id', postId)
   if (!targets?.length) throw new ApiError('VALIDATION', 'Izaberite bar jednu mrežu.')
-  const planned: Array<{ id: string; at: string }> = []
+  const planned: Array<{ id: string; at: string; accountId: string }> = []
   for (const t of targets) {
     if (t.status === 'published' || t.status === 'publishing') continue
     const at = input.targetTimes?.[t.social_account_id] ?? when.toISOString()
@@ -296,7 +297,7 @@ export async function schedulePost(viewer: Viewer, postId: string, input: Schedu
         await admin.from('post_targets').update({ status: 'pending', scheduled_at: null }).eq('id', p.id)
       throw conflict ?? mapDbError(error)
     }
-    planned.push({ id: t.id, at })
+    planned.push({ id: t.id, at, accountId: t.social_account_id })
   }
   const newVersion = await transition(
     postId,
@@ -308,7 +309,7 @@ export async function schedulePost(viewer: Viewer, postId: string, input: Schedu
   await admin.from('posts').update({ scheduled_for: when.toISOString() }).eq('id', postId)
   for (const p of planned) {
     try {
-      await enqueueTargetScheduled(p.id, p.at, newVersion)
+      await enqueueTargetScheduled(p.id, p.at, newVersion, p.accountId)
     } catch (error) {
       logger.error('schedule_enqueue_failed', { postId, targetId: p.id, error })
       throw error
@@ -335,7 +336,7 @@ async function unscheduleTargets(postId: string): Promise<void> {
     .from('post_targets')
     .select('id, status')
     .eq('post_id', postId)
-    .in('status', ['scheduled', 'paused', 'needs_reauth'])
+    .in('status', ['scheduled', 'paused', 'needs_reauth', 'publishing'])
   for (const t of targets ?? []) await enqueueTargetUnscheduled(t.id)
 }
 
@@ -360,7 +361,7 @@ export async function resumePost(viewer: Viewer, postId: string, version: number
   const admin = createSupabaseAdminClient()
   const { data: targets } = await admin
     .from('post_targets')
-    .select('id, scheduled_at, status')
+    .select('id, scheduled_at, status, social_account_id')
     .eq('post_id', postId)
     .eq('status', 'paused')
   const when = post.scheduled_for ? new Date(post.scheduled_for) : null
@@ -372,7 +373,7 @@ export async function resumePost(viewer: Viewer, postId: string, version: number
   const newVersion = await transition(postId, 'scheduled', version, viewer.user.id, 'nastavljeno')
   for (const t of targets ?? []) {
     await admin.from('post_targets').update({ status: 'scheduled' }).eq('id', t.id)
-    await enqueueTargetScheduled(t.id, t.scheduled_at ?? when.toISOString(), newVersion)
+    await enqueueTargetScheduled(t.id, t.scheduled_at ?? when.toISOString(), newVersion, t.social_account_id)
   }
   return getPostView(viewer, postId)
 }

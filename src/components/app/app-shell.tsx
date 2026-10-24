@@ -14,6 +14,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 
 import { AutoSubmitSelect } from '@/components/app/auto-submit-select'
+import { NotificationsBell } from '@/components/app/notifications-bell'
 import { CurrentPathInput, NavLink } from '@/components/app/nav-link'
 import { Badge } from '@/components/ui/badge'
 import { signOutAction, switchBrandAction, switchWorkspaceAction } from '@/lib/auth/actions'
@@ -53,9 +54,12 @@ export function AppShell({
   return (
     <div className="flex min-h-full flex-col md:flex-row">
       <aside className="flex w-full flex-col gap-4 border-b bg-sidebar p-4 md:min-h-screen md:w-64 md:border-r md:border-b-0">
-        <Link href="/app" className="text-lg font-semibold tracking-tight">
-          Sova
-        </Link>
+        <div className="flex items-center justify-between">
+          <Link href="/app" className="text-lg font-semibold tracking-tight">
+            Sova
+          </Link>
+          <NotificationsBell workspaceId={current?.workspaceId ?? null} />
+        </div>
 
         {current ? (
           <div className="space-y-2">

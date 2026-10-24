@@ -1127,7 +1127,7 @@ approved → scheduled, draft (izmena posle odobrenja vraća na in_review preko 
 rejected → draft
 scheduled → publishing, paused, canceled, draft (otkazano zakazivanje)
 paused → scheduled, canceled
-publishing → published, failed, partially_published
+publishing → published, failed, partially_published, scheduled (servis: svi targeti ponovo čekaju, D-051)
 failed → scheduled (retry), draft, canceled
 partially_published → published (preostali targeti uspeli), failed
 published → (terminal; brisanje samo meko)
@@ -1219,7 +1219,13 @@ Faza 8a (24.10.2026), bez nove migracije:
 Faza 9a (24.10.2026), bez nove migracije:
 
 - `posts.version` raste pri svakoj izmeni sadržaja (servis, `eq('version', expected)`) i pri svakom prelazu (`transition_post`); `post_versions.snapshot` nosi sadržaj, targete i medije (upsert po `(post_id, version)`). Upis ide kroz service role posle provere uloge i `locked_at`; čitanje kroz RLS.
-- `post_targets.text_content = ''` znači „koristi master tekst”; `scheduled_at` i `status` menja servis (`pending → scheduled → paused/pending/canceled`), publisher (9b) radi `publishing → published/failed`.
+- `post_targets.text_content = ''` znači „koristi master tekst”; `scheduled_at` i `status` menja servis (`pending → scheduled → paused/pending/canceled`), publisher (9b) radi `publishing → published/failed/scheduled`.
 - `post_media.target_id` = medij samo za taj nalog, `null` = za sve; redosled u `sort_order`.
 - `approvals` sa `decision = null` je zahtev (reminder cron u 9b), `decision` upisuje `decide_post`; `approval_links.use_count` raste po odluci klijenta; `post_comments.author_name` + `approval_link_id` za komentare bez naloga.
 - `queue_slots.time_local` je u zoni brenda; konverzija u UTC radi `zonedToUtc` (Intl, bez biblioteke).
+
+Faza 9b (24.10.2026): jedina promena šeme je red `('post', 'publishing', 'scheduled', true)` u `status_transitions` (migracija izmenjena u mestu, `db:reset`).
+
+- `post_targets`: publisher pri zaključavanju piše `attempt_count`, `last_attempt_at`, `inngest_run_id`; `last_error_code` nosi i servisne kodove (`WATCHDOG_RESENT`, `QUOTA_EXCEEDED`, `MEDIA_MISSING`, `ASYNC_TIMEOUT`, `NO_EXTERNAL_ID`, `BRAND_PAUSED`, `ACCOUNT_INACTIVE`, `INTERNAL`); `publish_latency_ms` = objavljeno − termin; `assisted`, `assisted_done_at` i `permalink` kod ručnog objavljivanja.
+- `publish_attempts`: jedan red po završenom pokušaju (append-only, pa se upisuje tek po ishodu), `outcome` success/retryable_error/permanent_error, `response_excerpt` nosi ID i link ili pending kontejner.
+- `notification_preferences`: red postoji samo kad korisnik promeni podrazumevano iz `src/config/notifications.ts`; `notifications.data` nosi `link`, `postId`, `targetId` (dedupe alarma watchdog-a kroz `contains`).

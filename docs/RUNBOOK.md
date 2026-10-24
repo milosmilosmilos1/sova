@@ -31,9 +31,9 @@ Zamke:
 
 ```
 npm run lint && npm run typecheck
-npm run test            # Vitest unit (100)
+npm run test            # Vitest unit (107)
 npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (24); pravi i briše test korisnike
-npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva i Meta Graph kroz MSW (54)
+npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva i Meta Graph kroz MSW (66)
 npm run test:e2e        # Playwright kroz Mailpit (5); traži pokrenut dev server
 npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs 25   # živi crawler bez baze i AI-ja
 npm run build           # produkcijski build
@@ -60,7 +60,10 @@ Faza 16. Vercel: `main` → Production, PR → Preview. Checklista u ARCHITECTUR
 
 ## 6. Incidenti
 
-- **Objave kasne**: Inngest dashboard (zaostali run-ovi), `select count(*) from post_targets where status='scheduled' and scheduled_at < now() - interval '3 minutes'`, logovi watchdog-a; ručni retry iz admin monitora (faza 13).
+- **Objave kasne**: `publish-watchdog` (cron 5 min) sam ponovo šalje događaj za target koji kasni > 3 min (`last_error_code = WATCHDOG_RESENT`, najviše jednom u 10 min) i posle 15 min šalje alarm vlasnicima; proveri `select id, status, scheduled_at, last_attempt_at, attempt_count, last_error_code from post_targets where status in ('scheduled','publishing') and scheduled_at < now() - interval '3 minutes'`, Inngest dashboard (run `publish-target` po `targetId`) i log `publish_watchdog_alarm`. Ručni nastavak: dugme „Pokušaj ponovo” na objavi (`failed`/`needs_reauth`).
+- **Target zaglavljen u `publishing`**: watchdog ga posle 30 min bez pokušaja vraća u `scheduled` i ponovo šalje događaj; publisher pre novog slanja proverava kod mreže da li je objava već prošla (`findExistingPost`). Ručno (service role): `update post_targets set status='scheduled' where id='…'` pa dugme „Pokušaj ponovo”.
+- **Mreža odbija objave masovno (kvota, 5xx)**: `select error_code, count(*) from publish_attempts where started_at > now() - interval '1 hour' group by 1`; kvota pomera termin za 24 h (obaveštenje `post_rescheduled`), 5xx troši 3 pokušaja (1/5/15 min) pa `failed`.
+- **Asistirani targeti stoje danima**: `select t.id, t.post_id, a.name from post_targets t join social_accounts a on a.id = t.social_account_id where t.status = 'assisted_pending'`; podsetnik stiže sa fazom 11.
 - **Mreža vraća 401 masovno**: isključi feature flag `platform.<mreža>`, banner korisnicima, proveri promenu API verzije (`META_GRAPH_VERSION` u env-u; promena bez deploya koda).
 - **Nalozi prelaze u `needs_reauth`**: `select platform, status, status_reason, last_error, refresh_token_expires_at from social_accounts where status <> 'active'`; Meta korisnički token traje 60 dana i `social-token-refresh` ga produžava dnevno; ako je korisnik promenio lozinku ili uklonio aplikaciju, ponovo povezuje iz `/app/accounts`.
 - **Meta webhook ne prolazi**: `signed_request` se proverava `META_APP_SECRET`-om iste aplikacije; pogrešna tajna daje 403. Data deletion mora da vrati čist JSON `{url, confirmation_code}` (ruta to radi mimo `ok/data` omotača).

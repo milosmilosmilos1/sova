@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
 import { CanvaCard } from '@/components/app/canva-card'
+import { NotificationPrefsCard } from '@/components/app/notification-prefs-card'
 import { CreateBrandForm, ProfileForm, WorkspaceForm } from '@/components/app/settings-forms'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,7 @@ import { getViewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
 import { listBrands } from '@/services/brands'
 import { getWorkspacePlan } from '@/services/plans'
+import { countScheduledPosts } from '@/services/posts/publisher'
 
 export const metadata: Metadata = { title: 'Podešavanja' }
 
@@ -26,6 +28,10 @@ export default async function SettingsPage({ searchParams }: PageProps<'/app/set
     listBrands(viewer, current.workspaceId),
     getWorkspacePlan(current.workspaceId),
   ])
+  const scheduledCounts = await countScheduledPosts(
+    viewer,
+    brands.map((b) => b.id),
+  )
   const isAdmin = ADMIN_ROLES.includes(current.role)
   const canEdit = EDIT_ROLES.includes(current.role)
 
@@ -76,6 +82,8 @@ export default async function SettingsPage({ searchParams }: PageProps<'/app/set
         </CardContent>
       </Card>
 
+      <NotificationPrefsCard workspaceId={current.workspaceId} />
+
       <Card>
         <CardHeader>
           <CardTitle>Brendovi</CardTitle>
@@ -89,6 +97,9 @@ export default async function SettingsPage({ searchParams }: PageProps<'/app/set
                   <div className="font-medium">{b.name}</div>
                   <div className="text-xs text-muted-foreground">
                     {b.website_url ?? 'bez sajta'} · {b.content_locale} · {b.timezone}
+                    {scheduledCounts[b.id]
+                      ? ` · ${scheduledCounts[b.id]} zakazanih objava (arhiviranje ih otkazuje)`
+                      : ''}
                   </div>
                 </div>
                 {isAdmin && brands.length > 1 ? (
