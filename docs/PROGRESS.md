@@ -86,6 +86,13 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - **Testovi**: 2 unit (signed_request, mapiranje Graph grešaka) i 8 integracionih sa MSW mockom Graph API-ja (connect → 302 sa scope-ovima i state-om, 404 za nepodržanu mrežu; callback → razmena koda, dugotrajan token, 3 naloga na čekanju, ponovljen state 400; izbor aktivira 2 i briše 1, IG asistiran kad je flag isključen, uvoz zakazan, ponovni izbor 404; uvoz istorije idempotentan, sinhronizacija nevidljivog naloga → `disabled`; provider objavljuje tekst/sliku/karusel na stranicu i kontejner na Instagram sa permalinkom, pending ručka i kasniji publish, odbijen medij, validacija, metrike objave i naloga, brisanje; osvežavanje tokena obnavlja Page token i `needs_reauth` posle isteka; webhook-ovi sa potpisom; prekid veze briše istoriju). Publisher koji ove metode poziva po rasporedu stiže u 9b.
 - Napomena: Meta app, test stranica i App Review još ne postoje (INTEGRATIONS 14), pa pravi Graph pozivi nisu provereni; mock prati dokumentaciju pročitanu 24.10.2026 (v26.0, token exchange, content publishing, data deletion).
 
+## Pregled uživo (lokalno)
+
+- Aplikacija: http://localhost:3001 (posle `npm run dev`); pozadinski poslovi traže `npm run inngest:dev` (http://localhost:8288).
+- `npm run demo:seed` pravi demo nalog sa primerima podataka i ispisuje email i lozinku; detalji u RUNBOOK 1.
+- Lokalni mejlovi idu u Mailpit: http://localhost:54324.
+- Provereno 24.10.2026 u Chromium-u: početna, Inbox, Objave, detalj objave, Kalendar, Strategija, Analitika, Autopilot, Obaveštenja, Mreže i Podešavanja rade bez grešaka u konzoli i API odgovorima. Usput ispravljeno: legenda kalendara je prikazivala interne nazive statusa, horizonti snimaka u analitici nisu bili poređani, editor nije prikazivao zašto je Autopilot vratio nacrt (sada prikazuje, a izveštaj se briše čim se tekst promeni).
+
 ## Faza 10c — šta je urađeno
 
 - **Nivoi** (brif 9.2, `src/lib/autopilot/rules.ts`): 0 ručno, 1 kopilot (nedeljni nacrti idu na odobrenje), 2 autopilot sa odobrenjem (Sova sama pravi strategiju; neodobrene posle roka se preskaču ili objavljuju po podešavanju), 3 pun autopilot (zakazuje bez odobrenja samo na izabranim nalozima; traži flag `autopilot_level3`, naziv brenda kao potvrdu i izbor naloga; svaki drugi nivo ga isključuje).

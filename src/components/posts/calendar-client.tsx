@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import type { ApiResponse } from '@/lib/api/response'
+import { statusLabel, type PostStatus } from '@/lib/posts/state-machine'
 
 interface Item {
   postId: string
@@ -182,7 +183,7 @@ export function CalendarClient({
       <div className="flex flex-wrap gap-2 text-xs">
         {Object.entries(STATUS_COLOR).map(([s, cls]) => (
           <Badge key={s} variant="outline" className={cls}>
-            {s}
+            {statusLabel(s as PostStatus)}
           </Badge>
         ))}
       </div>

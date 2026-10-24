@@ -19,6 +19,8 @@ Vrednosti za `.env.local` lokalnog Supabase-a: `npx supabase status -o env` (ANO
 
 Provera: http://localhost:3001/api/health vraća `status: ok`; `database: ok`.
 
+Demo nalog za pregled ekrana: `npm run demo:seed` pravi `demo@sova.local` (lozinka iz `DEMO_PASSWORD` ili nasumična, ispisuje se samo u konzoli), radni prostor „Sova demo” sa lažnim Facebook i Instagram nalogom (asistirano objavljivanje, ništa ne ide na prave mreže), aktivnom strategijom, 20 objavljenih objava sa metrikama, nacrtima Autopilota, uvidima, predlozima i obaveštenjima. Ponovno pokretanje briše prethodni demo. Skripta odbija Supabase URL koji nije localhost. Lokalni mejlovi (potvrda registracije, pozivnice) stižu u Mailpit na http://localhost:54324, ne u pravi sandučić. `npm run db:reset` briše i demo i sve lokalne naloge.
+
 Zamke:
 
 - Stari Supabase kontejneri drugog projekta na istim portovima: `docker ps -a | grep supabase`, pa `docker rm -f` i `docker volume rm` pre `db:start`.

@@ -32,6 +32,9 @@ import type { Database } from '@/types/database'
  */
 type Client = SupabaseClient<Database>
 
+/** redosled horizonata u prikazu (od najranijeg snimka) */
+const HORIZON_ORDER: Horizon[] = ['1h', '24h', '7d', '30d', 'adhoc']
+
 export interface AccountLite {
   id: string
   platform: SocialPlatform
@@ -339,7 +342,9 @@ export async function listPostMetrics(
       engagement,
       engagementRate: s?.engagementRate ?? null,
       horizon: s?.horizon ?? 'adhoc',
-      horizonsCaptured: [...new Set(horizons.get(t.targetId) ?? [])],
+      horizonsCaptured: [...new Set(horizons.get(t.targetId) ?? [])].sort(
+        (a, b) => HORIZON_ORDER.indexOf(a) - HORIZON_ORDER.indexOf(b),
+      ),
       comments: s?.comments ?? null,
       reactions: s?.reactions ?? null,
       shares: s?.shares ?? null,

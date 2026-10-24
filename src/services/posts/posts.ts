@@ -516,7 +516,11 @@ export async function updatePost(viewer: Viewer, postId: string, input: UpdatePo
   const admin = createSupabaseAdminClient()
   const patch: Database['public']['Tables']['posts']['Update'] = { version: post.version + 1 }
   if (input.title !== undefined) patch.title = input.title
-  if (input.masterText !== undefined) patch.master_text = input.masterText
+  if (input.masterText !== undefined) {
+    patch.master_text = input.masterText
+    // izveštaj kontrole kvaliteta Autopilota važi samo za tekst koji je proveren
+    if (input.masterText !== post.master_text) patch.qa_report = null
+  }
   if (input.firstComment !== undefined) patch.first_comment = input.firstComment
   if (input.linkUrl !== undefined) patch.link_url = input.linkUrl
   if (input.utm !== undefined) patch.utm = (input.utm as Json | null) ?? null

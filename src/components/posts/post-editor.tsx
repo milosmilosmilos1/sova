@@ -59,6 +59,8 @@ interface PostView {
   linkUrl: string | null
   scheduledFor: string | null
   lockedAt: string | null
+  source?: string
+  qaReport?: { passed: boolean; checks: Array<{ name: string; ok: boolean; message: string }> } | null
   targets: Target[]
   media: Array<{
     mediaAssetId: string
@@ -408,6 +410,7 @@ function EditorForm({
             Objava se upravo objavljuje i ne može da se menja.
           </p>
         ) : null}
+        {p?.qaReport?.checks?.length ? <QaReportBox report={p.qaReport} /> : null}
 
         <Card>
           <CardHeader>
@@ -916,6 +919,38 @@ function TargetCard({
           ) : null}
         </div>
       ) : null}
+    </div>
+  )
+}
+
+/** Rezultat kontrole kvaliteta Autopilota (faza 10c): zašto je nacrt vraćen ili da je prošao. */
+function QaReportBox({
+  report,
+}: {
+  report: { passed: boolean; checks: Array<{ name: string; ok: boolean; message: string }> }
+}) {
+  const failed = report.checks.filter((c) => !c.ok)
+  if (report.passed) {
+    return (
+      <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
+        Autopilot: nacrt je prošao kontrolu kvaliteta (dužina, zabranjene reči, pismo, sličnost, brojke iz
+        profila, vizual).
+      </p>
+    )
+  }
+  return (
+    <div
+      role="status"
+      className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"
+    >
+      <p className="font-medium">
+        Autopilot je vratio nacrt na doradu. Ispravite tekst pa ga pošaljite na odobrenje:
+      </p>
+      <ul className="mt-1 list-disc space-y-0.5 pl-5">
+        {failed.map((c) => (
+          <li key={c.name}>{c.message}</li>
+        ))}
+      </ul>
     </div>
   )
 }

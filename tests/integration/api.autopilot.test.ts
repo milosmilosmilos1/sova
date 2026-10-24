@@ -19,6 +19,7 @@ import { POST as runPost } from '@/app/api/autopilot/[brandId]/run/route'
 import { POST as acceptPost } from '@/app/api/suggestions/[id]/accept/route'
 import { POST as dismissPost } from '@/app/api/suggestions/[id]/dismiss/route'
 import { GET as suggestionsGet } from '@/app/api/suggestions/route'
+import { PATCH as postPatch } from '@/app/api/posts/[id]/route'
 import { POST as workspacesPost } from '@/app/api/workspaces/route'
 import { nextWeekRange } from '@/lib/autopilot/rules'
 import { setFeatureFlagForTests } from '@/lib/flags'
@@ -208,7 +209,15 @@ afterEach(() => {
 
 afterAll(async () => {
   setFeatureFlagForTests('autopilot_level3', null)
-  if (holidayName) await admin.from('holidays').delete().eq('name', holidayName)
+  if (holidayName) {
+    // praznik iz testa pravi predloge svim brendovima sa nivoom ≥ 1 u lokalnoj bazi (npr. demo nalog): ukloni ih
+    await admin
+      .from('suggestions')
+      .delete()
+      .eq('source', 'holiday')
+      .contains('payload', { name: holidayName })
+    await admin.from('holidays').delete().eq('name', holidayName)
+  }
   geminiServer.close()
   await deleteTestUser(editor)
   await deleteTestUser(owner)
@@ -492,7 +501,7 @@ describe('Autopilot: nedeljni prolaz', () => {
     expect(r).toMatchObject({ planned: 3, submitted: 2, returned: 1 })
     const { data: returned } = await admin
       .from('posts')
-      .select('status, qa_report')
+      .select('id, version, status, qa_report')
       .eq('strategy_id', strategyId)
       .eq('status', 'draft')
       .eq('source', 'autopilot')
@@ -506,6 +515,17 @@ describe('Autopilot: nedeljni prolaz', () => {
       .eq('user_id', owner.id)
       .eq('type', 'autopilot_returned')
     expect(notes!.length).toBe(1)
+
+    // korisnik ispravi tekst: stari izveštaj više ne važi
+    const fixed = returned![0]!
+    const edit = await call<{ qaReport: unknown; version: number }>(postPatch, `/api/posts/${fixed.id}`, {
+      token: owner.token,
+      method: 'PATCH',
+      params: { id: fixed.id },
+      body: { version: fixed.version, masterText: 'Servis klime na adresi, zakažite termin porukom.' },
+    })
+    expect(edit.status).toBe(200)
+    expect(edit.json.data!.qaReport).toBeNull()
   })
 
   it('nivo 3: nalog sa liste se zakazuje bez odobrenja, ostali idu na odobrenje', async () => {

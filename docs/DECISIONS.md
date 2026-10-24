@@ -361,3 +361,8 @@ Razlog: brif 9.2 („izričito, po nalogu, uz dodatnu potvrdu, isključuje se je
 
 Odluka: za Instagram i Pinterest Autopilot pravi vizual iz šablona (boje, fontovi i logo iz profila brenda, naslov iz hook-a, JPEG 1:1, 2 tokena) bez Unsplash pretrage i vision rangiranja; AI slike i fotografije iz biblioteke korisnik dodaje ručno.
 Razlog: deterministično, jeftino i bez spoljnog ključa; Instagram traži sliku pa bez vizuala QA vraća nacrt. Unsplash za Autopilot ostaje opcija u podešavanjima kad bude ključ.
+
+## D-069 · 24.10.2026 · usvojeno · Demo nalog samo lokalno, lozinka se ne čuva
+
+Odluka: `scripts/demo-seed.mjs` (`npm run demo:seed`) pravi demo korisnika i podatke direktno kroz service role samo kad je Supabase URL localhost; lozinka dolazi iz `DEMO_PASSWORD` ili se generiše i ispisuje u konzoli, nikad u repo ili dokumentaciju. Nalozi mreža su lažni sa `assisted_only = true`, pa publisher nikad ne zove prave mreže; generacije Autopilota u demou su upisane bez ledger-a samo da ekran budžeta ima šta da prikaže.
+Razlog: vlasnik treba da vidi ekrane sa podacima pre nego što stignu Gemini i Meta ključevi; bezbednosna pravila iz brifa (bez tajni u kodu) važe i za alate.
