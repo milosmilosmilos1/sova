@@ -214,3 +214,45 @@ export async function storeGeneratedImage(input: {
   if (error || !data) throw mapDbError(error, 'Zapis o generisanoj slici nije sačuvan.')
   return data
 }
+
+/** Biblioteka medija brenda (najnovije prve) sa potpisanim URL-ovima za pregled. */
+export async function listMedia(
+  viewer: Viewer,
+  brandId: string,
+  limit = 40,
+): Promise<
+  Array<{
+    id: string
+    url: string
+    width: number | null
+    height: number | null
+    mimeType: string
+    altText: string | null
+    source: string
+    createdAt: string
+  }>
+> {
+  const { data: brand } = await viewer.supabase.from('brands').select('id').eq('id', brandId).maybeSingle()
+  if (!brand) throw new ApiError('NOT_FOUND', 'Brend ne postoji ili nemate pristup.')
+  const { data, error } = await viewer.supabase
+    .from('media_assets')
+    .select('id, bucket, storage_path, width, height, mime_type, alt_text, source, created_at')
+    .eq('brand_id', brandId)
+    .eq('kind', 'image')
+    .is('deleted_at', null)
+    .order('created_at', { ascending: false })
+    .limit(limit)
+  if (error) throw mapDbError(error)
+  return Promise.all(
+    (data ?? []).map(async (m) => ({
+      id: m.id,
+      url: await signedUrl(m),
+      width: m.width,
+      height: m.height,
+      mimeType: m.mime_type,
+      altText: m.alt_text,
+      source: m.source,
+      createdAt: m.created_at,
+    })),
+  )
+}

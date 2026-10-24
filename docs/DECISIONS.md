@@ -246,3 +246,23 @@ Razlog: brif 7 „asistirano objavljivanje kao fallback”; omogućava rad pre A
 
 Odluka: `POST /api/webhooks/meta` (deauthorize) i `POST /api/webhooks/meta/data-deletion` proveravaju `signed_request` HMAC-SHA256 sa app secret-om; deauthorize prebacuje sve naloge tog Meta korisnika (`metadata.metaUserId`) u `revoked`, data deletion uz to pravi `account_deletion_requests` (source `meta_callback`) i vraća `{ url: /data-deletion?code=…, confirmation_code }` kao čist JSON. Prekid veze iz aplikacije opoziva dozvole (`DELETE /{user}/permissions`) samo kad je to poslednji nalog tog korisničkog tokena u brendu. Dnevni `social-token-refresh` produžava korisnički token kad ističe za < 7 dana i obnavlja Page tokene; `invalid`/`190` → `needs_reauth`.
 Razlog: obavezni callback-ovi za App Review (INTEGRATIONS 3) i N1/N2 iz EDGE_CASES.
+
+## D-046 · 24.10.2026 · usvojeno · State machine objava u tri sloja; radnje po ulozi; admin zakazuje bez odobravanja
+
+Odluka: TypeScript `src/lib/posts/state-machine.ts` (matrica + pravila uloga + `availableActions` za UI) → tabela `status_transitions` i trigger `posts_guard` → RPC `transition_post` sa `expected_version`. Radnje: editor piše, šalje na odobrenje, zakazuje tek odobrenu objavu; approver odlučuje; owner i admin zakazuju direktno iz nacrta (SCHEMA „draft → scheduled bez odobravanja”). Izmena sadržaja odobrene objave ili objave na odobravanju vraća je u nacrt (ponovno odobravanje). Brisanje je meko i samo za nacrt, odbijeno, otkazano ili neuspelo (admin).
+Razlog: brif 8 i 9 traže odobravanje i jasne uloge; tri sloja daju jednu istinu u bazi a brze poruke u aplikaciji.
+
+## D-047 · 24.10.2026 · usvojeno · `version` kao optimistic lock; svaki upis pravi `post_versions` snimak
+
+Odluka: `PATCH /api/posts/[id]` i svaka radnja nose `version`; neslaganje daje 409 sa `currentVersion` (K4). Servis piše kroz service role posle eksplicitne provere uloge i `locked_at` (RLS ostaje druga odbrana), zatim `post_versions.upsert(version)`. Targeti se sinhronizuju sa izabranim nalozima (objavljeni i u toku se ne diraju), mediji se prepisuju po redosledu.
+Razlog: dva člana istu objavu (K4) i istorija izmena bez posebnog audit sloja.
+
+## D-048 · 24.10.2026 · usvojeno · Zakazivanje: validacija po mreži, isti minut 409, događaj po targetu, „Objavi sada” = sledeći pun minut
+
+Odluka: `schedulePost` proverava vreme (prošlost → 400 sa hintom `publish_now`, najviše godinu dana), `validatePostContent` (dužina i hashtagovi iz `config/platforms.ts`, aktivan nalog, Meta `validatePost` za JPEG, odnos stranica, bar jedna slika na Instagramu), pa upisuje `scheduled_at` po targetu; UNIQUE indeks po minutu daje 409 sa predlogom pomeranja (K8) i vraća već zakazane targete u `pending`. Posle `transition_post` šalje `post/target.scheduled {targetId, scheduledAt, version}` po targetu; otkazivanje, pauza i uklanjanje šalju `post/target.unscheduled`. Publisher koji ih sluša stiže u 9b (do tada su događaji zabeleženi u Inngest-u bez funkcije).
+Razlog: ARCHITECTURE 3.3; zakazivanje i izmena termina rade isto bez obzira na mrežu.
+
+## D-049 · 24.10.2026 · usvojeno · Javni link za odobravanje: hash tokena, samo objave „na odobrenju”, odluka kroz isti RPC
+
+Odluka: `approval_links` čuva SHA-256 tokena (32 bajta base64url), rok (1–30 dana), `max_uses`, opoziv; link se pravi samo za objave u `in_review`. Javne rute `/api/public/approvals/[token]` (30/min po IP-u) daju tekst, medije (potpisani URL-ovi 24 h), platforme, komentare i odluke; odluka ide kroz `decide_post` sa `approval_link_id` i verzijom (zastarela → 409), komentar klijenta u `post_comments` sa `author_name`; autor dobija obaveštenje i email. Strana `/approve/[token]` je u javnoj grupi bez indeksiranja.
+Razlog: brif 8 (klijent bez naloga odobrava); ARCHITECTURE 5.2 (token samo kao hash).

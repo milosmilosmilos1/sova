@@ -1215,3 +1215,11 @@ Faza 8a (24.10.2026), bez nove migracije:
 - `oauth_states.provider = 'meta'` sa `brand_id`; `code_verifier_enc` je null (Facebook Login nema PKCE), `redirect_to` putanja posle povezivanja.
 - `historical_posts` se puni iz `fetchHistory` (upsert po `(social_account_id, external_id)`), `media` kao `[{url, type}]`, `metrics` `{likes, comments, shares?}`.
 - `account_deletion_requests.source = 'meta_callback'` sa `external_user_id` = app-scoped Meta ID.
+
+Faza 9a (24.10.2026), bez nove migracije:
+
+- `posts.version` raste pri svakoj izmeni sadržaja (servis, `eq('version', expected)`) i pri svakom prelazu (`transition_post`); `post_versions.snapshot` nosi sadržaj, targete i medije (upsert po `(post_id, version)`). Upis ide kroz service role posle provere uloge i `locked_at`; čitanje kroz RLS.
+- `post_targets.text_content = ''` znači „koristi master tekst”; `scheduled_at` i `status` menja servis (`pending → scheduled → paused/pending/canceled`), publisher (9b) radi `publishing → published/failed`.
+- `post_media.target_id` = medij samo za taj nalog, `null` = za sve; redosled u `sort_order`.
+- `approvals` sa `decision = null` je zahtev (reminder cron u 9b), `decision` upisuje `decide_post`; `approval_links.use_count` raste po odluci klijenta; `post_comments.author_name` + `approval_link_id` za komentare bez naloga.
+- `queue_slots.time_local` je u zoni brenda; konverzija u UTC radi `zonedToUtc` (Intl, bez biblioteke).

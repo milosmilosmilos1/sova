@@ -80,20 +80,20 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 
 ## Kalendar i objave
 
-| #   | Slučaj                                    | Ponašanje                                                                                        | Faza | Status |
-| --- | ----------------------------------------- | ------------------------------------------------------------------------------------------------ | ---- | ------ |
-| K1  | Zakazano u prošlosti                      | 400 sa ponudom „Objavi sada”                                                                     | 9a   | plan   |
-| K2  | Prelaz na letnje i zimsko vreme           | UTC u bazi; test za 29.3.2026 02:30 (ne postoji) i 25.10.2026 02:30 (dva puta) u Europe/Belgrade | 9a   | plan   |
-| K3  | Brisanje brenda sa zakazanim objavama     | Potvrda sa brojem objava; otkazivanje run-ova pre mekog brisanja                                 | 9b   | plan   |
-| K4  | Dva člana menjaju istu objavu             | `version` + 409 + prikaz razlika                                                                 | 9a   | plan   |
-| K5  | Izmena dok je `publishing`                | Trigger `POST_LOCKED`; UI prikazuje zaključano                                                   | 9b   | plan   |
-| K6  | Istekla pretplata                         | Zakazane ostaju; Autopilot i generisanje staju                                                   | 12   | plan   |
-| K7  | Promena vremenske zone brenda             | Ponuda da se svi budući termini pomere                                                           | 9a   | plan   |
-| K8  | Dve objave u istom minutu na istom nalogu | Parcijalni UNIQUE indeks → 409 sa predlogom termina                                              | 9a   | plan   |
-| K9  | Isti tekst ponovo na istom nalogu         | Upozorenje (mreže odbijaju duplikate)                                                            | 9a   | plan   |
-| K10 | Objava pomerena dok Inngest spava         | `post/target.unscheduled` otkazuje stari run, novi događaj pravi nov                             | 9b   | plan   |
-| K11 | Watchdog nalazi target koji kasni         | Ponovno slanje događaja; alarm ako kasni > 15 min                                                | 9b   | plan   |
-| K12 | Parcijalan uspeh (2 od 3 mreže)           | Objava `partially_published`, neuspeli targeti sa razlogom i retry dugmetom                      | 9b   | plan   |
+| #   | Slučaj                                    | Ponašanje                                                                                                    | Faza | Status |
+| --- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ---- | ------ |
+| K1  | Zakazano u prošlosti                      | 400 sa ponudom „Objavi sada”                                                                                 | 9a   | test   |
+| K2  | Prelaz na letnje i zimsko vreme           | UTC u bazi; test za 29.3.2026 02:30 (ne postoji) i 25.10.2026 02:30 (dva puta) u Europe/Belgrade             | 9a   | kod    |
+| K3  | Brisanje brenda sa zakazanim objavama     | Potvrda sa brojem objava; otkazivanje run-ova pre mekog brisanja                                             | 9b   | plan   |
+| K4  | Dva člana menjaju istu objavu             | `version` + 409 + prikaz razlika                                                                             | 9a   | test   |
+| K5  | Izmena dok je `publishing`                | Trigger `POST_LOCKED`; UI prikazuje zaključano                                                               | 9b   | plan   |
+| K6  | Istekla pretplata                         | Zakazane ostaju; Autopilot i generisanje staju                                                               | 12   | plan   |
+| K7  | Promena vremenske zone brenda             | Ponuda da se svi budući termini pomere                                                                       | 9a   | plan   |
+| K8  | Dve objave u istom minutu na istom nalogu | Parcijalni UNIQUE indeks → 409 sa predlogom termina                                                          | 9a   | test   |
+| K9  | Isti tekst ponovo na istom nalogu         | Upozorenje (mreže odbijaju duplikate); provera kod mreže (findExistingPost) stiže u 9b, UI upozorenje uz AI9 | 9a   | plan   |
+| K10 | Objava pomerena dok Inngest spava         | `post/target.unscheduled` otkazuje stari run, novi događaj pravi nov                                         | 9b   | plan   |
+| K11 | Watchdog nalazi target koji kasni         | Ponovno slanje događaja; alarm ako kasni > 15 min                                                            | 9b   | plan   |
+| K12 | Parcijalan uspeh (2 od 3 mreže)           | Objava `partially_published`, neuspeli targeti sa razlogom i retry dugmetom                                  | 9b   | plan   |
 
 ## Admin
 

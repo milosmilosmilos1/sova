@@ -4,25 +4,26 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 
 ## Stanje (24.10.2026)
 
-| Faza                                     | Status      | Napomena                                                                                                                     |
-| ---------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| 1 Plan i arhitektura                     | gotovo      | odobreno 23.10.2026, odgovori u D-013                                                                                        |
-| 2 Setup projekta                         | gotovo      | lokalno radi, health zelen, build prolazi, 25 unit testova, CI workflow                                                      |
-| 3 Baza i bezbednost                      | gotovo      | 14 migracija, 53 tabele, RLS, RPC za tokene, trigeri, storage, seed; 24/24 testova baze                                      |
-| 4 Auth i workspace                       | gotovo      | registracija, prijava, magic link, Google (uz ključeve), reset, MFA, workspace, tim, admin gate; 10 integracionih testova    |
-| 5 Token engine i AI jezgro               | gotovo      | tokeni, idempotentnost, Gemini sloj, Studio; pravi pozivi čekaju GEMINI_API_KEY                                              |
-| 6 Brand Brain                            | gotovo      | crawler + profil + RAG + nedeljna provera; živi smoke nad tangerineseo.rs prošao; bez ključa radi heuristički                |
-| 7 Vizuelni pipeline                      | gotovo      | Unsplash + vision rangiranje, 4 šablona (Satori), Canva Connect (PKCE, dizajn, export); čeka: UNSPLASH_ACCESS_KEY, Canva app |
-| 8a Facebook + Instagram                  | gotovo      | OAuth, izbor naloga, tokeni, uvoz istorije, osvežavanje, webhook-ovi, provider za objave; čeka: Meta app i App Review        |
-| 8b–8d Ostale mreže                       | sledeće     | LinkedIn, TikTok, GBP, Pinterest, YouTube, X; treba: app-ovi i prijave iz INTEGRATIONS 14                                    |
-| 9a–9b Objave, kalendar, publisher        | nije počelo |                                                                                                                              |
-| 10a–10c Strategija, analitika, Autopilot | nije počelo |                                                                                                                              |
-| 11 Edge case-ovi                         | nije počelo |                                                                                                                              |
-| 12 Plaćanje                              | nije počelo | Stripe nalog vlasnik pravi; preskače se do tada (D-001)                                                                      |
-| 13a–13b Admin                            | nije počelo | gate i placeholder postoje                                                                                                   |
-| 14a–14c Dizajn                           | nije počelo | treba: screenshot Dribbble reference ako link ne radi                                                                        |
-| 15 Testiranje                            | nije počelo | Playwright + Chromium instalirani; `npm run test:e2e` (5 testova) prolazi                                                    |
-| 16 Deploy                                | nije počelo | treba: Vercel, Supabase staging/prod, domen sovaai.rs, Upstash, Inngest, Sentry                                              |
+| Faza                                     | Status      | Napomena                                                                                                                      |
+| ---------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| 1 Plan i arhitektura                     | gotovo      | odobreno 23.10.2026, odgovori u D-013                                                                                         |
+| 2 Setup projekta                         | gotovo      | lokalno radi, health zelen, build prolazi, 25 unit testova, CI workflow                                                       |
+| 3 Baza i bezbednost                      | gotovo      | 14 migracija, 53 tabele, RLS, RPC za tokene, trigeri, storage, seed; 24/24 testova baze                                       |
+| 4 Auth i workspace                       | gotovo      | registracija, prijava, magic link, Google (uz ključeve), reset, MFA, workspace, tim, admin gate; 10 integracionih testova     |
+| 5 Token engine i AI jezgro               | gotovo      | tokeni, idempotentnost, Gemini sloj, Studio; pravi pozivi čekaju GEMINI_API_KEY                                               |
+| 6 Brand Brain                            | gotovo      | crawler + profil + RAG + nedeljna provera; živi smoke nad tangerineseo.rs prošao; bez ključa radi heuristički                 |
+| 7 Vizuelni pipeline                      | gotovo      | Unsplash + vision rangiranje, 4 šablona (Satori), Canva Connect (PKCE, dizajn, export); čeka: UNSPLASH_ACCESS_KEY, Canva app  |
+| 8a Facebook + Instagram                  | gotovo      | OAuth, izbor naloga, tokeni, uvoz istorije, osvežavanje, webhook-ovi, provider za objave; čeka: Meta app i App Review         |
+| 8b–8d Ostale mreže                       | sledeće     | LinkedIn, TikTok, GBP, Pinterest, YouTube, X; treba: app-ovi i prijave iz INTEGRATIONS 14                                     |
+| 9a Objave, odobravanje, kalendar         | gotovo      | state machine, composer backend, verzije, javni link, komentari, kalendar, red objava; UI /app/posts, /app/calendar, /approve |
+| 9b Publisher                             | sledeće     | Inngest publish-target sa sleepUntil, watchdog, notifikacije, asistirano objavljivanje                                        |
+| 10a–10c Strategija, analitika, Autopilot | nije počelo |                                                                                                                               |
+| 11 Edge case-ovi                         | nije počelo |                                                                                                                               |
+| 12 Plaćanje                              | nije počelo | Stripe nalog vlasnik pravi; preskače se do tada (D-001)                                                                       |
+| 13a–13b Admin                            | nije počelo | gate i placeholder postoje                                                                                                    |
+| 14a–14c Dizajn                           | nije počelo | treba: screenshot Dribbble reference ako link ne radi                                                                         |
+| 15 Testiranje                            | nije počelo | Playwright + Chromium instalirani; `npm run test:e2e` (5 testova) prolazi                                                     |
+| 16 Deploy                                | nije počelo | treba: Vercel, Supabase staging/prod, domen sovaai.rs, Upstash, Inngest, Sentry                                               |
 
 ## Faza 4 — šta je urađeno
 
@@ -82,6 +83,27 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - **Env**: `META_GRAPH_VERSION` (default v26.0), `META_LOGIN_CONFIG_ID` (opciono). Feature flagovi `platform.facebook` i `platform.instagram` upravljaju povezivanjem i `assisted_only` oznakom.
 - **Testovi**: 2 unit (signed_request, mapiranje Graph grešaka) i 8 integracionih sa MSW mockom Graph API-ja (connect → 302 sa scope-ovima i state-om, 404 za nepodržanu mrežu; callback → razmena koda, dugotrajan token, 3 naloga na čekanju, ponovljen state 400; izbor aktivira 2 i briše 1, IG asistiran kad je flag isključen, uvoz zakazan, ponovni izbor 404; uvoz istorije idempotentan, sinhronizacija nevidljivog naloga → `disabled`; provider objavljuje tekst/sliku/karusel na stranicu i kontejner na Instagram sa permalinkom, pending ručka i kasniji publish, odbijen medij, validacija, metrike objave i naloga, brisanje; osvežavanje tokena obnavlja Page token i `needs_reauth` posle isteka; webhook-ovi sa potpisom; prekid veze briše istoriju). Publisher koji ove metode poziva po rasporedu stiže u 9b.
 - Napomena: Meta app, test stranica i App Review još ne postoje (INTEGRATIONS 14), pa pravi Graph pozivi nisu provereni; mock prati dokumentaciju pročitanu 24.10.2026 (v26.0, token exchange, content publishing, data deletion).
+
+## Faza 9a — šta je urađeno
+
+- **State machine** (`src/lib/posts/state-machine.ts`): matrica prelaza iz SCHEMA.md, `SERVICE_ONLY` prelazi, pravila radnji po ulozi (`checkAction`, `availableActions`), status targeta koji prati objavu, validacija vremena (prošlost → poruka sa „Objavi sada”, najviše godinu dana). Baza ostaje druga i treća odbrana (`status_transitions`, `posts_guard`, RPC `transition_post`).
+- **Objave** (`src/services/posts/posts.ts`): kreiranje nacrta sa targetima po nalogu (tekst po mreži ili master) i medijima iz biblioteke (po objavi ili po nalogu), pregled sa potpisanim URL-ovima i dostupnim radnjama, lista sa filterima i stranicama, izmena sa `version` (409 na zastarelu, odobrena/na odobrenju → nacrt), meko brisanje, dupliranje, istorija verzija (`post_versions` snimak pri svakoj izmeni).
+- **Tok odobravanja** (`workflow.ts`): slanje na odobrenje (validacija sadržaja po mreži, red u `approvals`, obaveštenje approverima + email), povlačenje, odluka (`decide_post` RPC; komentar obavezan za odbijanje i izmene; obaveštenje autoru), zakazivanje (validacija, isti minut po nalogu → 409, događaj `post/target.scheduled` po targetu), „Objavi sada” (sledeći pun minut), otkazivanje zakazivanja, pauza/nastavak (istekao termin → poruka za ponovno zakazivanje), otkazivanje, vraćanje u nacrt.
+- **Javni link** (`approval-links.ts`): token 32 bajta → SHA-256 u bazi, rok, broj upotreba, opoziv; javne rute za čitanje, odluku i komentar klijenta (30/min po IP-u); strana `/approve/[token]`.
+- **Komentari** (`comments.ts`), **kalendar** i **red objava** (`calendar.ts`: objave i targeti u opsegu do 62 dana, zona brenda u odgovoru; termini po nalogu i danu, sledeći slobodan termin u zoni brenda bez sudara sa zakazanim).
+- **Obaveštenja** (`src/services/notifications.ts`): redovi u `notifications` + email kroz Resend (`src/emails/notice.tsx`) kad je ključ podešen; primaoci po ulogama sa pristupom brendu.
+- **API rute**: `GET/POST /api/posts`, `GET/PATCH/DELETE /api/posts/[id]`, `POST /api/posts/[id]/{submit,withdraw,approve,reject,request-changes,schedule,publish-now,unschedule,pause,resume,cancel,restore,duplicate,validate}`, `GET/POST /api/posts/[id]/comments`, `GET /api/posts/[id]/versions`, `GET/POST /api/approval-links`, `DELETE /api/approval-links/[id]`, `GET/POST /api/public/approvals/[token]`, `GET /api/calendar`, `GET/POST /api/queue-slots` (+ `?next=1`), `DELETE /api/queue-slots/[id]`, `GET /api/media`.
+- **UI**: `/app/posts` (lista sa filterima po statusu), `/app/posts/new` i `/app/posts/[id]` (composer: naslov, master tekst, tekst po mreži, nalozi, biblioteka medija i upload, link, prvi komentar, termin u zoni brenda, radnje po ulozi, odluka sa komentarom, targeti, javni link, komentari, verzije), `/app/calendar` (mesečna mreža po zoni brenda, boje po statusu), `/approve/[token]` (klijent: pregled, odluka, komentar). Navigacija: Objave, Kalendar.
+- **Testovi**: 4 unit (state machine) i 8 integracionih (editor pravi nacrt sa dva targeta; 409 na zastarelu verziju i snimci; editor ne zakazuje iz nacrta i ne odobrava; slanje na odobrenje sa obaveštenjem; javni link samo za objave na odobrenju, odluka klijenta bez komentara 400, zastarela verzija 409, izmene vraćaju u nacrt sa komentarom, opoziv linka 404; zakazivanje u prošlost 400, u budućnost sa događajem, izmena zakazane 409; isti minut 409 (K8) uz vraćanje targeta; pauza, nastavak, otkazivanje zakazivanja, otkazivanje, vraćanje, brisanje po ulozi; kalendar; komentari i red objava sa sledećim slobodnim terminom ponedeljkom u 09:30 po Beogradu).
+- Napomena: događaji `post/target.scheduled` i `post/target.unscheduled` se šalju, a funkcija koja ih sluša (publisher sa `sleepUntil`, watchdog, asistirano objavljivanje) je faza 9b.
+
+## Kako da testiraš (faza 9a)
+
+1. `/app/accounts` mora da ima bar jedan aktivan nalog (ili ubaci red u `social_accounts` kao u testu) → `/app/posts/new`: tekst, nalozi, slika iz biblioteke (AI Studio ili Unsplash iz faze 7) → „Sačuvaj nacrt”.
+2. Kao editor: „Pošalji na odobrenje” (greške po mreži se ispisuju). Kao vlasnik: na strani objave kartica „Odluka” → Odobri / Traži izmene / Odbij; ili „Napravi link” → otvori `/approve/<token>` u privatnom prozoru i odluči kao klijent.
+3. „Zakaži” sa terminom u zoni brenda → status zakazano, target zakazan; isti minut na istom nalogu daje 409. „Pauziraj”, „Nastavi”, „Otkaži zakazivanje”. `/app/calendar` prikazuje termin.
+4. Inngest dev server beleži događaje `post/target.scheduled` (bez funkcije do 9b).
+5. `npm run test` (100), `npm run test:integration` (54), `npm run test:db` (24), `npm run test:e2e` (5).
 
 ## Kako da testiraš (faza 8a)
 

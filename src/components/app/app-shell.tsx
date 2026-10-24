@@ -1,4 +1,15 @@
-import { Brain, Home, LogOut, Settings, Share2, ShieldCheck, Sparkles, Users } from 'lucide-react'
+import {
+  Brain,
+  CalendarDays,
+  FileText,
+  Home,
+  LogOut,
+  Settings,
+  Share2,
+  ShieldCheck,
+  Sparkles,
+  Users,
+} from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
@@ -79,6 +90,14 @@ export function AppShell({
           <NavLink href="/app" exact>
             <Home className="size-4" aria-hidden />
             Početna
+          </NavLink>
+          <NavLink href="/app/posts">
+            <FileText className="size-4" aria-hidden />
+            Objave
+          </NavLink>
+          <NavLink href="/app/calendar">
+            <CalendarDays className="size-4" aria-hidden />
+            Kalendar
           </NavLink>
           <NavLink href="/app/studio">
             <Sparkles className="size-4" aria-hidden />

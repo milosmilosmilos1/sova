@@ -88,3 +88,32 @@ export async function enqueueHistoryImport(socialAccountId: string, brandId: str
     )
   }
 }
+
+/** Zakazivanje targeta: publisher (faza 9b) spava do termina; `version` razlikuje stare run-ove. */
+export async function enqueueTargetScheduled(
+  targetId: string,
+  scheduledAt: string,
+  version: number,
+): Promise<void> {
+  try {
+    await inngest.send(events.postTargetScheduled.create({ targetId, scheduledAt, version }))
+  } catch (error) {
+    logger.error('enqueue_target_scheduled_failed', { targetId, error })
+    throw new AiError(
+      'PROVIDER_ERROR',
+      process.env.NODE_ENV === 'development'
+        ? 'Pozadinski servis nije dostupan. Pokrenite `npm run inngest:dev` pa pokušajte ponovo.'
+        : 'Pozadinski servis trenutno nije dostupan. Pokušajte ponovo za minut.',
+      { retryable: true, cause: error },
+    )
+  }
+}
+
+/** Otkazivanje zakazanog run-a (cancelOn u publisheru); greška se samo loguje, status u bazi je izvor istine. */
+export async function enqueueTargetUnscheduled(targetId: string): Promise<void> {
+  try {
+    await inngest.send(events.postTargetUnscheduled.create({ targetId }))
+  } catch (error) {
+    logger.warn('enqueue_target_unscheduled_failed', { targetId, error })
+  }
+}
