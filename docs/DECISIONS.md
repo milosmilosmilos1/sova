@@ -316,3 +316,18 @@ Razlog: stubovi su dugoročna osovina sadržaja (analitika po stubu u 10b), a st
 
 Odluka: dve kolone umesto guranja u `goals`/`network_mix` JSON; migracija izmenjena u mestu (pre lansiranja, RUNBOOK 3) uz `db:reset` i `db:types`.
 Razlog: JSON polja imaju opisan oblik u SCHEMA.md i služe kalendaru; sažetak i pretpostavke su tekst za prikaz i izveštaj.
+
+## D-060 · 24.10.2026 · usvojeno · Merodavan snimak metrika = najduži horizont; angažovanje = reakcije + komentari + deljenja + čuvanja
+
+Odluka: pregled i uvidi koriste po targetu snimak najdužeg horizonta (30d > 7d > 24h > 1h > adhoc), a pri istom horizontu najsvežiji. Angažovanje se računa isto za sve mreže iz normalizovanih polja; stopa = angažovanje / doseg (null bez dosega). Obrisane objave (`deleted_externally`) ne ulaze u zbirove, ručno objavljene (`assisted_done`) ulaze kad imaju ID objave.
+Razlog: brojevi se ne smeju menjati zbog ručnog osvežavanja; jedna formula za sve mreže omogućava poređenje po mreži i stubu.
+
+## D-061 · 24.10.2026 · usvojeno · AI uvidi plaća platforma; dokazi se filtriraju na poznate objave; do 2 predloga po prolazu
+
+Odluka: akcija `insights` košta 0 tokena (nedeljni cron za sve aktivne brendove, ručno 2 na sat po korisniku); generacija se ipak beleži u `ai_generations` zbog troška i praćenja. ID-jevi koje model navede kao dokaz, a ne postoje među objavama iz podataka, se odbacuju; pouzdanost se svodi na 0–1. Najviše 2 uvida postaju predlozi (rok 14 dana).
+Razlog: uvidi su deo vrednosti plana, ne potrošna akcija; izmišljen dokaz bi rušio poverenje (R14); Inbox ne sme da se zatrpa.
+
+## D-062 · 24.10.2026 · usvojeno · Analitika prvo kao brojevi i tabele, grafikoni uz dizajn
+
+Odluka: `/app/analytics` prikazuje ključne brojeve kao pločice (vrednost + promena u odnosu na prethodni period, tekst u bojama teksta) i tabele po mreži, stubu i objavi; trend grafikoni (pratioci kroz vreme, doseg po danu) stižu u 14b zajedno sa sistemom boja i proverom palete.
+Razlog: dataviz pravila traže validiranu paletu, dark mode i hover sloj; to je posao dizajn faze, a brojevi su tačni i dostupni odmah.

@@ -9,6 +9,7 @@ import {
   ShieldCheck,
   Sparkles,
   Target,
+  TrendingUp,
   Users,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -107,6 +108,10 @@ export function AppShell({
           <NavLink href="/app/strategy">
             <Target className="size-4" aria-hidden />
             Strategija
+          </NavLink>
+          <NavLink href="/app/analytics">
+            <TrendingUp className="size-4" aria-hidden />
+            Analitika
           </NavLink>
           <NavLink href="/app/studio">
             <Sparkles className="size-4" aria-hidden />

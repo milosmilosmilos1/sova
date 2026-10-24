@@ -17,6 +17,8 @@ export const metaState = {
   feedFailuresLeft: 0,
   /** svaki medij se odbija (MEDIA_REJECTED) */
   mediaRejected: false,
+  /** ID-jevi objava koje mreža više ne zna (code 100 / subcode 33) */
+  goneIds: [] as string[],
 }
 
 export function resetMetaState(): void {
@@ -30,6 +32,7 @@ export function resetMetaState(): void {
   metaState.codeValid = true
   metaState.feedFailuresLeft = 0
   metaState.mediaRejected = false
+  metaState.goneIds = []
 }
 
 const G = 'https://graph.facebook.com/:version'
@@ -173,6 +176,8 @@ export const metaHandlers = [
   }),
   http.get(`${G}/:id`, ({ request, params }) => {
     const id = String(params.id)
+    if (metaState.goneIds.includes(id))
+      return err(100, `Unsupported get request. Object with ID '${id}' does not exist`, 400, 33)
     const fields = new URL(request.url).searchParams.get('fields') ?? ''
     if (id.startsWith('container-'))
       return HttpResponse.json({
@@ -207,6 +212,8 @@ export const metaHandlers = [
     const metric = new URL(request.url).searchParams.get('metric') ?? ''
     const names = metric.split(',')
     const id = String(params.id)
+    if (metaState.goneIds.includes(id))
+      return err(100, `Unsupported get request. Object with ID '${id}' does not exist`, 400, 33)
     return HttpResponse.json({
       data: names.map((name, i) => ({
         name,

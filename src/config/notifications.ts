@@ -56,6 +56,11 @@ export const NOTIFICATION_TYPES = {
     description: 'Komentar člana tima ili klijenta na objavi.',
     emailDefault: false,
   },
+  insights_ready: {
+    label: 'Novi uvidi iz analitike',
+    description: 'Nedeljni AI uvidi i predlozi za Inbox su spremni.',
+    emailDefault: true,
+  },
   publish_watchdog_alarm: {
     label: 'Objava kasni',
     description: 'Zakazana objava kasni više od 15 minuta.',

@@ -70,7 +70,7 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 | N3  | Nalog promenjen iz poslovnog u lični           | `listAccounts` ga više ne vraća → `disabled` sa objašnjenjem i asistiranim fallbackom                                                | 8a    | test   |
 | N4  | Promena verzije API-ja                         | Verzija u env-u (`META_GRAPH_VERSION`); MSW testovi; deprecation header-i se loguju (8b)                                             | 8     | kod    |
 | N5  | Uspeh bez ID-ja objave                         | `findExistingPost` po idempotency ključu ili vremenu; ako nema, target `published` sa `external_post_id = null` i oznakom za proveru | 9b    | kod    |
-| N6  | Objava uklonjena zbog pravila mreže            | Pri povlačenju metrika 404 → `deleted_externally`                                                                                    | 10b   | plan   |
+| N6  | Objava uklonjena zbog pravila mreže            | Pri povlačenju metrika 404 → `deleted_externally`                                                                                    | 10b   | test   |
 | N7  | Dnevni limit objava (IG 100, TikTok ~15)       | Provera pre zakazivanja i pre objave; `QUOTA_EXCEEDED` → pomeranje na sledeći slobodan termin uz obaveštenje                         | 9b    | test   |
 | N8  | Neauditovan TikTok klijent                     | Samo privatne objave; banner i objašnjenje u composer-u                                                                              | 8b    | plan   |
 | N9  | Pogrešan odnos stranica slike                  | `validatePost` pre zakazivanja; Sharp auto-crop uz pregled                                                                           | 7, 9a | plan   |
@@ -148,3 +148,14 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 | S5  | Istorija prelazi letnje/zimsko vreme             | Sat se računa u zoni brenda po objavi (Intl), ne fiksnim pomakom                               | 10a  | kod    |
 | S6  | Druga strategija za isti period                  | `version + 1`; aktiviranje arhivira prethodnu aktivnu                                          | 10a  | test   |
 | S7  | Posao strategije padne (model, šema)             | `ai_generations.failed` sa porukom, rezervacija 20 tokena se oslobađa, UI nudi ponovni pokušaj | 10a  | kod    |
+
+## Analitika (faza 10b)
+
+| #   | Slučaj                                        | Ponašanje                                                                            | Faza | Status |
+| --- | --------------------------------------------- | ------------------------------------------------------------------------------------ | ---- | ------ |
+| A1  | Ručno osvežavanje posle horizonta             | Snimak `adhoc`; merodavan ostaje najduži horizont pa se brojevi ne menjaju nasumično | 10b  | test   |
+| A2  | Mreža ne vrati insights (mala stranica, rano) | Snimak sa osnovnim brojevima (reakcije, komentari), doseg null; stopa null           | 10b  | kod    |
+| A3  | Prethodni period bez objava                   | Promena „bez poređenja” umesto deljenja nulom                                        | 10b  | test   |
+| A4  | Model navede nepostojeći dokaz                | ID se odbacuje; pouzdanost se svodi na 0–1                                           | 10b  | test   |
+| A5  | Premalo podataka za uvide                     | Bez poziva modela, poruka sa brojem objava koji fali                                 | 10b  | test   |
+| A6  | Nalog izgubi token između horizonata          | Nalog `needs_reauth`, snimak preskočen, run nastavlja na sledeći horizont            | 10b  | kod    |

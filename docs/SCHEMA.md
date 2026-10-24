@@ -1237,3 +1237,10 @@ Faza 10a (24.10.2026): `strategies.summary text` i `strategies.assumptions jsonb
 - Oblici JSON polja: `network_mix = {platform: {per_week, formats[], role}}`, `best_times = {platform: [{weekday 0–6, hour, minute, source: 'data'|'assumption'}]}`, `weekly_themes = [{week, theme, angle, pillar, campaign}]`, `hashtag_strategy = {core[], niche[], local[], avoid[]}`, `goals = [{goal, kpi, target}]`.
 - `content_pillars.strategy_id` i `campaigns.strategy_id` vezuju AI izlaz za verziju; stub sa istim imenom se ne duplira (D-058).
 - Nacrti iz strategije: `posts.strategy_id`, `source = 'ai'`, `scheduled_for` upisan dok je status još `draft` (termin je plan, ne zakazivanje); `post_targets` bez `scheduled_at` dok korisnik ne zakaže.
+
+Faza 10b (24.10.2026), bez promene šeme:
+
+- `post_metrics_snapshots`: jedan red po (target, horizont) za 1h/24h/7d/30d (parcijalni UNIQUE), `adhoc` neograničeno; `reactions` = lajkovi/reakcije, `raw.engagement` = zbir koji je mreža vratila; `engagement_rate` = angažovanje / doseg.
+- `account_metrics_daily`: upsert po (nalog, dan); `raw` nosi originalne nazive Meta metrika.
+- `insights.items = [{claim, recommendation, evidenceTargetIds[], confidence 0–1, suggestionKind, suggestionTitle, suggestionBody}]` (camelCase od 10b).
+- `suggestions` iz uvida: `source = 'insight'`, `payload = {insightId, claim, recommendation}`, `evidence = {targetIds[]}`, `score` 0–100, `expires_at` +14 dana.
