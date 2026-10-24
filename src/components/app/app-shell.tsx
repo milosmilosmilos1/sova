@@ -19,10 +19,11 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 
 import { ImpersonationBanner } from '@/components/admin/impersonation-banner'
+import { SovaLogo } from '@/components/brand/sova-logo'
 import { AuthSync } from '@/components/app/auth-sync'
 import { AutoSubmitSelect } from '@/components/app/auto-submit-select'
 import { NotificationsBell } from '@/components/app/notifications-bell'
-import { CurrentPathInput, NavLink } from '@/components/app/nav-link'
+import { CurrentPathInput, NavGroup, NavLink } from '@/components/app/nav-link'
 import { Badge } from '@/components/ui/badge'
 import { signOutAction, switchBrandAction, switchWorkspaceAction } from '@/lib/auth/actions'
 import type { Membership } from '@/lib/auth/workspace'
@@ -70,17 +71,17 @@ export function AppShell({
           expiresAt={viewer.impersonation.expiresAt}
         />
       ) : null}
-      <div className="flex min-h-full flex-col md:flex-row">
-        <aside className="flex w-full flex-col gap-4 border-b bg-sidebar p-4 md:min-h-screen md:w-64 md:border-r md:border-b-0">
+      <div className="flex min-h-full flex-1 flex-col md:flex-row">
+        <aside className="flex w-full flex-col gap-5 border-b border-sidebar-border bg-sidebar p-4 text-sidebar-foreground md:sticky md:top-0 md:h-screen md:w-64 md:overflow-y-auto md:border-r md:border-b-0">
           <div className="flex items-center justify-between">
-            <Link href="/app" className="text-lg font-semibold tracking-tight">
-              Sova
+            <Link href="/app" aria-label="Sova, početna">
+              <SovaLogo />
             </Link>
             <NotificationsBell workspaceId={current?.workspaceId ?? null} />
           </div>
 
           {current ? (
-            <div className="space-y-2">
+            <div className="space-y-2 rounded-lg border border-sidebar-border bg-background/60 p-2">
               <form action={switchWorkspaceAction}>
                 <CurrentPathInput />
                 <AutoSubmitSelect
@@ -101,90 +102,109 @@ export function AppShell({
                   />
                 </form>
               ) : null}
-              <p className="px-1 text-xs text-muted-foreground">
-                Uloga: {ROLE_LABEL[current.role]}
+              <p className="truncate px-1 text-xs text-muted-foreground">
+                {ROLE_LABEL[current.role]}
                 {currentBrand ? ` · ${currentBrand.name}` : ''}
               </p>
             </div>
           ) : null}
 
-          <nav className="flex gap-1 overflow-x-auto md:flex-col" aria-label="Glavna navigacija">
-            <NavLink href="/app" exact>
-              <Home className="size-4" aria-hidden />
-              Početna
-            </NavLink>
-            <NavLink href="/app/inbox">
-              <Inbox className="size-4" aria-hidden />
-              Inbox
-            </NavLink>
-            <NavLink href="/app/posts">
-              <FileText className="size-4" aria-hidden />
-              Objave
-            </NavLink>
-            <NavLink href="/app/calendar">
-              <CalendarDays className="size-4" aria-hidden />
-              Kalendar
-            </NavLink>
-            <NavLink href="/app/strategy">
-              <Target className="size-4" aria-hidden />
-              Strategija
-            </NavLink>
-            <NavLink href="/app/analytics">
-              <TrendingUp className="size-4" aria-hidden />
-              Analitika
-            </NavLink>
-            <NavLink href="/app/autopilot">
-              <Bot className="size-4" aria-hidden />
-              Autopilot
-            </NavLink>
-            <NavLink href="/app/studio">
-              <Sparkles className="size-4" aria-hidden />
-              AI Studio
-            </NavLink>
-            <NavLink href="/app/brand">
-              <Brain className="size-4" aria-hidden />
-              Brand Brain
-            </NavLink>
-            <NavLink href="/app/accounts">
-              <Share2 className="size-4" aria-hidden />
-              Mreže
-            </NavLink>
-            <NavLink href="/app/team">
-              <Users className="size-4" aria-hidden />
-              Tim
-            </NavLink>
-            <NavLink href="/app/billing">
-              <CreditCard className="size-4" aria-hidden />
-              Naplata
-            </NavLink>
-            <NavLink href="/app/settings">
-              <Settings className="size-4" aria-hidden />
-              Podešavanja
-            </NavLink>
-            {viewer.platformRole === 'platform_admin' && !viewer.impersonation ? (
-              <NavLink href="/admin">
-                <ShieldCheck className="size-4" aria-hidden />
-                Admin
-                {!viewer.mfaVerified ? <Badge variant="outline">MFA</Badge> : null}
+          <nav className="flex gap-1 overflow-x-auto md:flex-col md:gap-4" aria-label="Glavna navigacija">
+            <NavGroup label="Rad">
+              <NavLink href="/app" exact>
+                <Home aria-hidden />
+                Početna
               </NavLink>
-            ) : null}
+              <NavLink href="/app/inbox">
+                <Inbox aria-hidden />
+                Inbox
+              </NavLink>
+              <NavLink href="/app/posts">
+                <FileText aria-hidden />
+                Objave
+              </NavLink>
+              <NavLink href="/app/calendar">
+                <CalendarDays aria-hidden />
+                Kalendar
+              </NavLink>
+            </NavGroup>
+            <NavGroup label="Plan i rast">
+              <NavLink href="/app/strategy">
+                <Target aria-hidden />
+                Strategija
+              </NavLink>
+              <NavLink href="/app/analytics">
+                <TrendingUp aria-hidden />
+                Analitika
+              </NavLink>
+              <NavLink href="/app/autopilot">
+                <Bot aria-hidden />
+                Autopilot
+              </NavLink>
+            </NavGroup>
+            <NavGroup label="Sadržaj">
+              <NavLink href="/app/studio">
+                <Sparkles aria-hidden />
+                AI Studio
+              </NavLink>
+              <NavLink href="/app/brand">
+                <Brain aria-hidden />
+                Brand Brain
+              </NavLink>
+            </NavGroup>
+            <NavGroup label="Podešavanja">
+              <NavLink href="/app/accounts">
+                <Share2 aria-hidden />
+                Mreže
+              </NavLink>
+              <NavLink href="/app/team">
+                <Users aria-hidden />
+                Tim
+              </NavLink>
+              <NavLink href="/app/billing">
+                <CreditCard aria-hidden />
+                Naplata
+              </NavLink>
+              <NavLink href="/app/settings">
+                <Settings aria-hidden />
+                Podešavanja
+              </NavLink>
+              {viewer.platformRole === 'platform_admin' && !viewer.impersonation ? (
+                <NavLink href="/admin">
+                  <ShieldCheck aria-hidden />
+                  Admin
+                  {!viewer.mfaVerified ? <Badge variant="outline">MFA</Badge> : null}
+                </NavLink>
+              ) : null}
+            </NavGroup>
           </nav>
 
-          <div className="mt-auto space-y-2 border-t pt-4 text-sm">
-            <p className="truncate font-medium">{viewer.fullName ?? viewer.email}</p>
-            <p className="truncate text-xs text-muted-foreground">{viewer.email}</p>
+          <div className="mt-auto flex items-center gap-3 border-t border-sidebar-border pt-4 text-sm">
+            <span
+              aria-hidden
+              className="grid size-9 shrink-0 place-items-center rounded-full bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+            >
+              {(viewer.fullName ?? viewer.email).trim().charAt(0).toUpperCase()}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="truncate font-medium">{viewer.fullName ?? viewer.email}</p>
+              <p className="truncate text-xs text-muted-foreground">{viewer.email}</p>
+            </div>
             <form action={signOutAction}>
               <button
                 type="submit"
-                className="flex items-center gap-2 text-muted-foreground hover:text-foreground"
+                title={viewer.impersonation ? 'Završite impersonaciju' : 'Odjavite se'}
+                className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
               >
                 <LogOut className="size-4" aria-hidden />
-                {viewer.impersonation ? 'Završite impersonaciju' : 'Odjavite se'}
+                <span className="sr-only">
+                  {viewer.impersonation ? 'Završite impersonaciju' : 'Odjavite se'}
+                </span>
               </button>
             </form>
           </div>
         </aside>
-        <main className="flex-1 px-4 py-6 md:px-8">{children}</main>
+        <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
       </div>
     </>
   )

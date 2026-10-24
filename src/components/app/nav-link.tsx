@@ -16,12 +16,25 @@ export function NavLink({ href, exact, children }: { href: Route; exact?: boolea
       href={href}
       aria-current={active ? 'page' : undefined}
       className={cn(
-        'flex items-center gap-2 rounded-md px-3 py-2 text-sm whitespace-nowrap hover:bg-sidebar-accent',
-        active && 'bg-sidebar-accent font-medium',
+        'relative flex items-center gap-2.5 rounded-md px-3 py-2 text-sm whitespace-nowrap text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent/70 hover:text-sidebar-foreground [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground',
+        active &&
+          'bg-sidebar-accent font-medium text-sidebar-accent-foreground before:absolute before:top-1.5 before:bottom-1.5 before:left-0 before:w-0.5 before:rounded-full before:bg-sidebar-primary [&_svg]:text-sidebar-primary',
       )}
     >
       {children}
     </Link>
+  )
+}
+
+/** Grupa linkova u bočnoj navigaciji; naslov grupe se vidi samo na širem ekranu. */
+export function NavGroup({ label, children }: { label: string; children: ReactNode }) {
+  return (
+    <div className="flex gap-1 md:flex-col">
+      <p className="hidden px-3 pb-1 text-[11px] font-medium tracking-wide text-muted-foreground uppercase md:block">
+        {label}
+      </p>
+      {children}
+    </div>
   )
 }
 

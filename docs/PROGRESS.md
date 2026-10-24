@@ -25,7 +25,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 | 11b Ostali ivični slučajevi             | gotovo      | nacrt editora, siročići uploada, brisanje medija u upotrebi, promena zone brenda, dupli tekst, GIF, letnje/zimsko vreme; ispravljeno meko brisanje brenda i prostora; plaćanje (T4–T13, K6) čeka fazu 12 |
 | 12 Plaćanje                             | gotovo      | Stripe Checkout, Portal, webhook i tokeni kroz mock (D-090); čeka: Stripe nalog, cene, webhook endpoint, Portal i poreski model                                                                          |
 | 13a–13b Admin                           | gotovo      | pregled, korisnici i radnje, monitor objava, AI troškovi i marža, platforma (flagovi, cene, modeli, održavanje), audit sa CSV-om, impersonacija (D-070, D-075)                                           |
-| 14a–14c Dizajn                          | nije počelo | treba: screenshot Dribbble reference ako link ne radi                                                                                                                                                    |
+| 14a–14c Dizajn                          | u toku      | plava tema i tamne javne strane, nov landing, okvir aplikacije i početna (D-091); sledi: grafikoni, PDF izveštaj, stub i kampanja u editoru, zamena medija, sečenje slike, SEO                           |
 | 15 Testiranje                           | nije počelo | Playwright + Chromium instalirani; `npm run test:e2e` (6 testova) prolazi                                                                                                                                |
 | 16 Deploy                               | nije počelo | treba: Vercel, Supabase staging/prod, domen sovaai.rs, Upstash, Inngest, Sentry                                                                                                                          |
 
@@ -97,6 +97,16 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Provereno 24.10.2026 u Chromium-u: početna, Inbox, Objave, detalj objave, Kalendar, Strategija, Analitika, Autopilot, Obaveštenja, Mreže i Podešavanja rade bez grešaka u konzoli i API odgovorima. Usput ispravljeno: legenda kalendara je prikazivala interne nazive statusa, horizonti snimaka u analitici nisu bili poređani, editor nije prikazivao zašto je Autopilot vratio nacrt (sada prikazuje, a izveštaj se briše čim se tekst promeni).
 - Provereno 24.10.2026 u Chromium-u (faza 11b): nacrt editora (čuvanje, traka posle osvežavanja, vraćanje, brisanje posle čuvanja), termin se vraća isti posle čuvanja, forma zone brenda sa ponudom zadržavanja lokalnog vremena; bez grešaka u konzoli.
 - Provereno 24.10.2026 u Chromium-u (faza 13): svih sedam admin strana, „Gledaj kao” za demo nalog (traka, izmena u read-only režimu dobija 403 sa objašnjenjem, „Izađi” vraća na detalj korisnika), `/admin/users` na 390 px bez horizontalnog skrola. Usput ispravljeno: stara provera u `requireMembership` je tokom read-only pregleda rušila svaku stranu aplikacije.
+
+## Faza 14, deo 1 — šta je urađeno
+
+- **Vizuelni sistem** (D-091): plavi tokeni za svetlu i tamnu temu, mreža i sjaj iz reference, znak Sove.
+- **Landing**: tamna strana sa segmentiranom navigacijom, dijagramom toka, mrežama, funkcijama, koracima, cenama iz baze (ušteda godišnjeg plana se računa), pitanjima i završnim pozivom; mobilni prikaz proveren na 500 px.
+- **Prijava i javne strane**: ista tamna površina sa mrežom i sjajem iza kartice; tamna površina ide do dna ekrana.
+- **Okvir aplikacije**: meni u grupama (Rad, Plan i rast, Sadržaj, Podešavanja), plavo aktivno stanje, kartica korisnika; stavka „Naplata”.
+- **Početna**: pregled sa četiri pločice, sledećim objavama i prvim koracima.
+- **Ispravka**: analitički test je kroz `runAccountMetricsSweep` upisivao vrednosti iz mocka u demo naloge (zajednička lokalna baza); sweep sada prima `scope.brandId`, a lažni redovi su obrisani.
+- **Provere**: E2E 6/6 posle izmena okvira.
 
 ## Faza 12 — šta je urađeno
 

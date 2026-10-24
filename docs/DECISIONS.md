@@ -543,3 +543,14 @@ Odluka:
 - Stripe Tax je isključen dok vlasnik ne izabere poreski model (`STRIPE_AUTOMATIC_TAX`): Stripe Tax sa sopstvenim registracijama (EU OSS, u Srbiji sa poreskim punomoćnikom) ili Stripe Managed Payments (Stripe je prodavac). Odluka ide uz računovođu.
 - Dnevni posao `billing-daily` još oslobađa istekle rezervacije i grantove (T3; do sada ih nije zvao nijedan posao) i obrađuje događaje zaglavljene u stanju `received`.
   Razlog: webhook je jedini izvor istine za novac (povratak sa Checkout-a ništa ne dodeljuje, T7), a idempotentne reference u bazi štite od Stripe ponavljanja.
+
+## D-091 · 25.10.2026 · usvojeno · Vizuelni sistem: plava tema, tamne javne strane, svetli radni ekrani
+
+Odluka:
+
+- Boje su tokeni u `src/app/globals.css` (oklch): primarna plava `oklch(0.55 0.2 262)` na svetloj temi (bele kartice na blago plavoj pozadini, bočna traka sa plavim aktivnim stanjem i trakom levo), a na tamnoj površina `oklch(0.16 0.028 265)`, svetlija plava sa tamnim tekstom na dugmetu (kao akcenat reference) i ivice `white / 9%`. Dodatni tokeni: `--brand`, `--brand-2` (gradijent i reč u naslovu), `--glow`, `--grid-line`, `--success`, `--warning`; klase `bg-grid`, `bg-grid-fade`, `bg-glow`, `text-brand-gradient`, `ring-brand-glow` su u `@layer components`, da ih utility klase nadjačaju.
+- Javne strane (landing, prijava, registracija, pravne strane) su uvek tamne: omotač u `(public)/layout.tsx` ima klasu `.dark`, nezavisno od teme sistema. Aplikacija prati temu sistema (next-themes), sa istim akcentom u obe teme.
+- Landing po referenci: segmentirana navigacija, naslov sa rečju u gradijentu, dijagram toka kao kosi čipovi sa aktivnim korakom, kartice mreža sa neutralnim ikonama (bez tuđih logotipa), funkcije, koraci, cene iz tabele `plans` i cene akcija iz `token_prices`, pitanja, završni poziv. Ušteda godišnjeg plana se računa iz cena, ne piše se ručno.
+- Znak Sove (`src/components/brand/sova-logo.tsx`): oči sove u kvadratu sa plavim gradijentom, gradijent kroz CSS (bez SVG ID-jeva).
+- Početna aplikacije postaje pregled: tokeni, zakazano za 7 dana, doseg za 7 dana sa promenom, Inbox, sledeće objave u zoni brenda i „Prvi koraci” (Brand Brain, mreže, strategija, prva objava); svaki izvor ima svoju rezervu, pa jedan pad ne obara stranu.
+  Razlog: brif traži moderan izgled u plavoj boji po Dribbble referenci; tamna površina radi za prodaju i prvi utisak, a svetla je odmornija za višesatni rad u kalendaru i editoru.

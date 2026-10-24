@@ -240,7 +240,7 @@ describe('Metrike objava', () => {
     expect(rows).toHaveLength(1)
     expect(rows![0]!.followers).toBeGreaterThan(0)
     expect(rows![0]!.reach).toBeGreaterThan(0)
-    const sweep = await runAccountMetricsSweep(day)
+    const sweep = await runAccountMetricsSweep(day, { brandId })
     expect(sweep.captured).toBeGreaterThanOrEqual(2)
     const { count } = await admin
       .from('account_metrics_daily')

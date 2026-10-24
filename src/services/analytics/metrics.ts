@@ -219,7 +219,11 @@ export interface SweepSummary {
 }
 
 /** Dnevni prolaz kroz aktivne naloge za jučerašnji dan (po UTC); svaki nalog nezavisno. */
-export async function runAccountMetricsSweep(date?: string): Promise<SweepSummary> {
+/** `scope.brandId` samo za testove: baza je deljena sa demo nalogom, pa test ne sme da dira tuđe naloge. */
+export async function runAccountMetricsSweep(
+  date?: string,
+  scope: { brandId?: string } = {},
+): Promise<SweepSummary> {
   const day = date ?? new Date(Date.now() - 86_400_000).toISOString().slice(0, 10)
   const admin = createSupabaseAdminClient()
   const { data: accounts } = await admin
@@ -227,6 +231,7 @@ export async function runAccountMetricsSweep(date?: string): Promise<SweepSummar
     .select('id')
     .eq('status', 'active')
     .in('platform', [...ACCOUNT_METRICS_PLATFORMS])
+    .match(scope.brandId ? { brand_id: scope.brandId } : {})
     .limit(1000)
   const summary: SweepSummary = {
     date: day,
