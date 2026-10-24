@@ -23,7 +23,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 | 10c Autopilot i Inbox predloga          | gotovo      | nivoi 0–3, nedeljni nacrti iz strategije sa QA i budžetom, rokovi, mesečna strategija, okidači, Pauziraj sve, Inbox, UTM                                                                                 |
 | 11a GDPR i nalog                        | gotovo      | izvoz podataka, brisanje naloga uz ponovnu potvrdu identiteta, prenos vlasništva, odjava u svim tabovima                                                                                                 |
 | 11b Ostali ivični slučajevi             | gotovo      | nacrt editora, siročići uploada, brisanje medija u upotrebi, promena zone brenda, dupli tekst, GIF, letnje/zimsko vreme; ispravljeno meko brisanje brenda i prostora; plaćanje (T4–T13, K6) čeka fazu 12 |
-| 12 Plaćanje                             | nije počelo | Stripe nalog vlasnik pravi; preskače se do tada (D-001)                                                                                                                                                  |
+| 12 Plaćanje                             | gotovo      | Stripe Checkout, Portal, webhook i tokeni kroz mock (D-090); čeka: Stripe nalog, cene, webhook endpoint, Portal i poreski model                                                                          |
 | 13a–13b Admin                           | gotovo      | pregled, korisnici i radnje, monitor objava, AI troškovi i marža, platforma (flagovi, cene, modeli, održavanje), audit sa CSV-om, impersonacija (D-070, D-075)                                           |
 | 14a–14c Dizajn                          | nije počelo | treba: screenshot Dribbble reference ako link ne radi                                                                                                                                                    |
 | 15 Testiranje                           | nije počelo | Playwright + Chromium instalirani; `npm run test:e2e` (6 testova) prolazi                                                                                                                                |
@@ -97,6 +97,17 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Provereno 24.10.2026 u Chromium-u: početna, Inbox, Objave, detalj objave, Kalendar, Strategija, Analitika, Autopilot, Obaveštenja, Mreže i Podešavanja rade bez grešaka u konzoli i API odgovorima. Usput ispravljeno: legenda kalendara je prikazivala interne nazive statusa, horizonti snimaka u analitici nisu bili poređani, editor nije prikazivao zašto je Autopilot vratio nacrt (sada prikazuje, a izveštaj se briše čim se tekst promeni).
 - Provereno 24.10.2026 u Chromium-u (faza 11b): nacrt editora (čuvanje, traka posle osvežavanja, vraćanje, brisanje posle čuvanja), termin se vraća isti posle čuvanja, forma zone brenda sa ponudom zadržavanja lokalnog vremena; bez grešaka u konzoli.
 - Provereno 24.10.2026 u Chromium-u (faza 13): svih sedam admin strana, „Gledaj kao” za demo nalog (traka, izmena u read-only režimu dobija 403 sa objašnjenjem, „Izađi” vraća na detalj korisnika), `/admin/users` na 390 px bez horizontalnog skrola. Usput ispravljeno: stara provera u `requireMembership` je tokom read-only pregleda rušila svaku stranu aplikacije.
+
+## Faza 12 — šta je urađeno
+
+- **Stripe iza PaymentProvider interfejsa** (D-090): Checkout za pretplatu i dopunu, Customer Portal, jedan kupac po radnom prostoru (`billing_customers`).
+- **Webhook**: provera potpisa, upis jednom, obrada u pozadini, stanje pretplate uvek iz Stripe-a.
+- **Tokeni**: dopuna kad je plaćeno, pretplata uz plaćenu fakturu, godišnji plan mesečno, povraćaj i spor oduzimaju srazmerno.
+- **Neuspelo plaćanje**: rok 7 dana, podsetnici dan 1, 3 i 6, posle roka nova generisanja staju (PAYMENT_REQUIRED).
+- **Strana `/app/billing`**: plan, pretplata, dopune, Portal, istorija tokena; stavka „Naplata” u meniju; link iz podešavanja kad se dostigne limit plana.
+- **Dnevni posao `billing-daily`**: godišnji plan, podsetnici, istekle rezervacije i grantovi (do sada ih nije čistio nijedan posao), zaglavljeni događaji.
+- **Testovi**: 13 integracionih (`api.billing`, pravi potpis webhook-a, Stripe kroz MSW), 4 unit (pravila naplate); migracija 023.
+- **Napomena**: Windows Application Control od 24.10.2026 uveče blokira `supabase.exe`; migracija 023 je lokalno primenjena kroz `docker exec … psql`, a tipovi su dopunjeni ručno u formatu CLI-ja (RUNBOOK, Zamke).
 
 ## Meta video i nove metrike — šta je urađeno
 

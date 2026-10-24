@@ -111,6 +111,21 @@ export const NOTIFICATION_TYPES = {
     description: 'Zakazana objava kasni više od 15 minuta.',
     emailDefault: true,
   },
+  billing_payment_failed: {
+    label: 'Plaćanje nije uspelo',
+    description: 'Kartica je odbijena pri obnovi pretplate; podsetnici do kraja roka.',
+    emailDefault: true,
+  },
+  billing_subscription: {
+    label: 'Pretplata',
+    description: 'Pretplata je aktivirana, otkazana ili je završena.',
+    emailDefault: true,
+  },
+  billing_tokens: {
+    label: 'Dopuna tokena',
+    description: 'Kupljeni tokeni su stigli na stanje.',
+    emailDefault: false,
+  },
 } as const satisfies Record<string, NotificationTypeDef>
 
 export type NotificationType = keyof typeof NOTIFICATION_TYPES

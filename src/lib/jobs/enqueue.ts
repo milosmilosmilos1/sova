@@ -158,3 +158,8 @@ export async function enqueueAutopilotWeek(
     )
   }
 }
+
+/** Obrada Stripe događaja (faza 12): webhook upisuje događaj i odmah odgovara, obrada ide u pozadini. */
+export async function enqueueBillingEvent(paymentEventId: string): Promise<void> {
+  await inngest.send(events.billingWebhookReceived.create({ paymentEventId, provider: 'stripe' }))
+}

@@ -96,6 +96,8 @@ export function buildServerEnvSchema(mode: EnvMode) {
     NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: z.string().optional(),
     STRIPE_PRICE_MONTHLY: z.string().optional(),
     STRIPE_PRICE_YEARLY: z.string().optional(),
+    /** Stripe Tax u Checkout-u: tek kad vlasnik izabere poreski model (D-090) */
+    STRIPE_AUTOMATIC_TAX: z.stringbool().default(false),
 
     // Background i infrastruktura
     INNGEST_EVENT_KEY: prodOnly(z.string().min(10)),

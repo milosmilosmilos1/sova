@@ -247,6 +247,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"billing_customers": {
+                  Row: {
+                    "created_at": string,"provider": string,"provider_customer_id": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"provider": string,"provider_customer_id": string,"workspace_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"provider"?: string,"provider_customer_id"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "billing_customers_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: true
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"brand_profiles": {
                   Row: {
                     "brand_id": string,"crawl_id": string | null,"created_at": string,"created_by": string | null,"data": NonNullable<Json>,"id": string,"is_current": boolean,"locked_fields": (string)[],"version": number
@@ -1315,14 +1335,14 @@ isOneToOne: false
                   ]
                 },"subscriptions": {
                   Row: {
-                    "cancel_at_period_end": boolean,"canceled_at": string | null,"created_at": string,"current_period_end": string | null,"current_period_start": string | null,"grace_until": string | null,"id": string,"last_invoice_id": string | null,"plan_id": string,"provider": string,"provider_customer_id": string,"provider_subscription_id": string,"raw": Json | null,"status": Database["public"]['Enums']["subscription_status"],"updated_at": string,"workspace_id": string
+                    "cancel_at_period_end": boolean,"canceled_at": string | null,"created_at": string,"current_period_end": string | null,"current_period_start": string | null,"dunning_step": number,"grace_until": string | null,"id": string,"last_invoice_id": string | null,"plan_id": string,"provider": string,"provider_customer_id": string,"provider_subscription_id": string,"raw": Json | null,"status": Database["public"]['Enums']["subscription_status"],"updated_at": string,"workspace_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "cancel_at_period_end"?: boolean,"canceled_at"?: string | null,"created_at"?: string,"current_period_end"?: string | null,"current_period_start"?: string | null,"grace_until"?: string | null,"id"?: string,"last_invoice_id"?: string | null,"plan_id": string,"provider": string,"provider_customer_id": string,"provider_subscription_id": string,"raw"?: Json | null,"status": Database["public"]['Enums']["subscription_status"],"updated_at"?: string,"workspace_id": string
+                    "cancel_at_period_end"?: boolean,"canceled_at"?: string | null,"created_at"?: string,"current_period_end"?: string | null,"current_period_start"?: string | null,"dunning_step"?: number,"grace_until"?: string | null,"id"?: string,"last_invoice_id"?: string | null,"plan_id": string,"provider": string,"provider_customer_id": string,"provider_subscription_id": string,"raw"?: Json | null,"status": Database["public"]['Enums']["subscription_status"],"updated_at"?: string,"workspace_id": string
                   }
                   Update: {
-                    "cancel_at_period_end"?: boolean,"canceled_at"?: string | null,"created_at"?: string,"current_period_end"?: string | null,"current_period_start"?: string | null,"grace_until"?: string | null,"id"?: string,"last_invoice_id"?: string | null,"plan_id"?: string,"provider"?: string,"provider_customer_id"?: string,"provider_subscription_id"?: string,"raw"?: Json | null,"status"?: Database["public"]['Enums']["subscription_status"],"updated_at"?: string,"workspace_id"?: string
+                    "cancel_at_period_end"?: boolean,"canceled_at"?: string | null,"created_at"?: string,"current_period_end"?: string | null,"current_period_start"?: string | null,"dunning_step"?: number,"grace_until"?: string | null,"id"?: string,"last_invoice_id"?: string | null,"plan_id"?: string,"provider"?: string,"provider_customer_id"?: string,"provider_subscription_id"?: string,"raw"?: Json | null,"status"?: Database["public"]['Enums']["subscription_status"],"updated_at"?: string,"workspace_id"?: string
                   }
                   Relationships: [
                     {
@@ -1836,6 +1856,9 @@ isOneToOne: false
                            },
 "reserve_tokens":
 { Args: { "p_amount": number,"p_brand_id"?: string,"p_generation_id"?: string,"p_ttl_minutes"?: number,"p_user_id"?: string,"p_workspace_id": string }; Returns: string
+                           },
+"revoke_tokens_to":
+{ Args: { "p_grant_id"?: string,"p_note"?: string,"p_reference": string,"p_target": number,"p_workspace_id": string }; Returns: number
                            },
 "shares_workspace_with":
 { Args: { "other": string }; Returns: boolean

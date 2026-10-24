@@ -33,16 +33,18 @@ export const TEST_SECRETS: Record<string, string> = {
   PINTEREST_APP_SECRET: 'test-pinterest-secret-0123456789',
   X_CLIENT_ID: 'test-x-client-id',
   X_CLIENT_SECRET: 'test-x-client-secret-0123456789',
+  // faza 12: Stripe kroz MSW (namerno bez sk_/whsec_ prefiksa, da ih skener tajni ne hvata)
+  STRIPE_SECRET_KEY: 'test-stripe-secret-key-0123456789',
+  STRIPE_WEBHOOK_SECRET: 'test-stripe-webhook-secret-0123456789',
+  STRIPE_PRICE_MONTHLY: 'price_test_monthly',
+  STRIPE_PRICE_YEARLY: 'price_test_yearly',
 }
 
 /** Bez ovih ključeva servisi rade lokalno ili se preskaču, isto kao u CI-ju. */
 export const UNSET_IN_TESTS = [
   'FIRECRAWL_API_KEY',
-  'STRIPE_SECRET_KEY',
-  'STRIPE_WEBHOOK_SECRET',
   'NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY',
-  'STRIPE_PRICE_MONTHLY',
-  'STRIPE_PRICE_YEARLY',
+  'STRIPE_AUTOMATIC_TAX',
   'INNGEST_EVENT_KEY',
   'INNGEST_SIGNING_KEY',
   'UPSTASH_REDIS_REST_URL',

@@ -2,6 +2,7 @@ import {
   Bot,
   Brain,
   CalendarDays,
+  CreditCard,
   FileText,
   Home,
   Inbox,
@@ -151,6 +152,10 @@ export function AppShell({
             <NavLink href="/app/team">
               <Users className="size-4" aria-hidden />
               Tim
+            </NavLink>
+            <NavLink href="/app/billing">
+              <CreditCard className="size-4" aria-hidden />
+              Naplata
             </NavLink>
             <NavLink href="/app/settings">
               <Settings className="size-4" aria-hidden />

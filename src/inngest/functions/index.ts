@@ -3,6 +3,7 @@ import { aiGenerateStrategy } from './ai-generate-strategy'
 import { aiVisualTemplate } from './ai-visual-template'
 import { analyticsInsightsWeekly } from './analytics-insights-weekly'
 import { autopilotBrandWeek, autopilotDaily, autopilotDeadlines, autopilotWeekly } from './autopilot'
+import { billingDaily, billingProcessEvent } from './billing'
 import { brandAnalyze } from './brand-analyze'
 import { brandSiteCheck } from './brand-site-check'
 import { mediaIncomingCleanup } from './media-incoming-cleanup'
@@ -34,4 +35,6 @@ export const functions = [
   autopilotDeadlines,
   autopilotDaily,
   mediaIncomingCleanup,
+  billingProcessEvent,
+  billingDaily,
 ]

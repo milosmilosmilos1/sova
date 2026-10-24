@@ -1290,6 +1290,14 @@ Faza 11a (24.10.2026): migracija `20261024000021_transfer_ownership.sql` sa RPC-
 
 Faza 8c (24.10.2026): migracija `20261024000022_incoming_uploads.sql` sa RPC-om `stale_incoming_uploads(before, limit)` (security definer, samo `service_role`): imena fajlova u `uploads/ws/%/incoming/%` starijih od zadatog trenutka, za dnevno brisanje napuštenih direktnih otpremanja (D-082). Video redovi u `media_assets` koriste postojeće kolone `kind = video`, `duration_ms`, `width`, `height`; kodeci i rotacija su u `source_data`.
 
+Faza 12 (24.10.2026): migracija `20261024000023_billing_stripe.sql`:
+
+- `billing_customers (workspace_id PK, provider, provider_customer_id UNIQUE sa provider)`: jedan Stripe kupac po radnom prostoru; RLS bez politika (samo service role); FK `on delete cascade deferrable initially deferred`.
+- `subscriptions.dunning_step smallint`: poslednji poslat podsetnik za neuspelo plaćanje (0–3).
+- Indeks `payment_events_open` (`received`, `failed`) za dnevni posao.
+- RPC `revoke_tokens_to(workspace, target, reference, grant_id?, note?)` (samo service role): oduzima tokene do ukupnog iznosa za referencu (`refund:{charge}`, `dispute:{id}`), prvo iz granta tog plaćanja; ledger `reason = refund`; vraća koliko je oduzeto u tom pozivu.
+- Grantovi pretplate: `reference = {pretplata}:{YYYY-MM-DD}` (početak mesečnog dela), `reference_type = invoice`, `note` = ID fakture; dopuna: `reference` = ID Checkout sesije. Nove vrste obaveštenja `billing_payment_failed`, `billing_subscription`, `billing_tokens` (tekst, bez migracije).
+
 Faza 13 (24.10.2026), tri nove migracije (primenjene sa `migration up`, bez `db:reset`):
 
 - `20261024000017_admin.sql`: RPC-ovi `admin_dashboard_stats`, `admin_activity_counts`, `admin_auth_users`, `admin_revoke_user_sessions`, `admin_ai_costs` (security definer, samo service role); indeksi `admin_audit_log` po vremenu, cilju i akciji i delimični indeks aktivnih `impersonation_sessions`; red `platform_settings.active_models = {}` (D-072).

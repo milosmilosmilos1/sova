@@ -134,7 +134,11 @@ export default async function SettingsPage({ searchParams }: PageProps<'/app/set
               <CreateBrandForm workspaceId={current.workspaceId} />
             ) : (
               <p className="text-sm text-muted-foreground">
-                Dostigli ste limit brendova za plan {plan.name}. Nadogradnja stiže sa naplatom.
+                Dostigli ste limit brendova za plan {plan.name}.{' '}
+                <Link href="/app/billing" className="underline">
+                  Nadogradite plan
+                </Link>
+                .
               </p>
             )
           ) : null}

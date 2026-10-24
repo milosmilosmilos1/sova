@@ -8,7 +8,7 @@ import { mapDbError, unwrap } from '@/lib/supabase/errors'
 import { getRateLimitSettings } from '@/lib/tokens/prices'
 import { reserveTokens, releaseReservation } from '@/lib/tokens/reservation'
 import { signedUrl } from '@/services/media'
-import { getWorkspacePlan } from '@/services/plans'
+import { assertBillingActive, getWorkspacePlan } from '@/services/plans'
 import type { Database, Json } from '@/types/database'
 
 export type GenerationRow = Database['public']['Tables']['ai_generations']['Row']
@@ -36,6 +36,8 @@ export interface StartedGeneration {
  * Ako rezervacija padne, red se označi kao failed da trag ostane.
  */
 export async function startGeneration(input: StartGenerationInput): Promise<StartedGeneration> {
+  // posle roka za neuspelo plaćanje nova generisanja staju (T9, K6); besplatne radnje rade
+  if (input.tokens > 0) await assertBillingActive(input.workspaceId)
   const admin = createSupabaseAdminClient()
   const row = unwrap(
     await admin

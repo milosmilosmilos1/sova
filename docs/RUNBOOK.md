@@ -19,6 +19,8 @@ Vrednosti za `.env.local` lokalnog Supabase-a: `npx supabase status -o env` (ANO
 
 Gemini (D-088): `GEMINI_API_KEY` iz Google AI Studio. Integracioni testovi ga nikad ne koriste (setup ga prepisuje lažnim), a dev server i `scripts/ai-smoke.ts` troše pravi ključ. Modeli su u env-u (`GEMINI_*_MODEL`) i u Admin → Platforma → AI modeli.
 
+Stripe (faza 12, D-090): `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_MONTHLY`, `STRIPE_PRICE_YEARLY` (ili `plans.provider_price_ids.stripe`), `STRIPE_AUTOMATIC_TAX` (`false` dok se ne izabere poreski model). U Stripe dashboard-u: proizvod „Sova” sa cenama $39 mesečno i $199 godišnje; webhook endpoint `{APP}/api/webhooks/payments` (API verzija `2026-09-30.endive`) sa događajima iz INTEGRATIONS 13a; Customer Portal (otkaz na kraju perioda, promena između mesečne i godišnje cene, kartica, fakture); Smart Retries: posle poslednjeg pokušaja otkazati pretplatu. Lokalno: `stripe listen --forward-to localhost:3001/api/webhooks/payments` ispisuje `whsec_…` za `.env.local`. Bez ključeva strana `/app/billing` kaže da plaćanje nije uključeno, a besplatan plan radi kao i do sada.
+
 Mreže iz faze 8b: `LINKEDIN_CLIENT_ID/SECRET`, `LINKEDIN_PAGES` i `LINKEDIN_MEMBER_ANALYTICS` (`true` tek kad LinkedIn odobri Community Management API odnosno Member Post Analytics), `TIKTOK_CLIENT_KEY/SECRET`, `PUBLIC_MEDIA_BASE_URL` (domen verifikovan u TikTok portalu; prazno = adresa aplikacije). Lokalno TikTok ne može da preuzme fajl sa localhost-a, pa foto objava traži javni tunel ili staging.
 
 Google poslovni profil i YouTube (faza 8c): isti `GOOGLE_CLIENT_ID/SECRET` kao Google prijava; u Google Cloud konzoli dodati redirect URI-je `{APP}/api/integrations/google_business/callback` i `{APP}/api/integrations/youtube/callback`. Flagovi `platform.google_business` i `platform.youtube` u admin panelu uključuju povezivanje. Dok je OAuth ekran u režimu „Testing”, Google refresh token ističe za 7 dana.
@@ -39,6 +41,7 @@ Zamke:
 
 - Stari Supabase kontejneri drugog projekta na istim portovima: `docker ps -a | grep supabase`, pa `docker rm -f` i `docker volume rm` pre `db:start`.
 - Dva `supabase start` istovremeno se sudaraju oko imena kontejnera; pokreni samo jedan.
+- Windows Application Control (od 24.10.2026) blokira `node_modules/@supabase/cli-windows-x64/bin/supabase.exe`: `npx supabase …` pada sa `spawn UNKNOWN`, a `npm run db:types` pritom isprazni `src/types/database.ts` (vratiti sa `git checkout`). Privremeno: migraciju primeniti kroz `docker exec -i supabase_db_sova psql -U postgres -d postgres -v ON_ERROR_STOP=1` i upisati red u `supabase_migrations.schema_migrations`, a tipove dopuniti u formatu CLI-ja. Trajno: dozvoliti fajl u Windows bezbednosti (App Control / Smart App Control). CI na Linux-u nije pogođen.
 - Port 3000 drži drugi projekat; Sova je na 3001 (D-011).
 - `npm run build` i `npm run dev` dele `.next`: build dok dev radi daje 500 na svim stranama, a dev pokrenut preko ostataka builda (`BUILD_ID`, `build-manifest.json` pored `.next/dev`) ulazi u beskonačnu Fast Refresh petlju (strana se ponovo učitava svake sekunde, E2E pada na „waiting for navigation”). Postupak: zaustavi dev → `npm run build` → `rm -rf .next` → `npm run dev`.
 - Native dodaci (`@resvg/resvg-js`, `sharp`) su u `serverExternalPackages`; nov paket sa `.node` fajlom dodaj tamo, inače Turbopack build pada sa „non-ecmascript placeable asset”.
@@ -47,9 +50,9 @@ Zamke:
 
 ```
 npm run lint && npm run typecheck
-npm run test            # Vitest unit (198)
+npm run test            # Vitest unit (202)
 npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (30); pravi i briše test korisnike
-npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (183)
+npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (196)
 npm run test:e2e        # Playwright kroz Mailpit (6); traži pokrenut dev server; posle brisanja .next prvi run traje oko 2 min
 npm run test:live       # pravi Gemini i pravi sajt nad lokalnim Supabase-om (oko 0,2 USD); samo ručno, nikad u CI-ju
 npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs 25   # živi crawler bez baze i AI-ja
@@ -102,6 +105,7 @@ Faza 16. Vercel: `main` → Production, PR → Preview. Checklista u ARCHITECTUR
 - **Meta webhook ne prolazi**: `signed_request` se proverava `META_APP_SECRET`-om iste aplikacije; pogrešna tajna daje 403. Data deletion mora da vrati čist JSON `{url, confirmation_code}` (ruta to radi mimo `ok/data` omotača).
 - **Dupli tokeni ili ledger ne štima**: `select workspace_id, sum(delta) from token_ledger group by 1` naspram `sum(amount - remaining)` iz `token_grants`; razlika je bag u RPC-u, ne popravljati ručno bez zapisa.
 - **Webhook plaćanja ne stiže**: provajderov dashboard → ponovno slanje; `payment_events (provider, event_id)` UNIQUE sprečava dupliranje.
+- **Naplata**: događaj u `payment_events` sa `status = failed` ima razlog u `error` (npr. druga aktivna pretplata istog radnog prostora: otkazati duplikat u Stripe-u i vratiti novac). Posle ispravke staviti `status = received`; dnevni posao `billing-daily` ga obrađuje (ili Stripe Dashboard → Events → Resend). Kupac kaže da tokeni nisu stigli: potražiti događaj po ID-ju Checkout sesije ili fakture u `payload`. Spor (`billing_dispute_created` u logu): odgovoriti u Stripe-u u roku; tokeni su već srazmerno oduzeti.
 - **Gemini spor**: u logu `ai_call_failed` sa `code: TIMEOUT` ili 504 za glavni model, `fallback_used` u `ai_generations`. Istek roka odmah ide na fallback; ako traje, izaberi brži model u Admin → Platforma → AI modeli. Brzina modela: `scripts/ai-smoke.ts` ispisuje trajanje.
 - **Gemini 503 „high demand”**: Google-ovo privremeno preopterećenje; aplikacija ponavlja zahtev i prelazi na fallback model. Ako se ponavlja satima, proveri da li Cloud projekat ključa ima uključenu naplatu (plaćeni nivo ima veće limite) i izaberi drugi model u adminu.
 - **Gemini pad**: circuit breaker preskače model 5 min; ako traje, Admin → Platforma → AI modeli: izaberi drugi model sa dozvoljene liste (važi za najviše minut, bez deploya). Nov model se prvo dodaje u `platform_settings.allowed_models`.
