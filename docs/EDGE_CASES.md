@@ -111,6 +111,11 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 | N28 | Položen ili duži od 3 minuta video za Short                      | Problem pri proveri pre zakazivanja                                                                                                  | 8c    | test   |
 | N29 | YouTube odbije video (duplikat, autorska prava) ili ga ne obradi | Target pada sa razlogom iz `rejectionReason` ili `failureReason`                                                                     | 8c    | test   |
 | N30 | Projekat bez YouTube audita: video zaključan kao privatan        | Video postoji i target je objavljen; vlasnik prati posle prvih objava i podnosi audit (INTEGRATIONS 14)                              | 8c    | plan   |
+| N31 | Pin bez table ili tabla obrisana                                 | Tabla je obavezna pri proveri; obrisana tabla (404) → target pada sa porukom da se izabere druga                                     | 8c    | test   |
+| N32 | Pinterest i Autopilot                                            | Pravila Pinterest-a: korisnik bira svaki pin; Autopilot ne pravi Pinterest nacrte, nivo 3 sa Pinterest nalogom → 400                 | 8c    | test   |
+| N33 | Pinterest istorija i metrike                                     | Ne čuvaju se (pravila Pinterest-a); table se čitaju uživo                                                                            | 8c    | test   |
+| N34 | Pinterest refresh token se menja pri svakom osvežavanju          | Nov se čuva odmah; cron osvežava pre isteka pristupnog, pa refresh token (60 dana) ne ističe                                         | 8c    | test   |
+| N35 | Isti medij dvaput u objavi (isti fajl otpremljen ponovo)         | Upisuje se jednom, bez greške o duplikatu                                                                                            | 8c    | test   |
 
 ## Kalendar i objave
 

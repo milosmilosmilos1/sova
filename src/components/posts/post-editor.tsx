@@ -12,9 +12,11 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { GoogleBusinessPanel } from '@/components/posts/google-business-panel'
+import { PinterestPanel } from '@/components/posts/pinterest-panel'
 import { TikTokPanel } from '@/components/posts/tiktok-panel'
 import { YouTubePanel } from '@/components/posts/youtube-panel'
 import { readGbpOptions } from '@/config/google-business'
+import { readPinterestOptions } from '@/config/pinterest'
 import { readYouTubeOptions } from '@/config/youtube'
 import { PLATFORMS } from '@/config/platforms'
 import { readTikTokOptions } from '@/config/tiktok'
@@ -647,6 +649,21 @@ function EditorForm({
                         set('selected', {
                           ...form.selected,
                           [a.id]: { ...sel, options: { ...sel.options, tiktok } },
+                        })
+                      }
+                    />
+                  ) : null}
+                  {sel.on && a.platform === 'pinterest' ? (
+                    <PinterestPanel
+                      accountId={a.id}
+                      value={readPinterestOptions({ pinterest: sel.options.pinterest })}
+                      postTitle={form.title}
+                      text={sel.text.trim() || form.masterText}
+                      disabled={!editable}
+                      onChange={(pinterest) =>
+                        set('selected', {
+                          ...form.selected,
+                          [a.id]: { ...sel, options: { ...sel.options, pinterest } },
                         })
                       }
                     />

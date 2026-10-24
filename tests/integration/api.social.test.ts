@@ -119,8 +119,8 @@ describe('Meta povezivanje', () => {
     expect(loc.searchParams.get('scope')).toContain('instagram_content_publish')
     expect(loc.searchParams.get('redirect_uri')).toBe(`${APP}/api/integrations/meta/callback`)
     pendingState = loc.searchParams.get('state')!
-    const unknown = await connectGet(authed(`/api/integrations/pinterest/connect?brandId=${brandId}`), {
-      params: Promise.resolve({ provider: 'pinterest' }),
+    const unknown = await connectGet(authed(`/api/integrations/myspace/connect?brandId=${brandId}`), {
+      params: Promise.resolve({ provider: 'myspace' }),
     })
     expect(unknown.status).toBe(404)
     // TikTok je podržan od faze 8b, ali bez uključenog flaga povezivanje nije dozvoljeno

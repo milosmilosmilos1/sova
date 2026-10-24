@@ -218,12 +218,22 @@ export async function updateAutopilot(
       const admin = createSupabaseAdminClient()
       const { data: accounts } = await admin
         .from('social_accounts')
-        .select('id')
+        .select('id, platform')
         .eq('brand_id', brandId)
         .eq('status', 'active')
         .in('id', ids)
       if ((accounts?.length ?? 0) !== ids.length) {
         throw new ApiError('VALIDATION', 'Neki od izabranih naloga ne pripadaju brendu ili nisu aktivni.')
+      }
+      // pravila Pinterest-a: svaki pin bira korisnik, pa Pinterest ne može na nivo 3 (D-085)
+      if ((accounts ?? []).some((a) => a.platform === 'pinterest')) {
+        throw new ApiError(
+          'VALIDATION',
+          'Pinterest ne dozvoljava objave bez izbora korisnika, pa ne može na nivo 3 Autopilota.',
+          {
+            fields: { level3AccountIds: ['pinterest'] },
+          },
+        )
       }
       update.autopilot_level3_confirmed_at = new Date().toISOString()
       nextSettings.level3AccountIds = ids

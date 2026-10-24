@@ -476,8 +476,16 @@ async function writeMedia(postId: string, media: CreatePostInput['media']): Prom
     .eq('post_id', postId)
   const targetByAccount = new Map((targets ?? []).map((t) => [t.social_account_id, t.id]))
   await admin.from('post_media').delete().eq('post_id', postId)
-  if (!media.length) return
-  const rows = media.map((m, i) => ({
+  // isti medij dvaput (isti fajl otpremljen ponovo daje isti asset, U8) ulazi jednom
+  const seen = new Set<string>()
+  const unique = media.filter((m) => {
+    const key = `${m.mediaAssetId}:${m.socialAccountId ?? ''}`
+    if (seen.has(key)) return false
+    seen.add(key)
+    return true
+  })
+  if (!unique.length) return
+  const rows = unique.map((m, i) => ({
     post_id: postId,
     media_asset_id: m.mediaAssetId,
     sort_order: m.sortOrder ?? i,

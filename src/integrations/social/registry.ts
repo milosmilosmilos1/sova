@@ -8,6 +8,7 @@ import {
 } from '@/integrations/social/google-business/provider'
 import { LinkedInProvider, type LinkedInProviderOptions } from '@/integrations/social/linkedin/provider'
 import { MetaProvider, type MetaProviderOptions } from '@/integrations/social/meta/provider'
+import { PinterestProvider, type PinterestProviderOptions } from '@/integrations/social/pinterest/provider'
 import { TikTokProvider, type TikTokProviderOptions } from '@/integrations/social/tiktok/provider'
 import type { SocialProvider } from '@/integrations/social/types'
 import { YouTubeProvider, type YouTubeProviderOptions } from '@/integrations/social/youtube/provider'
@@ -16,7 +17,7 @@ import { YouTubeProvider, type YouTubeProviderOptions } from '@/integrations/soc
  * Ključ OAuth toka; `meta` je zajednički za Facebook i Instagram (jedan tok za obe mreže). Google
  * poslovni profil i YouTube imaju odvojene tokove (isti Google klijent, različite dozvole).
  */
-export type ConnectProviderKey = 'meta' | 'linkedin' | 'tiktok' | 'google_business' | 'youtube'
+export type ConnectProviderKey = 'meta' | 'linkedin' | 'tiktok' | 'google_business' | 'youtube' | 'pinterest'
 
 export const CONNECT_PROVIDERS: Record<ConnectProviderKey, { label: string; platforms: SocialPlatform[] }> = {
   meta: { label: 'Facebook i Instagram', platforms: ['facebook', 'instagram'] },
@@ -24,6 +25,7 @@ export const CONNECT_PROVIDERS: Record<ConnectProviderKey, { label: string; plat
   tiktok: { label: 'TikTok', platforms: ['tiktok'] },
   google_business: { label: 'Google poslovni profil', platforms: ['google_business'] },
   youtube: { label: 'YouTube', platforms: ['youtube'] },
+  pinterest: { label: 'Pinterest', platforms: ['pinterest'] },
 }
 
 let metaOverride: MetaProvider | null = null
@@ -32,6 +34,7 @@ let linkedinOverride = null as LinkedInProvider | null
 let tiktokOverride: TikTokProvider | null = null
 let googleBusinessOverride: GoogleBusinessProvider | null = null
 let youtubeOverride: YouTubeProvider | null = null
+let pinterestOverride: PinterestProvider | null = null
 
 export function getMetaProvider(): MetaProvider {
   return metaOverride ?? new MetaProvider()
@@ -51,6 +54,10 @@ export function getGoogleBusinessProvider(): GoogleBusinessProvider {
 
 export function getYouTubeProvider(): YouTubeProvider {
   return youtubeOverride ?? new YouTubeProvider()
+}
+
+export function getPinterestProvider(): PinterestProvider {
+  return pinterestOverride ?? new PinterestProvider()
 }
 
 /** Testovi: provider bez pauza pri pollingu ili sa svojim fetch-om. */
@@ -74,6 +81,10 @@ export function setYouTubeProviderForTests(options: YouTubeProviderOptions | nul
   youtubeOverride = options ? new YouTubeProvider(options) : null
 }
 
+export function setPinterestProviderForTests(options: PinterestProviderOptions | null): void {
+  pinterestOverride = options ? new PinterestProvider(options) : null
+}
+
 export function providerForKey(key: ConnectProviderKey): SocialProvider {
   switch (key) {
     case 'linkedin':
@@ -84,6 +95,8 @@ export function providerForKey(key: ConnectProviderKey): SocialProvider {
       return getGoogleBusinessProvider()
     case 'youtube':
       return getYouTubeProvider()
+    case 'pinterest':
+      return getPinterestProvider()
     case 'meta':
       return getMetaProvider()
   }
@@ -102,6 +115,7 @@ export function connectKeyFor(provider: string): ConnectProviderKey | null {
   if (provider === 'tiktok') return 'tiktok'
   if (provider === 'google_business') return 'google_business'
   if (provider === 'youtube') return 'youtube'
+  if (provider === 'pinterest') return 'pinterest'
   return null
 }
 
@@ -125,6 +139,8 @@ export function isProviderConfigured(key: ConnectProviderKey): boolean {
       return GoogleBusinessProvider.isConfigured()
     case 'youtube':
       return YouTubeProvider.isConfigured()
+    case 'pinterest':
+      return PinterestProvider.isConfigured()
     case 'meta':
       return MetaProvider.isConfigured()
   }

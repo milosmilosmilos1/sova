@@ -15,7 +15,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 | 7 Vizuelni pipeline                     | gotovo      | Unsplash + vision rangiranje, 4 šablona (Satori), Canva Connect (PKCE, dizajn, export); čeka: UNSPLASH_ACCESS_KEY, Canva app                                                                             |
 | 8a Facebook + Instagram                 | gotovo      | OAuth, izbor naloga, tokeni, uvoz istorije, osvežavanje, webhook-ovi, provider za objave; čeka: Meta app i App Review                                                                                    |
 | 8b LinkedIn i TikTok                    | gotovo      | LinkedIn profil i stranice, TikTok foto (video spreman u provideru), panel u editoru, osvežavanje tokena; čeka: app-ovi i odobrenja (INTEGRATIONS 14)                                                    |
-| 8c–8d Ostale mreže                      | u toku      | gotovo: direktno otpremanje i video (D-082), zajednički tok za nove mreže (D-083), Google poslovni profil i YouTube Shorts (D-084); sledi Pinterest, X; treba: app-ovi i prijave iz INTEGRATIONS 14      |
+| 8c–8d Ostale mreže                      | u toku      | gotovo: direktno otpremanje i video (D-082), zajednički tok (D-083), Google poslovni profil i YouTube Shorts (D-084), Pinterest (D-085); sledi X (8d); treba: app-ovi i prijave iz INTEGRATIONS 14       |
 | 9a Objave, odobravanje, kalendar        | gotovo      | state machine, composer backend, verzije, javni link, komentari, kalendar, red objava; UI /app/posts, /app/calendar, /approve                                                                            |
 | 9b Publisher                            | gotovo      | Inngest publish-target (sleepUntil, cancelOn, 3 pokušaja 1/5/15 min, IG polling), watchdog, rollup statusa, asistirano objavljivanje, retry, obaveštenja sa podešavanjima, K3                            |
 | 10a Strategija i kalendar iz strategije | gotovo      | AI strategija (20 tokena, Inngest), vremena iz istorije ili pretpostavke, verzije, stubovi i kampanje, kalendar nacrta bez tokena, UI /app/strategy                                                      |
@@ -97,6 +97,13 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Provereno 24.10.2026 u Chromium-u: početna, Inbox, Objave, detalj objave, Kalendar, Strategija, Analitika, Autopilot, Obaveštenja, Mreže i Podešavanja rade bez grešaka u konzoli i API odgovorima. Usput ispravljeno: legenda kalendara je prikazivala interne nazive statusa, horizonti snimaka u analitici nisu bili poređani, editor nije prikazivao zašto je Autopilot vratio nacrt (sada prikazuje, a izveštaj se briše čim se tekst promeni).
 - Provereno 24.10.2026 u Chromium-u (faza 11b): nacrt editora (čuvanje, traka posle osvežavanja, vraćanje, brisanje posle čuvanja), termin se vraća isti posle čuvanja, forma zone brenda sa ponudom zadržavanja lokalnog vremena; bez grešaka u konzoli.
 - Provereno 24.10.2026 u Chromium-u (faza 13): svih sedam admin strana, „Gledaj kao” za demo nalog (traka, izmena u read-only režimu dobija 403 sa objašnjenjem, „Izađi” vraća na detalj korisnika), `/admin/users` na 390 px bez horizontalnog skrola. Usput ispravljeno: stara provera u `requireMembership` je tokom read-only pregleda rušila svaku stranu aplikacije.
+
+## Faza 8c, deo 4 — šta je urađeno
+
+- **Pinterest** (D-085): povezivanje, pin sa slikom, karusel do 5 slika i video pin; tabla se bira za svaki pin (panel u editoru čita table uživo).
+- **Pravila Pinterest-a**: Autopilot ne pravi Pinterest objave i Pinterest ne može na nivo 3; istorija i metrike pinova se ne čuvaju.
+- **Usput**: isti medij dvaput u jednoj objavi više ne daje grešku (upisuje se jednom).
+- **Testovi**: 7 integracionih (`api.pinterest`: OAuth sa Basic autentikacijom, table kroz dve strane, provera, pin sa slikom i UTM linkom, karusel, obrisana tabla, video kroz S3, refresh token koji se menja, pravila čuvanja i Autopilota), 3 unit.
 
 ## Faza 8c, deo 3 — šta je urađeno
 

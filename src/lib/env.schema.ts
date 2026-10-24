@@ -86,6 +86,8 @@ export function buildServerEnvSchema(mode: EnvMode) {
     GOOGLE_CLIENT_SECRET: z.string().optional(),
     PINTEREST_APP_ID: z.string().optional(),
     PINTEREST_APP_SECRET: z.string().optional(),
+    // Trial pristup: pinovi idu kroz sandbox (vidljivi samo autoru); Standard pristup = false
+    PINTEREST_SANDBOX: z.stringbool().default(false),
 
     // Plaćanje
     PAYMENT_PROVIDER: z.enum(['stripe', 'paddle']).default('stripe'),

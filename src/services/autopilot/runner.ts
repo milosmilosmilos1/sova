@@ -351,11 +351,13 @@ async function planWeek(runId: string, strategyId: string, weekStart: string): P
   }).filter((p) => p.week === weekIndex && p.date >= weekStart && p.date <= weekEnd)
 
   const platforms = [...new Set(plan.map((p) => p.platform))]
+  // Pinterest: korisnik mora sam da izabere svaki pin za zakazivanje (pravila Pinterest-a, D-085)
   const { data: accounts } = await admin
     .from('social_accounts')
     .select('id, platform')
     .eq('brand_id', brand.id)
     .eq('status', 'active')
+    .neq('platform', 'pinterest')
     .in('platform', platforms.length ? platforms : ['facebook'])
   const accountsByPlatform = new Map<SocialPlatform, string[]>()
   for (const a of accounts ?? [])
