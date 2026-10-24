@@ -58,6 +58,11 @@ export function buildServerEnvSchema(mode: EnvMode) {
     // Mreže (sve opcione dok odgovarajući feature flag nije uključen)
     META_APP_ID: z.string().optional(),
     META_APP_SECRET: z.string().optional(),
+    META_GRAPH_VERSION: z
+      .string()
+      .regex(/^v[0-9]+[.][0-9]+$/)
+      .default('v26.0'),
+    META_LOGIN_CONFIG_ID: z.string().optional(),
     LINKEDIN_CLIENT_ID: z.string().optional(),
     LINKEDIN_CLIENT_SECRET: z.string().optional(),
     LINKEDIN_API_VERSION: z

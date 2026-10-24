@@ -226,3 +226,23 @@ Razlog: vlasnik ima besplatan Canva plan (D-013); isti šifarski sloj služi mre
 
 Odluka: `visual_template` košta 2 tokena (cena pokriva do 8 Unsplash sličica kroz vision model i render); bez slike ili sa korisnikovom fotografijom cena je ista radi jednostavnosti. Trošak u USD se beleži samo za rangiranje. Rezultat je `media_assets` red sa `source: template`, `is_ai_generated = false` (tekst i kompozicija su deterministični), atribucijom Unsplash fotografije i spiskom kandidata sa ocenama.
 Razlog: ARCHITECTURE 8.2 (≈ $0.01 troška po vizualu) i jednostavan cenovnik za korisnika.
+
+## D-042 · 24.10.2026 · usvojeno · Jedan `SocialProvider` ugovor; Meta provider pokriva Facebook i Instagram kroz Facebook Login
+
+Odluka: svaka mreža implementira `SocialProvider` (`src/integrations/social/types.ts`) sa metodama za auth, naloge, validaciju, objavu, status, idempotentnu proveru, istoriju, metrike i opoziv; greške su `ProviderError` sa zajedničkim kodovima. `registry.providerFor(platform)` vraća provider; ključ `meta` je zajednički OAuth tok za `facebook` i `instagram` (D-013: Instagram API with Facebook Login). Verzija Graph API-ja je u env-u (`META_GRAPH_VERSION`, 24.10.2026 v26.0), a `META_LOGIN_CONFIG_ID` prebacuje dialog na Facebook Login for Business konfiguraciju.
+Razlog: brif 7.1 i INTEGRATIONS 1; publisher iz 9b i metrike iz 10b rade nad istim ugovorom za sve mreže.
+
+## D-043 · 24.10.2026 · usvojeno · Nalozi „na čekanju” u `social_accounts` umesto posebne tabele; izbor naloga posle OAuth-a
+
+Odluka: posle callback-a svi nalozi koje Facebook vrati upisuju se u `social_accounts` sa `status = disabled` i `metadata.pending = true` + `pendingState` (hash OAuth state-a), sa već šifrovanim tokenima. Korisnik na `/app/accounts` bira naloge: izabrani postaju `active` (+ uvoz istorije), ostali iz istog toka se brišu. Nalog koji je već bio aktivan samo dobija nove tokene. Token kolone: `access_token_enc` = Page token (bez isteka), `refresh_token_enc` = dugotrajan korisnički token, `refresh_token_expires_at` = njegov istek (60 dana); AAD `social:<brand>:<platform>:<external_id>`.
+Razlog: ARCHITECTURE 3.4 traži ekran „izaberi naloge” bez dodatnih tabela; tokeni nikad ne prolaze kroz klijent, a `social_accounts_public` ih ne izlaže.
+
+## D-044 · 24.10.2026 · usvojeno · `assisted_only` iz feature flagova mreže; publisher ga poštuje u 9b
+
+Odluka: pri aktivaciji naloga `assisted_only = !flag('platform.<mreža>')`. Dok Meta App Review nije prošao (ili za mreže bez API objavljivanja), nalog je povezan, istorija i metrike se čitaju, a objave idu asistirano (Sova priprema tekst i medij, korisnik objavljuje ručno i potvrđuje). Oznaka se prikazuje na kartici naloga; prebacivanje flaga ne menja postojeće naloge dok se ne sinhronizuju (admin alat u 13a).
+Razlog: brif 7 „asistirano objavljivanje kao fallback”; omogućava rad pre App Review-a bez lažnih obećanja korisniku.
+
+## D-045 · 24.10.2026 · usvojeno · Meta callback-ovi i opoziv
+
+Odluka: `POST /api/webhooks/meta` (deauthorize) i `POST /api/webhooks/meta/data-deletion` proveravaju `signed_request` HMAC-SHA256 sa app secret-om; deauthorize prebacuje sve naloge tog Meta korisnika (`metadata.metaUserId`) u `revoked`, data deletion uz to pravi `account_deletion_requests` (source `meta_callback`) i vraća `{ url: /data-deletion?code=…, confirmation_code }` kao čist JSON. Prekid veze iz aplikacije opoziva dozvole (`DELETE /{user}/permissions`) samo kad je to poslednji nalog tog korisničkog tokena u brendu. Dnevni `social-token-refresh` produžava korisnički token kad ističe za < 7 dana i obnavlja Page tokene; `invalid`/`190` → `needs_reauth`.
+Razlog: obavezni callback-ovi za App Review (INTEGRATIONS 3) i N1/N2 iz EDGE_CASES.

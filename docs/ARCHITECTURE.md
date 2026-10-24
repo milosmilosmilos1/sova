@@ -639,7 +639,7 @@ Env varijable: lista iz brifa plus `PAYMENT_PROVIDER` (`stripe` ili `paddle`), `
 - Unsplash developer aplikacija (demo 50 zahteva/h; prijava za production 1.000/h čim UI radi): `UNSPLASH_ACCESS_KEY`, `UNSPLASH_APP_NAME`.
 - Canva developer integracija (MFA na Canva nalogu je obavezan): `CANVA_CLIENT_ID`, `CANVA_CLIENT_SECRET`. Koji Canva plan imaš (Autofill traži Pro, Teams ili Enterprise).
 
-**Pre faze 8 (mreže):**
+**Pre faze 8 (mreže)** — 8a (Facebook + Instagram) kod gotov 24.10.2026 (D-042…D-045), čeka Meta app:
 
 - Meta app (Business tip), Facebook test stranica i Instagram Business nalog povezan sa njom, Business Verification pokrenut.
 - LinkedIn app: „Share on LinkedIn” (lični profil) odmah; Community Management API prijava traži firmu i verifikovanu stranicu firme.

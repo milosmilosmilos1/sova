@@ -72,3 +72,19 @@ export async function enqueueVisualTemplateJob(generationId: string, workspaceId
     )
   }
 }
+
+/** Uvoz istorije objava posle povezivanja ili sinhronizacije naloga (faza 8a). */
+export async function enqueueHistoryImport(socialAccountId: string, brandId: string): Promise<void> {
+  try {
+    await inngest.send(events.socialHistoryImportRequested.create({ socialAccountId, brandId }))
+  } catch (error) {
+    logger.error('enqueue_history_import_failed', { socialAccountId, error })
+    throw new AiError(
+      'PROVIDER_ERROR',
+      process.env.NODE_ENV === 'development'
+        ? 'Pozadinski servis nije dostupan. Pokrenite `npm run inngest:dev` pa pokušajte ponovo.'
+        : 'Pozadinski servis trenutno nije dostupan. Pokušajte ponovo za minut.',
+      { retryable: true, cause: error },
+    )
+  }
+}

@@ -1,4 +1,4 @@
-import { Brain, Home, LogOut, Settings, ShieldCheck, Sparkles, Users } from 'lucide-react'
+import { Brain, Home, LogOut, Settings, Share2, ShieldCheck, Sparkles, Users } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
@@ -87,6 +87,10 @@ export function AppShell({
           <NavLink href="/app/brand">
             <Brain className="size-4" aria-hidden />
             Brand Brain
+          </NavLink>
+          <NavLink href="/app/accounts">
+            <Share2 className="size-4" aria-hidden />
+            Mreže
           </NavLink>
           <NavLink href="/app/team">
             <Users className="size-4" aria-hidden />

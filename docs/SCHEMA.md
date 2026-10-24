@@ -1208,3 +1208,10 @@ Faza 7 (24.10.2026), bez nove migracije:
 - `media_assets.source`: `unsplash` (kopija u `uploads/.../unsplash/`, `source_data.photoId` za dedup, `attribution` sa utm linkovima), `template` (`generated/.../templates/`, `source_data.template/image/fontsUsed`), `canva` (`uploads/.../canva/`, `attribution.designId`). `is_ai_generated` je true samo za `gemini`.
 - `canva_connections`: `access_token_enc`/`refresh_token_enc` su AES-256-GCM (`iv|tag|ciphertext`, hex bytea), `key_version` prati `TOKEN_ENCRYPTION_KEY`; čita se kroz `canva_connections_public` view (bez tokena). `oauth_states.code_verifier_enc` isti format, `state_hash` = sha256(state).
 - `ai_generations.type`: `visual_template` (rang model u `model`, trošak samo za rangiranje), `canva_design` i `canva_export` (`provider = canva`, `cost_usd = 0`).
+
+Faza 8a (24.10.2026), bez nove migracije:
+
+- `social_accounts`: `access_token_enc` = Page token (AES-256-GCM, AAD `social:<brand>:<platform>:<external_id>`), `refresh_token_enc` = dugotrajan Meta korisnički token, `refresh_token_expires_at` njegov istek; `metadata` nosi `metaUserId`, `metaUserName`, `tasks`, `followers`, `pageId` (IG), i privremeno `pending`, `pendingState`, `pendingAt` dok korisnik ne izabere naloge (D-043). `status = disabled` + `pending` = na čekanju; `revoked` posle deauthorize callback-a.
+- `oauth_states.provider = 'meta'` sa `brand_id`; `code_verifier_enc` je null (Facebook Login nema PKCE), `redirect_to` putanja posle povezivanja.
+- `historical_posts` se puni iz `fetchHistory` (upsert po `(social_account_id, external_id)`), `media` kao `[{url, type}]`, `metrics` `{likes, comments, shares?}`.
+- `account_deletion_requests.source = 'meta_callback'` sa `external_user_id` = app-scoped Meta ID.

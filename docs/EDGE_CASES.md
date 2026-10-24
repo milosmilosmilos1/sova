@@ -65,17 +65,17 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 
 | #   | Slučaj                                         | Ponašanje                                                                                                                            | Faza  | Status |
 | --- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----- | ------ |
-| N1  | Token opozvan na strani mreže                  | `TOKEN_INVALID` → nalog `needs_reauth`, targeti `needs_reauth`, email + banner                                                       | 8a    | plan   |
-| N2  | Korisnik izgubio admin prava na stranici       | `PERMISSION_LOST` → isto kao N1 sa drugom porukom                                                                                    | 8a    | plan   |
-| N3  | Nalog promenjen iz poslovnog u lični           | `listAccounts` ga više ne vraća → `disabled` sa objašnjenjem i asistiranim fallbackom                                                | 8a    | plan   |
-| N4  | Promena verzije API-ja                         | Verzija u env-u; MSW testovi; deprecation header-i se loguju                                                                         | 8     | plan   |
+| N1  | Token opozvan na strani mreže                  | `TOKEN_INVALID` → nalog `needs_reauth`, targeti `needs_reauth`, email + banner                                                       | 8a    | test   |
+| N2  | Korisnik izgubio admin prava na stranici       | `PERMISSION_LOST` → isto kao N1 sa drugom porukom                                                                                    | 8a    | test   |
+| N3  | Nalog promenjen iz poslovnog u lični           | `listAccounts` ga više ne vraća → `disabled` sa objašnjenjem i asistiranim fallbackom                                                | 8a    | test   |
+| N4  | Promena verzije API-ja                         | Verzija u env-u (`META_GRAPH_VERSION`); MSW testovi; deprecation header-i se loguju (8b)                                             | 8     | kod    |
 | N5  | Uspeh bez ID-ja objave                         | `findExistingPost` po idempotency ključu ili vremenu; ako nema, target `published` sa `external_post_id = null` i oznakom za proveru | 9b    | plan   |
 | N6  | Objava uklonjena zbog pravila mreže            | Pri povlačenju metrika 404 → `deleted_externally`                                                                                    | 10b   | plan   |
 | N7  | Dnevni limit objava (IG 100, TikTok ~15)       | Provera pre zakazivanja i pre objave; `QUOTA_EXCEEDED` → pomeranje na sledeći slobodan termin uz obaveštenje                         | 9b    | plan   |
 | N8  | Neauditovan TikTok klijent                     | Samo privatne objave; banner i objašnjenje u composer-u                                                                              | 8b    | plan   |
 | N9  | Pogrešan odnos stranica slike                  | `validatePost` pre zakazivanja; Sharp auto-crop uz pregled                                                                           | 7, 9a | plan   |
 | N10 | YouTube kvota potrošena                        | Dnevni brojač; `QUOTA_EXCEEDED` → sledeći dan ili asistirano                                                                         | 8c    | plan   |
-| N11 | Instagram kontejner `EXPIRED`                  | Novi kontejner, jedan ponovni pokušaj                                                                                                | 8a    | plan   |
+| N11 | Instagram kontejner `EXPIRED`                  | Novi kontejner, jedan ponovni pokušaj                                                                                                | 8a    | test   |
 | N12 | Mediji nedostupni mreži (potpisan URL istekao) | URL se generiše neposredno pre objave sa 24 h važenja                                                                                | 9b    | plan   |
 
 ## Kalendar i objave

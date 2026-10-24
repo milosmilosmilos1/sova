@@ -24,16 +24,16 @@ Zamke:
 - Stari Supabase kontejneri drugog projekta na istim portovima: `docker ps -a | grep supabase`, pa `docker rm -f` i `docker volume rm` pre `db:start`.
 - Dva `supabase start` istovremeno se sudaraju oko imena kontejnera; pokreni samo jedan.
 - Port 3000 drži drugi projekat; Sova je na 3001 (D-011).
-- `npm run build` dok `npm run dev` radi briše `.next` ispod dev servera: strane posle toga vraćaju 500 ili se stalno ponovo učitavaju. Posle builda restartuj dev server (ili build pokreći kad dev ne radi).
+- `npm run build` i `npm run dev` dele `.next`: build dok dev radi daje 500 na svim stranama, a dev pokrenut preko ostataka builda (`BUILD_ID`, `build-manifest.json` pored `.next/dev`) ulazi u beskonačnu Fast Refresh petlju (strana se ponovo učitava svake sekunde, E2E pada na „waiting for navigation”). Postupak: zaustavi dev → `npm run build` → `rm -rf .next` → `npm run dev`.
 - Native dodaci (`@resvg/resvg-js`, `sharp`) su u `serverExternalPackages`; nov paket sa `.node` fajlom dodaj tamo, inače Turbopack build pada sa „non-ecmascript placeable asset”.
 
 ## 2. Testovi
 
 ```
 npm run lint && npm run typecheck
-npm run test            # Vitest unit (94)
+npm run test            # Vitest unit (96)
 npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (24); pravi i briše test korisnike
-npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash i Canva kroz MSW (38)
+npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva i Meta Graph kroz MSW (46)
 npm run test:e2e        # Playwright kroz Mailpit (5); traži pokrenut dev server
 npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs 25   # živi crawler bez baze i AI-ja
 npm run build           # produkcijski build
@@ -61,7 +61,9 @@ Faza 16. Vercel: `main` → Production, PR → Preview. Checklista u ARCHITECTUR
 ## 6. Incidenti
 
 - **Objave kasne**: Inngest dashboard (zaostali run-ovi), `select count(*) from post_targets where status='scheduled' and scheduled_at < now() - interval '3 minutes'`, logovi watchdog-a; ručni retry iz admin monitora (faza 13).
-- **Mreža vraća 401 masovno**: isključi feature flag `platform.<mreža>`, banner korisnicima, proveri promenu API verzije.
+- **Mreža vraća 401 masovno**: isključi feature flag `platform.<mreža>`, banner korisnicima, proveri promenu API verzije (`META_GRAPH_VERSION` u env-u; promena bez deploya koda).
+- **Nalozi prelaze u `needs_reauth`**: `select platform, status, status_reason, last_error, refresh_token_expires_at from social_accounts where status <> 'active'`; Meta korisnički token traje 60 dana i `social-token-refresh` ga produžava dnevno; ako je korisnik promenio lozinku ili uklonio aplikaciju, ponovo povezuje iz `/app/accounts`.
+- **Meta webhook ne prolazi**: `signed_request` se proverava `META_APP_SECRET`-om iste aplikacije; pogrešna tajna daje 403. Data deletion mora da vrati čist JSON `{url, confirmation_code}` (ruta to radi mimo `ok/data` omotača).
 - **Dupli tokeni ili ledger ne štima**: `select workspace_id, sum(delta) from token_ledger group by 1` naspram `sum(amount - remaining)` iz `token_grants`; razlika je bag u RPC-u, ne popravljati ručno bez zapisa.
 - **Webhook plaćanja ne stiže**: provajderov dashboard → ponovno slanje; `payment_events (provider, event_id)` UNIQUE sprečava dupliranje.
 - **Gemini pad**: circuit breaker preskače model 5 min; ako traje, admin u `platform_settings.allowed_models` menja primarni model bez deploya.
