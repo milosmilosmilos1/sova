@@ -10,11 +10,16 @@ import { isApiError } from '@/lib/api/errors'
 import { formValues, parseForm, type FormState } from '@/lib/auth/form-state'
 import { authErrorMessage } from '@/lib/auth/messages'
 import { verifyTurnstile } from '@/lib/auth/turnstile'
-import { getViewer } from '@/lib/auth/viewer'
+import { getRealViewer, getViewer, type Viewer } from '@/lib/auth/viewer'
+import {
+  clearImpersonationCookieName,
+  endImpersonationForAdmin,
+} from '@/services/admin/impersonation-actions'
 import { getMembership, setCurrentWorkspaceCookie } from '@/lib/auth/workspace'
 import { setCurrentBrandCookie } from '@/lib/auth/brand'
 import { env } from '@/lib/env'
 import { LOCALE_COOKIE } from '@/i18n/config'
+import { actionBlock, type ActionKind } from '@/lib/auth/impersonation-core'
 import { logger } from '@/lib/logger'
 import { cancelScheduledPostsForBrand } from '@/services/posts/publisher'
 import { rateLimit } from '@/lib/ratelimit'
@@ -64,6 +69,11 @@ function callbackUrl(next?: string): string {
 
 function fail(message: string, values?: Record<string, string>, code?: string): FormState {
   return { ok: false, message, values, code }
+}
+
+/** Impersonacija (D-070): šta serverska akcija sme dok admin gleda kao korisnik. */
+function impersonationGuard(viewer: Viewer, kind: ActionKind): string | null {
+  return viewer.impersonation ? actionBlock(viewer.impersonation.readOnly, kind) : null
 }
 
 function errorState(error: unknown, values?: Record<string, string>): FormState {
@@ -218,6 +228,20 @@ export async function resendVerificationAction(_prev: FormState, formData: FormD
 }
 
 export async function signOutAction(): Promise<void> {
+  const viewer = await getViewer()
+  if (viewer?.impersonation) {
+    const real = await getRealViewer()
+    const h = await headers()
+    if (real) {
+      await endImpersonationForAdmin(real, 'sign_out', {
+        ip: h.get('x-forwarded-for'),
+        userAgent: h.get('user-agent'),
+        requestId: h.get('x-request-id'),
+      })
+    }
+    ;(await cookies()).delete(clearImpersonationCookieName)
+    redirect(`/admin/users/${viewer.user.id}` as Route)
+  }
   const supabase = await createSupabaseServerClient()
   await supabase.auth.signOut()
   redirect('/login')
@@ -230,6 +254,8 @@ export async function signOutAction(): Promise<void> {
 export async function createWorkspaceAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const viewer = await getViewer()
   if (!viewer) redirect('/login?next=/app/onboarding')
+  const blocked = impersonationGuard(viewer, 'forbidden')
+  if (blocked) return fail(blocked)
   const parsed = parseForm(createWorkspaceSchema, formData)
   if (!parsed.success) return parsed.state
   let result: { workspaceId: string; brandId: string }
@@ -274,6 +300,8 @@ export async function switchBrandAction(formData: FormData): Promise<void> {
 export async function updateProfileAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const viewer = await getViewer()
   if (!viewer) redirect('/login')
+  const blocked = impersonationGuard(viewer, 'edit')
+  if (blocked) return fail(blocked)
   const parsed = parseForm(updateProfileSchema, formData)
   if (!parsed.success) return parsed.state
   const { fullName, locale, timezone } = parsed.data
@@ -291,6 +319,8 @@ export async function updateProfileAction(_prev: FormState, formData: FormData):
 export async function updateWorkspaceAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const viewer = await getViewer()
   if (!viewer) redirect('/login')
+  const blocked = impersonationGuard(viewer, 'edit')
+  if (blocked) return fail(blocked)
   const workspaceId = formData.get('workspaceId')?.toString() ?? ''
   const parsed = parseForm(updateWorkspaceSchema, formData)
   if (!parsed.success) return parsed.state
@@ -306,6 +336,8 @@ export async function updateWorkspaceAction(_prev: FormState, formData: FormData
 export async function inviteMemberAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const viewer = await getViewer()
   if (!viewer) redirect('/login')
+  const blocked = impersonationGuard(viewer, 'forbidden')
+  if (blocked) return fail(blocked)
   const brandIdsRaw = formData.getAll('brandIds').map(String).filter(Boolean)
   const parsed = createInvitationSchema.safeParse({
     workspaceId: formData.get('workspaceId'),
@@ -333,6 +365,7 @@ export async function inviteMemberAction(_prev: FormState, formData: FormData): 
 export async function updateMemberAction(formData: FormData): Promise<void> {
   const viewer = await getViewer()
   if (!viewer) redirect('/login')
+  if (impersonationGuard(viewer, 'forbidden')) return
   const workspaceId = formData.get('workspaceId')?.toString() ?? ''
   const parsed = updateMemberSchema.safeParse({
     userId: formData.get('userId'),
@@ -351,6 +384,7 @@ export async function updateMemberAction(formData: FormData): Promise<void> {
 export async function removeMemberAction(formData: FormData): Promise<void> {
   const viewer = await getViewer()
   if (!viewer) redirect('/login')
+  if (impersonationGuard(viewer, 'forbidden')) return
   const workspaceId = formData.get('workspaceId')?.toString() ?? ''
   const parsed = removeMemberSchema.safeParse({ userId: formData.get('userId') })
   if (parsed.success) {
@@ -366,6 +400,7 @@ export async function removeMemberAction(formData: FormData): Promise<void> {
 export async function revokeInvitationAction(formData: FormData): Promise<void> {
   const viewer = await getViewer()
   if (!viewer) redirect('/login')
+  if (impersonationGuard(viewer, 'forbidden')) return
   const workspaceId = formData.get('workspaceId')?.toString() ?? ''
   const invitationId = formData.get('invitationId')?.toString() ?? ''
   try {
@@ -380,6 +415,8 @@ export async function acceptInvitationAction(formData: FormData): Promise<void> 
   const token = formData.get('token')?.toString() ?? ''
   const viewer = await getViewer()
   if (!viewer) go(`/login?next=${encodeURIComponent(`/invite/${token}`)}`)
+  if (impersonationGuard(viewer, 'forbidden'))
+    go(`/invite/${token}?error=${encodeURIComponent('Pozivnica se ne prihvata tokom impersonacije.')}`)
   try {
     const result = await acceptInvitation(viewer, token)
     await setCurrentWorkspaceCookie(result.workspaceId)
@@ -393,6 +430,8 @@ export async function acceptInvitationAction(formData: FormData): Promise<void> 
 export async function createBrandAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const viewer = await getViewer()
   if (!viewer) redirect('/login')
+  const blocked = impersonationGuard(viewer, 'edit')
+  if (blocked) return fail(blocked)
   const parsed = createBrandSchema.safeParse({
     workspaceId: formData.get('workspaceId'),
     name: formData.get('name'),
@@ -419,6 +458,7 @@ export async function createBrandAction(_prev: FormState, formData: FormData): P
 export async function deleteBrandAction(formData: FormData): Promise<void> {
   const viewer = await getViewer()
   if (!viewer) redirect('/login')
+  if (impersonationGuard(viewer, 'forbidden')) return
   const brandId = formData.get('brandId')?.toString() ?? ''
   try {
     await deleteBrand(viewer, brandId)

@@ -72,7 +72,7 @@ export async function generateDraftText(
   })
   try {
     const outcome = await callWithFallback(
-      textModelChain(),
+      await textModelChain(),
       (model) =>
         generateText({
           model,

@@ -22,7 +22,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 | 10c Autopilot i Inbox predloga          | gotovo      | nivoi 0–3, nedeljni nacrti iz strategije sa QA i budžetom, rokovi, mesečna strategija, okidači, Pauziraj sve, Inbox, UTM                                                      |
 | 11 Edge case-ovi                        | nije počelo |                                                                                                                                                                               |
 | 12 Plaćanje                             | nije počelo | Stripe nalog vlasnik pravi; preskače se do tada (D-001)                                                                                                                       |
-| 13a–13b Admin                           | sledeće     | gate i placeholder postoje                                                                                                                                                    |
+| 13a–13b Admin                           | gotovo      | pregled, korisnici i radnje, monitor objava, AI troškovi i marža, platforma (flagovi, cene, modeli, održavanje), audit sa CSV-om, impersonacija (D-070, D-075)                |
 | 14a–14c Dizajn                          | nije počelo | treba: screenshot Dribbble reference ako link ne radi                                                                                                                         |
 | 15 Testiranje                           | nije počelo | Playwright + Chromium instalirani; `npm run test:e2e` (5 testova) prolazi                                                                                                     |
 | 16 Deploy                               | nije počelo | treba: Vercel, Supabase staging/prod, domen sovaai.rs, Upstash, Inngest, Sentry                                                                                               |
@@ -91,7 +91,34 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Aplikacija: http://localhost:3001 (posle `npm run dev`); pozadinski poslovi traže `npm run inngest:dev` (http://localhost:8288).
 - `npm run demo:seed` pravi demo nalog sa primerima podataka i ispisuje email i lozinku; detalji u RUNBOOK 1.
 - Lokalni mejlovi idu u Mailpit: http://localhost:54324.
+- Admin panel: isti `npm run demo:seed` pravi i `admin@sova.local` sa uključenim TOTP-om i ispisuje lozinku i TOTP tajnu. Posle prijave: Podešavanja → Bezbednost → kod iz aplikacije za kodove (ili `npm run demo:totp -- <tajna>`), pa http://localhost:3001/admin.
 - Provereno 24.10.2026 u Chromium-u: početna, Inbox, Objave, detalj objave, Kalendar, Strategija, Analitika, Autopilot, Obaveštenja, Mreže i Podešavanja rade bez grešaka u konzoli i API odgovorima. Usput ispravljeno: legenda kalendara je prikazivala interne nazive statusa, horizonti snimaka u analitici nisu bili poređani, editor nije prikazivao zašto je Autopilot vratio nacrt (sada prikazuje, a izveštaj se briše čim se tekst promeni).
+- Provereno 24.10.2026 u Chromium-u (faza 13): svih sedam admin strana, „Gledaj kao” za demo nalog (traka, izmena u read-only režimu dobija 403 sa objašnjenjem, „Izađi” vraća na detalj korisnika), `/admin/users` na 390 px bez horizontalnog skrola. Usput ispravljeno: stara provera u `requireMembership` je tokom read-only pregleda rušila svaku stranu aplikacije.
+
+## Faza 13 — šta je urađeno
+
+- **Pristup** (brif 16, D-071): `/admin/*` i `/api/admin/*` samo za `platform_admin` (email u allowlist-i pri registraciji) sa potvrđenim emailom i TOTP kodom potvrđenim u toj sesiji (AAL2). Bez potvrde stranice vode na Bezbednost sa objašnjenjem, a API vraća 403. Admin rute uvek rade sa stvarnim adminom, i tokom impersonacije.
+- **Pregled** (`/admin`): korisnici (ukupno, novi za 1/7/30 dana, blokirani, DAU/WAU/MAU iz `auth.sessions`, registracije po danu), radni prostori i brendovi, naplata (MRR, ARR, churn, konverzija; nula do faze 12 i strana to kaže), tokeni i AI (potrošnja, generisanja, trošak, procena marže), objave po mreži, kasne i neuspele.
+- **Korisnici** (`/admin/users`): pretraga po emailu, imenu i radnom prostoru, filteri (status, plan, period registracije), sortiranje i paginacija na serveru. Detalj: radni prostori sa tokenima i planom, brendovi i mreže (bez tokena), istorija tokena, generisanja, neuspele objave, oznake zloupotrebe, impersonacije i audit nad korisnikom. Svako otvaranje detalja ide u audit (`user.view`).
+- **Radnje nad korisnikom**: tokeni +/− uz razlog (ledger i jedan audit zapis u istoj transakciji, D-075), blokada (profil, Auth ban i opoziv sesija) i deblokada, odjava sa svih uređaja (izdat token odmah prestaje da važi), ponovno slanje verifikacije, brisanje naloga uz kucanje emaila (vlasnik tima sa drugim članovima dobija 409; solo radni prostori, objave, mediji i veze mreža se brišu). Nad drugim adminom i sopstvenim nalogom ove radnje nisu dozvoljene.
+- **Monitor objava** (`/admin/publishing`): neuspele objave po mreži i kodu greške za 30 dana, lista sa ručnim ponovnim pokušajem (sledeći slobodan minut, objava se vraća u red, audit `publish.retry`), zakazane koje kasne više od 3 minuta, broj naloga koji čekaju ponovno povezivanje.
+- **AI troškovi** (`/admin/ai-costs`): po modelu, danu i radnom prostoru (sa vlasnikom), prihod i marža po D-074, istaknuta negativna marža; 7, 30 ili 90 dana.
+- **Platforma** (`/admin/platform`): feature flagovi, cene akcija u tokenima, aktivni modeli samo sa dozvoljene liste (D-072), banner za održavanje svim korisnicima. Izmene važe za najviše minut i idu u audit sa stanjem pre i posle.
+- **Audit log** (`/admin/audit`): filteri po adminu, akciji, korisniku i periodu, paginacija, CSV izvoz (BOM za Excel, zaštita od formula, najviše 1.000 redova; i sam izvoz se beleži), lista sesija impersonacije sa brojem zahteva.
+- **Impersonacija** (D-070): razlog, read-only podrazumevano, pun režim uz kucanje emaila korisnika, najviše 30 minuta, potpisan httpOnly cookie sa ID-jem sesije, JWT za ciljnog korisnika (RLS radi kao za pravog korisnika), traka „Gledate kao … · Izađi” na svakoj strani aplikacije i admin panela, svaki zahtev u auditu (bez zapisa nema impersonacije). Read-only čuvaju handler API-ja, serverske akcije i RLS. Pun režim i dalje zabranjuje lozinku, email i MFA, naplatu, svako brisanje, povezivanje mreža i Canve, objavljivanje, Autopilot, tim i nov radni prostor. MFA panel je tokom impersonacije isključen, a „Odjava” samo završava impersonaciju.
+- **Šema**: migracija `017_admin` (RPC-ovi za brojke, aktivnost, opoziv sesija, Auth podatke i AI troškove; indeksi audita i sesija; `active_models`), `018_post_media_fk` (FK ka medijima se proverava na kraju transakcije: brisanje korisnika ili radnog prostora sa objavama koje imaju medije je ranije padalo), `019_audit_log_permanent` (audit bez stranih ključeva, `admin_email`, atomičan `admin_adjust_tokens`, D-075).
+- **Usput ispravljeno**: `requireMembership` je tokom read-only impersonacije bacao grešku i za čitanje; pravilo punog režima za `/api/workspaces` usklađeno je sa serverskom akcijom (izmena podešavanja radnog prostora dozvoljena, nov radni prostor i tim ne).
+- **Lokalni admin**: `npm run demo:seed` pravi `admin@sova.local` kroz allowlist sa uključenim TOTP-om; `npm run demo:totp -- <tajna>` ispisuje trenutni kod.
+- **Testovi**: 11 unit (cookie i JWT impersonacije, pravila blokade, metrike, CSV), 15 integracionih (pristup bez MFA, pregled i detalj, tokeni, blokada, odjava i verifikacija, brisanje, flagovi, cene, modeli, održavanje, monitor i ponovni pokušaj, AI troškovi, audit i CSV, impersonacija read-only i pun režim sa istekom, ukraden i lažan cookie, RLS sa `imp.ro`) i 2 testa baze (audit append-only bez stranih ključeva, atomičan `admin_adjust_tokens`).
+
+## Kako da testiraš (faza 13)
+
+1. `npm run demo:seed` → prijava kao `admin@sova.local` → Podešavanja → Bezbednost → kod (`npm run demo:totp -- <tajna>`) → `/admin`.
+2. Korisnici → `demo@sova.local` → dodaj 10 tokena uz razlog → istorija tokena i Audit log pokazuju promenu.
+3. „Gledaj kao” sa razlogom → `/app` sa žutom trakom; izmena daje poruku o režimu samo za čitanje; „Izađi” vraća na detalj korisnika; sesija se vidi na Audit log strani sa brojem zahteva.
+4. Platforma → banner za održavanje uključen → traka na svim stranama za najviše minut; isključi ga posle provere.
+5. Audit log → Izvezi CSV → fajl se otvara u Excelu sa ispravnim slovima.
+6. `npm run test` (138), `npm run test:integration` (111), `npm run test:db` (26), `npm run test:e2e` (5).
 
 ## Faza 10c — šta je urađeno
 
@@ -252,6 +279,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Meta app (Business), test Facebook stranica sa povezanim Instagram Business nalogom, `META_APP_ID/SECRET`; kasnije Business Verification i App Review (scope-ovi iz INTEGRATIONS 3 i 4, screencast). Do App Review-a objavljivanje radi samo za uloge na app-u (test korisnici), zato je `assisted_only` fallback uključen kroz flagove.
 - Adresa sedišta TangerineSEO LLC i merodavno pravo; email za privatnost na domenu sovaai.rs.
 - GitHub → Settings → Code security: uključiti secret scanning.
+- Za admin panel na produkciji: Supabase projekat sa HS256 JWT secretom dostupnim serveru (impersonacija, D-070) i `IMPERSONATION_SECRET` u Vercel env-u. Vaš email je u allowlist-i: posle registracije uključite TOTP u Podešavanja → Bezbednost.
 
 ## Poznati bagovi
 
@@ -272,3 +300,4 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Composer još nema izbor stuba i kampanje (Autopilot i kalendar iz strategije ih upisuju); dodaje se uz dizajn ekrana (14b).
 - Mesečni PDF izveštaj (`reports-monthly`) i grafikoni analitike stižu uz dizajn (D-062).
 - Vizual Autopilota je šablon bez fotografije (D-068); Unsplash i AI slika kao opcija Autopilota kad budu ključevi.
+- Admin pregled i AI troškovi su tabele; grafikoni stižu uz dizajn (faza 14). Audit CSV ima najviše 1.000 redova po izvozu (za više se sužava period).

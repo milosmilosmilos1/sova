@@ -662,7 +662,7 @@ async function stepPhotoStyle(
 
   try {
     const outcome = await callWithFallback(
-      textModelChain(),
+      await textModelChain(),
       (model) =>
         generateText({
           model,
@@ -785,7 +785,7 @@ async function stepProfile(
     pagesUsed = corpus.used
     try {
       const outcome = await callWithFallback(
-        textModelChain(),
+        await textModelChain(),
         (m) =>
           generateText({
             model: m,

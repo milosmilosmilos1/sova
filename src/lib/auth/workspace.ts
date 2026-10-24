@@ -66,8 +66,8 @@ export async function requireMembership(
   const membership = await getMembership(viewer, workspaceId)
   if (!membership) throw new ApiError('NOT_FOUND', 'Radni prostor ne postoji ili nemate pristup.')
   if (allowed && !allowed.includes(membership.role)) throw new ApiError('FORBIDDEN')
-  if (viewer.impersonation?.readOnly)
-    throw new ApiError('FORBIDDEN', 'Režim pregleda: izmene nisu dozvoljene.')
+  // read-only impersonacija se ne proverava ovde (funkcija služi i čitanju): izmene blokiraju
+  // handler, serverske akcije i RLS (D-070)
   return membership
 }
 

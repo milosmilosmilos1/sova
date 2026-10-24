@@ -191,7 +191,7 @@ export async function runImageGeneration(
     }
 
     const outcome = await callWithFallback(
-      imageModelChain(job.quality),
+      await imageModelChain(job.quality),
       (model) =>
         generateImage({
           model,

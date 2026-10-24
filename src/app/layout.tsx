@@ -4,6 +4,7 @@ import { headers } from 'next/headers'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale } from 'next-intl/server'
 
+import { MaintenanceBanner } from '@/components/maintenance-banner'
 import { Providers } from '@/components/providers'
 import { company } from '@/config/company'
 
@@ -50,7 +51,10 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
     >
       <body className="flex min-h-full flex-col">
         <NextIntlClientProvider>
-          <Providers nonce={nonce}>{children}</Providers>
+          <Providers nonce={nonce}>
+            <MaintenanceBanner />
+            {children}
+          </Providers>
         </NextIntlClientProvider>
       </body>
     </html>

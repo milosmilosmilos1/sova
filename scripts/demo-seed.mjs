@@ -7,6 +7,7 @@
  * aktivnu strategiju sa stubovima i kampanjom, objavljene objave sa metrikama za poslednjih
  * ~8 nedelja, dnevne metrike naloga, nacrte Autopilota na odobrenju, AI uvide, predloge u
  * Inbox-u, prolaze Autopilota i obaveštenja. Ponovno pokretanje briše prethodni demo i pravi nov.
+ * Pravi i lokalnog admina `admin@sova.local` (ili DEMO_ADMIN_EMAIL) sa uključenim TOTP-om za /admin.
  *
  * Pokretanje:  npm run demo:seed
  * Lozinka:     DEMO_PASSWORD iz okruženja ili nasumična, ispisuje se samo u konzoli.
@@ -18,6 +19,8 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
 import { createClient } from '@supabase/supabase-js'
+
+import { totp } from './totp.mjs'
 
 // --- okruženje ---------------------------------------------------------------
 try {
@@ -867,6 +870,40 @@ must(
   'Obaveštenja',
 )
 
+// --- lokalni admin za /admin (allowlist + TOTP, kao u produkciji) ------------------
+const ADMIN_EMAIL = process.env.DEMO_ADMIN_EMAIL ?? 'admin@sova.local'
+const ADMIN_PASSWORD = process.env.DEMO_ADMIN_PASSWORD ?? `Admin-${randomBytes(9).toString('base64url')}`
+const oldAdmin = await findUser(ADMIN_EMAIL)
+if (oldAdmin) must(await admin.auth.admin.deleteUser(oldAdmin.id), 'Brisanje starog admina')
+must(
+  await admin
+    .from('platform_admin_allowlist')
+    .upsert({ email: ADMIN_EMAIL, note: 'lokalni demo admin (demo:seed)' }),
+  'Allowlist',
+)
+must(
+  await admin.auth.admin.createUser({
+    email: ADMIN_EMAIL,
+    password: ADMIN_PASSWORD,
+    email_confirm: true,
+    user_metadata: { full_name: 'Demo Admin' },
+  }),
+  'Admin',
+)
+const adminClient = createClient(URL_, ANON, { auth: { persistSession: false, autoRefreshToken: false } })
+must(
+  await adminClient.auth.signInWithPassword({ email: ADMIN_EMAIL, password: ADMIN_PASSWORD }),
+  'Prijava admina',
+)
+const factor = must(
+  await adminClient.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Sova demo' }),
+  'TOTP',
+)
+must(
+  await adminClient.auth.mfa.challengeAndVerify({ factorId: factor.id, code: totp(factor.totp.secret) }),
+  'TOTP potvrda',
+)
+
 console.log('')
 console.log('Demo nalog je spreman (lokalno).')
 console.log(`  Adresa:  ${APP}/login`)
@@ -879,3 +916,11 @@ console.log(
 console.log(
   '  Nalozi mreža su lažni i označeni kao asistirano objavljivanje: ništa ne odlazi na prave mreže.',
 )
+console.log('')
+console.log('Lokalni admin (admin panel na /admin):')
+console.log(`  Email:      ${ADMIN_EMAIL}`)
+console.log(`  Lozinka:    ${ADMIN_PASSWORD}`)
+console.log(`  TOTP tajna: ${factor.totp.secret}`)
+console.log('  Tajnu unesite ručno u aplikaciju za kodove, ili trenutni kod dobijte sa:')
+console.log(`  npm run demo:totp -- ${factor.totp.secret}`)
+console.log('  Posle prijave: Podešavanja → Bezbednost → kod, pa /admin.')

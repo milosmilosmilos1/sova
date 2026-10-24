@@ -39,6 +39,9 @@ export default async function AppLayout({ children }: LayoutProps<'/app'>) {
         fullName: viewer.profile.fullName,
         platformRole: viewer.profile.platformRole,
         mfaVerified: viewer.mfaVerified,
+        impersonation: viewer.impersonation
+          ? { readOnly: viewer.impersonation.readOnly, expiresAt: viewer.impersonation.expiresAt }
+          : null,
       }}
       memberships={memberships}
       current={current}

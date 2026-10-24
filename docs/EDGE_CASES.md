@@ -97,12 +97,22 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 
 ## Admin
 
-| #   | Slučaj                                     | Ponašanje                                                        | Faza | Status |
-| --- | ------------------------------------------ | ---------------------------------------------------------------- | ---- | ------ |
-| AD1 | Uklanjanje poslednjeg admina platforme     | Seed skripta i ruta odbijaju                                     | 13a  | plan   |
-| AD2 | Impersonacija istekla usred akcije         | Cookie nevažeći → 401 `IMPERSONATION_EXPIRED`, povratak na admin | 13b  | plan   |
-| AD3 | Admin pokušava impersonaciju drugog admina | 403                                                              | 13b  | plan   |
-| AD4 | Admin bez MFA                              | 403 sa uputstvom za uključenje                                   | 13a  | plan   |
+| #    | Slučaj                                              | Ponašanje                                                                                          | Faza | Status |
+| ---- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---- | ------ |
+| AD1  | Uklanjanje poslednjeg admina platforme              | Uloga se ne menja iz aplikacije (samo allowlist i seed); admin ne može da blokira ni obriše admina | 13a  | test   |
+| AD2  | Impersonacija istekla usred akcije                  | Sledeći zahtev ide kao admin, sesija se zatvara (`expired`) i beleži, traka nestaje                | 13b  | test   |
+| AD3  | Admin pokušava impersonaciju drugog admina ili sebe | 403 za drugog admina, 400 za sopstveni nalog                                                       | 13b  | test   |
+| AD4  | Admin bez MFA                                       | Stranice vode na Bezbednost sa objašnjenjem, API 403 sa porukom                                    | 13a  | test   |
+| AD5  | Ukraden ili prepravljen `sova_imp` cookie           | Bez admin sesije koja ga je napravila ili sa lažnim potpisom se ignoriše                           | 13b  | test   |
+| AD6  | Upis zahteva u audit ne uspe tokom impersonacije    | Zahtev ide kao admin (fail closed)                                                                 | 13b  | kod    |
+| AD7  | Brisanje impersoniranog korisnika ili bivšeg admina | Prolazi; audit zapisi ostaju nepromenjeni (D-075)                                                  | 13a  | test   |
+| AD8  | Brisanje vlasnika tima sa drugim članovima          | 409 dok se vlasništvo ne prenese                                                                   | 13a  | test   |
+| AD9  | Oduzimanje više tokena nego što radni prostor ima   | 400 sa stanjem, ništa se ne menja                                                                  | 13a  | test   |
+| AD10 | Ponovni pokušaj objave koja nije neuspela           | 409 sa razlogom; neaktivan nalog takođe 409 (korisnik ga ponovo povezuje)                          | 13a  | test   |
+| AD11 | Dva admina menjaju isti flag ili cenu               | Važi poslednja izmena; obe su u auditu sa stanjem pre i posle                                      | 13a  | kod    |
+| AD12 | MFA panel tokom impersonacije                       | Isključen, jer browser nosi adminovu sesiju                                                        | 13b  | kod    |
+| AD13 | Odjava tokom impersonacije                          | Završava samo impersonaciju; admin ostaje prijavljen i vraća se na detalj korisnika                | 13b  | kod    |
+| AD14 | Nova impersonacija dok je stara aktivna             | Stara se zatvara (`replaced`); admin ima najviše jednu aktivnu sesiju                              | 13b  | test   |
 
 ## Brand Brain (iz brifa 5.7)
 

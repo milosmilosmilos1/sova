@@ -24,3 +24,8 @@ export function setFeatureFlagForTests(key: string, value: boolean | null): void
   else overrides.set(key, value)
   cache.delete(key)
 }
+
+/** Posle izmene u admin panelu: sledeće čitanje ide u bazu. */
+export function clearFlagCache(): void {
+  cache.clear()
+}

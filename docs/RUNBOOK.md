@@ -21,6 +21,8 @@ Provera: http://localhost:3001/api/health vraća `status: ok`; `database: ok`.
 
 Demo nalog za pregled ekrana: `npm run demo:seed` pravi `demo@sova.local` (lozinka iz `DEMO_PASSWORD` ili nasumična, ispisuje se samo u konzoli), radni prostor „Sova demo” sa lažnim Facebook i Instagram nalogom (asistirano objavljivanje, ništa ne ide na prave mreže), aktivnom strategijom, 20 objavljenih objava sa metrikama, nacrtima Autopilota, uvidima, predlozima i obaveštenjima. Ponovno pokretanje briše prethodni demo. Skripta odbija Supabase URL koji nije localhost. Lokalni mejlovi (potvrda registracije, pozivnice) stižu u Mailpit na http://localhost:54324, ne u pravi sandučić. `npm run db:reset` briše i demo i sve lokalne naloge.
 
+Isti `demo:seed` pravi i lokalnog admina `admin@sova.local` (kroz `platform_admin_allowlist`, kao u produkciji) sa uključenim TOTP-om; lozinka i TOTP tajna se ispisuju samo u konzoli. Admin panel traži kod potvrđen u sesiji: Podešavanja → Bezbednost → kod iz aplikacije za kodove ili `npm run demo:totp -- <tajna>`, pa `/admin`.
+
 Zamke:
 
 - Stari Supabase kontejneri drugog projekta na istim portovima: `docker ps -a | grep supabase`, pa `docker rm -f` i `docker volume rm` pre `db:start`.
@@ -33,9 +35,9 @@ Zamke:
 
 ```
 npm run lint && npm run typecheck
-npm run test            # Vitest unit (127)
-npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (24); pravi i briše test korisnike
-npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva i Meta Graph kroz MSW (96)
+npm run test            # Vitest unit (138)
+npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (26); pravi i briše test korisnike
+npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva i Meta Graph kroz MSW (111)
 npm run test:e2e        # Playwright kroz Mailpit (5); traži pokrenut dev server
 npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs 25   # živi crawler bez baze i AI-ja
 npm run build           # produkcijski build
@@ -45,6 +47,8 @@ npm run build           # produkcijski build
 
 - Nova migracija: `npx supabase migration new <naziv>` → fajl u `supabase/migrations/`. Do lansiranja se postojeće migracije menjaju u mestu i radi se `db:reset`; posle lansiranja samo nove migracije, unazad kompatibilne (expand → migrate → contract).
 - Posle promene šeme: `npm run db:reset`, `npm run test:db`, `npm run db:types` (regeneriše `src/types/database.ts`), `npm run typecheck`.
+- Bez brisanja lokalnih podataka (demo nalozi): `npx supabase migration up --local` primenjuje samo nove migracije; posle toga `npm run db:types`. Ispravka već primenjene migracije ide novom migracijom ili ručno kroz `psql`, jer `migration up` ne ponavlja zabeleženu verziju.
+- Append-only tabele (`admin_audit_log`, `token_ledger`, `publish_attempts`, `post_versions`, `approvals`) se ne menjaju ni u migraciji; jedini izuzetak je popuna nove kolone uz privremeno isključen okidač (primer: migracija 019).
 - Security definer funkcije: `revoke all ... from public, anon, authenticated` pa `grant execute ... to service_role` (Supabase podrazumevano daje EXECUTE svim ulogama).
 - Staging i prod: kroz GitHub Actions posle odobrenja vlasnika (dodaje se u fazi 16), nikad `db push` sa lokalne mašine na prod.
 
@@ -76,7 +80,7 @@ Faza 16. Vercel: `main` → Production, PR → Preview. Checklista u ARCHITECTUR
 - **Meta webhook ne prolazi**: `signed_request` se proverava `META_APP_SECRET`-om iste aplikacije; pogrešna tajna daje 403. Data deletion mora da vrati čist JSON `{url, confirmation_code}` (ruta to radi mimo `ok/data` omotača).
 - **Dupli tokeni ili ledger ne štima**: `select workspace_id, sum(delta) from token_ledger group by 1` naspram `sum(amount - remaining)` iz `token_grants`; razlika je bag u RPC-u, ne popravljati ručno bez zapisa.
 - **Webhook plaćanja ne stiže**: provajderov dashboard → ponovno slanje; `payment_events (provider, event_id)` UNIQUE sprečava dupliranje.
-- **Gemini pad**: circuit breaker preskače model 5 min; ako traje, admin u `platform_settings.allowed_models` menja primarni model bez deploya.
+- **Gemini pad**: circuit breaker preskače model 5 min; ako traje, Admin → Platforma → AI modeli: izaberi drugi model sa dozvoljene liste (važi za najviše minut, bez deploya). Nov model se prvo dodaje u `platform_settings.allowed_models`.
 - **Analiza sajta visi**: `select id, status, phase, progress->>'message', started_at from website_crawls where status in ('queued','running')`; Inngest dashboard → run `brand-analyze` po `crawlId`. Otkazivanje iz UI-ja šalje `brand/analyze.canceled` i vraća tokene; ručno: `update website_crawls set status='canceled', finished_at=now()` pa `release_reservation` za `ai_generations.token_reservation_id`.
 - **Vlasnik sajta se žali na SovaBot**: User-Agent je `SovaBot/1.0 (+https://sovaai.rs/bot)`; bot čita samo sajtove koje je korisnik uneo, poštuje robots.txt i Crawl-delay, najviše 60 strana po analizi i nedeljnu proveru sitemap/RSS. Blokada: `User-agent: SovaBot` / `Disallow: /`. Proveri `website_crawls` po `url` da vidiš ko je pokrenuo.
 - **Lažno pozitivna SSRF blokada**: `assertPublicHost` odbija domen ako bilo koja A/AAAA adresa padne u privatni opseg; proveri `nslookup` i, ako je sajt iza CDN-a sa javnim adresama, prijavi kao bag (ne dodavati izuzetke bez pregleda).
@@ -84,3 +88,13 @@ Faza 16. Vercel: `main` → Production, PR → Preview. Checklista u ARCHITECTUR
 ## 7. Dnevnik incidenata
 
 Još nema.
+
+## 8. Admin pristup i impersonacija
+
+- **Ko je admin**: samo email koji je u `platform_admin_allowlist` u trenutku registracije (ili seed); uloga se ne menja iz aplikacije. Nov admin na produkciji: insert u allowlist kroz SQL editor uz zapis u sekciji 7, pa registracija. Za postojeći nalog: `update profiles set platform_role = 'platform_admin' where email = '…'` (service role), takođe uz zapis.
+- **Pristup**: TOTP je obavezan i potvrđuje se u svakoj sesiji (AAL2). Izgubljen telefon: Supabase dashboard → Authentication → korisnik → obriši MFA faktor, admin ga ponovo uključuje u Podešavanja → Bezbednost.
+- **Impersonacija**: detalj korisnika → razlog (najmanje 10 znakova) → „Gledaj kao”. Read-only je podrazumevan; pun režim traži kucanje emaila korisnika. Traje najviše 30 minuta; izlaz dugmetom „Izađi” ili odjavom. Sesije: `select id, admin_id, user_id, mode, started_at, expires_at, ended_at, end_reason from impersonation_sessions order by started_at desc limit 20`; zahtevi jedne sesije: `select created_at, after from admin_audit_log where impersonation_session_id = '…' order by id`.
+- **Impersonacija ne radi** (traka se ne pojavljuje, admin vidi svoje podatke): proveri `SUPABASE_JWT_SECRET` (HS256 secret projekta), `IMPERSONATION_SECRET` (najmanje 32 znaka) i da je TOTP potvrđen u sesiji. Log `impersonation_audit_failed` znači da upis u audit ne prolazi; tada impersonacija namerno ne radi (fail closed).
+- **Hitno gašenje svih impersonacija**: `update impersonation_sessions set ended_at = now(), end_reason = 'revoked' where ended_at is null` (service role); rotacija `IMPERSONATION_SECRET` poništava sve cookie-je odjednom.
+- **Audit**: Admin → Audit log → filteri → „Izvezi CSV” (najviše 1.000 redova; za više suzi period). Zapisi se ne menjaju i ne brišu, ni kad se nalog admina ili korisnika obriše (D-075).
+- **Blokada i brisanje**: blokada zaključava profil i Auth nalog i briše sesije, pa izdati tokeni odmah prestaju da važe. Brisanje naloga traži kucanje emaila; vlasnik tima sa drugim članovima prvo prenosi vlasništvo (409).

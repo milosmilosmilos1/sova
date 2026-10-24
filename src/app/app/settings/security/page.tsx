@@ -26,7 +26,14 @@ export default async function SecurityPage({ searchParams }: PageProps<'/app/set
           <CardDescription>Kod iz aplikacije za autentifikaciju uz lozinku.</CardDescription>
         </CardHeader>
         <CardContent>
-          <MfaPanel currentLevel={viewer.mfaVerified ? 'aal2' : 'aal1'} reason={reason} />
+          {viewer.impersonation ? (
+            <p className="text-sm text-muted-foreground">
+              Tokom impersonacije dvofaktorska zaštita se ne prikazuje i ne menja: panel bi radio nad vašim
+              admin nalogom, ne nad korisnikovim.
+            </p>
+          ) : (
+            <MfaPanel currentLevel={viewer.mfaVerified ? 'aal2' : 'aal1'} reason={reason} />
+          )}
         </CardContent>
       </Card>
       <Card>

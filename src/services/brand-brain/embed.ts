@@ -122,7 +122,7 @@ export async function indexBrandPages(brandId: string, crawlId: string): Promise
   for (let i = 0; i < pending.length; i += BATCH) {
     const batch = pending.slice(i, i + BATCH)
     const outcome = await callWithFallback(
-      [embeddingModel()],
+      [await embeddingModel()],
       (model) =>
         embedTexts({
           model,
@@ -171,7 +171,7 @@ export async function searchKnowledge(brandId: string, query: string, limit = 5)
   if ((await countKnowledge(brandId)) === 0) return []
   try {
     const { vectors } = await embedTexts({
-      model: embeddingModel(),
+      model: await embeddingModel(),
       texts: [query.slice(0, 4000)],
       dimensions: EMBED_DIMENSIONS,
       taskType: 'RETRIEVAL_QUERY',

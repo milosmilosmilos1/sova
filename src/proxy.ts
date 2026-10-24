@@ -24,6 +24,7 @@ export async function proxy(request: NextRequest) {
   requestHeaders.set('x-request-id', requestId)
   requestHeaders.set('x-nonce', nonce)
   requestHeaders.set('x-pathname', pathname)
+  requestHeaders.set('x-method', request.method)
   requestHeaders.set('content-security-policy', csp)
 
   let response = NextResponse.next({ request: { headers: requestHeaders } })

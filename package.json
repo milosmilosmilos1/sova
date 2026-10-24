@@ -22,7 +22,8 @@
     "prepare": "husky",
     "test:integration": "vitest run --config vitest.integration.config.mts",
     "test:e2e": "playwright test",
-    "demo:seed": "node scripts/demo-seed.mjs"
+    "demo:seed": "node scripts/demo-seed.mjs",
+    "demo:totp": "node scripts/totp.mjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

@@ -366,3 +366,43 @@ Razlog: deterministično, jeftino i bez spoljnog ključa; Instagram traži sliku
 
 Odluka: `scripts/demo-seed.mjs` (`npm run demo:seed`) pravi demo korisnika i podatke direktno kroz service role samo kad je Supabase URL localhost; lozinka dolazi iz `DEMO_PASSWORD` ili se generiše i ispisuje u konzoli, nikad u repo ili dokumentaciju. Nalozi mreža su lažni sa `assisted_only = true`, pa publisher nikad ne zove prave mreže; generacije Autopilota u demou su upisane bez ledger-a samo da ekran budžeta ima šta da prikaže.
 Razlog: vlasnik treba da vidi ekrane sa podacima pre nego što stignu Gemini i Meta ključevi; bezbednosna pravila iz brifa (bez tajni u kodu) važe i za alate.
+
+## D-070 · 24.10.2026 · usvojeno · Impersonacija: potpisan JWT za ciljnog korisnika, admin zadržava svoju sesiju
+
+Odluka (preferirana varijanta iz ARCHITECTURE 5.3, proverena uživo nad lokalnim Supabase-om pre pisanja koda: PostgREST prihvata HS256 JWT koji potpiše server, RLS vraća samo podatke ciljnog korisnika, upis u read-only režimu odbija sama baza, lažni potpis dobija 401):
+
+- Start: admin bira korisnika, unosi razlog (najmanje 10 znakova) i režim. Read-only je podrazumevan. Pun režim traži dodatnu potvrdu kucanjem emaila korisnika i pravi poseban zapis u audit logu. Ne može se impersonirati drugi platform admin ni sopstveni nalog; jedan admin ima najviše jednu aktivnu sesiju (nova zatvara staru).
+- Sesija: red u `impersonation_sessions` (najviše 30 minuta). Cookie `sova_imp` nosi samo `sessionId.hmac` (HMAC-SHA256 sa `IMPERSONATION_SECRET`), httpOnly, SameSite=Lax, Secure u produkciji, Max-Age do isteka. Bez korisnikove lozinke i bez korisnikove Supabase sesije.
+- Svaki zahtev: server proverava potpis cookie-ja, red sesije (pripada tom adminu, nije završena, nije istekla) i da je stvarni korisnik i dalje platform admin sa AAL2 (TOTP). Tek tada pravi Supabase klijent sa JWT-om za ciljnog korisnika (`sub`, `role = authenticated`, `aud`, `exp` najviše do isteka sesije, claim `imp = {sid, ro, adm}`), potpisanim sa `SUPABASE_JWT_SECRET`. Istekla sesija se zatvara (`end_reason = expired`) i zahtev ide kao admin.
+- Read-only u tri sloja: `createHandler` odbija POST/PUT/PATCH/DELETE, serverske akcije proveravaju režim, a RLS politike za pisanje (`can_edit`, `can_admin`, `profiles_update_own`) već gledaju `imp.ro`. Servisi koji pišu kroz service role zato moraju da prođu kroz prva dva sloja. `requireMembership` ne proverava režim, jer služi i čitanju (stara provera iz faze 4 je rušila svaku stranicu tokom read-only pregleda).
+- Ni u punom režimu nisu dozvoljeni: lozinka, email i MFA, naplata, bilo koje brisanje (DELETE), povezivanje i odvajanje mreža i Canve, objavljivanje (zakazivanje, „objavi sada”, nastavak, retry i ručno objavljivanje targeta), promene Autopilota, tim i pozivnice, novi radni prostor.
+- Audit: `impersonation.start`, `impersonation.full_mode` (poseban zapis), `impersonation.request` za svaki zahtev (metod, putanja), `impersonation.end`, `impersonation.expired`. Ako upis zahteva u audit ne uspe, zahtev ide kao admin (fail closed): nema impersonacije bez zapisa. Traka „Gledate kao <email> — Izađi” je na svakoj strani aplikacije i admin panela.
+- Admin rute i stranice uvek rade sa stvarnim adminom (i tokom impersonacije). Ekrani koji koriste browser Supabase klijent (MFA) su tokom impersonacije isključeni, jer browser nosi adminovu sesiju.
+- Preduslov za produkciju: Supabase projekat zadržava HS256 (legacy) JWT secret za proveru tokena. Ako pređe isključivo na asimetrične ključeve, rezerva je aplikacijska impersonacija iz ARCHITECTURE 5.3 (nije implementirana).
+
+Razlog: brif 16 (razlog, 30 min, read-only podrazumevano, pun režim uz potvrdu, zabranjene radnje, traka, bez lozinke, potpisan httpOnly cookie, svaki zahtev u logu); RLS radi tačno kao za pravog korisnika, a read-only je garantovan i u bazi.
+
+## D-071 · 24.10.2026 · usvojeno · Admin panel: čitanje u Server Components, izmene kroz `/api/admin/*`, sve u audit logu
+
+Odluka: stranice `/admin/*` čitaju preko servisa u `src/services/admin/` sa service role klijentom (admin tabele nemaju RLS pristup); izmene idu kroz rute sa `auth: 'admin'` (platform admin + potvrđen email + AAL2, uvek stvarni korisnik). Svaka izmena i svako otvaranje detalja korisnika pišu `admin_audit_log` sa stanjem pre i posle, IP-om, user agentom i request id-jem. Liste (korisnici, audit) imaju pretragu, filtere, sortiranje i paginaciju na serveru; audit se izvozi u CSV.
+Razlog: brif 16 (pristup na tri mesta, audit svake akcije, paginacija na serveru).
+
+## D-072 · 24.10.2026 · usvojeno · Aktivni AI modeli iz podešavanja platforme, unutar dozvoljene liste
+
+Odluka: `platform_settings.active_models` (tekst, rezervni tekst, slika, premium slika, rezervna slika, embedding) nadjačava env, ali samo modelom iz `allowed_models` za tu vrstu; nepoznat model se ignoriše uz upozorenje u logu. Funkcije lanaca modela su asinhrone i keširaju podešavanje 60 s.
+Razlog: brif 16 („izbor modela iz dozvoljene liste”) i RUNBOOK (pad modela se rešava bez deploya); env ostaje izvor podrazumevanih naziva (brif 3).
+
+## D-073 · 24.10.2026 · usvojeno · Aktivni korisnici iz `auth.sessions`, metrike naplate iz pretplata
+
+Odluka: DAU i MAU broje različite korisnike čija je sesija osvežena u poslednjih 24 h i 30 dana (RPC `admin_activity_counts`, security definer, samo service role). MRR, ARR, churn i konverzija se računaju iz `subscriptions` i `plans` (godišnji plan deljen sa 12); do faze 12 su nula i stranica to kaže. Prinudna odjava briše sesije korisnika (RPC `admin_revoke_user_sessions`). Supabase Auth uz svaki token proverava i sesiju iz claim-a `session_id`, pa i već izdat access token odmah prestaje da važi (provereno integracionim testom).
+Razlog: aplikacija nema sopstveni log aktivnosti, a osvežavanje sesije prati stvarno korišćenje; naplata još ne postoji.
+
+## D-074 · 24.10.2026 · usvojeno · Marža: vrednost tokena po najnižoj ceni, besplatni tokeni bez prihoda
+
+Odluka: prihod po tokenu je najniža cena po tokenu među plaćenim planovima i dopunama (sada godišnji plan, oko 0,033 USD). Prihod radnog prostora = naplaćeni tokeni × ta vrednost ako radni prostor ima plaćenu pretplatu ili dopunu, inače 0. Marža = prihod − trošak provajdera; negativna marža se ističe na strani AI troškova.
+Razlog: konzervativna procena ne precenjuje zaradu; besplatni tokeni su trošak akvizicije, pa ih admin treba da vidi kao minus.
+
+## D-075 · 24.10.2026 · usvojeno · Audit log je trajan zapis bez stranih ključeva
+
+Odluka: `admin_audit_log` nema strane ključeve (migracija 019). `admin_id` i `impersonation_session_id` su obični UUID-ovi, a `admin_email` čuva email admina u trenutku radnje. Brisanje korisnika, admina ili sesije impersonacije ne menja zapise i ne blokira se zbog njih. `admin_adjust_tokens` upisuje jedan potpun zapis (IP, user agent, request id, stanje pre i posle) u istoj transakciji kao i promenu tokena; servis više ne piše svoj. Pretraga po adminu ide po snimljenom emailu, pa radi i za obrisane naloge.
+Razlog: kaskada brisanja korisnika je tiho postavljala `impersonation_session_id` na NULL (append-only okidač propušta izmene unutar kaskade), RESTRICT na `admin_id` je sprečavao brisanje bivšeg admina, a promena tokena je pravila dva zapisa, od kojih je drugi mogao da padne posle uspele promene.

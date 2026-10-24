@@ -422,7 +422,7 @@ export async function runStrategyGeneration(
       .update({ progress: { step: 'generating', message: 'Pišem strategiju…' } })
       .eq('id', generationId)
     const outcome = await callWithFallback(
-      textModelChain(),
+      await textModelChain(),
       (model) =>
         generateText({
           model,

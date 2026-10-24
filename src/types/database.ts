@@ -77,29 +77,17 @@ isOneToOne: false
                   ]
                 },"admin_audit_log": {
                   Row: {
-                    "action": string,"admin_id": string,"after": Json | null,"before": Json | null,"created_at": string,"id": number,"impersonation_session_id": string | null,"ip": unknown,"request_id": string | null,"target_id": string | null,"target_type": string | null,"user_agent": string | null
+                    "action": string,"admin_email": string | null,"admin_id": string,"after": Json | null,"before": Json | null,"created_at": string,"id": number,"impersonation_session_id": string | null,"ip": unknown,"request_id": string | null,"target_id": string | null,"target_type": string | null,"user_agent": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "action": string,"admin_id": string,"after"?: Json | null,"before"?: Json | null,"created_at"?: string,"id"?: number,"impersonation_session_id"?: string | null,"ip"?: unknown,"request_id"?: string | null,"target_id"?: string | null,"target_type"?: string | null,"user_agent"?: string | null
+                    "action": string,"admin_email"?: string | null,"admin_id": string,"after"?: Json | null,"before"?: Json | null,"created_at"?: string,"id"?: number,"impersonation_session_id"?: string | null,"ip"?: unknown,"request_id"?: string | null,"target_id"?: string | null,"target_type"?: string | null,"user_agent"?: string | null
                   }
                   Update: {
-                    "action"?: string,"admin_id"?: string,"after"?: Json | null,"before"?: Json | null,"created_at"?: string,"id"?: number,"impersonation_session_id"?: string | null,"ip"?: unknown,"request_id"?: string | null,"target_id"?: string | null,"target_type"?: string | null,"user_agent"?: string | null
+                    "action"?: string,"admin_email"?: string | null,"admin_id"?: string,"after"?: Json | null,"before"?: Json | null,"created_at"?: string,"id"?: number,"impersonation_session_id"?: string | null,"ip"?: unknown,"request_id"?: string | null,"target_id"?: string | null,"target_type"?: string | null,"user_agent"?: string | null
                   }
                   Relationships: [
-                    {
-      foreignKeyName: "admin_audit_log_admin_id_fkey"
-      columns: ["admin_id"]
-isOneToOne: false
-      referencedRelation: "profiles"
-      referencedColumns: ["id"]
-    },{
-      foreignKeyName: "admin_audit_log_impersonation_session_id_fkey"
-      columns: ["impersonation_session_id"]
-isOneToOne: false
-      referencedRelation: "impersonation_sessions"
-      referencedColumns: ["id"]
-    }
+                    
                   ]
                 },"ai_generations": {
                   Row: {
@@ -1758,8 +1746,25 @@ isOneToOne: false
             "accept_invitation":
 { Args: { "p_token": string }; Returns: Json
                            },
+"admin_activity_counts":
+{ Args: Record<PropertyKey, never>; Returns: Json
+                           },
 "admin_adjust_tokens":
-{ Args: { "p_admin_id": string,"p_delta": number,"p_reason": string,"p_workspace_id": string }; Returns: number
+{ Args: { "p_admin_id": string,"p_audit"?: Json,"p_delta": number,"p_reason": string,"p_workspace_id": string }; Returns: number
+                           },
+"admin_ai_costs":
+{ Args: { "p_days"?: number }; Returns: Json
+                           },
+"admin_auth_users":
+{ Args: { "p_ids": (string)[] }; Returns: {
+              "banned_until": string,"email_confirmed_at": string,"factors": number,"id": string,"last_sign_in_at": string
+            }[]
+                           },
+"admin_dashboard_stats":
+{ Args: { "p_days"?: number }; Returns: Json
+                           },
+"admin_revoke_user_sessions":
+{ Args: { "p_user_id": string }; Returns: number
                            },
 "brand_knowledge_count":
 { Args: { "p_brand_id": string }; Returns: number

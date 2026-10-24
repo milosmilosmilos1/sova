@@ -4,6 +4,7 @@ import * as Sentry from '@sentry/nextjs'
 import { type NextRequest } from 'next/server'
 import { z } from 'zod'
 
+import { impersonationBlock } from '@/lib/auth/impersonation-core'
 import { getViewerFromRequest, type Viewer } from '@/lib/auth/viewer'
 import { env } from '@/lib/env'
 import { createLogger, type Logger } from '@/lib/logger'
@@ -128,8 +129,13 @@ async function authenticate(mode: AuthMode, req: NextRequest): Promise<Viewer | 
     if (!env.CRON_SECRET || token !== env.CRON_SECRET) throw new ApiError('UNAUTHENTICATED')
     return null
   }
-  const viewer = await getViewerFromRequest(req)
+  // admin rute uvek rade sa stvarnim adminom, i tokom impersonacije (D-070, D-071)
+  const viewer = await getViewerFromRequest(req, { real: mode === 'admin' })
   if (!viewer) throw new ApiError('UNAUTHENTICATED')
+  if (viewer.impersonation) {
+    const blocked = impersonationBlock(viewer.impersonation.readOnly, req.method, req.nextUrl.pathname)
+    if (blocked) throw new ApiError('FORBIDDEN', blocked, { details: { impersonation: true } })
+  }
   if (viewer.profile.isBanned) throw new ApiError('FORBIDDEN', 'Nalog je blokiran.')
   if ((mode === 'verified' || mode === 'admin') && !viewer.profile.emailVerifiedAt) {
     throw new ApiError('EMAIL_NOT_VERIFIED')

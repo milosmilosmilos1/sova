@@ -476,7 +476,7 @@ create table post_media (
   id uuid primary key default gen_random_uuid(),
   post_id uuid not null references posts(id) on delete cascade,
   target_id uuid references post_targets(id) on delete cascade,  -- null = važi za sve mreže
-  media_asset_id uuid not null references media_assets(id) on delete restrict,
+  media_asset_id uuid not null references media_assets(id) on delete no action deferrable initially deferred,  -- migracija 018
   sort_order integer not null default 0,
   crop jsonb,                                  -- {aspect, x, y, w, h} po formatu
   unique (post_id, media_asset_id, target_id)
@@ -819,7 +819,8 @@ create table payment_events (
 ```sql
 create table admin_audit_log (
   id bigserial primary key,
-  admin_id uuid not null references profiles(id) on delete restrict,
+  admin_id uuid not null,                      -- bez FK: zapis ostaje i kad se nalog obriše (D-075)
+  admin_email text,                            -- email admina u trenutku radnje
   action text not null,                        -- user.view, user.ban, tokens.adjust, impersonation.start, flag.update ...
   target_type text,
   target_id text,
@@ -847,8 +848,7 @@ create table impersonation_sessions (
   ip inet,
   check (admin_id <> user_id)
 );
-alter table admin_audit_log add constraint admin_audit_imp_fk
-  foreign key (impersonation_session_id) references impersonation_sessions(id) on delete set null;
+-- admin_audit_log.impersonation_session_id je bez FK (migracija 019): kaskada brisanja sesije ne sme da menja audit
 
 create table feature_flags (
   key text primary key,                        -- platform.instagram, platform.x, firecrawl, canva_autofill ...
@@ -1096,7 +1096,12 @@ Napomena iz prethodne verzije projekta: `revoke ... from public` nije dovoljan j
 | `expire_reservations()`                                                                | service (cron)                     | `reserved` i `expires_at < now()` → `expired`.                                                                                                                                                                          |
 | `grant_tokens(ws, source, amount, reference_type, reference, expires_at, actor, note)` | service                            | Insert u `token_grants` (UNIQUE štiti), ledger `grant`. Vraća grant id ili postojeći ako je duplikat.                                                                                                                   |
 | `expire_grants()`                                                                      | service (cron)                     | Grantovi sa `expires_at < now()` i `remaining > 0` → ledger `expire`, `remaining = 0`.                                                                                                                                  |
-| `admin_adjust_tokens(ws, delta, reason, admin_id)`                                     | service                            | Pozitivno: grant `admin`. Negativno: troši grantove kao rezervacija + odmah potvrda. Audit log red.                                                                                                                     |
+| `admin_adjust_tokens(ws, delta, reason, admin_id, audit)`                              | service                            | Pozitivno: grant `admin`. Negativno: troši grantove kao rezervacija + odmah potvrda. Jedan audit red u istoj transakciji (`audit` = admin_email, target_user_id, ip, user_agent, request_id; stanje pre i posle).       |
+| `admin_dashboard_stats(days)`                                                          | service                            | Brojke za admin pregled: korisnici, radni prostori, tokeni, AI, objave po mreži, pretplate (jsonb).                                                                                                                     |
+| `admin_activity_counts()`                                                              | service                            | DAU/WAU/MAU iz `auth.sessions` (D-073).                                                                                                                                                                                 |
+| `admin_auth_users(ids)`                                                                | service                            | Iz `auth.users`: poslednja prijava, potvrda emaila, ban, broj MFA faktora.                                                                                                                                              |
+| `admin_revoke_user_sessions(user_id)`                                                  | service                            | Briše sesije korisnika (prinudna odjava, blokada); vraća broj.                                                                                                                                                          |
+| `admin_ai_costs(days)`                                                                 | service                            | Trošak po modelu, danu i radnom prostoru sa vlasnikom i oznakom plaćanja (jsonb).                                                                                                                                       |
 | `transition_post(post_id, to_status, expected_version, actor)`                         | service                            | Proverava dozvoljen prelaz iz matrice, `version = expected_version` inače `CONFLICT`, upisuje `post_versions`, podiže `version`.                                                                                        |
 | `decide_post(post_id, decision, comment, post_version, link_id)`                       | service (iz rute ili javnog linka) | Upis u `approvals`, prelaz statusa; odluka na staroj verziji → `CONFLICT`.                                                                                                                                              |
 | `complete_upload(asset_id, mime, size, width, height, sha256)`                         | service                            | Potvrđuje da je fajl prošao magic bytes proveru i upisuje metapodatke.                                                                                                                                                  |
@@ -1272,3 +1277,11 @@ create index posts_autopilot_pending on posts (brand_id, scheduled_for)
 - Autopilot objave: `source = 'autopilot'`, `qa_report = {passed, checks[{name, ok, message}], similarity}`, `scheduled_for` je plan dok objava nije zakazana.
 - Generacije Autopilota: `ai_generations.user_id = null`, `input.autopilot = true`, `input.runId`, `input.postId` (budžet, D-066).
 - Predlozi: `strategy_proposal` (source `analytics`, `payload.periodStart`), `post_idea` iz praznika (`payload = {date, name, kind}`), `repeat_format` iz analitike (`evidence.targetIds`).
+
+Faza 13 (24.10.2026), tri nove migracije (primenjene sa `migration up`, bez `db:reset`):
+
+- `20261024000017_admin.sql`: RPC-ovi `admin_dashboard_stats`, `admin_activity_counts`, `admin_auth_users`, `admin_revoke_user_sessions`, `admin_ai_costs` (security definer, samo service role); indeksi `admin_audit_log` po vremenu, cilju i akciji i delimični indeks aktivnih `impersonation_sessions`; red `platform_settings.active_models = {}` (D-072).
+- `20261024000018_post_media_fk.sql`: `post_media.media_asset_id` je `no action deferrable initially deferred`. Sa RESTRICT (pa i sa neodloženim NO ACTION, zbog redosleda kaskada) brisanje korisnika ili radnog prostora čije objave imaju medije je padalo; direktno brisanje medija koji je u upotrebi i dalje pada na kraju transakcije.
+- `20261024000019_audit_log_permanent.sql`: `admin_audit_log` bez stranih ključeva i sa kolonom `admin_email` (popunjena za postojeće redove), nova verzija `admin_adjust_tokens` sa parametrom `p_audit` (D-075).
+- Impersonacija ne menja šemu: koristi `impersonation_sessions` i `is_impersonation_readonly()` iz faze 3; `end_reason` je `exit`, `replaced`, `expired`, `sign_out` ili `revoked`.
+- Akcije u `admin_audit_log`: `user.view`, `user.ban`, `user.unban`, `user.logout_all`, `user.resend_verification`, `user.delete`, `tokens.adjust`, `flag.update`, `settings.token_prices`, `settings.active_models`, `settings.maintenance`, `publish.retry`, `audit.export`, `impersonation.start`, `impersonation.full_mode`, `impersonation.request`, `impersonation.end`, `impersonation.expired`.

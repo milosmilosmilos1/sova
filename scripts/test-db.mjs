@@ -547,6 +547,119 @@ async function main() {
     assert(ledger.length === 0, 'ledger ostao posle kaskade')
   })
 
+  // admin bez prijave (samo kroz allowlist), da ne troši limit prijava lokalnog Auth-a
+  const dbAdminEmail = `test-admin-${stamp}@sova.local`
+  let dbAdmin = null
+  await test('admin_adjust_tokens: jedan audit zapis u istoj transakciji; prijavljen korisnik ne može da je pozove', async () => {
+    await admin.from('platform_admin_allowlist').insert({ email: dbAdminEmail, note: 'test baze' })
+    const { data, error } = await admin.auth.admin.createUser({
+      email: dbAdminEmail,
+      password: `Lozinka-${stamp}-adm!`,
+      email_confirm: true,
+    })
+    assert(!error, `admin: ${error?.message}`)
+    dbAdmin = data.user
+    const { data: prof } = await admin.from('profiles').select('platform_role').eq('id', dbAdmin.id).single()
+    assert(prof.platform_role === 'platform_admin', 'allowlist nije dodelio admin ulogu')
+
+    const { data: ledgerId, error: rpcErr } = await admin.rpc('admin_adjust_tokens', {
+      p_workspace_id: wsA,
+      p_delta: 3,
+      p_reason: 'Provera audit zapisa',
+      p_admin_id: dbAdmin.id,
+      p_audit: {
+        admin_email: dbAdminEmail,
+        target_user_id: users.a.id,
+        ip: 'nije-ip',
+        user_agent: 'test-db',
+      },
+    })
+    assert(!rpcErr, `rpc: ${rpcErr?.message}`)
+    const { data: rows } = await admin
+      .from('admin_audit_log')
+      .select('admin_email, target_type, target_id, ip, user_agent, after')
+      .eq('action', 'tokens.adjust')
+      .eq('after->>ledgerId', String(ledgerId))
+    assert(rows.length === 1, `audit zapisa: ${rows.length}`)
+    const r = rows[0]
+    assert(
+      r.admin_email === dbAdminEmail &&
+        r.target_type === 'user' &&
+        r.target_id === users.a.id &&
+        r.ip === null &&
+        r.user_agent === 'test-db',
+      `audit zapis: ${JSON.stringify(r)}`,
+    )
+    assert(
+      r.after.delta === 3 && r.after.reason === 'Provera audit zapisa',
+      `after: ${JSON.stringify(r.after)}`,
+    )
+
+    const denied = await A.rpc('admin_adjust_tokens', {
+      p_workspace_id: wsA,
+      p_delta: 1000,
+      p_reason: 'Pokušaj korisnika',
+      p_admin_id: dbAdmin.id,
+    })
+    assert(denied.error, 'prijavljen korisnik je pozvao admin_adjust_tokens')
+  })
+
+  await test('admin_audit_log: append-only, bez stranih ključeva; brisanje admina i impersoniranog korisnika ne menja zapis', async () => {
+    assert(dbAdmin, 'nema admina iz prethodnog testa')
+    const { data: t, error: tErr } = await admin.auth.admin.createUser({
+      email: `test-imp-${stamp}@sova.local`,
+      password: `Lozinka-${stamp}-imp!`,
+      email_confirm: true,
+    })
+    assert(!tErr, `korisnik: ${tErr?.message}`)
+    try {
+      const { data: s, error: sErr } = await admin
+        .from('impersonation_sessions')
+        .insert({ admin_id: dbAdmin.id, user_id: t.user.id, reason: 'Provera brisanja u testu baze' })
+        .select('id')
+        .single()
+      assert(!sErr, `sesija: ${sErr?.message}`)
+      const { data: row, error: lErr } = await admin
+        .from('admin_audit_log')
+        .insert({
+          admin_id: dbAdmin.id,
+          admin_email: dbAdminEmail,
+          action: 'impersonation.start',
+          target_type: 'user',
+          target_id: t.user.id,
+          impersonation_session_id: s.id,
+        })
+        .select('id')
+        .single()
+      assert(!lErr, `audit: ${lErr?.message}`)
+      expectError(
+        await admin.from('admin_audit_log').update({ action: 'izmena' }).eq('id', row.id),
+        'APPEND_ONLY',
+      )
+      expectError(await admin.from('admin_audit_log').delete().eq('id', row.id), 'APPEND_ONLY')
+
+      const delUser = await admin.auth.admin.deleteUser(t.user.id)
+      assert(!delUser.error, `brisanje korisnika: ${delUser.error?.message}`)
+      const delAdmin = await admin.auth.admin.deleteUser(dbAdmin.id)
+      assert(!delAdmin.error, `brisanje admina: ${delAdmin.error?.message}`)
+      const { data: after } = await admin
+        .from('admin_audit_log')
+        .select('admin_id, admin_email, impersonation_session_id')
+        .eq('id', row.id)
+        .single()
+      assert(
+        after.impersonation_session_id === s.id &&
+          after.admin_id === dbAdmin.id &&
+          after.admin_email === dbAdminEmail,
+        `zapis izmenjen: ${JSON.stringify(after)}`,
+      )
+    } finally {
+      await admin.auth.admin.deleteUser(t.user.id).catch(() => {})
+      await admin.auth.admin.deleteUser(dbAdmin.id).catch(() => {})
+      await admin.from('platform_admin_allowlist').delete().eq('email', dbAdminEmail)
+    }
+  })
+
   await test('seed: planovi, podešavanja i flagovi postoje; anon vidi cenovnik', async () => {
     const anon = createClient(URL, ANON, { auth: { persistSession: false } })
     const { data: plans, error } = await anon.from('plans').select('code').order('sort_order')
