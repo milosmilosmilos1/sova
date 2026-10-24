@@ -19,6 +19,8 @@ Vrednosti za `.env.local` lokalnog Supabase-a: `npx supabase status -o env` (ANO
 
 Mreže iz faze 8b: `LINKEDIN_CLIENT_ID/SECRET`, `LINKEDIN_PAGES` i `LINKEDIN_MEMBER_ANALYTICS` (`true` tek kad LinkedIn odobri Community Management API odnosno Member Post Analytics), `TIKTOK_CLIENT_KEY/SECRET`, `PUBLIC_MEDIA_BASE_URL` (domen verifikovan u TikTok portalu; prazno = adresa aplikacije). Lokalno TikTok ne može da preuzme fajl sa localhost-a, pa foto objava traži javni tunel ili staging.
 
+Google poslovni profil i YouTube (faza 8c): isti `GOOGLE_CLIENT_ID/SECRET` kao Google prijava; u Google Cloud konzoli dodati redirect URI-je `{APP}/api/integrations/google_business/callback` i `{APP}/api/integrations/youtube/callback`. Flagovi `platform.google_business` i `platform.youtube` u admin panelu uključuju povezivanje. Dok je OAuth ekran u režimu „Testing”, Google refresh token ističe za 7 dana.
+
 Mediji (faza 8c): `MEDIA_MAX_VIDEO_MB` (podrazumevano 50) je najveći video u biblioteci. Supabase besplatan plan ne prima fajl veći od 50 MB bez obzira na ovu vrednost; na Pro planu podići i „Upload file size limit” u Storage podešavanjima projekta. Pregledač otprema pravo u skladište, pa `NEXT_PUBLIC_SUPABASE_URL` mora biti dostupan iz pregledača (CSP `connect-src` ga već dozvoljava).
 
 Provera: http://localhost:3001/api/health vraća `status: ok`; `database: ok`.
@@ -39,9 +41,9 @@ Zamke:
 
 ```
 npm run lint && npm run typecheck
-npm run test            # Vitest unit (171)
+npm run test            # Vitest unit (178)
 npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (30); pravi i briše test korisnike
-npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (140)
+npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (148)
 npm run test:e2e        # Playwright kroz Mailpit (6); traži pokrenut dev server; posle brisanja .next prvi run traje oko 2 min
 npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs 25   # živi crawler bez baze i AI-ja
 npm run build           # produkcijski build

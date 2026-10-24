@@ -26,6 +26,8 @@ process.env.LINKEDIN_PAGES ||= 'true'
 process.env.LINKEDIN_MEMBER_ANALYTICS ||= 'true'
 process.env.TIKTOK_CLIENT_KEY ||= 'test-tiktok-client-key'
 process.env.TIKTOK_CLIENT_SECRET ||= 'test-tiktok-secret-0123456789'
+process.env.GOOGLE_CLIENT_ID ||= 'test-google-client.apps.googleusercontent.com'
+process.env.GOOGLE_CLIENT_SECRET ||= 'test-google-secret-0123456789'
 process.env.PUBLIC_MEDIA_BASE_URL ||= 'https://media.sova.test'
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {

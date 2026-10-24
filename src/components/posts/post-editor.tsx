@@ -11,7 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { GoogleBusinessPanel } from '@/components/posts/google-business-panel'
 import { TikTokPanel } from '@/components/posts/tiktok-panel'
+import { readGbpOptions } from '@/config/google-business'
 import { PLATFORMS } from '@/config/platforms'
 import { readTikTokOptions } from '@/config/tiktok'
 import { targetStatusLabel } from '@/config/post-labels'
@@ -643,6 +645,20 @@ function EditorForm({
                         set('selected', {
                           ...form.selected,
                           [a.id]: { ...sel, options: { ...sel.options, tiktok } },
+                        })
+                      }
+                    />
+                  ) : null}
+                  {sel.on && a.platform === 'google_business' ? (
+                    <GoogleBusinessPanel
+                      accountId={a.id}
+                      value={readGbpOptions({ google_business: sel.options.google_business })}
+                      postLink={form.linkUrl.trim() || null}
+                      disabled={!editable}
+                      onChange={(google_business) =>
+                        set('selected', {
+                          ...form.selected,
+                          [a.id]: { ...sel, options: { ...sel.options, google_business } },
                         })
                       }
                     />

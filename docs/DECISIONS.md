@@ -457,3 +457,22 @@ Odluka:
 - **Video bez ffmpeg-a.** Trajanje, prikazane dimenzije (rotacija iz matrice `tkhd`, jer telefon vertikalan snimak čuva kao položen sa rotacijom 90°) i kodeci se čitaju iz ISO BMFF kutija (`src/lib/media/mp4.ts`). Lokacija i ostali metapodaci snimka (`©xyz`, QuickTime `meta` ključevi) se brišu bez ponovnog kodiranja: kutija postaje `free` iste veličine sa nulama, pa fajl ostaje ispravan (kao EXIF kod slika). Sličica za pregled je `<video preload="metadata">` u pregledaču.
 - **Limiti.** Slika do 20 MB; video MP4 ili MOV do `MEDIA_MAX_VIDEO_MB` (podrazumevano 50, koliko Supabase besplatan plan prima po fajlu), najmanje 1 s. Pravila po mreži (trajanje, odnos stranica) proverava provider pri proveri objave.
   Razlog: video je uslov za YouTube Shorts, TikTok video, Reels i Pinterest video; a otpremanje kroz server je na Vercel-u ograničeno na 4,5 MB.
+
+## D-083 · 24.10.2026 · usvojeno · Nove mreže u zajedničkom toku: PKCE, osvežavanje, opoziv, metrike, naplata objave na X
+
+Odluka:
+
+- **PKCE u zajedničkom OAuth toku.** Provider sa `usesPkce` (X) dobija `code_challenge` (S256); verifier se čuva šifrovan u `oauth_states.code_verifier_enc` (AAD `social-pkce:{ključ}:{korisnik}`) i dešifruje u povratku. Google i Pinterest PKCE za poverljiv web klijent ne dokumentuju, pa ga ne koriste.
+- **Osvežavanje tokena po mreži.** `accessTokenFor` osvežava svaki token sa refresh tokenom pre isteka (TikTok 10 min, X i Google 5 min, Pinterest dan ranije); bez refresh tokena istekao token daje TOKEN_INVALID. Cron na 6 h (`cronShouldRefresh`): TikTok kad ističe za manje od 6 h, Pinterest za manje od 3 dana (refresh token važi 60 dana od poslednjeg osvežavanja), X i Google samo da refresh token ne istekne dok nalog miruje (30 odnosno 60 dana posle isteka pristupnog). Nalozi koji miruju se biraju posebnim upitima, da ne istisnu TikTok i LinkedIn iz limita.
+- **Opoziv po identitetu kroz sve brendove.** Pre opoziva kod mreže proverava se da li isti korisnik mreže (`providerUserId`) i dalje ima povezan nalog u bilo kom brendu, u grupi mreža koje dele opoziv (Facebook i Instagram; YouTube i Google poslovni profil, jer Google opoziv ukida sve dozvole projekta).
+- **Metrike po mreži.** Objave: Facebook, Instagram, LinkedIn, TikTok, YouTube i X (X samo 24 h i 7 dana, jer se svako čitanje plaća); Google poslovni profil nema metrike objava kroz API, Pinterest zabranjuje čuvanje (D-085). Dnevne metrike naloga: bez X-a (pratioci pri sinhronizaciji); Google poslovni profil daje prikaze, klikove na sajt, pozive, putanje i poruke.
+- **Naplata objave na X** (D-013): publisher pre slanja rezerviše 1 token, ili 6 kad objava ima link (X objavu sa URL-om naplaćuje $0.20); potvrda posle uspeha, i posle obrade videa; oslobađanje pri svakoj grešci; nedovoljno tokena → target pada sa porukom koliko treba. Rezervacija važi 60 min.
+  Razlog: četiri nove mreže treba da prođu kroz isti tok kao Meta, LinkedIn i TikTok, uz pravila koja svaka mreža nameće.
+
+## D-084 · 24.10.2026 · usvojeno · Google poslovni profil i YouTube kroz isti Google OAuth klijent
+
+Odluka:
+
+- Isti OAuth klijent kao Google prijava (`GOOGLE_CLIENT_ID/SECRET`), sa dva odvojena toka (`/api/integrations/google_business/…` i `/api/integrations/youtube/…`), da korisnik daje samo dozvole za ono što povezuje. `access_type=offline` i `prompt=consent` (refresh token samo pri prvom pristanku); identitet iz OpenID `userinfo` (`sub`); odobren `scope` se proverava jer granularni pristanak može da ga suzi.
+- **Google poslovni profil**: svaka lokacija je nalog u Sovi (`external_id` = lokacija, `external_parent_id` = Google nalog, jer v4 putanja objava traži oba). Objave kroz `localPosts`: obična, događaj ili ponuda, dugme (Saznajte više, Rezervišite, Poručite, Kupite, Prijavite se, Pozovite), jedna fotografija (JPG ili PNG, bar 250 px i 10 KB; WebP ide kroz našu JPEG varijantu). Vreme događaja je lokalno vreme lokacije, bez pretvaranja u UTC. Odbijena objava (`state: REJECTED`) pada sa objašnjenjem. Lokacija sa `canOperateLocalPost = false` se povezuje, ali provera objave kaže zašto ne može. Metrike objava ne postoje (ukinuto 2023); metrike lokacije iz Performance API-ja.
+  Razlog: oba proizvoda su Google, ali traže različite dozvole i različite provere (poslovni profil: odobrenje pristupa; YouTube: verifikacija i kvota).

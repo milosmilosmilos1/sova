@@ -36,7 +36,9 @@ import { notifyUsers, usersWithRoles } from '@/services/notifications'
 import { getPostView, loadPost, type PostRow, type PostView, type TargetRow } from '@/services/posts/posts'
 import { markAccountStatus, refFor, type SocialAccountRow } from '@/services/social/account-rows'
 import { accessTokenFor } from '@/services/social/tokens'
-import { publicMediaUrl } from '@/lib/media/public-url'
+import { publicMediaUrl, type MediaVariant } from '@/lib/media/public-url'
+import { getTokenPrice } from '@/lib/tokens/prices'
+import { confirmReservation, releaseReservation, reserveTokens } from '@/lib/tokens/reservation'
 import type { Database, Json } from '@/types/database'
 
 /**
@@ -82,7 +84,7 @@ export interface PublishReport {
 
 type BrandLite = Pick<
   Database['public']['Tables']['brands']['Row'],
-  'id' | 'name' | 'status' | 'timezone' | 'workspace_id'
+  'id' | 'name' | 'status' | 'timezone' | 'workspace_id' | 'content_locale'
 >
 type TargetUpdate = Database['public']['Tables']['post_targets']['Update']
 
@@ -130,7 +132,7 @@ async function loadBundle(targetId: string): Promise<Bundle | null> {
     admin.from('social_accounts').select('*').eq('id', target.social_account_id).maybeSingle(),
     admin
       .from('brands')
-      .select('id, name, status, timezone, workspace_id')
+      .select('id, name, status, timezone, workspace_id, content_locale')
       .eq('id', target.brand_id)
       .maybeSingle(),
   ])
@@ -198,6 +200,12 @@ export function withUtm(
   }
 }
 
+function publicVariant(platform: SocialPlatform, kind: string): MediaVariant {
+  if (kind !== 'image') return 'orig'
+  if (platform === 'tiktok') return 'tiktok'
+  return platform === 'pinterest' || platform === 'google_business' ? 'jpeg' : 'orig'
+}
+
 async function normalize(b: Bundle): Promise<NormalizedPost> {
   const media: NormalizedPost['media'] = []
   for (const m of b.media) {
@@ -208,8 +216,8 @@ async function normalize(b: Bundle): Promise<NormalizedPost> {
       height: m.asset.height,
       alt: m.asset.alt_text,
       assetId: m.asset.id,
-      // TikTok foto preuzima samo sa verifikovanog domena; JPEG do 1080p (D-077)
-      publicUrl: publicMediaUrl(m.asset.id, b.target.platform === 'tiktok' ? 'tiktok' : 'orig'),
+      // TikTok foto preuzima samo sa verifikovanog domena; JPEG do 1080p (D-077); Pinterest i Google ne primaju WebP
+      publicUrl: publicMediaUrl(m.asset.id, publicVariant(b.target.platform, m.asset.kind)),
       sizeBytes: m.asset.size_bytes,
       durationMs: m.asset.duration_ms,
     })
@@ -227,6 +235,7 @@ async function normalize(b: Bundle): Promise<NormalizedPost> {
     clientKey: b.target.idempotency_key,
     title: b.post.title,
     options: (b.target.options as Record<string, Json> | null) ?? {},
+    language: b.brand.content_locale === 'en' ? 'en' : 'sr',
   }
 }
 
@@ -590,9 +599,52 @@ async function recheck(job: PublishJob, runId: string | null, now: Date): Promis
   return { action: 'go' }
 }
 
+/**
+ * X je pay-per-use (D-013): objava troši 1 token, a sa linkom 6 (X naplaćuje objavu sa URL-om
+ * $0.20). Rezervacija pre slanja, potvrda posle uspeha, oslobađanje pri grešci; rok rezervacije 60 min
+ * pokriva i obradu videa.
+ */
+export function xChargeAction(post: Pick<NormalizedPost, 'text' | 'link'>): 'x_post' | 'x_post_with_link' {
+  return post.link || /https?:\/\//i.test(post.text) ? 'x_post_with_link' : 'x_post'
+}
+
+async function reservePublishCharge(b: Bundle, post: NormalizedPost): Promise<string | null> {
+  if (b.target.platform !== 'x') return null
+  const amount = await getTokenPrice(xChargeAction(post))
+  if (amount <= 0) return null
+  return reserveTokens({
+    workspaceId: b.post.workspace_id,
+    brandId: b.brand.id,
+    userId: b.post.created_by,
+    amount,
+    ttlMinutes: 60,
+  })
+}
+
+async function settleCharge(
+  charge: string | null,
+  outcome: 'confirm' | 'release',
+  reason = 'publish',
+): Promise<void> {
+  if (!charge) return
+  try {
+    if (outcome === 'confirm') await confirmReservation(charge)
+    else await releaseReservation(charge, reason)
+  } catch (error) {
+    logger.error('publish_charge_settle_failed', { charge, outcome, error })
+  }
+}
+
 type AttemptResult =
   | { kind: 'success'; externalId: string | null; socialAccountId: string; brandId: string }
-  | { kind: 'pending'; handle: PollHandle; socialAccountId: string; brandId: string }
+  | {
+      kind: 'pending'
+      handle: PollHandle
+      socialAccountId: string
+      brandId: string
+      /** rezervacija tokena (X) koja se potvrđuje ili oslobađa posle obrade */
+      charge: string | null
+    }
   | { kind: 'retry'; delayMs: number; message: string }
   | { kind: 'reschedule'; at: string; socialAccountId: string; version: number; message: string }
   | { kind: 'failed'; message: string }
@@ -653,6 +705,11 @@ async function attemptOnce(
     try {
       const existing = await provider.findExistingPost(normalized, ref, token)
       if (existing) {
+        try {
+          await settleCharge(await reservePublishCharge(b, normalized), 'confirm')
+        } catch (error) {
+          logger.warn('publish_charge_existing_failed', { targetId: b.target.id, error })
+        }
         await finalizeSuccess(
           b,
           attemptNo,
@@ -669,6 +726,26 @@ async function attemptOnce(
     }
   }
 
+  let charge: string | null = null
+  try {
+    charge = await reservePublishCharge(b, normalized)
+  } catch (error) {
+    const failure: ClassifiedFailure =
+      error instanceof ApiError && error.code === 'INSUFFICIENT_TOKENS'
+        ? {
+            kind: 'permanent',
+            code: 'INSUFFICIENT_TOKENS',
+            message: `Nema dovoljno tokena za objavu na X (${
+              xChargeAction(normalized) === 'x_post_with_link' ? 'objava sa linkom' : 'objava'
+            }). Dopunite tokene pa objavite ponovo.`,
+            detail: error.message,
+            httpStatus: null,
+          }
+        : classifyPublishError(error)
+    await failTarget(b, attemptNo, startedAt, failure, runId)
+    return { kind: 'failed', message: failure.message }
+  }
+
   try {
     const result = await provider.publish(normalized, ref, token)
     if (result.pending) {
@@ -681,12 +758,14 @@ async function attemptOnce(
         { pending: pollHandleId(result.pending) },
         runId,
       )
-      return { kind: 'pending', handle: result.pending, ...ids }
+      return { kind: 'pending', handle: result.pending, ...ids, charge }
     }
+    await settleCharge(charge, 'confirm')
     await finalizeSuccess(b, attemptNo, startedAt, result.externalId, result.permalink, runId, null)
     return { kind: 'success', externalId: result.externalId, ...ids }
   } catch (error) {
     const failure = classifyPublishError(error)
+    await settleCharge(charge, 'release', failure.code)
     switch (failure.kind) {
       case 'retry': {
         if (attemptNo >= MAX_PUBLISH_ATTEMPTS) {
@@ -773,10 +852,13 @@ async function pollOnce(
   attemptNo: number,
   pollNo: number,
   runId: string | null,
+  charge: string | null = null,
 ): Promise<PollResult> {
   const b = await loadBundle(job.targetId)
-  if (!b || b.target.status !== 'publishing')
+  if (!b || b.target.status !== 'publishing') {
+    await settleCharge(charge, 'release', 'target_changed')
     return { kind: 'failed', message: 'target više nije u objavljivanju' }
+  }
   const provider = providerFor(b.target.platform)
   const startedAt = new Date()
   try {
@@ -791,12 +873,14 @@ async function pollOnce(
           detail: `obrada ${pollHandleId(handle)} i dalje traje posle ${pollNo} provera`,
           httpStatus: null,
         }
+        await settleCharge(charge, 'release', failure.code)
         await failTarget(b, attemptNo, startedAt, failure, runId)
         return { kind: 'failed', message: failure.message }
       }
       return { kind: 'pending' }
     }
     if (status.state === 'failed') {
+      await settleCharge(charge, 'release', 'MEDIA_REJECTED')
       const failure: ClassifiedFailure = {
         kind: 'permanent',
         code: 'MEDIA_REJECTED',
@@ -807,11 +891,13 @@ async function pollOnce(
       await failTarget(b, attemptNo, startedAt, failure, runId)
       return { kind: 'failed', message: status.message }
     }
+    await settleCharge(charge, 'confirm')
     await finalizeSuccess(b, attemptNo, startedAt, status.externalId, status.permalink, runId, null)
     return { kind: 'success', externalId: status.externalId }
   } catch (error) {
     const failure = classifyPublishError(error)
     if (failure.kind === 'retry' && pollNo < ASYNC_POLL_MAX) return { kind: 'pending' }
+    await settleCharge(charge, 'release', failure.code)
     await failTarget(b, attemptNo, startedAt, failure, runId)
     return { kind: 'failed', message: failure.message }
   }
@@ -899,11 +985,11 @@ export async function runPublishTarget(job: PublishJob, ctx: PublishContext): Pr
       })
       return report('published', null, r.externalId, attemptNo)
     }
-    // pending: asinhrona mreža (IG kontejner)
+    // pending: asinhrona mreža (IG kontejner, TikTok, YouTube obrada, Pinterest i X video)
     for (let pollNo = 1; pollNo <= ASYNC_POLL_MAX; pollNo++) {
       await ctx.sleep(`poll-wait-${attemptNo}-${pollNo}`, ASYNC_POLL_INTERVAL_MS)
       const p = await ctx.run(`poll-${attemptNo}-${pollNo}`, () =>
-        pollOnce(job, r.handle, attemptNo, pollNo, ctx.runId),
+        pollOnce(job, r.handle, attemptNo, pollNo, ctx.runId, r.charge),
       )
       if (p.kind === 'pending') continue
       if (p.kind === 'failed') return report('failed', p.message, null, attemptNo)

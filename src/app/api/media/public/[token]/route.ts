@@ -9,7 +9,8 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 /**
  * Javni medij za mreže koje fajl preuzimaju same (TikTok PULL_FROM_URL, D-077): potpisan token sa
  * istekom, bajtovi direktno (TikTok ne prati preusmeravanja). Varijanta `tiktok` je JPEG do 1080 px
- * širine i 1920 px visine, jer TikTok foto prima samo JPEG i WebP do 1080p.
+ * širine i 1920 px visine, jer TikTok foto prima samo JPEG i WebP do 1080p; varijanta `jpeg` je ista
+ * obrada za Pinterest i Google poslovni profil, koji ne primaju WebP.
  */
 export const GET = createHandler(
   {
@@ -31,7 +32,7 @@ export const GET = createHandler(
     if (error || !file) throw new ApiError('NOT_FOUND', 'Medij ne postoji ili je link istekao.')
     let bytes = Buffer.from(await file.arrayBuffer())
     let type = asset.mime_type
-    if (parsed.variant === 'tiktok' && type.startsWith('image/')) {
+    if (parsed.variant !== 'orig' && type.startsWith('image/')) {
       bytes = await sharp(bytes)
         .rotate()
         .resize({ width: 1080, height: 1920, fit: 'inside', withoutEnlargement: true })

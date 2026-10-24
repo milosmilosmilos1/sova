@@ -3,7 +3,8 @@ import 'server-only'
 import { isProviderError } from '@/integrations/social/errors'
 import { providerFor } from '@/integrations/social/registry'
 import type { NormalizedMetrics } from '@/integrations/social/types'
-import { ANALYTICS_TARGET_STATUSES, type Horizon } from '@/lib/analytics/aggregate'
+import type { SocialPlatform } from '@/config/platforms'
+import { ANALYTICS_TARGET_STATUSES, type CaptureHorizon, type Horizon } from '@/lib/analytics/aggregate'
 import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { markAccountStatus, refFor } from '@/services/social/account-rows'
@@ -31,7 +32,30 @@ export function isGoneError(error: unknown): boolean {
   return /does not exist|not found|deleted/i.test(error.message)
 }
 
-const SUPPORTED_PLATFORMS = ['facebook', 'instagram', 'linkedin', 'tiktok'] as const
+/**
+ * Koje mreže imaju metrike u Sovi. Objave: Google poslovni profil ih nema kroz API, Pinterest zabranjuje
+ * čuvanje podataka iz API-ja (D-085), X naplaćuje svako čitanje pa se prate samo 24 h i 7 dana (D-083).
+ * Dnevne metrike naloga: X se ne povlači svaki dan (pratioci se osvežavaju pri sinhronizaciji naloga).
+ */
+const POST_METRICS_PLATFORMS: readonly SocialPlatform[] = [
+  'facebook',
+  'instagram',
+  'linkedin',
+  'tiktok',
+  'youtube',
+  'x',
+]
+const ACCOUNT_METRICS_PLATFORMS: readonly SocialPlatform[] = [
+  'facebook',
+  'instagram',
+  'linkedin',
+  'tiktok',
+  'youtube',
+  'google_business',
+]
+export const POST_METRIC_HORIZONS: Partial<Record<SocialPlatform, readonly CaptureHorizon[]>> = {
+  x: ['24h', '7d'],
+}
 
 export async function publishedAtOf(targetId: string): Promise<string | null> {
   const admin = createSupabaseAdminClient()
@@ -68,8 +92,12 @@ export async function capturePostMetrics(targetId: string, horizon: Horizon): Pr
   if (!(ANALYTICS_TARGET_STATUSES as readonly string[]).includes(target.status) || !target.external_post_id) {
     return { status: 'skipped', reason: `target je ${target.status} bez ID-ja objave` }
   }
-  if (!(SUPPORTED_PLATFORMS as readonly string[]).includes(target.platform)) {
-    return { status: 'skipped', reason: `mreža ${target.platform} još nema metrike` }
+  if (!POST_METRICS_PLATFORMS.includes(target.platform)) {
+    return { status: 'skipped', reason: `mreža ${target.platform} nema metrike objava` }
+  }
+  const horizons = POST_METRIC_HORIZONS[target.platform]
+  if (horizon !== 'adhoc' && horizons && !horizons.includes(horizon)) {
+    return { status: 'skipped', reason: `horizont ${horizon} se ne prati za mrežu ${target.platform}` }
   }
   if (horizon !== 'adhoc') {
     const { count } = await admin
@@ -145,8 +173,8 @@ export async function captureAccountMetrics(accountId: string, date: string): Pr
   const { data: account } = await admin.from('social_accounts').select('*').eq('id', accountId).maybeSingle()
   if (!account) return { status: 'skipped', reason: 'nalog ne postoji' }
   if (account.status !== 'active') return { status: 'skipped', reason: `nalog je ${account.status}` }
-  if (!(SUPPORTED_PLATFORMS as readonly string[]).includes(account.platform)) {
-    return { status: 'skipped', reason: `mreža ${account.platform} još nema metrike` }
+  if (!ACCOUNT_METRICS_PLATFORMS.includes(account.platform)) {
+    return { status: 'skipped', reason: `mreža ${account.platform} nema dnevne metrike naloga` }
   }
   try {
     const m = await providerFor(account.platform).fetchAccountMetrics(
@@ -163,6 +191,7 @@ export async function captureAccountMetrics(accountId: string, date: string): Pr
         reach: m.reach,
         impressions: m.impressions,
         profile_views: m.profileViews,
+        website_clicks: m.websiteClicks ?? null,
         raw: { ...m.raw, engagement: m.engagement } as unknown as NonNullable<Json>,
         captured_at: new Date().toISOString(),
       },
@@ -197,7 +226,7 @@ export async function runAccountMetricsSweep(date?: string): Promise<SweepSummar
     .from('social_accounts')
     .select('id')
     .eq('status', 'active')
-    .in('platform', [...SUPPORTED_PLATFORMS])
+    .in('platform', [...ACCOUNT_METRICS_PLATFORMS])
     .limit(1000)
   const summary: SweepSummary = {
     date: day,

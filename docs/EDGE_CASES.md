@@ -79,28 +79,34 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 
 ## Mreže
 
-| #   | Slučaj                                          | Ponašanje                                                                                                                            | Faza  | Status |
-| --- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----- | ------ |
-| N1  | Token opozvan na strani mreže                   | `TOKEN_INVALID` → nalog `needs_reauth`, targeti `needs_reauth`, email + banner                                                       | 8a    | test   |
-| N2  | Korisnik izgubio admin prava na stranici        | `PERMISSION_LOST` → isto kao N1 sa drugom porukom                                                                                    | 8a    | test   |
-| N3  | Nalog promenjen iz poslovnog u lični            | `listAccounts` ga više ne vraća → `disabled` sa objašnjenjem i asistiranim fallbackom                                                | 8a    | test   |
-| N4  | Promena verzije API-ja                          | Verzija u env-u (`META_GRAPH_VERSION`, `LINKEDIN_API_VERSION` = 202610; 202511 se gasi 16.11.2026); MSW testovi                      | 8     | kod    |
-| N5  | Uspeh bez ID-ja objave                          | `findExistingPost` po idempotency ključu ili vremenu; ako nema, target `published` sa `external_post_id = null` i oznakom za proveru | 9b    | kod    |
-| N6  | Objava uklonjena zbog pravila mreže             | Pri povlačenju metrika 404 → `deleted_externally`                                                                                    | 10b   | test   |
-| N7  | Dnevni limit objava (IG 100, TikTok ~15)        | Provera pre zakazivanja i pre objave; `QUOTA_EXCEEDED` → pomeranje na sledeći slobodan termin uz obaveštenje                         | 9b    | test   |
-| N8  | Neauditovan TikTok klijent                      | Greška `unaudited_client_…` → poruka da do audita idu samo privatni nalozi i „Samo ja”                                               | 8b    | test   |
-| N9  | Pogrešan odnos stranica slike                   | Provera objave javlja odnos van opsega mreže pre zakazivanja; auto-crop uz pregled stiže uz dizajn (14)                              | 7, 9a | kod    |
-| N10 | YouTube kvota potrošena                         | Dnevni brojač; `QUOTA_EXCEEDED` → sledeći dan ili asistirano                                                                         | 8c    | plan   |
-| N11 | Instagram kontejner `EXPIRED`                   | Novi kontejner, jedan ponovni pokušaj                                                                                                | 8a    | test   |
-| N12 | Mediji nedostupni mreži (potpisan URL istekao)  | URL se generiše neposredno pre objave sa 24 h važenja                                                                                | 9b    | kod    |
-| N13 | LinkedIn veza ističe (60 dana, bez refresh-a)   | Obaveštenje vlasnicima 7 dana ranije (jednom), posle isteka `needs_reauth` i u publisheru                                            | 8b    | test   |
-| N14 | LinkedIn link bez pregleda (API ne čita link)   | Naslov i opis sa stranice kroz SSRF-bezbedan fetch; ako ne uspe, naslov je domen                                                     | 8b    | test   |
-| N15 | TikTok privatnost se promeni posle zakazivanja  | `creator_info` pri objavi; objava pada sa porukom da se privatnost izabere ponovo                                                    | 8b    | test   |
-| N16 | TikTok ID tek posle moderacije                  | `external_post_id = publish:{id}`; povlačenje metrika ga zameni pravim ID-jem i linkom                                               | 8b    | test   |
-| N17 | TikTok int64 ID u JSON-u                        | Brojevi od 16+ cifara se parsiraju kao stringovi (bez zaokruživanja)                                                                 | 8b    | test   |
-| N18 | TikTok refresh token se promeni pri osvežavanju | Nov se čuva odmah; ako drugi proces upravo osvežava, koristi se stanje iz baze                                                       | 8b    | test   |
-| N19 | WebP slika na LinkedIn                          | Pretvara se u JPEG pri uploadu                                                                                                       | 8b    | kod    |
-| N20 | Javni link medija procuri                       | HMAC token za jedan medij, važi 2 h, bez listanja; obrisan medij 404                                                                 | 8b    | test   |
+| #   | Slučaj                                                      | Ponašanje                                                                                                                            | Faza  | Status |
+| --- | ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----- | ------ |
+| N1  | Token opozvan na strani mreže                               | `TOKEN_INVALID` → nalog `needs_reauth`, targeti `needs_reauth`, email + banner                                                       | 8a    | test   |
+| N2  | Korisnik izgubio admin prava na stranici                    | `PERMISSION_LOST` → isto kao N1 sa drugom porukom                                                                                    | 8a    | test   |
+| N3  | Nalog promenjen iz poslovnog u lični                        | `listAccounts` ga više ne vraća → `disabled` sa objašnjenjem i asistiranim fallbackom                                                | 8a    | test   |
+| N4  | Promena verzije API-ja                                      | Verzija u env-u (`META_GRAPH_VERSION`, `LINKEDIN_API_VERSION` = 202610; 202511 se gasi 16.11.2026); MSW testovi                      | 8     | kod    |
+| N5  | Uspeh bez ID-ja objave                                      | `findExistingPost` po idempotency ključu ili vremenu; ako nema, target `published` sa `external_post_id = null` i oznakom za proveru | 9b    | kod    |
+| N6  | Objava uklonjena zbog pravila mreže                         | Pri povlačenju metrika 404 → `deleted_externally`                                                                                    | 10b   | test   |
+| N7  | Dnevni limit objava (IG 100, TikTok ~15)                    | Provera pre zakazivanja i pre objave; `QUOTA_EXCEEDED` → pomeranje na sledeći slobodan termin uz obaveštenje                         | 9b    | test   |
+| N8  | Neauditovan TikTok klijent                                  | Greška `unaudited_client_…` → poruka da do audita idu samo privatni nalozi i „Samo ja”                                               | 8b    | test   |
+| N9  | Pogrešan odnos stranica slike                               | Provera objave javlja odnos van opsega mreže pre zakazivanja; auto-crop uz pregled stiže uz dizajn (14)                              | 7, 9a | kod    |
+| N10 | YouTube kvota potrošena                                     | Dnevni brojač; `QUOTA_EXCEEDED` → sledeći dan ili asistirano                                                                         | 8c    | plan   |
+| N11 | Instagram kontejner `EXPIRED`                               | Novi kontejner, jedan ponovni pokušaj                                                                                                | 8a    | test   |
+| N12 | Mediji nedostupni mreži (potpisan URL istekao)              | URL se generiše neposredno pre objave sa 24 h važenja                                                                                | 9b    | kod    |
+| N13 | LinkedIn veza ističe (60 dana, bez refresh-a)               | Obaveštenje vlasnicima 7 dana ranije (jednom), posle isteka `needs_reauth` i u publisheru                                            | 8b    | test   |
+| N14 | LinkedIn link bez pregleda (API ne čita link)               | Naslov i opis sa stranice kroz SSRF-bezbedan fetch; ako ne uspe, naslov je domen                                                     | 8b    | test   |
+| N15 | TikTok privatnost se promeni posle zakazivanja              | `creator_info` pri objavi; objava pada sa porukom da se privatnost izabere ponovo                                                    | 8b    | test   |
+| N16 | TikTok ID tek posle moderacije                              | `external_post_id = publish:{id}`; povlačenje metrika ga zameni pravim ID-jem i linkom                                               | 8b    | test   |
+| N17 | TikTok int64 ID u JSON-u                                    | Brojevi od 16+ cifara se parsiraju kao stringovi (bez zaokruživanja)                                                                 | 8b    | test   |
+| N18 | TikTok refresh token se promeni pri osvežavanju             | Nov se čuva odmah; ako drugi proces upravo osvežava, koristi se stanje iz baze                                                       | 8b    | test   |
+| N19 | WebP slika na LinkedIn                                      | Pretvara se u JPEG pri uploadu                                                                                                       | 8b    | kod    |
+| N20 | Javni link medija procuri                                   | HMAC token za jedan medij, važi 2 h, bez listanja; obrisan medij 404                                                                 | 8b    | test   |
+| N21 | Lokacija bez prava objave (nije verifikovana, suspendovana) | Povezuje se, ali provera objave kaže da Google ne dozvoljava objave za lokaciju                                                      | 8c    | test   |
+| N22 | Google odbije objavu (pravila sadržaja)                     | `state: REJECTED` → target pada sa objašnjenjem (telefon ili link u tekstu)                                                          | 8c    | test   |
+| N23 | Događaj ili ponuda bez naslova ili vremena                  | Problem pri proveri pre zakazivanja; vreme je lokalno vreme lokacije                                                                 | 8c    | test   |
+| N24 | Mala ili WebP fotografija za Google poslovni profil         | Bar 250 px i 10 KB; WebP ide kroz JPEG varijantu na našem domenu                                                                     | 8c    | test   |
+| N25 | Opoziv Google veze kad isti nalog koristi i drugi brend     | Opoziv ukida sve dozvole projekta, pa se radi tek kad nijedan nalog istog identiteta ne ostane (sve mreže iz grupe, svi brendovi)    | 8c    | test   |
+| N26 | Objava na X bez dovoljno tokena                             | Rezervacija pre slanja; nedovoljno → target pada sa porukom (1 token, 6 sa linkom); greška oslobađa rezervaciju                      | 8d    | kod    |
 
 ## Kalendar i objave
 

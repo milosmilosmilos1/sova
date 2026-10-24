@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { encryptSecret, toPgBytea } from '@/lib/crypto/tokens'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError } from '@/lib/supabase/errors'
@@ -10,31 +11,36 @@ import type { TokenSet } from '@/integrations/social/types'
 import { aadFor, loadAccountRow, tokensFor, type SocialAccountRow } from './account-rows'
 
 /**
- * Važeći pristupni token za poziv mreže (publisher, istorija, metrike, sinhronizacija). TikTok token
- * traje 24 h i osvežava se pre isteka; LinkedIn traje 60 dana i bez programskog refresh-a posle
- * isteka traži ponovno povezivanje (D-076). Meta Page tokeni nemaju fiksan istek.
+ * Koliko pre isteka se pristupni token osvežava: TikTok 24 h, X 2 h, Google 1 h, Pinterest 30 dana.
+ * LinkedIn (60 dana) bez programskog refresh-a posle isteka traži ponovno povezivanje (D-076);
+ * Meta Page tokeni nemaju fiksan istek.
  */
-const TIKTOK_MARGIN_MS = 10 * 60_000
+const REFRESH_MARGIN_MS: Partial<Record<SocialPlatform, number>> = {
+  tiktok: 10 * 60_000,
+  x: 5 * 60_000,
+  youtube: 5 * 60_000,
+  google_business: 5 * 60_000,
+  pinterest: 24 * 3_600_000,
+}
 
+/** Važeći pristupni token za poziv mreže (publisher, istorija, metrike, sinhronizacija). */
 export async function accessTokenFor(row: SocialAccountRow): Promise<string> {
   const tokens = tokensFor(row)
   const exp = row.token_expires_at ? new Date(row.token_expires_at).getTime() : null
-  if (row.platform === 'tiktok' && exp !== null && exp - Date.now() < TIKTOK_MARGIN_MS) {
-    return (await refreshAccountTokens(row)).accessToken
-  }
-  if (row.platform === 'linkedin' && exp !== null && exp <= Date.now()) {
-    if (tokens.refreshToken) return (await refreshAccountTokens(row)).accessToken
-    throw new ProviderError('TOKEN_INVALID', {
-      message: 'LinkedIn token je istekao (60 dana).',
-      userMessage: 'LinkedIn veza je istekla. Povežite nalog ponovo.',
-    })
-  }
-  return tokens.accessToken
+  if (exp === null || row.platform === 'facebook' || row.platform === 'instagram') return tokens.accessToken
+  if (exp - Date.now() > (REFRESH_MARGIN_MS[row.platform] ?? 0)) return tokens.accessToken
+  if (tokens.refreshToken) return (await refreshAccountTokens(row)).accessToken
+  if (exp > Date.now()) return tokens.accessToken
+  const label = PLATFORMS[row.platform].label
+  throw new ProviderError('TOKEN_INVALID', {
+    message: `${label} token je istekao.`,
+    userMessage: `${label} veza je istekla. Povežite nalog ponovo.`,
+  })
 }
 
 /**
- * Osvežavanje i upis. TikTok pri osvežavanju može da vrati nov refresh token, a stari tada više ne
- * važi; ako je drugi proces upravo osvežio isti nalog, koristi se njegovo stanje iz baze.
+ * Osvežavanje i upis. TikTok, X i Pinterest pri osvežavanju vraćaju nov refresh token, a stari tada
+ * više ne važi; ako je drugi proces upravo osvežio isti nalog, koristi se njegovo stanje iz baze.
  */
 export async function refreshAccountTokens(row: SocialAccountRow): Promise<TokenSet> {
   const current = tokensFor(row)

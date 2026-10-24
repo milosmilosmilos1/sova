@@ -28,7 +28,8 @@ export const postMetrics = inngest.createFunction(
       if (horizon === '24h' && r.status === 'captured')
         await step.run('outlier', () => checkOutlier(event.data.targetId))
       if (r.status === 'deleted') break
-      if (r.status === 'skipped' && /target|nalog/.test(r.reason ?? '')) break
+      // target ili nalog više ne važe, ili mreža nema metrike objava (Google poslovni profil, Pinterest)
+      if (r.status === 'skipped' && /target|nalog|nema metrike objava/.test(r.reason ?? '')) break
     }
     return { status: 'done' as const, results }
   },

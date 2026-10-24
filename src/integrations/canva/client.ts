@@ -1,7 +1,5 @@
 import 'server-only'
 
-import { createHash, randomBytes } from 'node:crypto'
-
 import { ApiError } from '@/lib/api/errors'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
@@ -30,11 +28,7 @@ export function isCanvaConfigured(): boolean {
   return Boolean(env.CANVA_CLIENT_ID && env.CANVA_CLIENT_SECRET)
 }
 
-export function createPkce(): { verifier: string; challenge: string } {
-  const verifier = randomBytes(48).toString('base64url')
-  const challenge = createHash('sha256').update(verifier).digest('base64url')
-  return { verifier, challenge }
-}
+export { createPkce } from '@/lib/crypto/pkce'
 
 export function buildAuthorizeUrl(params: { challenge: string; state: string; redirectUri: string }): string {
   const u = new URL(CANVA_AUTHORIZE_URL)

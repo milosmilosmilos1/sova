@@ -72,6 +72,11 @@ const EMPTY_NOTICE: Record<string, string> = {
   meta: 'Facebook nije vratio nijednu stranicu. Proverite da ste administrator stranice i da je Instagram nalog poslovni i povezan sa stranicom.',
   linkedin: 'LinkedIn nije vratio nijedan nalog.',
   tiktok: 'TikTok nije vratio nalog.',
+  google_business:
+    'Google nije vratio nijednu lokaciju. Proverite da ste vlasnik ili menadžer poslovnog profila i da je profil verifikovan.',
+  youtube: 'Google nalog nema YouTube kanal. Napravite kanal na YouTube-u pa povežite ponovo.',
+  pinterest: 'Pinterest nije vratio nalog.',
+  x: 'X nije vratio nalog.',
 }
 
 const STATUS_LABEL: Record<AccountView['status'], string> = {

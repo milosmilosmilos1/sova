@@ -3,7 +3,8 @@ import type { Json } from '@/types/database'
 
 /**
  * Zajednički ugovor za mreže (docs/INTEGRATIONS.md 1): Meta (Facebook + Instagram, faza 8a), LinkedIn i
- * TikTok (faza 8b); ostale mreže stižu u 8c–8d. Objavljivanje koristi publisher iz faze 9b.
+ * TikTok (faza 8b), Google Business Profile, YouTube i Pinterest (8c), X (8d). Objavljivanje koristi
+ * publisher iz faze 9b.
  */
 export interface TokenSet {
   accessToken: string
@@ -67,6 +68,8 @@ export interface NormalizedPost {
   title?: string | null
   /** podešavanja targeta po mreži (`post_targets.options`, npr. `tiktok`) */
   options?: Record<string, Json>
+  /** jezik sadržaja brenda (`sr`, `en`): Google poslovni profil `languageCode`, YouTube `defaultLanguage` */
+  language?: string | null
 }
 
 export interface ValidationResult {
@@ -83,10 +86,32 @@ export type PollHandle =
       username: string | null
       mediaType: 'photo' | 'video'
     }
+  /** YouTube obrađuje video posle uploada; objava je gotova kad je `processed` */
+  | { kind: 'youtube_processing'; videoId: string; accountExternalId: string }
+  /** Pinterest video: posle obrade medija pravi se pin sa sačuvanim telom */
+  | { kind: 'pinterest_media'; mediaId: string; pin: Record<string, Json>; accountExternalId: string }
+  /** X video: posle obrade medija objavljuje se tekst sa medijem */
+  | {
+      kind: 'x_media'
+      mediaId: string
+      text: string
+      accountExternalId: string
+      username: string | null
+    }
 
 /** Oznaka ručke za logove i poruke. */
 export function pollHandleId(handle: PollHandle): string {
-  return handle.kind === 'ig_container' ? handle.containerId : handle.publishId
+  switch (handle.kind) {
+    case 'ig_container':
+      return handle.containerId
+    case 'tiktok_publish':
+      return handle.publishId
+    case 'youtube_processing':
+      return handle.videoId
+    case 'pinterest_media':
+    case 'x_media':
+      return handle.mediaId
+  }
 }
 
 export interface PublishResult {
@@ -129,6 +154,8 @@ export interface AccountMetrics {
   impressions: number | null
   engagement: number | null
   profileViews: number | null
+  /** klikovi na sajt (Google poslovni profil) */
+  websiteClicks?: number | null
   raw: Record<string, Json>
 }
 
@@ -144,10 +171,12 @@ export interface AccountRef {
 
 export interface SocialProvider {
   readonly platforms: readonly SocialPlatform[]
-  getAuthUrl(ctx: { state: string; redirectUri: string }): string
+  /** OAuth uz PKCE (X ga traži): tok čuva šifrovan `code_verifier` u `oauth_states` */
+  readonly usesPkce?: boolean
+  getAuthUrl(ctx: { state: string; redirectUri: string; codeChallenge?: string }): string
   exchangeCode(
     code: string,
-    ctx: { redirectUri: string },
+    ctx: { redirectUri: string; codeVerifier?: string },
   ): Promise<TokenSet & { externalUserId: string; externalUserName: string | null }>
   refreshUserToken(tokens: TokenSet): Promise<TokenSet>
   listAccounts(tokens: TokenSet): Promise<ExternalAccount[]>

@@ -6,7 +6,8 @@ import type { SocialPlatform } from '@/config/platforms'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
-import { currentKeyVersion, encryptSecret, sha256Hex, toPgBytea } from '@/lib/crypto/tokens'
+import { createPkce } from '@/lib/crypto/pkce'
+import { currentKeyVersion, decryptSecret, encryptSecret, sha256Hex, toPgBytea } from '@/lib/crypto/tokens'
 import { env } from '@/lib/env'
 import { isFeatureEnabled } from '@/lib/flags'
 import { enqueueHistoryImport } from '@/lib/jobs/enqueue'
@@ -21,6 +22,7 @@ import {
   isProviderConfigured,
   providerFor,
   providerForKey,
+  revokeGroupFor,
   type ConnectProviderKey,
 } from '@/integrations/social/registry'
 import type { ExternalAccount, TokenSet } from '@/integrations/social/types'
@@ -42,7 +44,8 @@ export { loadAccountRow, markAccountStatus, refFor, tokensFor, type SocialAccoun
 /**
  * Nalozi mreža (docs/ARCHITECTURE.md 3.4): povezivanje kroz OAuth, izbor naloga, tokeni AES-256-GCM
  * u `social_accounts`, čitanje kroz `social_accounts_public` (bez tokena). Meta (FB + IG) od faze 8a,
- * LinkedIn i TikTok od faze 8b; ključ toka i mreže dolaze iz registry-ja.
+ * LinkedIn i TikTok od faze 8b, Google (YouTube, poslovni profil), Pinterest i X od faze 8c–8d; ključ
+ * toka i mreže dolaze iz registry-ja. Mreže koje traže PKCE (X) dobijaju šifrovan verifier uz state.
  */
 export type SocialAccountPublic = Database['public']['Views']['social_accounts_public']['Row']
 
@@ -51,6 +54,8 @@ const PENDING_TTL_MS = 60 * 60_000
 function callbackUrl(key: ConnectProviderKey): string {
   return `${env.NEXT_PUBLIC_APP_URL}/api/integrations/${key}/callback`
 }
+
+const pkceAad = (key: ConnectProviderKey, userId: string) => `social-pkce:${key}:${userId}`
 
 /** ID korisnika na mreži (osnova za grupisanje naloga istog korisnika); Meta zadržava stari ključ. */
 function providerUserIdOf(meta: Record<string, Json> | null | undefined): string | null {
@@ -104,6 +109,8 @@ export async function beginSocialConnect(
     throw new ApiError('FORBIDDEN', `Povezivanje mreže ${label} još nije uključeno.`)
 
   const state = randomBytes(24).toString('base64url')
+  const provider = providerForKey(key)
+  const pkce = provider.usesPkce ? createPkce() : null
   const admin = createSupabaseAdminClient()
   const { error } = await admin.from('oauth_states').insert({
     state_hash: sha256Hex(state),
@@ -111,10 +118,13 @@ export async function beginSocialConnect(
     workspace_id: brand.workspace_id,
     brand_id: brand.id,
     provider: key,
+    code_verifier_enc: pkce
+      ? toPgBytea(encryptSecret(pkce.verifier, pkceAad(key, viewer.user.id)).ciphertext)
+      : null,
     redirect_to: redirectTo && redirectTo.startsWith('/') ? redirectTo : '/app/accounts',
   })
   if (error) throw mapDbError(error)
-  return providerForKey(key).getAuthUrl({ state, redirectUri: callbackUrl(key) })
+  return provider.getAuthUrl({ state, redirectUri: callbackUrl(key), codeChallenge: pkce?.challenge })
 }
 
 export interface ConnectCallbackResult {
@@ -161,10 +171,20 @@ export async function completeSocialConnect(
   }
 
   const provider = providerForKey(key)
+  let codeVerifier: string | undefined
+  if (provider.usesPkce) {
+    if (!row.code_verifier_enc)
+      throw new ApiError('VALIDATION', 'Povezivanje nema PKCE verifier. Pokušajte ponovo.')
+    codeVerifier = decryptSecret(
+      row.code_verifier_enc as unknown as string,
+      currentKeyVersion(),
+      pkceAad(key, viewer.user.id),
+    )
+  }
   let tokens: TokenSet & { externalUserId: string; externalUserName: string | null }
   let accounts: ExternalAccount[]
   try {
-    tokens = await provider.exchangeCode(params.code, { redirectUri: callbackUrl(key) })
+    tokens = await provider.exchangeCode(params.code, { redirectUri: callbackUrl(key), codeVerifier })
     accounts = await provider.listAccounts(tokens)
   } catch (error) {
     throw providerToApiError(error)
@@ -385,8 +405,9 @@ export async function removeSocialAccount(viewer: Viewer, accountId: string): Pr
   if (!row) throw new ApiError('NOT_FOUND', 'Nalog ne postoji.')
   const brand = await getBrand(viewer, row.brand_id)
   await requireMembership(viewer, brand.workspace_id, ADMIN_ROLES)
-  // opoziv na mreži je najbolji napor; ako isti korisnički token koristi i drugi nalog brenda
-  // (npr. stranica i IG nalog, ili profil i stranica firme), aplikacija se ne opoziva
+  // opoziv na mreži je najbolji napor; ako isti identitet korisnika koristi i drugi nalog, u bilo kom
+  // brendu (stranica i IG nalog, profil i stranica firme, YouTube i poslovni profil istog Google
+  // naloga), aplikacija se ne opoziva, jer bi opoziv prekinuo i tu vezu
   const meta = (row.metadata as Record<string, Json> | null) ?? {}
   const userId = providerUserIdOf(meta)
   let shared = 0
@@ -395,7 +416,7 @@ export async function removeSocialAccount(viewer: Viewer, accountId: string): Pr
     const { count } = await admin
       .from('social_accounts')
       .select('id', { count: 'exact', head: true })
-      .eq('brand_id', row.brand_id)
+      .in('platform', revokeGroupFor(row.platform))
       .contains('metadata', { [field]: userId })
       .neq('id', row.id)
     shared = count ?? 0

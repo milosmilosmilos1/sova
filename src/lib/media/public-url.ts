@@ -10,8 +10,9 @@ import { env } from '@/lib/env'
  * Token = `assetId.varijanta.istek.potpis` (HMAC-SHA256, ključ izveden HKDF-om iz
  * TOKEN_ENCRYPTION_KEY sa posebnom namenom), bez preusmeravanja i bez listanja.
  */
-export type MediaVariant = 'orig' | 'tiktok'
-const VARIANTS = new Set<MediaVariant>(['orig', 'tiktok'])
+/** `tiktok` i `jpeg`: JPEG do 1080 × 1920 (TikTok foto; Pinterest i Google ne primaju WebP). */
+export type MediaVariant = 'orig' | 'tiktok' | 'jpeg'
+const VARIANTS = new Set<MediaVariant>(['orig', 'tiktok', 'jpeg'])
 
 let cachedKey: Buffer | null = null
 function key(): Buffer {
@@ -57,6 +58,6 @@ export function verifyMediaToken(
 /** URL za mrežu; baza je PUBLIC_MEDIA_BASE_URL (domen verifikovan na TikTok-u) ili adresa aplikacije. */
 export function publicMediaUrl(assetId: string, variant: MediaVariant, ttlSec?: number): string {
   const base = (env.PUBLIC_MEDIA_BASE_URL ?? env.NEXT_PUBLIC_APP_URL ?? '').replace(/\/+$/, '')
-  const ext = variant === 'tiktok' ? '.jpg' : ''
+  const ext = variant === 'orig' ? '' : '.jpg'
   return `${base}/api/media/public/${signMediaToken(assetId, variant, ttlSec)}${ext}`
 }
