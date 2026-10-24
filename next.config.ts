@@ -26,6 +26,8 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   typedRoutes: true,
+  // Native dodaci (.node) ne mogu u Turbopack bundle; učitavaju se iz node_modules u runtime-u (faza 7, resvg).
+  serverExternalPackages: ['@resvg/resvg-js', 'sharp'],
   turbopack: {
     rules: {
       '*.css': {

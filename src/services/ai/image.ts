@@ -14,6 +14,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getTokenPrice } from '@/lib/tokens/prices'
 import { confirmReservation } from '@/lib/tokens/reservation'
 import { assertDailyQuota, failGeneration, startGeneration } from '@/services/ai/generations'
+import { getBrandContextForBrand } from '@/services/brand-brain/profile'
 import { getBrand } from '@/services/brands'
 import { downloadAsset, getAsset, storeGeneratedImage } from '@/services/media'
 
@@ -33,9 +34,17 @@ interface ImageJobInput {
   sourceAssetId: string | null
 }
 
-async function brandStyleFor(brand: { name: string; settings: unknown }): Promise<string | null> {
+/** Stil iz Brand Brain profila (stil fotografija + boje); bez profila opcioni ručni unos u settings.photo_style. */
+async function brandStyleFor(brand: { id: string; name: string; settings: unknown }): Promise<string | null> {
+  const ctx = await getBrandContextForBrand(brand.id)
+  if (ctx) {
+    const parts = [
+      ctx.photoStyleSuffix,
+      `brand colors ${ctx.colors.primary}, ${ctx.colors.secondary}, accent ${ctx.colors.accent} (use as subtle palette, not as flat fills)`,
+    ].filter(Boolean)
+    return parts.join('; ')
+  }
   const s = (brand.settings ?? {}) as Record<string, unknown>
-  // Faza 6 puni stil fotografija i boje iz profila; dotad opcioni ručni unos u settings.photo_style
   return typeof s.photo_style === 'string' ? s.photo_style : null
 }
 

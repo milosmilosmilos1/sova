@@ -48,7 +48,28 @@ interface JobView {
   errorMessage: string | null
   progress: { message?: string } | null
   assetUrl: string | null
+  assetId: string | null
   model: string | null
+  output: { template?: string; attribution?: string | null; notes?: string[] } | null
+}
+
+interface UnsplashSearch {
+  configured: boolean
+  total: number
+  results: Array<{
+    id: string
+    preview: string
+    thumb: string
+    alt: string | null
+    photographer: string
+    attribution: { text: string; html: string }
+  }>
+}
+
+interface CanvaStatus {
+  configured: boolean
+  enabled: boolean
+  connected: boolean
 }
 
 interface UploadResult {
@@ -133,7 +154,13 @@ export function StudioClient({
           <TabsTrigger value="prompt">
             Slika iz prompta ({balance.data?.prices.image_standard ?? 8})
           </TabsTrigger>
+          <TabsTrigger value="template">
+            Vizual iz šablona ({balance.data?.prices.visual_template ?? 2})
+          </TabsTrigger>
         </TabsList>
+        <TabsContent value="template">
+          <VisualPanel workspaceId={workspaceId} brandId={brandId} onDone={refreshBalance} />
+        </TabsContent>
         <TabsContent value="text">
           <TextPanel workspaceId={workspaceId} brandId={brandId} onDone={refreshBalance} />
         </TabsContent>
@@ -494,11 +521,394 @@ function ImagePanel({
                 <figcaption className="text-xs text-muted-foreground">
                   AI generisano · model {job.data.model} · naplaćeno {job.data.tokensCharged} tokena
                 </figcaption>
+                <CanvaActions workspaceId={workspaceId} brandId={brandId} assetId={job.data.assetId} />
               </figure>
             ) : null}
           </div>
         ) : null}
       </CardContent>
     </Card>
+  )
+}
+
+const TEMPLATES = [
+  ['auto', 'Automatski'],
+  ['photo-overlay', 'Fotografija sa naslovom'],
+  ['solid', 'Boja brenda i poruka'],
+  ['split', 'Fotografija pored teksta'],
+  ['announcement', 'Najava sa okvirom'],
+] as const
+const TEMPLATE_ASPECTS = ['1:1', '4:5', '9:16', '16:9', '3:4'] as const
+
+function UnsplashPicker({
+  value,
+  onChange,
+}: {
+  value: { id: string; attribution: string } | null
+  onChange: (v: { id: string; attribution: string } | null) => void
+}) {
+  const [query, setQuery] = useState('')
+  const [submitted, setSubmitted] = useState('')
+  const search = useQuery({
+    queryKey: ['unsplash', submitted],
+    queryFn: () =>
+      api<UnsplashSearch>(`/api/unsplash/search?query=${encodeURIComponent(submitted)}&perPage=12`),
+    enabled: submitted.length >= 2,
+  })
+  return (
+    <div className="space-y-2">
+      <div className="flex gap-2">
+        <Input
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          placeholder="Npr. klima uređaj, kancelarija, kafa"
+          onKeyDown={(e) => e.key === 'Enter' && setSubmitted(query.trim())}
+        />
+        <Button
+          type="button"
+          variant="outline"
+          onClick={() => setSubmitted(query.trim())}
+          disabled={query.trim().length < 2}
+        >
+          Traži
+        </Button>
+      </div>
+      {search.isPending && submitted ? (
+        <p className="text-sm text-muted-foreground">Tražim na Unsplash-u…</p>
+      ) : null}
+      <ErrorBox error={search.error} />
+      {search.data && !search.data.configured ? (
+        <p className="text-sm text-muted-foreground">
+          Unsplash nije podešen; otpremite svoju fotografiju ili napravite vizual bez slike.
+        </p>
+      ) : null}
+      {search.data?.configured && search.data.results.length === 0 ? (
+        <p className="text-sm text-muted-foreground">Nema rezultata za „{submitted}”.</p>
+      ) : null}
+      {search.data?.results.length ? (
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {search.data.results.map((p) => (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => onChange({ id: p.id, attribution: p.attribution.text })}
+              className={`overflow-hidden rounded-md border ${value?.id === p.id ? 'ring-2 ring-primary' : ''}`}
+              title={`${p.alt ?? ''} · ${p.attribution.text}`}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={p.thumb}
+                alt={p.alt ?? 'Unsplash fotografija'}
+                className="aspect-square w-full object-cover"
+                loading="lazy"
+              />
+            </button>
+          ))}
+        </div>
+      ) : null}
+      {value ? (
+        <p className="text-xs text-muted-foreground">
+          Izabrano: {value.attribution}{' '}
+          <button type="button" className="underline" onClick={() => onChange(null)}>
+            ukloni
+          </button>
+        </p>
+      ) : null}
+    </div>
+  )
+}
+
+function VisualPanel({
+  workspaceId,
+  brandId,
+  onDone,
+}: {
+  workspaceId: string
+  brandId: string
+  onDone: () => void
+}) {
+  const [headline, setHeadline] = useState('')
+  const [subtext, setSubtext] = useState('')
+  const [cta, setCta] = useState('')
+  const [aspect, setAspect] = useState<(typeof TEMPLATE_ASPECTS)[number]>('1:1')
+  const [template, setTemplate] = useState<(typeof TEMPLATES)[number][0]>('auto')
+  const [source, setSource] = useState<'unsplash' | 'asset' | 'none'>('unsplash')
+  const [unsplashQuery, setUnsplashQuery] = useState('')
+  const [picked, setPicked] = useState<{ id: string; attribution: string } | null>(null)
+  const [photo, setPhoto] = useState<UploadResult | null>(null)
+  const [jobId, setJobId] = useState<string | null>(null)
+
+  const start = useMutation({
+    mutationFn: () =>
+      api<{ generationId: string }>('/api/ai/visual/template', {
+        method: 'POST',
+        idempotent: true,
+        json: {
+          brandId,
+          headline,
+          subtext: subtext || undefined,
+          cta: cta || undefined,
+          aspectRatio: aspect,
+          template,
+          image:
+            source === 'none'
+              ? { kind: 'none' }
+              : source === 'asset'
+                ? { kind: 'asset', mediaAssetId: photo?.id }
+                : {
+                    kind: 'unsplash',
+                    photoId: picked?.id,
+                    query: picked ? undefined : unsplashQuery || headline,
+                  },
+        },
+      }),
+    onSuccess: (d) => {
+      setJobId(d.generationId)
+      onDone()
+    },
+    onError: onDone,
+  })
+  const job = useQuery({
+    queryKey: ['job', jobId],
+    queryFn: () => api<JobView>(`/api/ai/jobs/${jobId}`),
+    enabled: Boolean(jobId),
+    refetchInterval: (q) => {
+      const s = q.state.data?.status
+      return s && (s === 'succeeded' || s === 'failed' || s === 'canceled') ? false : 2000
+    },
+  })
+  const doneRef = useRef<string | null>(null)
+  useEffect(() => {
+    const s = job.data?.status
+    if (job.data && (s === 'succeeded' || s === 'failed') && doneRef.current !== job.data.id) {
+      doneRef.current = job.data.id
+      onDone()
+    }
+  }, [job.data, onDone])
+
+  const canStart = headline.trim().length >= 3 && !start.isPending && (source !== 'asset' || photo)
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Vizual iz šablona</CardTitle>
+        <CardDescription>
+          Boje, fontovi i logo dolaze iz Brand Brain profila. Fotografija sa Unsplash-a (AI bira najbolju),
+          vaša fotografija ili bez slike. 2 tokena.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="vt-headline">Naslov na slici</Label>
+          <Input
+            id="vt-headline"
+            value={headline}
+            onChange={(e) => setHeadline(e.target.value)}
+            maxLength={120}
+            placeholder="Npr. Servis klime od 2.990 din."
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="vt-subtext">Podnaslov (opciono)</Label>
+            <Input
+              id="vt-subtext"
+              value={subtext}
+              onChange={(e) => setSubtext(e.target.value)}
+              maxLength={200}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="vt-cta">Poziv na akciju (opciono)</Label>
+            <Input
+              id="vt-cta"
+              value={cta}
+              onChange={(e) => setCta(e.target.value)}
+              maxLength={40}
+              placeholder="Zakažite termin"
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="vt-aspect">Format</Label>
+            <select
+              id="vt-aspect"
+              value={aspect}
+              onChange={(e) => setAspect(e.target.value as (typeof TEMPLATE_ASPECTS)[number])}
+              className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+            >
+              {TEMPLATE_ASPECTS.map((a) => (
+                <option key={a} value={a}>
+                  {a}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="vt-template">Šablon</Label>
+            <select
+              id="vt-template"
+              value={template}
+              onChange={(e) => setTemplate(e.target.value as (typeof TEMPLATES)[number][0])}
+              className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+            >
+              {TEMPLATES.map(([id, label]) => (
+                <option key={id} value={id}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium">Slika</legend>
+          <div className="flex flex-wrap gap-3 text-sm">
+            {(
+              [
+                ['unsplash', 'Unsplash fotografija'],
+                ['asset', 'Moja fotografija'],
+                ['none', 'Bez slike'],
+              ] as const
+            ).map(([v, label]) => (
+              <label key={v} className="flex items-center gap-1.5">
+                <input
+                  type="radio"
+                  name="vt-source"
+                  value={v}
+                  checked={source === v}
+                  onChange={() => setSource(v)}
+                />
+                {label}
+              </label>
+            ))}
+          </div>
+          {source === 'unsplash' ? (
+            <div className="space-y-2">
+              <p className="text-xs text-muted-foreground">
+                Izaberite fotografiju ili ostavite prazno: Sova pretražuje po naslovu i AI bira najbolju.
+              </p>
+              <UnsplashPicker value={picked} onChange={setPicked} />
+              {!picked ? (
+                <Input
+                  value={unsplashQuery}
+                  onChange={(e) => setUnsplashQuery(e.target.value)}
+                  placeholder="Pojam za automatsku pretragu (opciono)"
+                />
+              ) : null}
+            </div>
+          ) : null}
+          {source === 'asset' ? (
+            <PhotoUpload workspaceId={workspaceId} brandId={brandId} value={photo} onChange={setPhoto} />
+          ) : null}
+        </fieldset>
+        <Button disabled={!canStart} onClick={() => start.mutate()}>
+          {start.isPending ? 'Šaljem…' : 'NAPRAVI VIZUAL'}
+        </Button>
+        <ErrorBox error={start.error} />
+        {jobId ? (
+          <div className="space-y-2">
+            {job.data && (job.data.status === 'queued' || job.data.status === 'running') ? (
+              <p className="text-sm text-muted-foreground" aria-live="polite">
+                {job.data.progress?.message ?? 'U redu za obradu…'}
+              </p>
+            ) : null}
+            {job.data?.status === 'failed' ? (
+              <ErrorBox error={new Error(job.data.errorMessage ?? 'Vizual nije napravljen.')} />
+            ) : null}
+            {job.data?.status === 'succeeded' && job.data.assetUrl ? (
+              <figure className="space-y-2">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={job.data.assetUrl} alt={headline} className="max-h-[560px] rounded-lg border" />
+                <figcaption className="text-xs text-muted-foreground">
+                  Šablon {job.data.output?.template} · naplaćeno {job.data.tokensCharged} tokena
+                  {job.data.output?.attribution ? ` · ${job.data.output.attribution}` : ''}
+                  {job.data.output?.notes?.length ? ` · ${job.data.output.notes.join(' ')}` : ''}
+                </figcaption>
+                <CanvaActions workspaceId={workspaceId} brandId={brandId} assetId={job.data.assetId} />
+              </figure>
+            ) : null}
+          </div>
+        ) : null}
+      </CardContent>
+    </Card>
+  )
+}
+
+function CanvaActions({
+  workspaceId,
+  brandId,
+  assetId,
+}: {
+  workspaceId: string
+  brandId: string
+  assetId: string | null
+}) {
+  const status = useQuery({
+    queryKey: ['canva-status', workspaceId],
+    queryFn: () => api<CanvaStatus>(`/api/canva/status?workspaceId=${workspaceId}`),
+  })
+  const [designId, setDesignId] = useState<string | null>(null)
+  const design = useMutation({
+    mutationFn: () =>
+      api<{ design: { id: string; editUrl: string } }>('/api/canva/designs', {
+        method: 'POST',
+        idempotent: true,
+        json: { brandId, mediaAssetId: assetId ?? undefined },
+      }),
+    onSuccess: (d) => {
+      setDesignId(d.design.id)
+      window.open(d.design.editUrl, '_blank', 'noopener')
+    },
+  })
+  const exp = useMutation({
+    mutationFn: () =>
+      api<{ asset: { url: string } }>('/api/canva/export', {
+        method: 'POST',
+        idempotent: true,
+        json: { brandId, designId, format: 'png' },
+      }),
+  })
+  if (!status.data?.configured || !status.data.enabled) return null
+  if (!status.data.connected) {
+    return (
+      <p className="text-xs text-muted-foreground">
+        Želite da doradite u Canvi?{' '}
+        <a
+          className="underline"
+          href={`/api/integrations/canva/connect?workspaceId=${workspaceId}&redirectTo=/app/studio`}
+        >
+          Povežite Canvu
+        </a>
+        .
+      </p>
+    )
+  }
+  return (
+    <div className="flex flex-wrap items-center gap-2 text-xs">
+      <Button
+        type="button"
+        size="sm"
+        variant="outline"
+        onClick={() => design.mutate()}
+        disabled={design.isPending || !assetId}
+      >
+        {design.isPending ? 'Otvaram Canvu…' : 'Doradi u Canvi (2)'}
+      </Button>
+      {designId ? (
+        <Button
+          type="button"
+          size="sm"
+          variant="outline"
+          onClick={() => exp.mutate()}
+          disabled={exp.isPending}
+        >
+          {exp.isPending ? 'Uvozim…' : 'Uvezi gotov dizajn iz Canve (2)'}
+        </Button>
+      ) : null}
+      <ErrorBox error={design.error ?? exp.error} />
+      {exp.data ? (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={exp.data.asset.url} alt="Dizajn iz Canve" className="max-h-64 rounded-md border" />
+      ) : null}
+    </div>
   )
 }

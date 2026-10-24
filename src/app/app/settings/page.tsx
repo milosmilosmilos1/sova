@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
+import { CanvaCard } from '@/components/app/canva-card'
 import { CreateBrandForm, ProfileForm, WorkspaceForm } from '@/components/app/settings-forms'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -14,11 +15,13 @@ import { getWorkspacePlan } from '@/services/plans'
 
 export const metadata: Metadata = { title: 'Podešavanja' }
 
-export default async function SettingsPage() {
+export default async function SettingsPage({ searchParams }: PageProps<'/app/settings'>) {
   const viewer = await getViewer()
   if (!viewer) redirect('/login')
   const current = await getCurrentWorkspace(viewer)
   if (!current) redirect('/app/onboarding')
+  const sp = await searchParams
+  const canvaNotice = typeof sp.canva === 'string' ? sp.canva : null
   const [brands, plan] = await Promise.all([
     listBrands(viewer, current.workspaceId),
     getWorkspacePlan(current.workspaceId),
@@ -110,6 +113,8 @@ export default async function SettingsPage() {
           ) : null}
         </CardContent>
       </Card>
+
+      <CanvaCard workspaceId={current.workspaceId} canEdit={canEdit} notice={canvaNotice} />
     </div>
   )
 }

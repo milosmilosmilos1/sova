@@ -14,6 +14,9 @@ try {
 
 // Gemini se u testovima uvek mockuje (MSW); ključ služi samo da klijent bude "podešen".
 process.env.GEMINI_API_KEY ??= 'test-gemini-key'
+process.env.UNSPLASH_ACCESS_KEY ??= 'test-unsplash-key'
+process.env.CANVA_CLIENT_ID ??= 'test-canva-client'
+process.env.CANVA_CLIENT_SECRET ??= 'test-canva-secret-0123456789'
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error('Integracioni testovi traže pokrenut lokalni Supabase i .env.local (npm run db:start).')

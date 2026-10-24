@@ -634,7 +634,7 @@ Env varijable: lista iz brifa plus `PAYMENT_PROVIDER` (`stripe` ili `paddle`), `
 - Test sajt za analizu (predlog: jedan od tvojih sajtova, npr. klima24 ili tangerineseo, plus jedan ćirilični i jedan SPA sajt za ivične slučajeve).
 - Opciono `FIRECRAWL_API_KEY`.
 
-**Pre faze 7 (vizuali):**
+**Pre faze 7 (vizuali)** — kod je gotov 24.10.2026 (D-038…D-041), ključevi još nedostaju:
 
 - Unsplash developer aplikacija (demo 50 zahteva/h; prijava za production 1.000/h čim UI radi): `UNSPLASH_ACCESS_KEY`, `UNSPLASH_APP_NAME`.
 - Canva developer integracija (MFA na Canva nalogu je obavezan): `CANVA_CLIENT_ID`, `CANVA_CLIENT_SECRET`. Koji Canva plan imaš (Autofill traži Pro, Teams ili Enterprise).

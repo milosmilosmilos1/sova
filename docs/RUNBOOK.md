@@ -24,14 +24,16 @@ Zamke:
 - Stari Supabase kontejneri drugog projekta na istim portovima: `docker ps -a | grep supabase`, pa `docker rm -f` i `docker volume rm` pre `db:start`.
 - Dva `supabase start` istovremeno se sudaraju oko imena kontejnera; pokreni samo jedan.
 - Port 3000 drži drugi projekat; Sova je na 3001 (D-011).
+- `npm run build` dok `npm run dev` radi briše `.next` ispod dev servera: strane posle toga vraćaju 500 ili se stalno ponovo učitavaju. Posle builda restartuj dev server (ili build pokreći kad dev ne radi).
+- Native dodaci (`@resvg/resvg-js`, `sharp`) su u `serverExternalPackages`; nov paket sa `.node` fajlom dodaj tamo, inače Turbopack build pada sa „non-ecmascript placeable asset”.
 
 ## 2. Testovi
 
 ```
 npm run lint && npm run typecheck
-npm run test            # Vitest unit (86)
+npm run test            # Vitest unit (94)
 npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (24); pravi i briše test korisnike
-npm run test:integration # API rute u procesu nad lokalnim Supabase-om, Gemini i lažni sajt kroz MSW (29)
+npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash i Canva kroz MSW (38)
 npm run test:e2e        # Playwright kroz Mailpit (5); traži pokrenut dev server
 npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs 25   # živi crawler bez baze i AI-ja
 npm run build           # produkcijski build
@@ -46,7 +48,8 @@ npm run build           # produkcijski build
 
 ## 4. Rotacija ključeva
 
-- `TOKEN_ENCRYPTION_KEY`: dodaj `v2:` ključ u env, deploy, pokreni skriptu za reenkripciju (faza 5), ukloni `v1` kad nema redova sa `key_version = 1`.
+- `TOKEN_ENCRYPTION_KEY`: nov ključ ide u `TOKEN_ENCRYPTION_KEY` kao `v2:<base64>`, stari u `TOKEN_ENCRYPTION_KEY_PREVIOUS` (`v1:...`), deploy; `src/lib/crypto/tokens.ts` dešifruje po `key_version` zapisa, a svaki nov upis koristi v2. Skripta za ponovno šifrovanje postojećih redova (`canva_connections`, od faze 8 `social_accounts`) stiže uz fazu 8; kad nema redova sa `key_version = 1`, ukloni `_PREVIOUS`.
+- Canva: ako korisnik opozove pristup u Canvi, sledeći refresh vraća `invalid_grant` i veza prelazi u `needs_reauth`; korisnik je ponovo povezuje iz podešavanja.
 - Gemini, Unsplash, Canva, mreže: zameni u Vercel env, redeploy, stari ključ opozovi kod provajdera.
 - Supabase service role: rotiraj u dashboardu, ažuriraj Vercel i Inngest.
 - Ako ključ procuri: rotiraj odmah, pregledaj `admin_audit_log`, Sentry i logove za neobične zahteve, zapiši incident u sekciju 7.

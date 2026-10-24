@@ -1202,3 +1202,9 @@ Faza 6 (24.10.2026), migracija `20261024000015_brand_brain.sql`:
 - Jedinstven delimičan indeks `website_crawls_one_active (brand_id) where status in ('queued','running')`: drugi zahtev dobija 409.
 - `brand_profiles.data` čuva Zod šemu `brandProfileSchema` (`src/lib/brand/profile-schema.ts`), `locked_fields` su putanje iz `FIELD_PATHS`; ručna izmena i vraćanje verzije idu kroz korisnikov klijent (RLS `can_edit_brand`), analiza kroz service role.
 - `website_pages.images/json_ld/open_graph/social_links/headings` se pune iz crawlera; `media_assets` logo ide u `brand-assets/ws/{ws}/brand/{brand}/logo/`.
+
+Faza 7 (24.10.2026), bez nove migracije:
+
+- `media_assets.source`: `unsplash` (kopija u `uploads/.../unsplash/`, `source_data.photoId` za dedup, `attribution` sa utm linkovima), `template` (`generated/.../templates/`, `source_data.template/image/fontsUsed`), `canva` (`uploads/.../canva/`, `attribution.designId`). `is_ai_generated` je true samo za `gemini`.
+- `canva_connections`: `access_token_enc`/`refresh_token_enc` su AES-256-GCM (`iv|tag|ciphertext`, hex bytea), `key_version` prati `TOKEN_ENCRYPTION_KEY`; čita se kroz `canva_connections_public` view (bez tokena). `oauth_states.code_verifier_enc` isti format, `state_hash` = sha256(state).
+- `ai_generations.type`: `visual_template` (rang model u `model`, trošak samo za rangiranje), `canva_design` i `canva_export` (`provider = canva`, `cost_usd = 0`).

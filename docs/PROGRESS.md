@@ -4,24 +4,24 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 
 ## Stanje (24.10.2026)
 
-| Faza                                     | Status      | Napomena                                                                                                                  |
-| ---------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------- |
-| 1 Plan i arhitektura                     | gotovo      | odobreno 23.10.2026, odgovori u D-013                                                                                     |
-| 2 Setup projekta                         | gotovo      | lokalno radi, health zelen, build prolazi, 25 unit testova, CI workflow                                                   |
-| 3 Baza i bezbednost                      | gotovo      | 14 migracija, 53 tabele, RLS, RPC za tokene, trigeri, storage, seed; 24/24 testova baze                                   |
-| 4 Auth i workspace                       | gotovo      | registracija, prijava, magic link, Google (uz ključeve), reset, MFA, workspace, tim, admin gate; 10 integracionih testova |
-| 5 Token engine i AI jezgro               | gotovo      | tokeni, idempotentnost, Gemini sloj, Studio; pravi pozivi čekaju GEMINI_API_KEY                                           |
-| 6 Brand Brain                            | gotovo      | crawler + profil + RAG + nedeljna provera; živi smoke nad tangerineseo.rs prošao; bez ključa radi heuristički             |
-| 7 Vizuelni pipeline                      | sledeće     | treba: Unsplash ključ, Canva integracija                                                                                  |
-| 8a–8d Integracije mreža                  | nije počelo | treba: app-ovi i prijave iz INTEGRATIONS 14                                                                               |
-| 9a–9b Objave, kalendar, publisher        | nije počelo |                                                                                                                           |
-| 10a–10c Strategija, analitika, Autopilot | nije počelo |                                                                                                                           |
-| 11 Edge case-ovi                         | nije počelo |                                                                                                                           |
-| 12 Plaćanje                              | nije počelo | Stripe nalog vlasnik pravi; preskače se do tada (D-001)                                                                   |
-| 13a–13b Admin                            | nije počelo | gate i placeholder postoje                                                                                                |
-| 14a–14c Dizajn                           | nije počelo | treba: screenshot Dribbble reference ako link ne radi                                                                     |
-| 15 Testiranje                            | nije počelo | Playwright + Chromium instalirani; `npm run test:e2e` (5 testova) prolazi                                                 |
-| 16 Deploy                                | nije počelo | treba: Vercel, Supabase staging/prod, domen sovaai.rs, Upstash, Inngest, Sentry                                           |
+| Faza                                     | Status      | Napomena                                                                                                                     |
+| ---------------------------------------- | ----------- | ---------------------------------------------------------------------------------------------------------------------------- |
+| 1 Plan i arhitektura                     | gotovo      | odobreno 23.10.2026, odgovori u D-013                                                                                        |
+| 2 Setup projekta                         | gotovo      | lokalno radi, health zelen, build prolazi, 25 unit testova, CI workflow                                                      |
+| 3 Baza i bezbednost                      | gotovo      | 14 migracija, 53 tabele, RLS, RPC za tokene, trigeri, storage, seed; 24/24 testova baze                                      |
+| 4 Auth i workspace                       | gotovo      | registracija, prijava, magic link, Google (uz ključeve), reset, MFA, workspace, tim, admin gate; 10 integracionih testova    |
+| 5 Token engine i AI jezgro               | gotovo      | tokeni, idempotentnost, Gemini sloj, Studio; pravi pozivi čekaju GEMINI_API_KEY                                              |
+| 6 Brand Brain                            | gotovo      | crawler + profil + RAG + nedeljna provera; živi smoke nad tangerineseo.rs prošao; bez ključa radi heuristički                |
+| 7 Vizuelni pipeline                      | gotovo      | Unsplash + vision rangiranje, 4 šablona (Satori), Canva Connect (PKCE, dizajn, export); čeka: UNSPLASH_ACCESS_KEY, Canva app |
+| 8a–8d Integracije mreža                  | sledeće     | treba: app-ovi i prijave iz INTEGRATIONS 14                                                                                  |
+| 9a–9b Objave, kalendar, publisher        | nije počelo |                                                                                                                              |
+| 10a–10c Strategija, analitika, Autopilot | nije počelo |                                                                                                                              |
+| 11 Edge case-ovi                         | nije počelo |                                                                                                                              |
+| 12 Plaćanje                              | nije počelo | Stripe nalog vlasnik pravi; preskače se do tada (D-001)                                                                      |
+| 13a–13b Admin                            | nije počelo | gate i placeholder postoje                                                                                                   |
+| 14a–14c Dizajn                           | nije počelo | treba: screenshot Dribbble reference ako link ne radi                                                                        |
+| 15 Testiranje                            | nije počelo | Playwright + Chromium instalirani; `npm run test:e2e` (5 testova) prolazi                                                    |
+| 16 Deploy                                | nije počelo | treba: Vercel, Supabase staging/prod, domen sovaai.rs, Upstash, Inngest, Sentry                                              |
 
 ## Faza 4 — šta je urađeno
 
@@ -58,6 +58,25 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - **Testovi**: 43 nova unit testa (SSRF, crawler, boje, fontovi, chunkovi, SVG, heuristika, spajanje, prompt), 9 integracionih sa lažnim sajtom kroz MSW i DNS stubom (prva analiza besplatna i ceo pipeline sa logoom, bojama, fontovima, stilom fotografija, znanjem; 409 za drugu analizu u toku; ručna izmena i 400 za sistemsko polje; druga analiza 10 tokena uz zaključana polja; vraćanje verzije; otkazivanje vraća tokene; robots blokada → failed; bez ključa heuristički i besplatno; nedeljna provera pravi predlog bez dupliranja). Živi smoke `npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs`: 25 strana za 15 s, logo, paleta, kontakt, mreže, blog.
 - Ispravljen bag iz faze 5: `embedTexts` je niz stringova slao kao jedan sadržaj sa više delova (SDK spaja stringove), pa bi embeddingi u produkciji pali; sad svaki tekst ide kao poseban `Content`.
 
+## Faza 7 — šta je urađeno
+
+- **Unsplash** (`src/integrations/unsplash/client.ts`): pretraga sa `content_filter=high`, keš 1 h (Redis ili memorija), 403 sa potrošenim limitom → 429 korisniku, `download_location` se poziva pri svakoj stvarnoj upotrebi, atribucija sa `utm_source=sova`, hotlink URL-ovi zadržavaju `ixid`. Servis `services/visuals/unsplash.ts`: pretraga za UI (pregledi 600 px, sličice 200 px), izbor fotografije → kopija u `uploads` + `media_assets` (`source: unsplash`, atribucija i izvorni podaci), ponovni izbor koristi postojeću; `rankCandidates` (Gemini vision nad do 8 sličica, bez ključa redosled Unsplash-a), `pickPhotoForTemplate`.
+- **Šabloni** (`src/lib/visuals/`): `templates.ts` (4 šablona kao Satori stablo: fotografija sa naslovom, boja brenda i poruka, fotografija pored teksta, najava sa okvirom; 5 formata; automatski izbor; veličina naslova po dužini; kontrast teksta), `fonts.ts` (Google Font brenda kao WOFF kroz CSS v1 API sa UA starog Chrome-a, provera magic bajtova, keš; ugrađen Inter podskup latinica + latin-ext + ćirilica, OFL, 2 × 35 KB), `render.ts` (Satori → resvg → sharp; slike i logo kao data URI, logo SVG se rasterizuje).
+- **Posao** `visual_template` (`services/visuals/template.ts`, Inngest `ai-visual-template`): 2 tokena, 202; slika sa Unsplash-a (zadata ili pretraga po pojmu ili naslovu + rangiranje), iz biblioteke ili bez slike; boje, fontovi, logo i stil fotografija iz Brand Brain profila; rezultat u `generated` (`source: template`) sa atribucijom i spiskom kandidata. Rangiranje koje padne ne ruši posao (napomena u izlazu).
+- **Canva Connect** (`src/integrations/canva/client.ts`, `services/canva/*`): OAuth Authorization Code + PKCE S256, token endpoint form-urlencoded sa Basic auth, refresh token rotira; tokeni AES-256-GCM (`src/lib/crypto/tokens.ts`, verzija ključa, AAD po vezi) u `canva_connections`, state i PKCE verifier u `oauth_states`; `GET /users/me`, proba Autofill-a (`/brand-templates` 403 → nema); dizajn od slike (`/asset-uploads` + polling → `/designs` → `edit_url`), export (`/exports` + polling → fajl u biblioteku, `source: canva`); osvežavanje tokena 2 min pre isteka, `invalid_grant` → `needs_reauth`. Iza feature flaga `canva` i env ključeva.
+- **Gemini slike** sada u prompt dodaju stil fotografija i boje brenda iz profila (`services/ai/image.ts`).
+- **API rute**: `GET /api/unsplash/search`, `POST /api/unsplash/select`, `POST /api/ai/visual/template`, `GET /api/integrations/canva/connect`, `GET /api/integrations/canva/callback`, `GET /api/canva/status`, `DELETE /api/canva/connection`, `POST /api/canva/designs`, `POST /api/canva/export`.
+- **UI**: Studio kartica „Vizual iz šablona” (naslov, podnaslov, CTA, format, šablon, izvor slike: Unsplash pretraga sa izborom, moja fotografija, bez slike; polling posla; atribucija), dugmad „Doradi u Canvi” i „Uvezi gotov dizajn” uz rezultate; kartica Canva u podešavanjima (status, poveži, prekini).
+- **Testovi**: 8 unit (šifrovanje tokena, šabloni, render 4 šablona u 540 px sa ćirilicom, PNG, fallback fontova); 9 integracionih sa MSW mockom Unsplash API-ja, Unsplash CDN-a i Canva API-ja (pretraga + keš + 429 + 400, izbor sa beleženjem preuzimanja i ponovnom upotrebom, šablon sa Unsplash-om i rangiranjem → 2 tokena i atribucija, šablon bez slike i sa otpremljenom fotografijom, rangiranje koje pada ne ruši posao, 400 bez Idempotency-Key i refund za nepostojeću fotografiju, Canva connect → PKCE state, callback → šifrovani tokeni i status, dizajn + export po 2 tokena, osvežavanje tokena i `needs_reauth` posle opoziva, prekid veze). Vizuelna provera: 4 šablona renderovana na 1080 px sa pravim Google fontovima.
+- Napomena: Unsplash i Canva nemaju ključeve lokalno, pa pravi pozivi nisu provereni; MSW mock prati zvaničnu dokumentaciju pročitanu 24.10.2026 (INTEGRATIONS 11 i 12).
+
+## Kako da testiraš (faza 7)
+
+1. Bez ključeva: `/app/studio` → „Vizual iz šablona” → naslov, „Bez slike” ili „Moja fotografija” → vizual sa bojama, fontovima i logoom iz Brand Brain profila (posle analize sajta). Unsplash izvor javlja da nije podešen.
+2. Sa `UNSPLASH_ACCESS_KEY` (demo aplikacija, 50 zahteva/h): Unsplash pretraga u kartici, izbor sličice ili prazno → Sova pretražuje po naslovu, AI rangira (uz Gemini ključ) i render traje 3–8 s.
+3. Canva: u Developer portalu napravi integraciju (scope-ovi iz INTEGRATIONS 11, redirect `http://localhost:3001/api/integrations/canva/callback`), unesi `CANVA_CLIENT_ID/SECRET`, uključi flag `canva` u `feature_flags` → Podešavanja → „Poveži Canvu” → posle vizuala „Doradi u Canvi” otvara Canvu, „Uvezi gotov dizajn” vraća PNG u biblioteku.
+4. `npm run test` (94), `npm run test:integration` (38), `npm run test:db` (24), `npm run test:e2e` (5).
+
 ## Kako da testiraš (faza 6)
 
 1. `npm run db:start` (migracija 15 je primenjena sa `npx supabase migration up`; posle `db:reset` ide sama), `npm run dev`, `npm run inngest:dev`.
@@ -91,6 +110,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Google OAuth klijent (`GOOGLE_CLIENT_ID/SECRET`) da se pojavi Google dugme; Resend ključ da pozivnice i obaveštenja idu emailom; Turnstile ključevi za zaštitu registracije u produkciji.
 - `GEMINI_API_KEY` u `.env.local` (jedino što fali da AI Studio i AI profil brenda rade sa pravim modelom; prvi pravi poziv Brand Brain-a nad tangerineseo.rs proveriti zajedno, posebno `responseJsonSchema` sa većom šemom).
 - Ćirilični i SPA sajt za ivične slučajeve B4 i B10 (predlog: jedan sajt na ćirilici koji poznaješ).
+- `UNSPLASH_ACCESS_KEY` (developer aplikacija „sova”, demo plan) i Canva integracija (`CANVA_CLIENT_ID/SECRET`, redirect URL za localhost i sovaai.rs) da se faza 7 proveri uživo; tekst Unsplash production prijave stiže uz dizajn.
 - Adresa sedišta TangerineSEO LLC i merodavno pravo; email za privatnost na domenu sovaai.rs.
 - GitHub → Settings → Code security: uključiti secret scanning.
 

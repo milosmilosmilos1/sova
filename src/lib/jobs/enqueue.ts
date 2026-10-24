@@ -56,3 +56,19 @@ export async function sendBrandAnalysisCanceled(crawlId: string): Promise<void> 
     logger.warn('send_brand_analysis_canceled_failed', { crawlId, error })
   }
 }
+
+/** Vizual iz šablona (faza 7) kao pozadinski posao. */
+export async function enqueueVisualTemplateJob(generationId: string, workspaceId: string): Promise<void> {
+  try {
+    await inngest.send(events.aiVisualTemplateRequested.create({ generationId, workspaceId }))
+  } catch (error) {
+    logger.error('enqueue_visual_template_failed', { generationId, error })
+    throw new AiError(
+      'PROVIDER_ERROR',
+      process.env.NODE_ENV === 'development'
+        ? 'Pozadinski servis nije dostupan. Pokrenite `npm run inngest:dev` pa pokušajte ponovo.'
+        : 'Pozadinski servis trenutno nije dostupan. Pokušajte ponovo za minut.',
+      { retryable: true, cause: error },
+    )
+  }
+}

@@ -58,7 +58,7 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 | U5  | Ogromna rezolucija                         | `limitInputPixels` 50 MP → 400 sa porukom                                                               | 7     | kod               |
 | U6  | Animirani GIF                              | Prva sličica kao slika; upozorenje da mreže GIF ne prikazuju kao animaciju kroz API                     | 7     | plan              |
 | U7  | Prekinut upload                            | Potpisan URL ističe za 1 h; `media_assets` red se pravi tek pri `complete`; cleanup cron briše siročiće | 7     | plan              |
-| U8  | Isti fajl dva puta                         | `sha256` poklapanje → ponuda postojećeg asseta umesto duplikata                                         | 7     | kod               |
+| U8  | Isti fajl dva puta                         | `sha256` poklapanje → ponuda postojećeg asseta umesto duplikata; Unsplash po `photoId`                  | 7     | test              |
 | U9  | Brisanje medija koji je u zakazanoj objavi | Trigger odbija; UI nudi zamenu                                                                          | 7, 9a | plan              |
 
 ## Mreže
@@ -121,3 +121,18 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 | B11 | Biznis bez sajta                | Onboarding preko kratkog opisa + uvoz sa mreža; profil sa niskim confidence           | 6    | kod    |
 | B12 | Sajt promenjen posle analize    | Nedeljna provera, predlog ažuriranja, `locked_fields` se ne diraju                    | 6    | test   |
 | B13 | Analiza pokrenuta dvaput        | jedinstven indeks aktivne analize (409), concurrency 1 po brendu, rate limit 6/10 min | 6    | test   |
+
+## Vizuali (faza 7)
+
+| #   | Slučaj                                          | Ponašanje                                                                                                     | Faza | Status |
+| --- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------- | ---- | ------ |
+| V1  | Unsplash limit potrošen (403 Rate Limit)        | 429 korisniku sa predlogom da otpremi svoju fotografiju; keš pretrage 1 h smanjuje pozive                     | 7    | test   |
+| V2  | Unsplash ključ nije podešen                     | Pretraga vraća `configured: false`, UI nudi upload ili šablon bez slike; zahtev sa Unsplash izvorom daje 400  | 7    | test   |
+| V3  | Pretraga bez rezultata ili fotografija nestala  | Bez rezultata → šablon bez slike uz napomenu; nepostojeći `photoId` → posao `failed`, tokeni vraćeni          | 7    | test   |
+| V4  | Vision rangiranje padne                         | Redosled Unsplash-a, posao uspeva, napomena u izlazu                                                          | 7    | test   |
+| V5  | Google font brenda nedostupan ili nije WOFF/TTF | Fallback na ugrađeni Inter (latinica, latin-ext, ćirilica); `fontsUsed` u izlazu kaže šta je zaista korišćeno | 7    | test   |
+| V6  | Logo SVG ne može da se rasterizuje              | Šablon ispisuje naziv brenda u fontu umesto logoa                                                             | 7    | kod    |
+| V7  | Canva token istekao                             | Osvežavanje 2 min pre isteka; refresh token rotira i odmah se upisuje                                         | 7    | test   |
+| V8  | Canva pristup opozvan                           | `invalid_grant` → `needs_reauth`, 403 korisniku bez naplate, podešavanja nude ponovno povezivanje             | 7    | test   |
+| V9  | Canva export traži plaćeni plan                 | `license_required`/`approval_required` → jasna poruka, tokeni vraćeni                                         | 7    | kod    |
+| V10 | OAuth state ponovljen ili istekao               | 400 „Povezivanje je isteklo ili je već iskorišćeno”; state važi 10 min i jednokratan je                       | 7    | test   |

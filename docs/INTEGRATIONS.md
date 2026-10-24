@@ -106,12 +106,14 @@ Greške se mapiraju u `ProviderError { code, retryable, userMessage (srpski), ra
 - **Autofill**: zvanični vodič navodi Pro, Teams i Enterprise kao planove sa pristupom brand template-ima i Autofill-u (API referenca na drugom mestu kaže „Enterprise”). Sova proverava mogućnost u runtime-u: pokušaj `GET /v1/brand-templates` → 403 znači nema Autofill → `canva_connections.autofill_available = false`. Tok: `POST /v1/asset-uploads` (slika) → `GET /v1/brand-templates/{id}/dataset` → `POST /v1/autofills` → polling `GET /v1/autofills/{job}` → `POST /v1/exports` → polling → preuzimanje u `generated`.
 - **Bez Autofill-a**: `POST /v1/designs {design_type: {type: 'preset', name: 'instagram_post'} | custom {width,height}, asset_id, title}` → `edit_url` → korisnik dorađuje → `GET /api/canva/return?correlation_state=...` → `POST /v1/exports` (png/jpg/pdf/mp4). Canva traži da se `edit_url` otvori odmah po kreiranju (kratko važi).
 - **Napomena**: Canva najavljuje promenu ID-jeva brand template-a sa 6 meseci migracije. Čuvamo ID uz datum i spremni smo za remapiranje.
+- **Ugrađeno (faza 7, 24.10.2026, docs pročitane isti dan)**: autorizacija `https://www.canva.com/api/oauth/authorize` (PKCE S256, `redirect_uri` mora biti registrovan), token `POST https://api.canva.com/rest/v1/oauth/token` (form-urlencoded, Basic auth, `expires_in` 14400, refresh token jednokratan), `GET /v1/users/me` (`team_user.user_id/team_id`), `POST /v1/asset-uploads` (octet-stream + `Asset-Upload-Metadata: {name_base64}`, polling `GET /v1/asset-uploads/{jobId}`), `POST /v1/designs` (`design_type` preset `doc|email|presentation|whiteboard` ili custom 40–8000 px, `asset_id`, `title`; `edit_url` važi 30 dana, prazni dizajni se brišu posle 7 dana), `POST /v1/exports` (`format {type: png|jpg, width, quality}`; polling `GET /v1/exports/{id}`; URL-ovi važe 24 h; greške `license_required`/`approval_required` za plaćene opcije). Rate limiti: dizajn 20/min, export polling 120/min, upload 30/min. Kod: `src/integrations/canva/client.ts`, `src/services/canva/*`.
 
 ## 12. Unsplash
 
 - **Limiti**: demo 50 zahteva/h, production 1.000/h posle prijave („Apply for Production” u developer portalu, aplikacija mora poštovati smernice; prijava čim UI radi, u fazi 7). Broje se samo pozivi ka `api.unsplash.com`, ne slike sa `images.unsplash.com`.
 - **Obaveze**: hotlink slika sa URL-ova iz odgovora (zadržati `ixid` pri resize-u); poziv `photo.links.download_location` kad korisnik zaista upotrebi fotografiju u objavi (ne pri prikazu rezultata); atribucija svuda gde se slika vidi: `Photo by <a href="https://unsplash.com/@{username}?utm_source=sova&utm_medium=referral">{name}</a> on <a href="https://unsplash.com/?utm_source=sova&utm_medium=referral">Unsplash</a>` (`utm_source` = naziv aplikacije kako je registrovana). Keš rezultata pretrage 1 h u Redisu smanjuje pozive.
 - **Pretraga**: `GET /search/photos?query&orientation&color&content_filter=high&per_page=12`, zatim Gemini vision rangira kandidate po relevantnosti i stilu brenda.
+- **Ugrađeno (faza 7)**: `src/integrations/unsplash/client.ts` (header `Authorization: Client-ID`, `Accept-Version: v1`, keš pretrage 1 h, 403 „Rate Limit Exceeded” → 429 korisniku sa predlogom da otpremi svoju fotografiju), `GET /photos/:id` pri izboru, `GET links.download_location` pri svakoj upotrebi, kopija 1600–2000 px kroz `urls.raw&w=&q=&auto=format` (ixid ostaje). Atribucija: `attributionFor()` daje tekst i HTML sa `utm_source=<UNSPLASH_APP_NAME>&utm_medium=referral`; na šablonu se ispisuje u uglu, u UI-ju uz sliku. Production prijava: tekst pripremiti kad UI faze 14 bude gotov (screenshot pretrage sa atribucijom).
 
 ## 13. Gemini
 
@@ -126,27 +128,28 @@ Brand Brain (faza 6):
 
 ## 14. Checklista prijava (status se ažurira svake faze)
 
-| Stavka                                                               | Potrebno za         | Preduslov                                    | Status      |
-| -------------------------------------------------------------------- | ------------------- | -------------------------------------------- | ----------- |
-| Stranice Privatnost, Uslovi, Brisanje podataka na javnom domenu      | sve mreže           | faza 2                                       | nije počelo |
-| Meta app (Business), test stranica + IG Business nalog               | Facebook, Instagram | faza 2                                       | nije počelo |
-| Meta Business Verification                                           | App Review          | dokumenti firme                              | nije počelo |
-| Meta App Review (scope-ovi iz sekcija 3 i 4, screencast)             | produkcija          | radna integracija (8a)                       | nije počelo |
-| Meta deauthorize + data deletion callback                            | App Review          | faza 8a                                      | nije počelo |
-| LinkedIn app + „Share on LinkedIn”                                   | lični profil        | faza 8b                                      | nije počelo |
-| LinkedIn Community Management, Development tier                      | stranice firmi      | firma, poslovni email, verifikovana stranica | nije počelo |
-| LinkedIn Standard tier (screencast)                                  | produkcija          | 8b gotova                                    | nije počelo |
-| TikTok app + audit                                                   | javne objave        | 8b gotova                                    | nije počelo |
-| TikTok URL property verifikacija (ako proxy)                         | PULL_FROM_URL       | domen                                        | nije počelo |
-| X developer nalog + krediti                                          | X                   | kartica                                      | nije počelo |
-| Google Cloud: OAuth consent screen, verifikacija (YouTube scope-ovi) | YouTube             | domen, politika, demo video                  | nije počelo |
-| YouTube kvota — zahtev za povećanje                                  | YouTube             | verifikacija                                 | nije počelo |
-| GBP API pristup (formular)                                           | GBP                 | GBP profil, Cloud projekat                   | nije počelo |
-| Pinterest app Trial → Standard (video)                               | Pinterest           | 8c gotova                                    | nije počelo |
-| Canva integracija (Developer portal, MFA)                            | Canva               | faza 7                                       | nije počelo |
-| Unsplash production pristup                                          | Unsplash            | faza 7                                       | nije počelo |
-| Resend domen (SPF, DKIM, DMARC)                                      | email               | domen                                        | nije počelo |
-| Paddle ili Stripe nalog + sandbox                                    | naplata             | odluka (pitanje 1)                           | nije počelo |
+| Stavka                                                               | Potrebno za         | Preduslov                                    | Status        |
+| -------------------------------------------------------------------- | ------------------- | -------------------------------------------- | ------------- |
+| Stranice Privatnost, Uslovi, Brisanje podataka na javnom domenu      | sve mreže           | faza 2                                       | nije počelo   |
+| Meta app (Business), test stranica + IG Business nalog               | Facebook, Instagram | faza 2                                       | nije počelo   |
+| Meta Business Verification                                           | App Review          | dokumenti firme                              | nije počelo   |
+| Meta App Review (scope-ovi iz sekcija 3 i 4, screencast)             | produkcija          | radna integracija (8a)                       | nije počelo   |
+| Meta deauthorize + data deletion callback                            | App Review          | faza 8a                                      | nije počelo   |
+| LinkedIn app + „Share on LinkedIn”                                   | lični profil        | faza 8b                                      | nije počelo   |
+| LinkedIn Community Management, Development tier                      | stranice firmi      | firma, poslovni email, verifikovana stranica | nije počelo   |
+| LinkedIn Standard tier (screencast)                                  | produkcija          | 8b gotova                                    | nije počelo   |
+| TikTok app + audit                                                   | javne objave        | 8b gotova                                    | nije počelo   |
+| TikTok URL property verifikacija (ako proxy)                         | PULL_FROM_URL       | domen                                        | nije počelo   |
+| X developer nalog + krediti                                          | X                   | kartica                                      | nije počelo   |
+| Google Cloud: OAuth consent screen, verifikacija (YouTube scope-ovi) | YouTube             | domen, politika, demo video                  | nije počelo   |
+| YouTube kvota — zahtev za povećanje                                  | YouTube             | verifikacija                                 | nije počelo   |
+| GBP API pristup (formular)                                           | GBP                 | GBP profil, Cloud projekat                   | nije počelo   |
+| Pinterest app Trial → Standard (video)                               | Pinterest           | 8c gotova                                    | nije počelo   |
+| Canva integracija (Developer portal, MFA)                            | Canva               | faza 7 gotova; vlasnik pravi integraciju     | čeka vlasnika |
+| Unsplash developer aplikacija (demo ključ)                           | Unsplash            | faza 7 gotova                                | čeka vlasnika |
+| Unsplash production pristup                                          | Unsplash            | UI sa atribucijom (faza 14)                  | nije počelo   |
+| Resend domen (SPF, DKIM, DMARC)                                      | email               | domen                                        | nije počelo   |
+| Paddle ili Stripe nalog + sandbox                                    | naplata             | odluka (pitanje 1)                           | nije počelo   |
 
 ## 15. Izvori (pročitano 23.10.2026)
 

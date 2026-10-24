@@ -206,3 +206,23 @@ Razlog: Inngest pamti rezultate koraka pa zatvorene promenljive nisu pouzdane pr
 
 Odluka: cron `brand-site-check` (ponedeljak 6 h, Europe/Belgrade) za aktivne brendove sa profilom: čita robots, sitemap i RSS, poredi hash sa `brands.sitemap_hash/feed_hash`, nove URL-ove (bez već poznatih stranica i bez onih iz prethodnih provera) pretvara u predloge: `new_blog_post` (source `blog`) po objavi i jedan `profile_update` (source `site_change`) kad ima novih stranica ponude. Ne preuzima stranice i ne troši tokene; `last_site_check_at` se pomera i kad sajt nema sitemap ni RSS.
 Razlog: brif 5.6 traži „predlog, ne automatsku promenu”; jeftina provera bez AI-ja skalira na sve brendove.
+
+## D-038 · 24.10.2026 · usvojeno · Šabloni kroz Satori + resvg sa ugrađenim Inter podskupom i Google fontom brenda
+
+Odluka: vizuali iz šablona se renderuju Satori-jem (podskup HTML/CSS → SVG) i resvg-om (→ PNG), bez sistemskih fontova. Font brenda (iz profila, `mapped_headings/mapped_body`) se preuzima sa Google Fonts kao WOFF (CSS v1 API sa User-Agentom starog Chrome-a; IE6 UA daje EOT, moderan UA WOFF2 koji Satori ne čita) i proverava po magic bajtovima; uvek se dodaje ugrađeni Inter podskup (latinica, latin-ext, ćirilica; OFL) kao fallback za glifove. Slike i logo ulaze kao data URI.
+Razlog: Vercel nema fontove ni librsvg sa fontconfig-om; Satori daje deterministički render sa web fontovima; podskup od 2 × 35 KB pokriva srpski u oba pisma bez velikih fajlova u repou.
+
+## D-039 · 24.10.2026 · usvojeno · Unsplash: hotlink za preglede, kopija tek pri izboru, rangiranje kroz Gemini vision
+
+Odluka: rezultati pretrage se prikazuju hotlinkom (`images.unsplash.com`, `ixid` zadržan, keš 1 h); tek izbor fotografije ili upotreba u šablonu poziva `download_location` i čuva kopiju (1600–2000 px) u `uploads` sa atribucijom i izvornim podacima, da objave i šabloni ne zavise od CDN-a. Za šablon se uzima 8 kandidata (orijentacija po formatu, `content_filter=high`) i Gemini vision ih rangira po relevantnosti, stilu brenda i mirnoj površini za tekst; bez ključa ili pri grešci ostaje Unsplash redosled i posao uspeva uz napomenu.
+Razlog: smernice Unsplash API-ja (hotlink, download tracking, atribucija) i brif 6.2; kopija je potrebna za objavljivanje na mrežama koje traže fajl.
+
+## D-040 · 24.10.2026 · usvojeno · Canva Connect bez Autofill-a kao primaran tok; veza po korisniku; tokeni AES-256-GCM
+
+Odluka: tok je slika iz biblioteke → Canva asset → dizajn sa `edit_url` (korisnik dorađuje u Canvi) → export → kopija u biblioteci; Autofill se samo detektuje (`/brand-templates` 403) i ostaje za planove koji ga imaju. Veza je po (workspace, korisnik) jer Canva tokeni pripadaju Canva korisniku. Tokeni i PKCE verifier se šifruju AES-256-GCM sa verzijom ključa i AAD-om (`canva:<ws>:<user>`); refresh token se rotira pri svakom osvežavanju, `invalid_grant` prebacuje vezu u `needs_reauth`. Integracija je iza feature flaga `canva` i env ključeva; `GET /api/canva/return` (correlation state) nije ugrađen jer traži registrovan return URL u Canva portalu.
+Razlog: vlasnik ima besplatan Canva plan (D-013); isti šifarski sloj služi mrežama u fazi 8.
+
+## D-041 · 24.10.2026 · usvojeno · Vizual iz šablona je posao od 2 tokena bez obzira na izvor slike
+
+Odluka: `visual_template` košta 2 tokena (cena pokriva do 8 Unsplash sličica kroz vision model i render); bez slike ili sa korisnikovom fotografijom cena je ista radi jednostavnosti. Trošak u USD se beleži samo za rangiranje. Rezultat je `media_assets` red sa `source: template`, `is_ai_generated = false` (tekst i kompozicija su deterministični), atribucijom Unsplash fotografije i spiskom kandidata sa ocenama.
+Razlog: ARCHITECTURE 8.2 (≈ $0.01 troška po vizualu) i jednostavan cenovnik za korisnika.
