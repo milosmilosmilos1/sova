@@ -22,6 +22,8 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getTokenPrice } from '@/lib/tokens/prices'
 import { confirmReservation } from '@/lib/tokens/reservation'
 import { assertDailyQuota, failGeneration, startGeneration } from '@/services/ai/generations'
+import { searchKnowledge } from '@/services/brand-brain/embed'
+import { getBrandContextForBrand } from '@/services/brand-brain/profile'
 import { getBrand } from '@/services/brands'
 import { downloadAsset, getAsset } from '@/services/media'
 
@@ -34,23 +36,53 @@ export interface PostTextResult {
   validation: Record<string, { ok: boolean; length: number; max: number; problems: string[] }>
 }
 
-/** Brand kontekst iz tabele brands; profil iz Brand Brain-a (faza 6) ovde dodaje ton, činjenice, zabranjene reči. */
-function brandContextFrom(
-  brand: { name: string; content_locale: string; settings: unknown },
+/**
+ * Brand kontekst: profil iz Brand Brain-a (faza 6) kad postoji, inače osnovni podaci iz `brands`.
+ * Uz to RAG: do 5 odlomaka sa sajta relevantnih za temu (prazno bez indeksa ili ključa).
+ */
+async function buildBrandContext(
+  brand: { id: string; name: string; content_locale: string; settings: unknown },
+  topic: string,
   override?: string,
-): BrandContext {
-  const settings = (brand.settings ?? {}) as Record<string, unknown>
-  const locale = (override ?? brand.content_locale) as BrandContext['locale']
-  return {
-    name: brand.name,
-    locale: ['sr-Latn', 'sr-Cyrl', 'en'].includes(locale) ? locale : 'sr-Latn',
-    address: settings.address === 'ti' ? 'ti' : 'vi',
-    emoji: settings.emoji === true,
-    forbiddenWords: Array.isArray(settings.forbidden_words) ? (settings.forbidden_words as string[]) : [],
-    tone: typeof settings.tone === 'string' ? settings.tone : null,
-    description: typeof settings.description === 'string' ? settings.description : null,
-    facts: Array.isArray(settings.facts) ? (settings.facts as string[]) : [],
+): Promise<BrandContext> {
+  const fromProfile = await getBrandContextForBrand(brand.id)
+  const localeRaw = (override ?? fromProfile?.locale ?? brand.content_locale) as BrandContext['locale']
+  const locale: BrandContext['locale'] = ['sr-Latn', 'sr-Cyrl', 'en'].includes(localeRaw)
+    ? localeRaw
+    : 'sr-Latn'
+  let context: BrandContext
+  if (fromProfile) {
+    context = {
+      name: fromProfile.name || brand.name,
+      locale,
+      address: fromProfile.address,
+      emoji: fromProfile.emoji,
+      forbiddenWords: fromProfile.forbiddenWords,
+      tone: fromProfile.tone,
+      description: fromProfile.description,
+      facts: fromProfile.facts,
+      services: fromProfile.services,
+      audience: fromProfile.audience,
+      keyTerms: fromProfile.keyTerms,
+      samplePhrases: fromProfile.samplePhrases,
+      hashtags: fromProfile.hashtags,
+    }
+  } else {
+    const settings = (brand.settings ?? {}) as Record<string, unknown>
+    context = {
+      name: brand.name,
+      locale,
+      address: settings.address === 'ti' ? 'ti' : 'vi',
+      emoji: settings.emoji === true,
+      forbiddenWords: Array.isArray(settings.forbidden_words) ? (settings.forbidden_words as string[]) : [],
+      tone: typeof settings.tone === 'string' ? settings.tone : null,
+      description: typeof settings.description === 'string' ? settings.description : null,
+      facts: Array.isArray(settings.facts) ? (settings.facts as string[]) : [],
+    }
   }
+  const hits = await searchKnowledge(brand.id, topic, 5)
+  context.knowledge = hits.map((h) => h.content.slice(0, 700))
+  return context
 }
 
 /**
@@ -77,6 +109,7 @@ export async function generatePostText(
     assetAlt = asset.alt_text
   }
 
+  const brandContext = await buildBrandContext(brand, input.topic, input.locale)
   const price = await getTokenPrice('text')
   const { generationId, reservationId } = await startGeneration({
     workspaceId: brand.workspace_id,
@@ -98,7 +131,7 @@ export async function generatePostText(
   })
 
   const prompt = buildPostTextPrompt({
-    brand: brandContextFrom(brand, input.locale),
+    brand: brandContext,
     platforms: input.platforms,
     topic: input.topic,
     goal: input.goal,

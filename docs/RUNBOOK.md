@@ -29,8 +29,11 @@ Zamke:
 
 ```
 npm run lint && npm run typecheck
-npm run test            # Vitest unit (25)
+npm run test            # Vitest unit (86)
 npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (24); pravi i briše test korisnike
+npm run test:integration # API rute u procesu nad lokalnim Supabase-om, Gemini i lažni sajt kroz MSW (29)
+npm run test:e2e        # Playwright kroz Mailpit (5); traži pokrenut dev server
+npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs 25   # živi crawler bez baze i AI-ja
 npm run build           # produkcijski build
 ```
 
@@ -59,6 +62,9 @@ Faza 16. Vercel: `main` → Production, PR → Preview. Checklista u ARCHITECTUR
 - **Dupli tokeni ili ledger ne štima**: `select workspace_id, sum(delta) from token_ledger group by 1` naspram `sum(amount - remaining)` iz `token_grants`; razlika je bag u RPC-u, ne popravljati ručno bez zapisa.
 - **Webhook plaćanja ne stiže**: provajderov dashboard → ponovno slanje; `payment_events (provider, event_id)` UNIQUE sprečava dupliranje.
 - **Gemini pad**: circuit breaker preskače model 5 min; ako traje, admin u `platform_settings.allowed_models` menja primarni model bez deploya.
+- **Analiza sajta visi**: `select id, status, phase, progress->>'message', started_at from website_crawls where status in ('queued','running')`; Inngest dashboard → run `brand-analyze` po `crawlId`. Otkazivanje iz UI-ja šalje `brand/analyze.canceled` i vraća tokene; ručno: `update website_crawls set status='canceled', finished_at=now()` pa `release_reservation` za `ai_generations.token_reservation_id`.
+- **Vlasnik sajta se žali na SovaBot**: User-Agent je `SovaBot/1.0 (+https://sovaai.rs/bot)`; bot čita samo sajtove koje je korisnik uneo, poštuje robots.txt i Crawl-delay, najviše 60 strana po analizi i nedeljnu proveru sitemap/RSS. Blokada: `User-agent: SovaBot` / `Disallow: /`. Proveri `website_crawls` po `url` da vidiš ko je pokrenuo.
+- **Lažno pozitivna SSRF blokada**: `assertPublicHost` odbija domen ako bilo koja A/AAAA adresa padne u privatni opseg; proveri `nslookup` i, ako je sajt iza CDN-a sa javnim adresama, prijavi kao bag (ne dodavati izuzetke bez pregleda).
 
 ## 7. Dnevnik incidenata
 

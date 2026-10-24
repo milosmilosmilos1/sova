@@ -44,7 +44,7 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 | AI5 | Slika generisana, upload u Storage pao | Retry uploada 3x unutar istog koraka; ako padne, rezervacija se oslobađa, generacija `failed`                                     | 5     | kod    |
 | AI6 | Model ugašen (404 za model)            | Trajna greška → odmah fallback model + alarm adminu + health crven                                                                | 5     | test   |
 | AI7 | Odgovor na pogrešnom jeziku ili pismu  | Detekcija pisma (udeo ćiriličnih karaktera) i jezika; jedan ponovni pokušaj sa pojačanom instrukcijom; zatim upozorenje korisniku | 5, 6  | plan   |
-| AI8 | Prompt injection iz sadržaja sajta     | Delimiteri + instrukcija + Zod; činjenice se proveravaju naspram profila                                                          | 6     | kod    |
+| AI8 | Prompt injection iz sadržaja sajta     | Delimiteri + instrukcija + Zod; činjenice se proveravaju naspram profila                                                          | 6     | test   |
 | AI9 | Sličan tekst već objavljen u 90 dana   | Embedding sličnost > 0,92 → upozorenje i ponuda drugog ugla                                                                       | 6, 9a | plan   |
 
 ## Upload i mediji
@@ -106,18 +106,18 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 
 ## Brand Brain (iz brifa 5.7)
 
-| #   | Slučaj                          | Ponašanje                                                                            | Faza | Status |
-| --- | ------------------------------- | ------------------------------------------------------------------------------------ | ---- | ------ |
-| B1  | Sajt ne postoji ili ne odgovara | `failed` sa porukom i ponudom ručnog unosa ili uvoza sa mreža                        | 6    | plan   |
-| B2  | robots.txt blokira              | Poštuje se; poruka korisniku sa predlogom da dozvoli `SovaBot` ili unese ručno       | 6    | plan   |
-| B3  | Cloudflare challenge ili 403    | Prepoznavanje challenge stranice; Firecrawl ako je uključen; inače poruka            | 6    | plan   |
-| B4  | SPA bez sadržaja                | Detekcija (malo teksta, `<div id="root">` prazan) → Firecrawl ili poruka             | 6    | plan   |
-| B5  | Višejezičan sajt                | `hreflang` i `lang`; bira se jezik koji korisnik izabere, ostale verzije se preskaču | 6    | plan   |
-| B6  | Ogroman sajt                    | Limit 60 stranica po prioritetu; blog se uzima iz RSS-a bez fetch-a svake strane     | 6    | plan   |
-| B7  | Sajt bez bloga                  | Sekcija prazna, Autopilot ne zavisi od bloga                                         | 6    | plan   |
-| B8  | Logo samo kao tekst             | Profil `logo = null`, UI traži upload, šabloni koriste naziv u fontu brenda          | 6    | plan   |
-| B9  | Crno-bela paleta                | Neutralne se čuvaju posebno; akcent se predlaže uz jasnu oznaku „predlog”            | 6    | plan   |
-| B10 | Sajt na ćirilici                | `content_locale = sr-Cyrl`; generisanje na ćirilici; test sa pravim sajtom           | 6    | plan   |
-| B11 | Biznis bez sajta                | Onboarding preko kratkog opisa + uvoz sa mreža; profil sa niskim confidence          | 6    | plan   |
-| B12 | Sajt promenjen posle analize    | Nedeljna provera, predlog ažuriranja, `locked_fields` se ne diraju                   | 6    | plan   |
-| B13 | Analiza pokrenuta dvaput        | concurrency 1 po brendu + rate limit 3/h                                             | 6    | plan   |
+| #   | Slučaj                          | Ponašanje                                                                             | Faza | Status |
+| --- | ------------------------------- | ------------------------------------------------------------------------------------- | ---- | ------ |
+| B1  | Sajt ne postoji ili ne odgovara | `failed` sa porukom i ponudom ručnog unosa ili uvoza sa mreža                         | 6    | test   |
+| B2  | robots.txt blokira              | Poštuje se; poruka korisniku sa predlogom da dozvoli `SovaBot` ili unese ručno        | 6    | test   |
+| B3  | Cloudflare challenge ili 403    | Prepoznavanje challenge stranice i poruka sa ručnim unosom; Firecrawl odložen (D-035) | 6    | test   |
+| B4  | SPA bez sadržaja                | Detekcija (malo teksta, `<div id="root">` prazan) → poruka i ručni unos (D-035)       | 6    | test   |
+| B5  | Višejezičan sajt                | `hreflang` i `lang`; bira se jezik koji korisnik izabere, ostale verzije se preskaču  | 6    | kod    |
+| B6  | Ogroman sajt                    | Limit 60 stranica po prioritetu; blog se uzima iz RSS-a bez fetch-a svake strane      | 6    | test   |
+| B7  | Sajt bez bloga                  | Sekcija prazna, Autopilot ne zavisi od bloga                                          | 6    | test   |
+| B8  | Logo samo kao tekst             | Profil `logo = null`, UI traži upload, šabloni koriste naziv u fontu brenda           | 6    | test   |
+| B9  | Crno-bela paleta                | Neutralne se čuvaju posebno; akcent se predlaže uz jasnu oznaku „predlog”             | 6    | test   |
+| B10 | Sajt na ćirilici                | `content_locale = sr-Cyrl`; generisanje na ćirilici; test sa pravim sajtom            | 6    | kod    |
+| B11 | Biznis bez sajta                | Onboarding preko kratkog opisa + uvoz sa mreža; profil sa niskim confidence           | 6    | kod    |
+| B12 | Sajt promenjen posle analize    | Nedeljna provera, predlog ažuriranja, `locked_fields` se ne diraju                    | 6    | test   |
+| B13 | Analiza pokrenuta dvaput        | jedinstven indeks aktivne analize (409), concurrency 1 po brendu, rate limit 6/10 min | 6    | test   |

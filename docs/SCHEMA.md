@@ -1195,3 +1195,10 @@ Implementacija je u `supabase/migrations/2026102300000{1..14}_*.sql` i `supabase
 - Trigeri: `workspace_members_guard` spaja poslednjeg owner-a i dodelu owner uloge; `posts_guard` proverava zaključavanje, prelaze i verziju; `post_targets_guard` proverava prelaze; `brands_guard` traži potvrdu za nivo 3 i brani promenu workspace-a.
 - Storage: `exports` bucket ima posebnu politiku čitanja (`users/{user_id}/...` ili admin workspace-a); upload je dozvoljen samo u `uploads`, u `generated` i `brand-assets` piše samo server.
 - Testovi: `scripts/test-db.mjs`, 24 testa (svih 12 iz sekcije 9 plus uloge, teammate profili, FIFO po isteku, seed).
+
+Faza 6 (24.10.2026), migracija `20261024000015_brand_brain.sql`:
+
+- RPC `match_knowledge_chunks(p_brand_id, p_embedding vector(1536), p_limit, p_source_types)` (security definer, samo service_role; operator se piše `operator(extensions.<=>)` jer je `search_path` prazan), `next_brand_profile_version(p_brand_id)` (authenticated i service_role), `brand_knowledge_count(p_brand_id)` (vraća broj samo uz `has_brand_access`).
+- Jedinstven delimičan indeks `website_crawls_one_active (brand_id) where status in ('queued','running')`: drugi zahtev dobija 409.
+- `brand_profiles.data` čuva Zod šemu `brandProfileSchema` (`src/lib/brand/profile-schema.ts`), `locked_fields` su putanje iz `FIELD_PATHS`; ručna izmena i vraćanje verzije idu kroz korisnikov klijent (RLS `can_edit_brand`), analiza kroz service role.
+- `website_pages.images/json_ld/open_graph/social_links/headings` se pune iz crawlera; `media_assets` logo ide u `brand-assets/ws/{ws}/brand/{brand}/logo/`.

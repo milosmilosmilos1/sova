@@ -1,4 +1,4 @@
-import { Home, LogOut, Settings, ShieldCheck, Sparkles, Users } from 'lucide-react'
+import { Brain, Home, LogOut, Settings, ShieldCheck, Sparkles, Users } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 
@@ -83,6 +83,10 @@ export function AppShell({
           <NavLink href="/app/studio">
             <Sparkles className="size-4" aria-hidden />
             AI Studio
+          </NavLink>
+          <NavLink href="/app/brand">
+            <Brain className="size-4" aria-hidden />
+            Brand Brain
           </NavLink>
           <NavLink href="/app/team">
             <Users className="size-4" aria-hidden />

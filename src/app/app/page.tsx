@@ -68,9 +68,11 @@ export default async function AppHomePage({ searchParams }: PageProps<'/app'>) {
             <CardTitle className="text-lg">Analiza sajta (Brand Brain)</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm text-muted-foreground">
-            <p>Stiže u sledećoj fazi: Sova će sa sajta izvući logo, boje, usluge i ton.</p>
-            <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/app/settings" />}>
-              Podešavanja brenda
+            <p>
+              Sova čita sajt i izvlači logo, boje, usluge, ton i činjenice koje posle koristi u svakoj objavi.
+            </p>
+            <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/app/brand" />}>
+              Otvori Brand Brain
             </Button>
           </CardContent>
         </Card>

@@ -629,7 +629,7 @@ Env varijable: lista iz brifa plus `PAYMENT_PROVIDER` (`stripe` ili `paddle`), `
 - `GEMINI_API_KEY` (nov ključ; stari iz prethodne verzije rotiraj).
 - `TOKEN_ENCRYPTION_KEY`, `CRON_SECRET`, `IMPERSONATION_SECRET` — generisaću komandu, ti pokreneš i uneseš.
 
-**Pre faze 6 (Brand Brain):**
+**Pre faze 6 (Brand Brain)** — urađeno 24.10.2026 nad tangerineseo.rs; Firecrawl nije ugrađen (D-035):
 
 - Test sajt za analizu (predlog: jedan od tvojih sajtova, npr. klima24 ili tangerineseo, plus jedan ćirilični i jedan SPA sajt za ivične slučajeve).
 - Opciono `FIRECRAWL_API_KEY`.

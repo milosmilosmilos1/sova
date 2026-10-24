@@ -1729,6 +1729,9 @@ isOneToOne: false
 "admin_adjust_tokens":
 { Args: { "p_admin_id": string,"p_delta": number,"p_reason": string,"p_workspace_id": string }; Returns: number
                            },
+"brand_knowledge_count":
+{ Args: { "p_brand_id": string }; Returns: number
+                           },
 "brand_workspace":
 { Args: { "b": string }; Returns: string
                            },
@@ -1777,8 +1780,16 @@ isOneToOne: false
 "is_workspace_member":
 { Args: { "ws": string }; Returns: boolean
                            },
+"match_knowledge_chunks":
+{ Args: { "p_brand_id": string,"p_embedding": string,"p_limit"?: number,"p_source_types"?: (string)[] }; Returns: {
+              "chunk_index": number,"content": string,"id": string,"metadata": Json,"similarity": number,"source_id": string,"source_type": string
+            }[]
+                           },
 "minute_bucket":
 { Args: { "ts": string }; Returns: number
+                           },
+"next_brand_profile_version":
+{ Args: { "p_brand_id": string }; Returns: number
                            },
 "release_reservation":
 { Args: { "p_reason"?: string,"p_reservation_id": string }; Returns: undefined

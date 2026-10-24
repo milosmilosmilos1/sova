@@ -260,7 +260,8 @@ export async function embedTexts(
   try {
     const response = await ai.models.embedContent({
       model: req.model,
-      contents: req.texts,
+      // svaki tekst kao poseban Content: niz stringova bi SDK spojio u jedan sadržaj sa više delova
+      contents: req.texts.map((text) => ({ role: 'user', parts: [{ text }] })),
       config: {
         outputDimensionality: req.dimensions ?? 1536,
         taskType: req.taskType ?? 'RETRIEVAL_DOCUMENT',

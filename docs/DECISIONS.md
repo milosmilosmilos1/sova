@@ -176,3 +176,33 @@ Razlog: jedan izvor istine za oblik izlaza (brif 6.1, 17.3 prompt injection); ne
 
 Odluka: upload prihvata JPG, PNG i WebP po magic bytes-u; HEIC vraća jasnu poruku jer prebuilt `sharp` nema libheif (konverzija kroz WASM dekoder ide u fazu 7). Integracioni testovi mockuju Gemini API MSW-om (`tests/integration/gemini-mock.ts`) sa redom odgovora (uspeh, 503 pa uspeh, 404 modela, safety blokada, slika).
 Razlog: brif 3 traži MSW za spoljne API-je; bez pravog ključa ceo tok (rezervacija → poziv → potvrda ili oslobađanje) je ipak testiran, uključujući retry, fallback i naplatu.
+
+## D-032 · 24.10.2026 · usvojeno · Prva analiza sajta besplatna, svaka sledeća 10 tokena; bez AI-ja nema naplate
+
+Odluka: `brand_analyze_first = 0`, `brand_analyze_again = 10` (platform_settings). Tokeni se rezervišu pri zahtevu, potvrđuju u koraku `finish` samo ako je AI zaista sastavio profil; kad Gemini nije podešen ili padne, profil je heuristički, rezervacija se oslobađa i analiza završava kao `partial` sa napomenom.
+Razlog: korisnik plaća samo AI rad (brif 11.1); heuristički profil je i dalje koristan (kontakt, mreže, usluge, boje) pa ga ne treba kriti.
+
+## D-033 · 24.10.2026 · usvojeno · Profil brenda kao polja `{value, confidence, source_urls}` sa verzijama i `locked_fields`
+
+Odluka: `brand_profiles.data` je Zod šema `brandProfileSchema` sa 38 putanja (`FIELD_PATHS`). Svaka analiza i svaka ručna izmena prave novu verziju (`next_brand_profile_version`, trigger gasi staru `is_current`). Ručno izmenjena polja ulaze u `locked_fields` i buduće analize ih ne menjaju; otključavanje je posebna radnja. Vraćanje starije verzije kopira tu verziju (i njena zaključana polja) kao novu, istorija ostaje linearna. Sistemska polja (logo, lista objava, ima blog) ne mogu ručno da se menjaju.
+Razlog: brif 5.3 i 5.6 (pouzdanost po polju, zaključavanje); linearna istorija je jednostavnija za UI i audit od grananja.
+
+## D-034 · 24.10.2026 · usvojeno · AI izlaz profila bez null vrednosti; heuristika kao osnova, AI prepisuje kad je siguran
+
+Odluka: šema izlaza modela (`aiProfileOutputSchema`) koristi prazan string, prazan niz ili 0 za „nepoznato”, a `aiOutputToFields` pretvara u null. Konačan profil je `composeProfile`: heuristika → AI polja sa `confidence ≥ 0.3` ili kad heuristika nema vrednost → zaključana polja iz prethodne verzije; vizuali, mreže i spisak objava dolaze samo iz deterministične ekstrakcije. Zabranjene reči se dopunjuju, ne brišu.
+Razlog: `nullable` u JSON šemi za strukturisan izlaz je najčešći izvor nevalidnog JSON-a; deterministični izvori (JSON-LD, linkovi, CSS) su pouzdaniji od modela za činjenice koje se mogu pročitati.
+
+## D-035 · 24.10.2026 · usvojeno · Bez Firecrawl-a; SPA i Cloudflare sajtovi dobijaju poruku i ručni unos
+
+Odluka: `FIRECRAWL_API_KEY` ostaje opcion i neiskorišćen. Crawler prepoznaje SPA ljusku (malo teksta + `#root`/`#__next` + skripte) i challenge stranice (403/503 sa Cloudflare markerima) i završava analizu kao `failed` sa porukom koja nudi ručni unos. `used_firecrawl` kolona ostaje za kasnije.
+Razlog: dodatni plaćeni servis pre prvog korisnika nije opravdan; ciljni korisnici (mali biznisi u Srbiji) uglavnom imaju WordPress sajtove koje čitamo direktno. Odluka se preispituje kad se u `website_crawls.error_code` nakupe `SPA_SHELL`/`CHALLENGE` padovi.
+
+## D-036 · 24.10.2026 · usvojeno · Crawler kao `step.run` koraci sa greškama kao podacima; deps zamenljivi u testovima
+
+Odluka: `runAnalysisPipeline(job, run)` prima apstraktni `StepRunner`; Inngest prosleđuje `step.run`, testovi prosleđuju direktno izvršavanje. Deterministične greške (robots, HTTP 4xx, SPA, prazan sajt) vraćaju `{ ok: false, code, message }` i pipeline sam zatvara analizu; samo mrežne i serverske greške bacaju (Inngest ponavlja korak). `getCrawlDeps()` daje `fetch` (SSRF omotač) i testovi ga zamenjuju MSW fetch-om sa DNS stubom (`fixture-site.test`). Stanje između koraka ide kroz rezultate koraka i bazu (`website_pages`), ne kroz zatvaranja.
+Razlog: Inngest pamti rezultate koraka pa zatvorene promenljive nisu pouzdane pri ponovnom izvršavanju; greške kao podaci sprečavaju uzaludne retry-eve i jasne su korisniku.
+
+## D-037 · 24.10.2026 · usvojeno · Nedeljna provera samo sitemap/RSS, predlozi bez AI-ja, bez dupliranja
+
+Odluka: cron `brand-site-check` (ponedeljak 6 h, Europe/Belgrade) za aktivne brendove sa profilom: čita robots, sitemap i RSS, poredi hash sa `brands.sitemap_hash/feed_hash`, nove URL-ove (bez već poznatih stranica i bez onih iz prethodnih provera) pretvara u predloge: `new_blog_post` (source `blog`) po objavi i jedan `profile_update` (source `site_change`) kad ima novih stranica ponude. Ne preuzima stranice i ne troši tokene; `last_site_check_at` se pomera i kad sajt nema sitemap ni RSS.
+Razlog: brif 5.6 traži „predlog, ne automatsku promenu”; jeftina provera bez AI-ja skalira na sve brendove.

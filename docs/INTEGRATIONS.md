@@ -117,6 +117,13 @@ Greške se mapiraju u `ProviderError { code, retryable, userMessage (srpski), ra
 
 Vidi ARCHITECTURE 8.1 za modele i cene. Dodatno: strukturisan izlaz kroz `responseMimeType: application/json` + `responseSchema`; safety podešavanja na podrazumevanim pragovima, blokiran odgovor → `AI_BLOCKED` sa porukom i bez naplate; `thinkingConfig` sa niskim budžetom za tekst objava radi cene; slike kroz `generateContent` sa `responseModalities: ['IMAGE']` i `imageConfig { aspectRatio, imageSize }`; embeddings `embedContent` sa `outputDimensionality: 1536` i `taskType: RETRIEVAL_DOCUMENT` / `RETRIEVAL_QUERY`.
 
+Brand Brain (faza 6):
+
+- **Profil brenda**: jedan `generateContent` poziv sa korpusom do 120.000 karaktera (važne strane cele, blog skraćen), `responseJsonSchema` iz Zod šeme `aiProfileOutputSchema`, `thinkingLevel: medium`, temperatura 0,3, timeout 120 s. Šema izlaza nema `nullable` polja (prazan string, prazan niz ili 0 znače „nepoznato”) jer je to najpouzdaniji oblik za strukturisan izlaz; pretvaranje u null radi `aiOutputToFields`.
+- **Stil fotografija**: `generateContent` sa 3–8 slika (svaka smanjena na 768 px JPEG q75 da bi ulaz bio jeftin), JSON izlaz `photoStyleOutputSchema`.
+- **Embeddings**: `embedContent` kroz `batchEmbedContents` u grupama od 16. Zamka SDK-a: `contents: string[]` se spaja u JEDAN sadržaj sa više delova (vraća jedan vektor); svaki tekst mora biti poseban `Content` (`{ role: 'user', parts: [{ text }] }`).
+- **Naplata**: prva analiza 0, sledeće `brand_analyze_again` (10). Kad AI nije podešen ili padne, profil je heuristički i rezervacija se oslobađa.
+
 ## 14. Checklista prijava (status se ažurira svake faze)
 
 | Stavka                                                               | Potrebno za         | Preduslov                                    | Status      |

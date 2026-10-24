@@ -2,7 +2,7 @@
 
 Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Režim rada: više faza zaredom bez potvrde po fazi (D-012).
 
-## Stanje (23.10.2026)
+## Stanje (24.10.2026)
 
 | Faza                                     | Status      | Napomena                                                                                                                  |
 | ---------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------- |
@@ -10,9 +10,9 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 | 2 Setup projekta                         | gotovo      | lokalno radi, health zelen, build prolazi, 25 unit testova, CI workflow                                                   |
 | 3 Baza i bezbednost                      | gotovo      | 14 migracija, 53 tabele, RLS, RPC za tokene, trigeri, storage, seed; 24/24 testova baze                                   |
 | 4 Auth i workspace                       | gotovo      | registracija, prijava, magic link, Google (uz ključeve), reset, MFA, workspace, tim, admin gate; 10 integracionih testova |
-| 5 Token engine i AI jezgro               | sledeće     | treba: GEMINI_API_KEY; bez njega rade mock testovi                                                                        |
-| 6 Brand Brain                            | nije počelo | test sajt: tangerineseo.rs                                                                                                |
-| 7 Vizuelni pipeline                      | nije počelo | treba: Unsplash ključ, Canva integracija                                                                                  |
+| 5 Token engine i AI jezgro               | gotovo      | tokeni, idempotentnost, Gemini sloj, Studio; pravi pozivi čekaju GEMINI_API_KEY                                           |
+| 6 Brand Brain                            | gotovo      | crawler + profil + RAG + nedeljna provera; živi smoke nad tangerineseo.rs prošao; bez ključa radi heuristički             |
+| 7 Vizuelni pipeline                      | sledeće     | treba: Unsplash ključ, Canva integracija                                                                                  |
 | 8a–8d Integracije mreža                  | nije počelo | treba: app-ovi i prijave iz INTEGRATIONS 14                                                                               |
 | 9a–9b Objave, kalendar, publisher        | nije počelo |                                                                                                                           |
 | 10a–10c Strategija, analitika, Autopilot | nije počelo |                                                                                                                           |
@@ -45,6 +45,28 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - **Studio** (`/app/studio`): tri kartice (tekst, slika iz fotografije, slika iz prompta), stanje tokena i cene, upload fotografije, prikaz varijanti sa proverom dužine, polling statusa posla, 4 stanja.
 - **Testovi**: 18 novih unit testova (retry, breaker, cena, limiti mreža, prompt i šema); 10 integracionih sa MSW mockom Gemini-ja: 400 bez ključa idempotentnosti, srećan put (50 → 48 tokena, trošak upisan, sistemska instrukcija i JSON šema poslate), ponovljen ključ bez nove naplate i 409 za drugo telo, 503 pa uspeh (retry), safety blokada (422, tokeni vraćeni), 404 modela → fallback, 402 bez poziva modela, upload (odbija ne-sliku, prima PNG), slika iz prompta (202 → posao → 8 tokena → potpisan URL, ponovno pokretanje preskočeno), slika iz fotografije (šalje sliku modelu, premium model, neuspeh vraća 15 tokena).
 
+## Faza 6 — šta je urađeno
+
+- **SSRF zaštita** (`src/lib/ssrf.ts`): samo http/https, normalizacija URL-a (bez tracking parametara), statičke provere imena, DNS provera svake adrese (IPv4 i IPv6, mapirane i NAT64 adrese, metadata opsezi), ručno praćenje najviše 5 preusmerenja uz proveru svakog hopa, timeout, gornja granica veličine, User-Agent `SovaBot/1.0 (+BOT_INFO_URL)`. Javna strana `/bot` objašnjava bota i kako se zabranjuje.
+- **Crawler** (`src/lib/crawler/`): `robots.ts` (robots-parser, Crawl-delay, Sitemap linije), `discover.ts` (sitemap i sitemap index, RSS/Atom, linkovi sa početne; dedup, prioritet po tipu, blog najviše trećina limita, hash liste za nedeljnu proveru), `classify.ts` (tip strane po putanji na srpskom i engleskom), `extract.ts` (cheerio: naslov, meta, OG, JSON-LD, naslovi, glavni tekst bez navigacije i futera, slike, kandidati za logo po skoru, interni linkovi, društvene mreže bez share linkova, feed i CSS linkovi, SPA detekcija, charset), `colors.ts` (CSS varijable i važni selektori teže, ΔE spajanje, WCAG kontrast, monohrom), `fonts.ts` (Google Fonts, @font-face, body i naslovi, mapiranje komercijalnih fontova), `logo.ts` (SVG sanitizacija, ico/webp/png kroz sharp), `chunk.ts` (3.000 karaktera, preklop 300), `fetch-page.ts` (Cloudflare challenge, greške kao podaci). `deps.ts` daje zamenu fetch-a i DNS-a za testove.
+- **Profil brenda** (`src/lib/brand/`): Zod šema sa `{value, confidence, source_urls}` po polju (identitet, ponuda, publika, glas, činjenice, kontakt, mreže, vizuali, sadržaj, meta), `heuristic.ts` (profil bez AI-ja iz JSON-LD, meta, naslova, kontakt regexa, detekcija pisma i obraćanja), `compose.ts` (heuristika + AI + zaključana polja iz prethodne verzije; `toBrandContext` za promptove). Promptovi `prompts/brand-profile.ts` (korpus do 120k karaktera, izlaz bez null vrednosti radi stabilnog JSON-a) i `prompts/photo-style.ts` (vision nad 3–8 fotografija).
+- **Pipeline** (`src/services/brand-brain/pipeline.ts`, Inngest `brand-analyze`): prepare → discover → fetch po 10 (3 paralelno, Crawl-delay) → visual (logo u `brand-assets`, paleta iz CSS-a i logoa kroz node-vibrant, fontovi) → photo-style → profile (nova verzija, `locked_fields` poštovani) → embed (`knowledge_chunks`, nepromenjeni chunkovi se ne šalju ponovo) → finish (status `succeeded` ili `partial`, naplata samo kad je AI radio, notifikacija). Deterministične greške (robots, 404, SPA, challenge) su podaci, ne izuzeci; `cancelOn` i `onFailure` vraćaju tokene.
+- **Servisi**: `crawl.ts` (zahtev, jedan aktivan po brendu, prva analiza besplatna pa 10 tokena, otkazivanje), `profile.ts` (verzije, ručne izmene koje zaključavaju polja, otključavanje, vraćanje starije verzije), `embed.ts` (indeksiranje i semantička pretraga kroz RPC `match_knowledge_chunks`), `site-check.ts` (nedeljna provera sitemap/RSS → predlozi `new_blog_post` i `profile_update`, bez dupliranja). `text.ts` sada puni kontekst iz profila i dodaje do 5 RAG odlomaka u prompt.
+- **API rute**: `POST|GET /api/brands/[id]/analyze`, `GET|DELETE /api/brands/[id]/analysis/[crawlId]`, `GET|PATCH /api/brands/[id]/profile`, `POST .../profile/restore`, `POST .../profile/unlock`.
+- **Stranica** `/app/brand`: pokretanje i otkazivanje analize sa napretkom (polling 2 s), profil po sekcijama sa pouzdanošću, izvorima i katancem, ručne izmene ključnih polja, verzije sa vraćanjem, 4 stanja.
+- **Baza**: migracija 15 (`match_knowledge_chunks`, `next_brand_profile_version`, `brand_knowledge_count`, jedinstven indeks jedne aktivne analize po brendu).
+- **Testovi**: 43 nova unit testa (SSRF, crawler, boje, fontovi, chunkovi, SVG, heuristika, spajanje, prompt), 9 integracionih sa lažnim sajtom kroz MSW i DNS stubom (prva analiza besplatna i ceo pipeline sa logoom, bojama, fontovima, stilom fotografija, znanjem; 409 za drugu analizu u toku; ručna izmena i 400 za sistemsko polje; druga analiza 10 tokena uz zaključana polja; vraćanje verzije; otkazivanje vraća tokene; robots blokada → failed; bez ključa heuristički i besplatno; nedeljna provera pravi predlog bez dupliranja). Živi smoke `npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs`: 25 strana za 15 s, logo, paleta, kontakt, mreže, blog.
+- Ispravljen bag iz faze 5: `embedTexts` je niz stringova slao kao jedan sadržaj sa više delova (SDK spaja stringove), pa bi embeddingi u produkciji pali; sad svaki tekst ide kao poseban `Content`.
+
+## Kako da testiraš (faza 6)
+
+1. `npm run db:start` (migracija 15 je primenjena sa `npx supabase migration up`; posle `db:reset` ide sama), `npm run dev`, `npm run inngest:dev`.
+2. `/app/brand` → unesi `tangerineseo.rs` → „Analiziraj sajt”: traka napretka prolazi faze (čitam sajt, tražim stranice, preuzimam 1/25…, logo i boje, fotografije, profil, pamtim sadržaj). Bez `GEMINI_API_KEY` završava kao „Gotovo, uz napomene” sa heurističkim profilom i 0 tokena; sa ključem profil je AI i piše model.
+3. Profil: naziv, slogan, opis, usluge, cene sa sajta, kontakt, mreže, logo, paleta, fontovi; verzija 1. „Izmeni ključna polja” → sačuvaj → verzija 2, polja sa katancem. „Analiziraj ponovo” → 10 tokena manje, zaključana polja netaknuta. „Vrati ovu verziju” → nova verzija sa starim sadržajem.
+4. `/app/studio` tekst: prompt sada nosi ton, činjenice, usluge i (sa ključem) odlomke sa sajta.
+5. Lažni sajt bez baze: `npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs 25`.
+6. `npm run test` (86), `npm run test:integration` (29), `npm run test:db` (24), `npm run test:e2e` (5).
+
 ## Kako da testiraš (faza 5)
 
 1. Unesi `GEMINI_API_KEY` u `.env.local` (nov ključ iz Google AI Studio), restartuj `npm run dev`; `/api/health` → `gemini: ok` sa nazivom modela.
@@ -67,7 +89,8 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 ## Šta čeka vlasnika
 
 - Google OAuth klijent (`GOOGLE_CLIENT_ID/SECRET`) da se pojavi Google dugme; Resend ključ da pozivnice i obaveštenja idu emailom; Turnstile ključevi za zaštitu registracije u produkciji.
-- `GEMINI_API_KEY` u `.env.local` (jedino što fali da AI Studio radi sa pravim modelom).
+- `GEMINI_API_KEY` u `.env.local` (jedino što fali da AI Studio i AI profil brenda rade sa pravim modelom; prvi pravi poziv Brand Brain-a nad tangerineseo.rs proveriti zajedno, posebno `responseJsonSchema` sa većom šemom).
+- Ćirilični i SPA sajt za ivične slučajeve B4 i B10 (predlog: jedan sajt na ćirilici koji poznaješ).
 - Adresa sedišta TangerineSEO LLC i merodavno pravo; email za privatnost na domenu sovaai.rs.
 - GitHub → Settings → Code security: uključiti secret scanning.
 
@@ -83,4 +106,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - CI pokreće samo unit testove; testovi baze i integracioni zahtevaju Supabase u CI-ju (faza 15).
 - `complete_upload` RPC iz plana zamenjen serverskim uploadom (`POST /api/media/upload`); HEIC konverzija (WASM dekoder) i video upload idu u fazu 7.
 - Studio status posla kroz polling; Realtime pretplata uz dizajn (D-029).
-- Brand kontekst za promptove čita samo `brands.settings` dok Brand Brain (faza 6) ne popuni profil.
+- Brand kontekst bez profila i dalje pada na `brands.settings`; posle prve analize koristi profil i RAG.
+- Firecrawl (SPA i Cloudflare sajtovi) nije ugrađen: takvi sajtovi dobijaju jasnu poruku i ručni unos (D-035). Realtime napredak analize ide kroz polling do faze 14 (tabela `website_crawls` je u publikaciji).
+- Nedeljna provera pravi predloge, ali ih UI još ne prikazuje (inbox predloga stiže u fazi 10); notifikacije o završenoj analizi se upisuju u `notifications` bez UI-ja.
+- AI7 (odgovor na pogrešnom pismu) i AI9 (sličan tekst u 90 dana) ostaju za fazu 9a kad postoje objave.
