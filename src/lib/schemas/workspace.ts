@@ -81,11 +81,27 @@ export const createInvitationSchema = z.object({
   brandIds: z.array(z.uuid()).max(100).optional(),
 })
 
+/** IANA zona koju Intl poznaje (npr. Europe/Belgrade); nepoznata bi pokvarila računanje termina. */
+function isTimeZone(tz: string): boolean {
+  try {
+    new Intl.DateTimeFormat('en-US', { timeZone: tz })
+    return true
+  } catch {
+    return false
+  }
+}
+const timeZoneField = z
+  .string()
+  .trim()
+  .min(1)
+  .max(64)
+  .refine(isTimeZone, { error: 'Nepoznata vremenska zona.' })
+
 export const createBrandSchema = z.object({
   workspaceId: z.uuid(),
   name,
   websiteUrl: websiteUrlSchema,
-  timezone: z.string().trim().min(1).max(64).default('Europe/Belgrade'),
+  timezone: timeZoneField.default('Europe/Belgrade'),
   contentLocale: z.enum(['sr-Latn', 'sr-Cyrl', 'en']).default('sr-Latn'),
 })
 
@@ -93,16 +109,18 @@ export const updateBrandSchema = z
   .object({
     name: name.optional(),
     websiteUrl: websiteUrlSchema,
-    timezone: z.string().trim().min(1).max(64).optional(),
+    timezone: timeZoneField.optional(),
     contentLocale: z.enum(['sr-Latn', 'sr-Cyrl', 'en']).optional(),
     status: z.enum(['active', 'paused', 'archived']).optional(),
+    /** uz promenu zone: zakazane objave zadržavaju isto lokalno vreme (EDGE_CASES K7) */
+    shiftSchedule: z.boolean().optional(),
   })
   .refine((v) => Object.values(v).some((x) => x !== undefined), { error: 'Nema izmena.' })
 
 export const updateProfileSchema = z.object({
   fullName: z.string().trim().min(2).max(100),
   locale: z.enum(['sr-Latn', 'en']),
-  timezone: z.string().trim().min(1).max(64),
+  timezone: timeZoneField,
 })
 
 export const uuidParamSchema = z.object({ id: z.uuid({ error: 'Neispravan identifikator.' }) })

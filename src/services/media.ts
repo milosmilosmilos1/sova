@@ -49,6 +49,13 @@ export async function uploadImage(
       'HEIC format još nije podržan. Sačuvajte fotografiju kao JPEG pa pokušajte ponovo.',
     )
   }
+  if (mime === 'image/gif') {
+    // EDGE_CASES U6: Sova slike normalizuje bez animacije, a Instagram i TikTok ionako primaju samo mirne slike
+    throw new ApiError(
+      'VALIDATION',
+      'GIF još nije podržan. Sačuvajte željenu sličicu kao JPG ili PNG; Instagram i TikTok ionako primaju samo slike bez animacije.',
+    )
+  }
   if (!ALLOWED_IMAGE_MIME.has(mime)) {
     throw new ApiError(
       'VALIDATION',
@@ -101,31 +108,33 @@ export async function uploadImage(
   })
   if (upload.error) throw new ApiError('INTERNAL', 'Čuvanje fajla nije uspelo.', { cause: upload.error })
 
-  const row = unwrap(
-    await admin
-      .from('media_assets')
-      .insert({
-        id,
-        workspace_id: input.workspaceId,
-        brand_id: input.brandId,
-        kind: 'image',
-        source: 'upload',
-        bucket: 'uploads',
-        storage_path: storagePath,
-        mime_type: mime,
-        size_bytes: output.data.length,
-        width: output.info.width,
-        height: output.info.height,
-        sha256,
-        exif_stripped: true,
-        uploaded_by: viewer.user.id,
-        source_data: input.originalName ? { original_name: input.originalName.slice(0, 200) } : null,
-      })
-      .select('*')
-      .single(),
-    'Zapis o fajlu nije sačuvan.',
-  )
-  return row
+  const inserted = await admin
+    .from('media_assets')
+    .insert({
+      id,
+      workspace_id: input.workspaceId,
+      brand_id: input.brandId,
+      kind: 'image',
+      source: 'upload',
+      bucket: 'uploads',
+      storage_path: storagePath,
+      mime_type: mime,
+      size_bytes: output.data.length,
+      width: output.info.width,
+      height: output.info.height,
+      sha256,
+      exif_stripped: true,
+      uploaded_by: viewer.user.id,
+      source_data: input.originalName ? { original_name: input.originalName.slice(0, 200) } : null,
+    })
+    .select('*')
+    .single()
+  if (inserted.error || !inserted.data) {
+    // bez reda u bazi fajl bi ostao siroče u skladištu (EDGE_CASES U7)
+    await admin.storage.from('uploads').remove([storagePath])
+    throw mapDbError(inserted.error, 'Zapis o fajlu nije sačuvan.')
+  }
+  return inserted.data
 }
 
 export async function getAsset(viewer: Viewer, assetId: string): Promise<MediaAssetRow> {
@@ -211,7 +220,10 @@ export async function storeGeneratedImage(input: {
     })
     .select('*')
     .single()
-  if (error || !data) throw mapDbError(error, 'Zapis o generisanoj slici nije sačuvan.')
+  if (error || !data) {
+    await admin.storage.from('generated').remove([storagePath])
+    throw mapDbError(error, 'Zapis o generisanoj slici nije sačuvan.')
+  }
   return data
 }
 
@@ -255,4 +267,20 @@ export async function listMedia(
       createdAt: m.created_at,
     })),
   )
+}
+
+/**
+ * Brisanje iz biblioteke (meko, `deleted_at`): okidač `media_in_use_guard` odbija medij koji je u
+ * zakazanoj ili objavljivanoj objavi (EDGE_CASES U9), pa korisnik prvo menja medij u objavi.
+ * Piše kroz service role posle provere: SELECT politika skriva obrisan red, pa bi UPDATE kroz
+ * korisnički klijent pao sa 42501 (D-081).
+ */
+export async function deleteMediaAsset(viewer: Viewer, assetId: string): Promise<void> {
+  const asset = await getAsset(viewer, assetId)
+  await requireMembership(viewer, asset.workspace_id, EDIT_ROLES)
+  const { error } = await createSupabaseAdminClient()
+    .from('media_assets')
+    .update({ deleted_at: new Date().toISOString() })
+    .eq('id', assetId)
+  if (error) throw mapDbError(error)
 }

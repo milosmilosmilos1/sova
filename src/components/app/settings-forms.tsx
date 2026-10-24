@@ -1,13 +1,17 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useRouter } from 'next/navigation'
+import { useActionState, useState } from 'react'
 
 import { FormMessage, SubmitButton, TextField } from '@/components/forms/form-parts'
+import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
+import type { ApiResponse } from '@/lib/api/response'
 import { createBrandAction, updateProfileAction, updateWorkspaceAction } from '@/lib/auth/actions'
 import { initialFormState } from '@/lib/auth/form-state'
+import { pluralSr } from '@/lib/plural'
 
-const TIMEZONES = [
+export const TIMEZONES = [
   'Europe/Belgrade',
   'Europe/Podgorica',
   'Europe/Sarajevo',
@@ -155,5 +159,89 @@ export function CreateBrandForm({ workspaceId }: { workspaceId: string }) {
       </div>
       <SubmitButton pendingText="Dodajem…">Dodajte brend</SubmitButton>
     </form>
+  )
+}
+
+/**
+ * Zona postojećeg brenda (EDGE_CASES K7). Podrazumevano zakazane objave zadržavaju isto lokalno
+ * vreme u novoj zoni; bez toga ostaju u istom trenutku (pa im se lokalno vreme promeni).
+ */
+export function BrandTimezoneForm({
+  brandId,
+  timezone,
+  scheduledCount,
+}: {
+  brandId: string
+  timezone: string
+  scheduledCount: number
+}) {
+  const router = useRouter()
+  const [value, setValue] = useState(timezone)
+  const [keepLocal, setKeepLocal] = useState(true)
+  const [busy, setBusy] = useState(false)
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null)
+  const options = TIMEZONES.includes(timezone) ? TIMEZONES : [timezone, ...TIMEZONES]
+
+  async function save() {
+    setBusy(true)
+    setMessage(null)
+    try {
+      const res = await fetch(`/api/brands/${brandId}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ timezone: value, shiftSchedule: keepLocal }),
+      })
+      const data = (await res.json()) as ApiResponse<{ shifted: { targets: number; posts: number } | null }>
+      if (!data.ok) throw new Error(data.error.message)
+      const moved = data.data.shifted?.targets ?? 0
+      setMessage({
+        ok: true,
+        text: moved
+          ? `Zona je sačuvana; ${moved} ${pluralSr(moved, 'zakazana objava zadržava', 'zakazane objave zadržavaju', 'zakazanih objava zadržava')} isto lokalno vreme.`
+          : 'Zona je sačuvana.',
+      })
+      router.refresh()
+    } catch (e) {
+      setMessage({ ok: false, text: e instanceof Error ? e.message : 'Čuvanje nije uspelo.' })
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <div className="mt-2 flex flex-wrap items-center gap-2 text-xs">
+      <select
+        aria-label="Vremenska zona brenda"
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        className="h-8 rounded-md border border-input bg-background px-2 text-xs"
+      >
+        {options.map((tz) => (
+          <option key={tz} value={tz}>
+            {tz}
+          </option>
+        ))}
+      </select>
+      {value !== timezone && scheduledCount > 0 ? (
+        <label className="flex items-center gap-1">
+          <input type="checkbox" checked={keepLocal} onChange={(e) => setKeepLocal(e.target.checked)} />
+          zadrži lokalno vreme {scheduledCount}{' '}
+          {pluralSr(scheduledCount, 'zakazane objave', 'zakazane objave', 'zakazanih objava')}
+        </label>
+      ) : null}
+      {value !== timezone ? (
+        <Button size="sm" variant="outline" disabled={busy} onClick={() => void save()}>
+          {busy ? 'Čuvam…' : 'Sačuvaj zonu'}
+        </Button>
+      ) : null}
+      {message ? (
+        <span
+          role={message.ok ? 'status' : 'alert'}
+          className={message.ok ? 'text-emerald-700' : 'text-destructive'}
+        >
+          {message.text}
+        </span>
+      ) : null}
+    </div>
   )
 }

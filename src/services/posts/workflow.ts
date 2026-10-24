@@ -1,7 +1,7 @@
 import 'server-only'
 
 import type { NotificationType } from '@/config/notifications'
-import { validateText } from '@/config/platforms'
+import { PLATFORMS, validateText, type SocialPlatform } from '@/config/platforms'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { requireMembership, type Membership } from '@/lib/auth/workspace'
@@ -84,6 +84,42 @@ export interface ContentProblem {
   problems: string[]
 }
 
+const DUPLICATE_WINDOW_MS = 30 * 86_400_000
+const normalizeText = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim()
+
+/** Mreže koje identičan tekst odbijaju greškom (Facebook #506, LinkedIn DUPLICATE_POST, X 187). */
+const DUPLICATE_REJECTING: ReadonlySet<string> = new Set(['facebook', 'linkedin', 'x'])
+
+/**
+ * Isti tekst na istom nalogu u poslednjih 30 dana ili već zakazan (EDGE_CASES K9). Proverava se samo
+ * za mreže iz `DUPLICATE_REJECTING`, pa se problem javlja pre zakazivanja, ne posle pada objave;
+ * Instagram i TikTok isti opis uz drugu sliku primaju (D-081).
+ */
+async function findDuplicateOnAccount(
+  socialAccountId: string,
+  text: string,
+  postId: string,
+): Promise<{ status: string; at: string | null } | null> {
+  const want = normalizeText(text)
+  if (want.length < 20) return null
+  const since = new Date(Date.now() - DUPLICATE_WINDOW_MS).toISOString()
+  const admin = createSupabaseAdminClient()
+  const { data } = await admin
+    .from('post_targets')
+    .select('status, text_content, scheduled_at, published_at, posts!inner(master_text)')
+    .eq('social_account_id', socialAccountId)
+    .in('status', ['published', 'scheduled', 'publishing'])
+    .neq('post_id', postId)
+    .or(`published_at.gte."${since}",scheduled_at.gte."${since}"`)
+    .limit(200)
+  for (const r of data ?? []) {
+    const posts = r.posts as unknown as { master_text: string } | null
+    const effective = r.text_content || posts?.master_text || ''
+    if (normalizeText(effective) === want) return { status: r.status, at: r.published_at ?? r.scheduled_at }
+  }
+  return null
+}
+
 /** Validacija sadržaja po mreži (dužina, hashtagovi, mediji) pre odobrenja ili zakazivanja. */
 export async function validatePostContent(
   viewer: Viewer,
@@ -105,6 +141,16 @@ export async function validatePostContent(
     list.push(...text.problems)
     if (t.accountStatus && t.accountStatus !== 'active')
       list.push(`Nalog nije aktivan (${t.accountStatus}); povežite ga ponovo pre objave.`)
+    const duplicate = DUPLICATE_REJECTING.has(t.platform)
+      ? await findDuplicateOnAccount(t.socialAccountId, t.text, postId)
+      : null
+    if (duplicate) {
+      const label = PLATFORMS[t.platform as SocialPlatform]?.label ?? t.platform
+      const when = duplicate.at ? new Date(duplicate.at).toLocaleDateString('sr-Latn-RS') : ''
+      list.push(
+        `Isti tekst je ${duplicate.status === 'published' ? 'već objavljen' : 'već zakazan'} na ovom nalogu${when ? ` (${when})` : ''}; ${label} odbija identične objave. Izmenite tekst.`,
+      )
+    }
     try {
       const row = await loadAccountRow(t.socialAccountId)
       if (row && connectKeyFor(row.platform)) {

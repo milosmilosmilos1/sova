@@ -519,6 +519,7 @@ async function storeLogo(job: AnalysisJob, logo: LogoResult): Promise<VisualStep
   })
   if (error) {
     logger.warn('logo_asset_insert_failed', { crawlId: job.crawlId, error })
+    await admin.storage.from('brand-assets').remove([storagePath])
     return null
   }
   return { assetId: id, sourceUrl: logo.sourceUrl, mimeType }

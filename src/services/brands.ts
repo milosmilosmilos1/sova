@@ -4,6 +4,7 @@ import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import type { CreateBrandInput } from '@/lib/schemas/workspace'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
 import { getWorkspacePlan } from '@/services/plans'
 import type { Database } from '@/types/database'
@@ -101,6 +102,7 @@ export async function updateBrand(
   )
 }
 
+/** Meko brisanje (arhiva); upis kroz service role posle provere uloge, jer SELECT politika skriva obrisan red (D-081). */
 export async function deleteBrand(viewer: Viewer, brandId: string): Promise<void> {
   const brand = await getBrand(viewer, brandId)
   await requireMembership(viewer, brand.workspace_id, ADMIN_ROLES)
@@ -110,7 +112,7 @@ export async function deleteBrand(viewer: Viewer, brandId: string): Promise<void
     .eq('workspace_id', brand.workspace_id)
     .is('deleted_at', null)
   if ((count ?? 0) <= 1) throw new ApiError('CONFLICT', 'Radni prostor mora imati bar jedan brend.')
-  const { error } = await viewer.supabase
+  const { error } = await createSupabaseAdminClient()
     .from('brands')
     .update({ deleted_at: new Date().toISOString(), status: 'archived' })
     .eq('id', brandId)

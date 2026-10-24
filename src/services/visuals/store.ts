@@ -69,6 +69,10 @@ export async function storeServerImage(input: {
     })
     .select('*')
     .single()
-  if (error || !data) throw mapDbError(error, 'Zapis o slici nije sačuvan.')
+  if (error || !data) {
+    // bez reda u bazi fajl bi ostao siroče u skladištu (EDGE_CASES U7)
+    await admin.storage.from(bucket).remove([storagePath])
+    throw mapDbError(error, 'Zapis o slici nije sačuvan.')
+  }
   return data
 }

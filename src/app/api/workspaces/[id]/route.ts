@@ -1,5 +1,6 @@
 import { assertViewer, createHandler } from '@/lib/api/handler'
 import { updateWorkspaceSchema, uuidParamSchema } from '@/lib/schemas/workspace'
+import { cancelScheduledPostsForWorkspace } from '@/services/posts/publisher'
 import { deleteWorkspace, getWorkspace, updateWorkspace } from '@/services/workspaces'
 
 export const GET = createHandler({ auth: 'user', params: uuidParamSchema }, async ({ viewer, params }) =>
@@ -12,6 +13,8 @@ export const PATCH = createHandler(
 )
 
 export const DELETE = createHandler({ auth: 'user', params: uuidParamSchema }, async ({ viewer, params }) => {
-  await deleteWorkspace(assertViewer(viewer), params.id)
-  return { deleted: true }
+  const v = assertViewer(viewer)
+  await deleteWorkspace(v, params.id)
+  const canceled = await cancelScheduledPostsForWorkspace(params.id, v.user.id)
+  return { deleted: true, canceled }
 })

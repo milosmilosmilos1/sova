@@ -4,30 +4,30 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 
 ## Stanje (24.10.2026)
 
-| Faza                                    | Status      | Napomena                                                                                                                                                                      |
-| --------------------------------------- | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1 Plan i arhitektura                    | gotovo      | odobreno 23.10.2026, odgovori u D-013                                                                                                                                         |
-| 2 Setup projekta                        | gotovo      | lokalno radi, health zelen, build prolazi, 25 unit testova, CI workflow                                                                                                       |
-| 3 Baza i bezbednost                     | gotovo      | 14 migracija, 53 tabele, RLS, RPC za tokene, trigeri, storage, seed; 24/24 testova baze                                                                                       |
-| 4 Auth i workspace                      | gotovo      | registracija, prijava, magic link, Google (uz ključeve), reset, MFA, workspace, tim, admin gate; 10 integracionih testova                                                     |
-| 5 Token engine i AI jezgro              | gotovo      | tokeni, idempotentnost, Gemini sloj, Studio; pravi pozivi čekaju GEMINI_API_KEY                                                                                               |
-| 6 Brand Brain                           | gotovo      | crawler + profil + RAG + nedeljna provera; živi smoke nad tangerineseo.rs prošao; bez ključa radi heuristički                                                                 |
-| 7 Vizuelni pipeline                     | gotovo      | Unsplash + vision rangiranje, 4 šablona (Satori), Canva Connect (PKCE, dizajn, export); čeka: UNSPLASH_ACCESS_KEY, Canva app                                                  |
-| 8a Facebook + Instagram                 | gotovo      | OAuth, izbor naloga, tokeni, uvoz istorije, osvežavanje, webhook-ovi, provider za objave; čeka: Meta app i App Review                                                         |
-| 8b LinkedIn i TikTok                    | gotovo      | LinkedIn profil i stranice, TikTok foto (video spreman u provideru), panel u editoru, osvežavanje tokena; čeka: app-ovi i odobrenja (INTEGRATIONS 14)                         |
-| 8c–8d Ostale mreže                      | sledeće     | Google Business Profile, Pinterest, YouTube Shorts (8c), X (8d); treba: app-ovi i prijave iz INTEGRATIONS 14                                                                  |
-| 9a Objave, odobravanje, kalendar        | gotovo      | state machine, composer backend, verzije, javni link, komentari, kalendar, red objava; UI /app/posts, /app/calendar, /approve                                                 |
-| 9b Publisher                            | gotovo      | Inngest publish-target (sleepUntil, cancelOn, 3 pokušaja 1/5/15 min, IG polling), watchdog, rollup statusa, asistirano objavljivanje, retry, obaveštenja sa podešavanjima, K3 |
-| 10a Strategija i kalendar iz strategije | gotovo      | AI strategija (20 tokena, Inngest), vremena iz istorije ili pretpostavke, verzije, stubovi i kampanje, kalendar nacrta bez tokena, UI /app/strategy                           |
-| 10b Metrike i analitika                 | gotovo      | post-metrics (+1h/+24h/+7d/+30d), dnevne metrike naloga, pregled sa poređenjem, AI uvidi nedeljno + predlozi, UI /app/analytics                                               |
-| 10c Autopilot i Inbox predloga          | gotovo      | nivoi 0–3, nedeljni nacrti iz strategije sa QA i budžetom, rokovi, mesečna strategija, okidači, Pauziraj sve, Inbox, UTM                                                      |
-| 11a GDPR i nalog                        | gotovo      | izvoz podataka, brisanje naloga uz ponovnu potvrdu identiteta, prenos vlasništva, odjava u svim tabovima                                                                      |
-| 11b Ostali ivični slučajevi             | sledeće     | nacrt editora, siročići uploada, brisanje medija u upotrebi, promena zone brenda, dupli tekst, GIF; plaćanje (T4–T13, K6) čeka fazu 12                                        |
-| 12 Plaćanje                             | nije počelo | Stripe nalog vlasnik pravi; preskače se do tada (D-001)                                                                                                                       |
-| 13a–13b Admin                           | gotovo      | pregled, korisnici i radnje, monitor objava, AI troškovi i marža, platforma (flagovi, cene, modeli, održavanje), audit sa CSV-om, impersonacija (D-070, D-075)                |
-| 14a–14c Dizajn                          | nije počelo | treba: screenshot Dribbble reference ako link ne radi                                                                                                                         |
-| 15 Testiranje                           | nije počelo | Playwright + Chromium instalirani; `npm run test:e2e` (5 testova) prolazi                                                                                                     |
-| 16 Deploy                               | nije počelo | treba: Vercel, Supabase staging/prod, domen sovaai.rs, Upstash, Inngest, Sentry                                                                                               |
+| Faza                                    | Status      | Napomena                                                                                                                                                                                                 |
+| --------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 Plan i arhitektura                    | gotovo      | odobreno 23.10.2026, odgovori u D-013                                                                                                                                                                    |
+| 2 Setup projekta                        | gotovo      | lokalno radi, health zelen, build prolazi, 25 unit testova, CI workflow                                                                                                                                  |
+| 3 Baza i bezbednost                     | gotovo      | 14 migracija, 53 tabele, RLS, RPC za tokene, trigeri, storage, seed; 24/24 testova baze                                                                                                                  |
+| 4 Auth i workspace                      | gotovo      | registracija, prijava, magic link, Google (uz ključeve), reset, MFA, workspace, tim, admin gate; 10 integracionih testova                                                                                |
+| 5 Token engine i AI jezgro              | gotovo      | tokeni, idempotentnost, Gemini sloj, Studio; pravi pozivi čekaju GEMINI_API_KEY                                                                                                                          |
+| 6 Brand Brain                           | gotovo      | crawler + profil + RAG + nedeljna provera; živi smoke nad tangerineseo.rs prošao; bez ključa radi heuristički                                                                                            |
+| 7 Vizuelni pipeline                     | gotovo      | Unsplash + vision rangiranje, 4 šablona (Satori), Canva Connect (PKCE, dizajn, export); čeka: UNSPLASH_ACCESS_KEY, Canva app                                                                             |
+| 8a Facebook + Instagram                 | gotovo      | OAuth, izbor naloga, tokeni, uvoz istorije, osvežavanje, webhook-ovi, provider za objave; čeka: Meta app i App Review                                                                                    |
+| 8b LinkedIn i TikTok                    | gotovo      | LinkedIn profil i stranice, TikTok foto (video spreman u provideru), panel u editoru, osvežavanje tokena; čeka: app-ovi i odobrenja (INTEGRATIONS 14)                                                    |
+| 8c–8d Ostale mreže                      | sledeće     | Google Business Profile, Pinterest, YouTube Shorts (8c), X (8d); treba: app-ovi i prijave iz INTEGRATIONS 14                                                                                             |
+| 9a Objave, odobravanje, kalendar        | gotovo      | state machine, composer backend, verzije, javni link, komentari, kalendar, red objava; UI /app/posts, /app/calendar, /approve                                                                            |
+| 9b Publisher                            | gotovo      | Inngest publish-target (sleepUntil, cancelOn, 3 pokušaja 1/5/15 min, IG polling), watchdog, rollup statusa, asistirano objavljivanje, retry, obaveštenja sa podešavanjima, K3                            |
+| 10a Strategija i kalendar iz strategije | gotovo      | AI strategija (20 tokena, Inngest), vremena iz istorije ili pretpostavke, verzije, stubovi i kampanje, kalendar nacrta bez tokena, UI /app/strategy                                                      |
+| 10b Metrike i analitika                 | gotovo      | post-metrics (+1h/+24h/+7d/+30d), dnevne metrike naloga, pregled sa poređenjem, AI uvidi nedeljno + predlozi, UI /app/analytics                                                                          |
+| 10c Autopilot i Inbox predloga          | gotovo      | nivoi 0–3, nedeljni nacrti iz strategije sa QA i budžetom, rokovi, mesečna strategija, okidači, Pauziraj sve, Inbox, UTM                                                                                 |
+| 11a GDPR i nalog                        | gotovo      | izvoz podataka, brisanje naloga uz ponovnu potvrdu identiteta, prenos vlasništva, odjava u svim tabovima                                                                                                 |
+| 11b Ostali ivični slučajevi             | gotovo      | nacrt editora, siročići uploada, brisanje medija u upotrebi, promena zone brenda, dupli tekst, GIF, letnje/zimsko vreme; ispravljeno meko brisanje brenda i prostora; plaćanje (T4–T13, K6) čeka fazu 12 |
+| 12 Plaćanje                             | nije počelo | Stripe nalog vlasnik pravi; preskače se do tada (D-001)                                                                                                                                                  |
+| 13a–13b Admin                           | gotovo      | pregled, korisnici i radnje, monitor objava, AI troškovi i marža, platforma (flagovi, cene, modeli, održavanje), audit sa CSV-om, impersonacija (D-070, D-075)                                           |
+| 14a–14c Dizajn                          | nije počelo | treba: screenshot Dribbble reference ako link ne radi                                                                                                                                                    |
+| 15 Testiranje                           | nije počelo | Playwright + Chromium instalirani; `npm run test:e2e` (6 testova) prolazi                                                                                                                                |
+| 16 Deploy                               | nije počelo | treba: Vercel, Supabase staging/prod, domen sovaai.rs, Upstash, Inngest, Sentry                                                                                                                          |
 
 ## Faza 4 — šta je urađeno
 
@@ -95,7 +95,27 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Lokalni mejlovi idu u Mailpit: http://localhost:54324.
 - Admin panel: isti `npm run demo:seed` pravi i `admin@sova.local` sa uključenim TOTP-om i ispisuje lozinku i TOTP tajnu. Posle prijave: Podešavanja → Bezbednost → kod iz aplikacije za kodove (ili `npm run demo:totp -- <tajna>`), pa http://localhost:3001/admin.
 - Provereno 24.10.2026 u Chromium-u: početna, Inbox, Objave, detalj objave, Kalendar, Strategija, Analitika, Autopilot, Obaveštenja, Mreže i Podešavanja rade bez grešaka u konzoli i API odgovorima. Usput ispravljeno: legenda kalendara je prikazivala interne nazive statusa, horizonti snimaka u analitici nisu bili poređani, editor nije prikazivao zašto je Autopilot vratio nacrt (sada prikazuje, a izveštaj se briše čim se tekst promeni).
+- Provereno 24.10.2026 u Chromium-u (faza 11b): nacrt editora (čuvanje, traka posle osvežavanja, vraćanje, brisanje posle čuvanja), termin se vraća isti posle čuvanja, forma zone brenda sa ponudom zadržavanja lokalnog vremena; bez grešaka u konzoli.
 - Provereno 24.10.2026 u Chromium-u (faza 13): svih sedam admin strana, „Gledaj kao” za demo nalog (traka, izmena u read-only režimu dobija 403 sa objašnjenjem, „Izađi” vraća na detalj korisnika), `/admin/users` na 390 px bez horizontalnog skrola. Usput ispravljeno: stara provera u `requireMembership` je tokom read-only pregleda rušila svaku stranu aplikacije.
+
+## Faza 11b — šta je urađeno
+
+- **Nacrt editora** (A4): tekst, nalozi, mediji i termin se čuvaju u pregledaču dok kucate. Posle osvežavanja, isteka sesije ili zatvaranja taba editor nudi „Vrati nacrt” ili „Odbaci”; posle čuvanja nacrt nestaje.
+- **Mediji**: brisanje iz biblioteke (`DELETE /api/media/[id]`) daje 409 dok je medij u zakazanoj objavi (U9); kad upis u bazu ne uspe, fajl se odmah briše iz skladišta (U7); GIF dobija poruku sa razlogom (U6).
+- **Zona brenda** (K7): Podešavanja → Brendovi → izbor zone; zakazane objave podrazumevano zadržavaju isto lokalno vreme (10:00 ostaje 10:00 u novoj zoni), run-ovi se zakazuju ponovo. Nepoznata zona daje 400.
+- **Letnje i zimsko vreme** (K2): jedna konverzija lokalnog vremena u UTC za server i editor (`src/lib/zoned-time.ts`). Stara je na dan prelaza pomerala noćne termine za sat; sad 02:30 koje ne postoji postaje 03:30, a 02:30 koje postoji dvaput uzima prvi put.
+- **Dupli tekst** (K9): za Facebook, LinkedIn i X provera objave javlja kad je isti tekst već objavljen ili zakazan na istom nalogu u poslednjih 30 dana (te mreže ga odbijaju); Instagram i TikTok se ne proveravaju (D-081).
+- **Brisanje brenda i radnog prostora**: nije radilo (403 iz RLS-a, akcija je grešku prećutala); sad radi i otkazuje zakazane objave (K3, K13).
+- **Ostalo**: stanje tokena u Studiju se osvežava pri povratku na tab i na 60 s (T2); polje termina ima oznaku za čitače ekrana; „1 zakazana objava” umesto „1 zakazanih objava” (`src/lib/plural.ts`). E2E granice su šire (30 s po proveri, 120 s po testu), jer dev server rutu pri prvom zahtevu prevodi i do 20 s.
+- **Testovi**: 6 integracionih (`api.edge-cases`: GIF, medij u upotrebi, siročić u skladištu, promena zone, dupli tekst na Facebooku i bez provere na Instagramu, brisanje brenda i prostora sa otkazivanjem), 10 unit (zone i prelazi, množina), 1 E2E (nacrt posle osvežavanja i termin 31.3.2030 02:30 → 03:30). Provereno u Chromium-u: traka nacrta, vraćanje, čuvanje, forma zone.
+
+## Kako da testiraš (faza 11b)
+
+1. Objave → Nova objava → upiši tekst → osveži stranu → traka „Imate nesačuvan nacrt” → Vrati nacrt.
+2. Podešavanja → Brendovi → izaberi drugu zonu → uz zakazane objave čekiraj „zadrži lokalno vreme” → Sačuvaj zonu → u kalendaru objava ostaje u istom satu.
+3. Zakaži objavu sa slikom, pa probaj da obrišeš sliku kroz `DELETE /api/media/{id}` → 409; otkaži zakazivanje → brisanje prolazi.
+4. Facebook objava sa istim tekstom kao već zakazana → Zakaži → poruka „Isti tekst je već zakazan na ovom nalogu…”.
+5. `npm run test` (164), `npm run test:integration` (135), `npm run test:db` (29), `npm run test:e2e` (6).
 
 ## Faza 11a — šta je urađeno
 
@@ -321,7 +341,8 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 
 ## Poznati bagovi
 
-- Nema poznatih. Ispravljeno u fazi 5: onboarding tipa „Jedan biznis” je padao na validaciji jer je prazno skriveno polje `brandName` stizalo kao prazan string (sad `parseForm` prazna polja tretira kao neuneta).
+- Nema poznatih. Ispravljeno u fazi 11b: brisanje brenda iz Podešavanja i brisanje radnog prostora nisu radili (meko brisanje kroz RLS je vraćalo 403, a akcija je grešku prećutala); na dan prelaza na letnje ili zimsko vreme noćni termini su bili pomereni za sat (Beograd 01:00–02:00, Njujork 01:00–06:00); nacrt editora se vraćao posle čuvanja ako se čuvalo odmah posle kucanja.
+- Ispravljeno u fazi 5: onboarding tipa „Jedan biznis” je padao na validaciji jer je prazno skriveno polje `brandName` stizalo kao prazan string (sad `parseForm` prazna polja tretira kao neuneta).
 
 ## Tehnički dug
 

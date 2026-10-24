@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -17,6 +17,7 @@ import { readTikTokOptions } from '@/config/tiktok'
 import { targetStatusLabel } from '@/config/post-labels'
 import type { ApiResponse } from '@/lib/api/response'
 import type { WorkspaceRole } from '@/lib/auth/workspace'
+import { wallClock, zonedToUtc } from '@/lib/zoned-time'
 
 /**
  * Composer (faza 9a): master tekst + tekst po mreži, nalozi, mediji iz biblioteke ili upload,
@@ -124,50 +125,15 @@ function ErrorBox({ error }: { error: unknown }) {
 
 function toLocalInput(iso: string | null, timeZone: string): string {
   if (!iso) return ''
-  const d = new Date(iso)
-  const parts = Object.fromEntries(
-    new Intl.DateTimeFormat('en-GB', {
-      timeZone,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    })
-      .formatToParts(d)
-      .map((p) => [p.type, p.value]),
-  )
-  return `${parts.year}-${parts.month}-${parts.day}T${parts.hour === '24' ? '00' : parts.hour}:${parts.minute}`
+  const w = wallClock(iso, timeZone)
+  return `${w.date}T${w.time}`
 }
 
+/** Vreme iz polja u zoni brenda → UTC; nepostojeći sat (prelaz na letnje vreme) ide unapred (K2). */
 function fromLocalInput(value: string, timeZone: string): string | null {
   if (!value) return null
   const [date, time] = value.split('T')
-  const [y, m, d] = date!.split('-').map(Number)
-  const [hh, mm] = time!.split(':').map(Number)
-  const guess = new Date(Date.UTC(y!, m! - 1, d!, hh!, mm!))
-  const parts = Object.fromEntries(
-    new Intl.DateTimeFormat('en-US', {
-      timeZone,
-      hour12: false,
-      year: 'numeric',
-      month: '2-digit',
-      day: '2-digit',
-      hour: '2-digit',
-      minute: '2-digit',
-    })
-      .formatToParts(guess)
-      .map((p) => [p.type, p.value]),
-  )
-  const asIfUtc = Date.UTC(
-    Number(parts.year),
-    Number(parts.month) - 1,
-    Number(parts.day),
-    Number(parts.hour) % 24,
-    Number(parts.minute),
-  )
-  return new Date(guess.getTime() - (asIfUtc - guess.getTime())).toISOString()
+  return zonedToUtc(date!, time!.slice(0, 5), timeZone)
 }
 
 const ACTION_LABEL: Record<string, string> = {
@@ -197,6 +163,48 @@ interface SelectedTarget {
   on: boolean
   text: string
   options: Record<string, unknown>
+}
+
+/** Lokalni nacrt (EDGE_CASES A4): čuva se dok korisnik kuca, briše posle uspešnog čuvanja. */
+interface StoredDraft {
+  savedAt: number
+  version: number
+  form: FormState
+}
+
+function draftKeyFor(brandId: string, postId: string | null): string {
+  return `sova:nacrt:${brandId}:${postId ?? 'nova'}`
+}
+
+function parseDraft(raw: string | null): StoredDraft | null {
+  if (!raw) return null
+  try {
+    const d = JSON.parse(raw) as StoredDraft
+    const f = d?.form
+    if (
+      !f ||
+      typeof f.masterText !== 'string' ||
+      typeof f.selected !== 'object' ||
+      !Array.isArray(f.mediaIds)
+    )
+      return null
+    return d
+  } catch {
+    return null
+  }
+}
+
+function subscribeStorage(onChange: () => void): () => void {
+  window.addEventListener('storage', onChange)
+  return () => window.removeEventListener('storage', onChange)
+}
+
+function removeDraft(key: string): void {
+  try {
+    window.localStorage.removeItem(key)
+  } catch {
+    // privatni režim ili blokirano skladište: nacrt se samo ne čuva
+  }
 }
 
 function initialForm(p: PostView | null, timezone: string): FormState {
@@ -289,6 +297,47 @@ function EditorForm({
   })
 
   const [form, setForm] = useState<FormState>(() => initialForm(p, timezone))
+  const draftKey = draftKeyFor(brandId, postId)
+  const [baseline] = useState(() => JSON.stringify(initialForm(p, timezone)))
+  const formJson = JSON.stringify(form)
+  // nacrt iz prethodne sesije; server nema localStorage (null), klijent čita posle hidracije
+  const storedRaw = useSyncExternalStore(
+    subscribeStorage,
+    () => {
+      try {
+        return window.localStorage.getItem(draftKey)
+      } catch {
+        return null
+      }
+    },
+    () => null,
+  )
+  const stored = useMemo(() => parseDraft(storedRaw), [storedRaw])
+  const [draftDismissed, setDraftDismissed] = useState(false)
+  const storedJson = stored ? JSON.stringify(stored.form) : null
+  const offerDraft = Boolean(stored && !draftDismissed && storedJson !== formJson && storedJson !== baseline)
+  // posle uspešnog čuvanja tajmer koji još čeka ne sme da vrati obrisan nacrt (forma se zatim remontira)
+  const savedRef = useRef(false)
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (savedRef.current) return
+      try {
+        if (formJson === baseline) window.localStorage.removeItem(draftKey)
+        else
+          window.localStorage.setItem(
+            draftKey,
+            JSON.stringify({
+              savedAt: Date.now(),
+              version: p?.version ?? 0,
+              form: JSON.parse(formJson) as FormState,
+            }),
+          )
+      } catch {
+        // skladište nedostupno: bez lokalnog nacrta
+      }
+    }, 600)
+    return () => clearTimeout(t)
+  }, [formJson, baseline, draftKey, p?.version])
   const [comment, setComment] = useState('')
   const [linkUrlCreated, setLinkUrlCreated] = useState<string | null>(null)
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((f) => ({ ...f, [k]: v }))
@@ -338,6 +387,8 @@ function EditorForm({
       })
     },
     onSuccess: (saved) => {
+      savedRef.current = true
+      removeDraft(draftKey)
       if (!postId) router.push(`/app/posts/${saved.id}`)
       else refresh()
     },
@@ -424,6 +475,37 @@ function EditorForm({
           <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
             Objava se upravo objavljuje i ne može da se menja.
           </p>
+        ) : null}
+        {offerDraft && stored ? (
+          <div
+            role="status"
+            className="flex flex-wrap items-center gap-3 rounded-md border border-sky-300 bg-sky-50 px-3 py-2 text-sm text-sky-950"
+          >
+            <span>
+              Imate nesačuvan nacrt od {new Date(stored.savedAt).toLocaleString('sr-Latn-RS')}
+              {p && stored.version !== p.version ? ' (napravljen na starijoj verziji objave)' : ''}.
+            </span>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setForm(stored.form)
+                setDraftDismissed(true)
+              }}
+            >
+              Vrati nacrt
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => {
+                removeDraft(draftKey)
+                setDraftDismissed(true)
+              }}
+            >
+              Odbaci
+            </Button>
+          </div>
         ) : null}
         {p?.qaReport?.checks?.length ? <QaReportBox report={p.qaReport} /> : null}
 
@@ -624,6 +706,7 @@ function EditorForm({
           <CardContent>
             <Input
               type="datetime-local"
+              aria-label="Termin objave"
               value={form.when}
               onChange={(e) => set('when', e.target.value)}
               disabled={!canEdit}

@@ -42,7 +42,7 @@ import { confirmReservation } from '@/lib/tokens/reservation'
 import { assertDailyQuota, failGeneration, startGeneration } from '@/services/ai/generations'
 import { buildBrandContext } from '@/services/ai/text'
 import { getBrand } from '@/services/brands'
-import { zonedToUtc } from '@/services/posts/calendar'
+import { zonedToUtc } from '@/lib/zoned-time'
 import { listCampaigns, listPillars, type CampaignView, type PillarView } from '@/services/strategy/pillars'
 import type { Database, Json } from '@/types/database'
 

@@ -25,7 +25,7 @@ async function confirmEmail(page: Page, email: string) {
   await page.goto(link)
 }
 
-test.describe.serial('registracija, potvrda emaila, onboarding, tim, odjava', () => {
+test.describe.serial('registracija, potvrda emaila, onboarding, tim, nacrt, odjava', () => {
   test('neulogovan korisnik ne vidi aplikaciju', async ({ page }) => {
     for (const path of ['/app', '/app/team', '/admin']) {
       const res = await page.request.get(path, { maxRedirects: 0 })
@@ -94,6 +94,44 @@ test.describe.serial('registracija, potvrda emaila, onboarding, tim, odjava', ()
     await page.getByRole('button', { name: 'Sačuvajte profil' }).click()
     await expect(page.getByRole('status').filter({ hasText: 'Profil je sačuvan' })).toBeVisible()
     await expect(page.getByText(/Dostigli ste limit brendova/).first()).toBeVisible()
+  })
+
+  test('composer čuva nacrt lokalno i nudi ga posle osvežavanja (A4)', async ({ page }) => {
+    await page.goto('/login')
+    await page.getByLabel('Email').fill(owner.email)
+    await page.getByLabel('Lozinka').fill(owner.password)
+    await page.getByRole('button', { name: 'Prijavite se' }).click()
+    await expect(page).toHaveURL(/\/app$/)
+
+    const text = `Nacrt koji preživljava osvežavanje ${stamp}`
+    await page.goto('/app/posts/new')
+    await page.getByLabel('Tekst objave').fill(text)
+    await page.getByLabel('Termin objave').fill('2030-03-31T02:30')
+    // čuvanje u localStorage kreće 600 ms posle poslednje izmene
+    await expect
+      .poll(() =>
+        page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('sova:nacrt:')).length),
+      )
+      .toBe(1)
+
+    await page.reload()
+    const banner = page.getByRole('status').filter({ hasText: 'Imate nesačuvan nacrt' })
+    await expect(banner).toBeVisible()
+    await expect(page.getByLabel('Tekst objave')).toHaveValue('')
+    await page.getByRole('button', { name: 'Vrati nacrt' }).click()
+    await expect(page.getByLabel('Tekst objave')).toHaveValue(text)
+    await expect(banner).toHaveCount(0)
+
+    await page.getByRole('button', { name: 'Sačuvaj nacrt' }).click()
+    await expect(page).toHaveURL(/\/app\/posts\/[0-9a-f-]{36}/)
+    await expect(page.getByLabel('Tekst objave')).toHaveValue(text)
+    // K2: 31.3.2030 02:30 ne postoji u Beogradu (prelaz na letnje vreme), pa termin ide unapred
+    await expect(page.getByLabel('Termin objave')).toHaveValue('2030-03-31T03:30')
+    await expect
+      .poll(() =>
+        page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('sova:nacrt:')).length),
+      )
+      .toBe(0)
   })
 
   test('admin panel nije dostupan običnom korisniku, odjava radi', async ({ page }) => {

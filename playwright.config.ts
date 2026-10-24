@@ -6,8 +6,9 @@ import { defineConfig, devices } from '@playwright/test'
  */
 export default defineConfig({
   testDir: './tests/e2e',
-  timeout: 60_000,
-  expect: { timeout: 10_000 },
+  // dev server prevodi rutu pri prvom zahtevu (10–20 s na hladnom .next), pa su granice šire nego za build
+  timeout: 120_000,
+  expect: { timeout: 30_000 },
   fullyParallel: false,
   workers: 1,
   retries: 0,

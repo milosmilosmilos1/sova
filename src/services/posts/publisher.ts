@@ -1222,7 +1222,11 @@ export async function countScheduledPosts(
 }
 
 /** Pre arhiviranja brenda: otkazuje run-ove i zakazane objave da publisher ne objavi ništa posle brisanja. */
-export async function cancelScheduledPostsForBrand(brandId: string, actorId: string): Promise<number> {
+export async function cancelScheduledPostsForBrand(
+  brandId: string,
+  actorId: string,
+  summary = 'brend arhiviran',
+): Promise<number> {
   const admin = createSupabaseAdminClient()
   const { data: posts } = await admin
     .from('posts')
@@ -1246,10 +1250,23 @@ export async function cancelScheduledPostsForBrand(brandId: string, actorId: str
       p_to: 'canceled',
       p_expected_version: p.version,
       p_actor: actorId,
-      p_summary: 'brend arhiviran',
+      p_summary: summary,
     })
     if (error) logger.warn('cancel_post_on_brand_delete_failed', { postId: p.id, error: error.message })
     else canceled += 1
   }
+  return canceled
+}
+
+/** Brisanje radnog prostora: otkazuje zakazane objave svih njegovih brendova. */
+export async function cancelScheduledPostsForWorkspace(
+  workspaceId: string,
+  actorId: string,
+): Promise<number> {
+  const admin = createSupabaseAdminClient()
+  const { data: brands } = await admin.from('brands').select('id').eq('workspace_id', workspaceId)
+  let canceled = 0
+  for (const b of brands ?? [])
+    canceled += await cancelScheduledPostsForBrand(b.id, actorId, 'radni prostor obrisan')
   return canceled
 }

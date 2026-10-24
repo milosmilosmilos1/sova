@@ -1,19 +1,19 @@
 # Sova — ivični slučajevi
 
-Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno automatskim testom). Faza u kojoj se rešava je u koloni. Lista se dopunjava u svakoj fazi; faza 11 prolazi kroz sve i zatvara rupe.
+Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno automatskim testom). Faza u kojoj se rešava je u koloni. Lista se dopunjava u svakoj fazi; faza 11 prolazi kroz sve i zatvara rupe. Posle faze 11b status `plan` imaju samo slučajevi naplate (T4–T13, K6, faza 12) i YouTube kvota (N10, faza 8c).
 
 ## Auth i nalog
 
-| #   | Slučaj                                              | Ponašanje                                                                                                   | Faza   | Status                 |
-| --- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------ | ---------------------- |
-| A1  | Email već postoji                                   | Poruka bez otkrivanja da nalog postoji („Ako nalog postoji, poslali smo uputstvo”), link na login i reset   | 4      | kod                    |
-| A2  | Nepotvrđen email pokušava da troši tokene           | 403 `EMAIL_NOT_VERIFIED`, dugme „Pošalji ponovo” sa rate limitom 3/h                                        | 4, 5   | kod (handler verified) |
-| A3  | Istekao magic link ili reset link                   | Stranica sa objašnjenjem i dugmetom za nov link                                                             | 4      | kod                    |
-| A4  | Sesija istekla usred rada                           | Nacrt composera čuva se u localStorage po brand_id; posle prijave ponuda „Vrati nacrt”                      | 4, 9a  | plan                   |
-| A5  | Korisnik banovan dok je ulogovan                    | `is_banned` proverava `getViewer()` na svakom zahtevu; RLS funkcije vraćaju false; proxy odjavljuje         | 4      | kod                    |
-| A6  | Korisnik obrisan dok je ulogovan                    | Token ne prolazi (`/api/me` 401); tab na fokusu ide na prijavu, ostali tabovi kroz BroadcastChannel         | 4, 11a | test                   |
-| A7  | Više tabova, odjava u jednom                        | Strana za prijavu posle odjave šalje poruku kroz BroadcastChannel `sova-auth`; ostali tabovi idu na prijavu | 4, 11a | test (Chromium)        |
-| A8  | Google prijava emailom koji već postoji sa lozinkom | Supabase povezuje identitete ako je email potvrđen; inače poruka                                            | 4      | kod                    |
+| #   | Slučaj                                              | Ponašanje                                                                                                                                                                                                    | Faza   | Status                 |
+| --- | --------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ | ---------------------- |
+| A1  | Email već postoji                                   | Poruka bez otkrivanja da nalog postoji („Ako nalog postoji, poslali smo uputstvo”), link na login i reset                                                                                                    | 4      | kod                    |
+| A2  | Nepotvrđen email pokušava da troši tokene           | 403 `EMAIL_NOT_VERIFIED`, dugme „Pošalji ponovo” sa rate limitom 3/h                                                                                                                                         | 4, 5   | kod (handler verified) |
+| A3  | Istekao magic link ili reset link                   | Stranica sa objašnjenjem i dugmetom za nov link                                                                                                                                                              | 4      | kod                    |
+| A4  | Sesija istekla usred rada                           | Nacrt composera se čuva u localStorage po brendu i objavi (600 ms posle izmene); posle osvežavanja, isteka sesije ili zatvaranja taba traka nudi „Vrati nacrt” ili „Odbaci”; briše se posle uspešnog čuvanja | 4, 11b | test (E2E)             |
+| A5  | Korisnik banovan dok je ulogovan                    | `is_banned` proverava `getViewer()` na svakom zahtevu; RLS funkcije vraćaju false; proxy odjavljuje                                                                                                          | 4      | kod                    |
+| A6  | Korisnik obrisan dok je ulogovan                    | Token ne prolazi (`/api/me` 401); tab na fokusu ide na prijavu, ostali tabovi kroz BroadcastChannel                                                                                                          | 4, 11a | test                   |
+| A7  | Više tabova, odjava u jednom                        | Strana za prijavu posle odjave šalje poruku kroz BroadcastChannel `sova-auth`; ostali tabovi idu na prijavu                                                                                                  | 4, 11a | test (Chromium)        |
+| A8  | Google prijava emailom koji već postoji sa lozinkom | Supabase povezuje identitete ako je email potvrđen; inače poruka                                                                                                                                             | 4      | kod                    |
 
 ## GDPR i nalog (faza 11a)
 
@@ -29,21 +29,21 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 
 ## Tokeni i naplata
 
-| #   | Slučaj                                      | Ponašanje                                                                                                                                                                           | Faza  | Status              |
-| --- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----- | ------------------- |
-| T1  | Tačno 0 tokena                              | 402 `INSUFFICIENT_TOKENS` sa linkom na kupovinu; UI unapred onemogućava dugme ako je stanje manje od cene                                                                           | 5     | test                |
-| T2  | Tokeni potrošeni u drugom tabu              | Rezervacija pada → 402; stanje se osvežava kroz Realtime na `token_ledger`? Ne: kroz invalidaciju posle svake akcije i polling na 60 s                                              | 5     | plan                |
-| T3  | Istekla rezervacija (posao trajao > 15 min) | Cron oslobađa; ako posao ipak uspe, `confirm_reservation` vidi `expired` → pokušava novu rezervaciju; ako ne uspe, rezultat se čuva ali označava `unpaid` i admin dobija alarm      | 5     | kod (cron u fazi 9) |
-| T4  | Pretplata istekla usred generisanja         | Rezervacija je već napravljena iz postojećih grantova; generisanje se završava; nova generisanja blokirana                                                                          | 5, 12 | plan                |
-| T5  | Refundacija                                 | `charge.refunded` → grant `refund` negativan? Ne: oduzimanje kroz `admin_adjust_tokens` sa negativnim delta, balance može u minus → nova generisanja blokirana do pozitivnog stanja | 12    | plan                |
-| T6  | Isti webhook dvaput                         | `payment_events (provider, event_id)` UNIQUE → drugi upis pada, ruta vraća 200                                                                                                      | 12    | plan                |
-| T7  | Webhook pre povratka sa Checkout-a          | Checkout stranica ne dodeljuje ništa; sve radi webhook; povratna stranica samo prikazuje stanje                                                                                     | 12    | plan                |
-| T8  | Webhook van redosleda                       | Za stanje pretplate uvek `getSubscription` od provajdera, ne payload                                                                                                                | 12    | plan                |
-| T9  | Odbijena kartica pri obnovi                 | `past_due`, grace 7 dana, email podsetnici dan 1, 3, 6; dan 8 blokada generisanja, zakazane objave ostaju                                                                           | 12    | plan                |
-| T10 | Otkazivanje pa obnova pre kraja perioda     | Provajder vraća `active`; nema novog granta dok ne stigne `invoice.paid`                                                                                                            | 12    | plan                |
-| T11 | Promena plana usred perioda                 | Upgrade: proracija kod provajdera, grant razlike tokena odmah; downgrade: na kraju perioda                                                                                          | 12    | plan                |
-| T12 | Chargeback                                  | `user_flags.chargeback`, workspace `past_due`, admin alarm                                                                                                                          | 12    | plan                |
-| T13 | Godišnji plan: 500 tokena mesečno           | Inngest cron pravi grant mesečno sa `reference = subscription_id:YYYY-MM` (UNIQUE štiti)                                                                                            | 12    | plan                |
+| #   | Slučaj                                      | Ponašanje                                                                                                                                                                           | Faza   | Status              |
+| --- | ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ------------------- |
+| T1  | Tačno 0 tokena                              | 402 `INSUFFICIENT_TOKENS` sa linkom na kupovinu; UI unapred onemogućava dugme ako je stanje manje od cene                                                                           | 5      | test                |
+| T2  | Tokeni potrošeni u drugom tabu              | Rezervacija pada → 402; stanje u Studiju se osvežava posle svake akcije, pri povratku na tab i na 60 s                                                                              | 5, 11b | kod                 |
+| T3  | Istekla rezervacija (posao trajao > 15 min) | Cron oslobađa; ako posao ipak uspe, `confirm_reservation` vidi `expired` → pokušava novu rezervaciju; ako ne uspe, rezultat se čuva ali označava `unpaid` i admin dobija alarm      | 5      | kod (cron u fazi 9) |
+| T4  | Pretplata istekla usred generisanja         | Rezervacija je već napravljena iz postojećih grantova; generisanje se završava; nova generisanja blokirana                                                                          | 5, 12  | plan                |
+| T5  | Refundacija                                 | `charge.refunded` → grant `refund` negativan? Ne: oduzimanje kroz `admin_adjust_tokens` sa negativnim delta, balance može u minus → nova generisanja blokirana do pozitivnog stanja | 12     | plan                |
+| T6  | Isti webhook dvaput                         | `payment_events (provider, event_id)` UNIQUE → drugi upis pada, ruta vraća 200                                                                                                      | 12     | plan                |
+| T7  | Webhook pre povratka sa Checkout-a          | Checkout stranica ne dodeljuje ništa; sve radi webhook; povratna stranica samo prikazuje stanje                                                                                     | 12     | plan                |
+| T8  | Webhook van redosleda                       | Za stanje pretplate uvek `getSubscription` od provajdera, ne payload                                                                                                                | 12     | plan                |
+| T9  | Odbijena kartica pri obnovi                 | `past_due`, grace 7 dana, email podsetnici dan 1, 3, 6; dan 8 blokada generisanja, zakazane objave ostaju                                                                           | 12     | plan                |
+| T10 | Otkazivanje pa obnova pre kraja perioda     | Provajder vraća `active`; nema novog granta dok ne stigne `invoice.paid`                                                                                                            | 12     | plan                |
+| T11 | Promena plana usred perioda                 | Upgrade: proracija kod provajdera, grant razlike tokena odmah; downgrade: na kraju perioda                                                                                          | 12     | plan                |
+| T12 | Chargeback                                  | `user_flags.chargeback`, workspace `past_due`, admin alarm                                                                                                                          | 12     | plan                |
+| T13 | Godišnji plan: 500 tokena mesečno           | Inngest cron pravi grant mesečno sa `reference = subscription_id:YYYY-MM` (UNIQUE štiti)                                                                                            | 12     | plan                |
 
 ## AI
 
@@ -61,17 +61,17 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 
 ## Upload i mediji
 
-| #   | Slučaj                                     | Ponašanje                                                                                               | Faza  | Status            |
-| --- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------- | ----- | ----------------- |
-| U1  | Fajl od 0 bajtova                          | 400 pre uploada (klijent) i pri `complete` (server)                                                     | 7     | kod               |
-| U2  | Pogrešna ekstenzija, pravi tip drugačiji   | Magic bytes odlučuju; ekstenzija se prepisuje                                                           | 7     | test              |
-| U3  | HEIC                                       | Sharp konverzija u JPEG                                                                                 | 7     | kod (odbija HEIC) |
-| U4  | CMYK JPEG                                  | Sharp `toColorspace('srgb')`                                                                            | 7     | kod               |
-| U5  | Ogromna rezolucija                         | `limitInputPixels` 50 MP → 400 sa porukom                                                               | 7     | kod               |
-| U6  | Animirani GIF                              | Prva sličica kao slika; upozorenje da mreže GIF ne prikazuju kao animaciju kroz API                     | 7     | plan              |
-| U7  | Prekinut upload                            | Potpisan URL ističe za 1 h; `media_assets` red se pravi tek pri `complete`; cleanup cron briše siročiće | 7     | plan              |
-| U8  | Isti fajl dva puta                         | `sha256` poklapanje → ponuda postojećeg asseta umesto duplikata; Unsplash po `photoId`                  | 7     | test              |
-| U9  | Brisanje medija koji je u zakazanoj objavi | Trigger odbija; UI nudi zamenu                                                                          | 7, 9a | plan              |
+| #   | Slučaj                                     | Ponašanje                                                                                                                                                            | Faza   | Status            |
+| --- | ------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------ | ----------------- |
+| U1  | Fajl od 0 bajtova                          | 400 pre uploada (klijent) i pri `complete` (server)                                                                                                                  | 7      | kod               |
+| U2  | Pogrešna ekstenzija, pravi tip drugačiji   | Magic bytes odlučuju; ekstenzija se prepisuje                                                                                                                        | 7      | test              |
+| U3  | HEIC                                       | Sharp konverzija u JPEG                                                                                                                                              | 7      | kod (odbija HEIC) |
+| U4  | CMYK JPEG                                  | Sharp `toColorspace('srgb')`                                                                                                                                         | 7      | kod               |
+| U5  | Ogromna rezolucija                         | `limitInputPixels` 50 MP → 400 sa porukom                                                                                                                            | 7      | kod               |
+| U6  | Animirani GIF                              | 400 sa objašnjenjem: Sova slike šalje bez animacije, a Instagram i TikTok ionako primaju samo mirne slike; predlog da se sličica sačuva kao JPG ili PNG              | 7, 11b | test              |
+| U7  | Prekinut upload                            | Upload ide kroz server (bez potpisanog URL-a); kad upis u bazu ne uspe, fajl se odmah briše iz skladišta (upload, AI slike, šabloni, snimci sajta), pa siročića nema | 7, 11b | test              |
+| U8  | Isti fajl dva puta                         | `sha256` poklapanje → ponuda postojećeg asseta umesto duplikata; Unsplash po `photoId`                                                                               | 7      | test              |
+| U9  | Brisanje medija koji je u zakazanoj objavi | `DELETE /api/media/[id]` → 409 (okidač `media_in_use_guard`); posle otkazivanja zakazivanja brisanje prolazi; dugme za zamenu medija stiže uz dizajn (14)            | 7, 11b | test              |
 
 ## Mreže
 
@@ -85,7 +85,7 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 | N6  | Objava uklonjena zbog pravila mreže             | Pri povlačenju metrika 404 → `deleted_externally`                                                                                    | 10b   | test   |
 | N7  | Dnevni limit objava (IG 100, TikTok ~15)        | Provera pre zakazivanja i pre objave; `QUOTA_EXCEEDED` → pomeranje na sledeći slobodan termin uz obaveštenje                         | 9b    | test   |
 | N8  | Neauditovan TikTok klijent                      | Greška `unaudited_client_…` → poruka da do audita idu samo privatni nalozi i „Samo ja”                                               | 8b    | test   |
-| N9  | Pogrešan odnos stranica slike                   | `validatePost` pre zakazivanja; Sharp auto-crop uz pregled                                                                           | 7, 9a | plan   |
+| N9  | Pogrešan odnos stranica slike                   | Provera objave javlja odnos van opsega mreže pre zakazivanja; auto-crop uz pregled stiže uz dizajn (14)                              | 7, 9a | kod    |
 | N10 | YouTube kvota potrošena                         | Dnevni brojač; `QUOTA_EXCEEDED` → sledeći dan ili asistirano                                                                         | 8c    | plan   |
 | N11 | Instagram kontejner `EXPIRED`                   | Novi kontejner, jedan ponovni pokušaj                                                                                                | 8a    | test   |
 | N12 | Mediji nedostupni mreži (potpisan URL istekao)  | URL se generiše neposredno pre objave sa 24 h važenja                                                                                | 9b    | kod    |
@@ -100,20 +100,21 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 
 ## Kalendar i objave
 
-| #   | Slučaj                                    | Ponašanje                                                                                                    | Faza | Status |
-| --- | ----------------------------------------- | ------------------------------------------------------------------------------------------------------------ | ---- | ------ |
-| K1  | Zakazano u prošlosti                      | 400 sa ponudom „Objavi sada”                                                                                 | 9a   | test   |
-| K2  | Prelaz na letnje i zimsko vreme           | UTC u bazi; test za 29.3.2026 02:30 (ne postoji) i 25.10.2026 02:30 (dva puta) u Europe/Belgrade             | 9a   | kod    |
-| K3  | Brisanje brenda sa zakazanim objavama     | Potvrda sa brojem objava; otkazivanje run-ova pre mekog brisanja                                             | 9b   | test   |
-| K4  | Dva člana menjaju istu objavu             | `version` + 409 + prikaz razlika                                                                             | 9a   | test   |
-| K5  | Izmena dok je `publishing`                | Trigger `POST_LOCKED`; UI prikazuje zaključano                                                               | 9b   | kod    |
-| K6  | Istekla pretplata                         | Zakazane ostaju; Autopilot i generisanje staju                                                               | 12   | plan   |
-| K7  | Promena vremenske zone brenda             | Ponuda da se svi budući termini pomere                                                                       | 9a   | plan   |
-| K8  | Dve objave u istom minutu na istom nalogu | Parcijalni UNIQUE indeks → 409 sa predlogom termina                                                          | 9a   | test   |
-| K9  | Isti tekst ponovo na istom nalogu         | Upozorenje (mreže odbijaju duplikate); provera kod mreže (findExistingPost) stiže u 9b, UI upozorenje uz AI9 | 9a   | plan   |
-| K10 | Objava pomerena dok Inngest spava         | `post/target.unscheduled` otkazuje stari run, novi događaj pravi nov                                         | 9b   | kod    |
-| K11 | Watchdog nalazi target koji kasni         | Ponovno slanje događaja; alarm ako kasni > 15 min                                                            | 9b   | test   |
-| K12 | Parcijalan uspeh (2 od 3 mreže)           | Objava `partially_published`, neuspeli targeti sa razlogom i retry dugmetom                                  | 9b   | test   |
+| #   | Slučaj                                         | Ponašanje                                                                                                                                                                                                                              | Faza    | Status |
+| --- | ---------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | ------ |
+| K1  | Zakazano u prošlosti                           | 400 sa ponudom „Objavi sada”                                                                                                                                                                                                           | 9a      | test   |
+| K2  | Prelaz na letnje i zimsko vreme                | UTC u bazi; jedna konverzija za server i editor (`src/lib/zoned-time.ts`): sat koji ne postoji ide unapred (29.3.2026 02:30 → 03:30), sat koji postoji dvaput uzima raniji trenutak (25.10.2026 02:30 → 00:30 UTC)                     | 9a, 11b | test   |
+| K3  | Brisanje brenda sa zakazanim objavama          | Potvrda sa brojem objava; run-ovi i objave se otkazuju i iz Podešavanja i kroz `DELETE /api/brands/[id]`                                                                                                                               | 9b, 11b | test   |
+| K4  | Dva člana menjaju istu objavu                  | `version` + 409 + prikaz razlika                                                                                                                                                                                                       | 9a      | test   |
+| K5  | Izmena dok je `publishing`                     | Trigger `POST_LOCKED`; UI prikazuje zaključano                                                                                                                                                                                         | 9b      | kod    |
+| K6  | Istekla pretplata                              | Zakazane ostaju; Autopilot i generisanje staju                                                                                                                                                                                         | 12      | plan   |
+| K7  | Promena vremenske zone brenda                  | Podešavanja → zona brenda; podrazumevano zakazane objave i planirani termini zadržavaju isto lokalno vreme, run-ovi se zakazuju ponovo; nepoznata zona 400                                                                             | 9a, 11b | test   |
+| K8  | Dve objave u istom minutu na istom nalogu      | Parcijalni UNIQUE indeks → 409 sa predlogom termina                                                                                                                                                                                    | 9a      | test   |
+| K9  | Isti tekst ponovo na istom nalogu              | Za Facebook, LinkedIn i X provera objave javlja problem kad je isti tekst (bez razlike u velikim slovima i razmacima, bar 20 znakova) objavljen ili zakazan na istom nalogu u poslednjih 30 dana; Instagram i TikTok se ne proveravaju | 9a, 11b | test   |
+| K10 | Objava pomerena dok Inngest spava              | `post/target.unscheduled` otkazuje stari run, novi događaj pravi nov                                                                                                                                                                   | 9b      | kod    |
+| K11 | Watchdog nalazi target koji kasni              | Ponovno slanje događaja; alarm ako kasni > 15 min                                                                                                                                                                                      | 9b      | test   |
+| K12 | Parcijalan uspeh (2 od 3 mreže)                | Objava `partially_published`, neuspeli targeti sa razlogom i retry dugmetom                                                                                                                                                            | 9b      | test   |
+| K13 | Brisanje radnog prostora sa zakazanim objavama | Zakazane objave svih brendova se otkazuju pre nego što prostor nestane                                                                                                                                                                 | 11b     | test   |
 
 ## Admin
 

@@ -5,13 +5,19 @@ import { redirect } from 'next/navigation'
 import { CanvaCard } from '@/components/app/canva-card'
 import { NotificationPrefsCard } from '@/components/app/notification-prefs-card'
 import { PrivacyCard } from '@/components/app/privacy-card'
-import { CreateBrandForm, ProfileForm, WorkspaceForm } from '@/components/app/settings-forms'
+import {
+  BrandTimezoneForm,
+  CreateBrandForm,
+  ProfileForm,
+  WorkspaceForm,
+} from '@/components/app/settings-forms'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { deleteBrandAction } from '@/lib/auth/actions'
 import { getViewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
+import { pluralSr } from '@/lib/plural'
 import { authProviders } from '@/services/account'
 import { listBrands } from '@/services/brands'
 import { getWorkspacePlan } from '@/services/plans'
@@ -101,9 +107,16 @@ export default async function SettingsPage({ searchParams }: PageProps<'/app/set
                   <div className="text-xs text-muted-foreground">
                     {b.website_url ?? 'bez sajta'} · {b.content_locale} · {b.timezone}
                     {scheduledCounts[b.id]
-                      ? ` · ${scheduledCounts[b.id]} zakazanih objava (arhiviranje ih otkazuje)`
+                      ? ` · ${scheduledCounts[b.id]} ${pluralSr(scheduledCounts[b.id] ?? 0, 'zakazana objava', 'zakazane objave', 'zakazanih objava')} (arhiviranje ih otkazuje)`
                       : ''}
                   </div>
+                  {canEdit ? (
+                    <BrandTimezoneForm
+                      brandId={b.id}
+                      timezone={b.timezone}
+                      scheduledCount={scheduledCounts[b.id] ?? 0}
+                    />
+                  ) : null}
                 </div>
                 {isAdmin && brands.length > 1 ? (
                   <form action={deleteBrandAction}>

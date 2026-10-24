@@ -6,6 +6,7 @@ import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import { statusLabel, type PostStatus } from '@/lib/posts/state-machine'
 import type { QueueSlotInput } from '@/lib/schemas/posts'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
+import { zonedToUtc } from '@/lib/zoned-time'
 import { getBrand } from '@/services/brands'
 
 /**
@@ -157,31 +158,6 @@ export async function deleteQueueSlot(viewer: Viewer, slotId: string): Promise<v
   await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
   const { error } = await viewer.supabase.from('queue_slots').delete().eq('id', slotId)
   if (error) throw mapDbError(error)
-}
-
-/** Lokalno vreme (HH:MM) u zoni brenda → UTC ISO za zadati datum (YYYY-MM-DD). */
-export function zonedToUtc(date: string, timeLocal: string, timeZone: string): string {
-  const [h, m] = timeLocal.split(':').map(Number)
-  const guess = new Date(`${date}T${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:00Z`)
-  const fmt = new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    hour12: false,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
-  const parts = Object.fromEntries(fmt.formatToParts(guess).map((p) => [p.type, p.value]))
-  const asIfUtc = Date.UTC(
-    Number(parts.year),
-    Number(parts.month) - 1,
-    Number(parts.day),
-    Number(parts.hour) % 24,
-    Number(parts.minute),
-  )
-  const offset = asIfUtc - guess.getTime()
-  return new Date(guess.getTime() - offset).toISOString()
 }
 
 /** Sledeći slobodan termin iz reda za nalog, posle zadatog trenutka (do 8 nedelja unapred). */

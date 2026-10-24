@@ -3,6 +3,7 @@ import 'server-only'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, listMemberships, requireMembership, type Membership } from '@/lib/auth/workspace'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
 import type { CreateWorkspaceInput } from '@/lib/schemas/workspace'
 import type { Database } from '@/types/database'
@@ -62,7 +63,10 @@ export async function updateWorkspace(
   )
 }
 
-/** Meko brisanje; samo owner. Zakazane objave i Inngest run-ovi se otkazuju u fazi 9. */
+/**
+ * Meko brisanje; samo owner. Upis kroz service role posle provere, jer SELECT politika skriva obrisan
+ * red (D-081). Zakazane objave otkazuje ruta (`cancelScheduledPostsForWorkspace`).
+ */
 export async function deleteWorkspace(viewer: Viewer, workspaceId: string): Promise<void> {
   await requireMembership(viewer, workspaceId, ['owner'])
   const memberships = await listMemberships(viewer)
@@ -72,7 +76,7 @@ export async function deleteWorkspace(viewer: Viewer, workspaceId: string): Prom
       'Ne možete obrisati jedini radni prostor. Umesto toga obrišite nalog u Podešavanjima.',
     )
   }
-  const { error } = await viewer.supabase
+  const { error } = await createSupabaseAdminClient()
     .from('workspaces')
     .update({ deleted_at: new Date().toISOString() })
     .eq('id', workspaceId)

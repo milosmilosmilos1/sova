@@ -123,6 +123,9 @@ export function StudioClient({
   const balance = useQuery({
     queryKey: ['tokens', workspaceId],
     queryFn: () => api<Balance>(`/api/tokens/balance?workspaceId=${workspaceId}`),
+    // tokeni se troše i u drugim tabovima i kroz Autopilot (EDGE_CASES T2)
+    refetchOnWindowFocus: true,
+    refetchInterval: 60_000,
   })
   const refreshBalance = () => queryClient.invalidateQueries({ queryKey: ['tokens', workspaceId] })
 

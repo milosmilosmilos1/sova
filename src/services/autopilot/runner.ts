@@ -34,7 +34,7 @@ import {
 } from '@/services/autopilot/content'
 import { autopilotSettings, autopilotUsage } from '@/services/autopilot/settings'
 import { notifyUsers, usersWithRoles } from '@/services/notifications'
-import { zonedToUtc } from '@/services/posts/calendar'
+import { zonedToUtc } from '@/lib/zoned-time'
 import { systemSchedule, systemSubmitForReview } from '@/services/posts/system'
 import { runStrategyGeneration } from '@/services/strategy/strategy'
 import type { Database, Json } from '@/types/database'
