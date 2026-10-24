@@ -61,6 +61,11 @@ export const events = {
     schema: z.object({ generationId: uuid, brandId: uuid, workspaceId: uuid }),
   }),
 
+  // Faza 10c
+  autopilotWeekRequested: eventType('autopilot/week.requested', {
+    schema: z.object({ brandId: uuid, weekStart: z.iso.date().nullable(), triggeredBy: uuid.nullable() }),
+  }),
+
   // Faza 12
   billingWebhookReceived: eventType('billing/webhook.received', {
     schema: z.object({ paymentEventId: uuid, provider: z.enum(['stripe', 'paddle']) }),

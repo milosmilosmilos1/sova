@@ -331,3 +331,33 @@ Razlog: uvidi su deo vrednosti plana, ne potrošna akcija; izmišljen dokaz bi r
 
 Odluka: `/app/analytics` prikazuje ključne brojeve kao pločice (vrednost + promena u odnosu na prethodni period, tekst u bojama teksta) i tabele po mreži, stubu i objavi; trend grafikoni (pratioci kroz vreme, doseg po danu) stižu u 14b zajedno sa sistemom boja i proverom palete.
 Razlog: dataviz pravila traže validiranu paletu, dark mode i hover sloj; to je posao dizajn faze, a brojevi su tačni i dostupni odmah.
+
+## D-063 · 24.10.2026 · usvojeno · Autopilot je niz koraka nad običnim objavama, ne zaseban tok
+
+Odluka: nedeljni prolaz pravi obične nacrte (`source = 'autopilot'`, `strategy_id`, `scheduled_for` kao plan) i vodi ih kroz isti state machine kao ručne objave, preko `src/services/posts/system.ts` (`transition_post` sa `actor = null`, isti minut po nalogu, događaji publishera). Odobrena Autopilot objava se zakazuje cron-om rokova, neodobrena se obrađuje po nivou i podešavanju brenda.
+Razlog: kalendar, odobravanje, publisher, analitika i istorija verzija rade bez posebnih grana; korisnik u svakom trenutku vidi i menja ono što je Autopilot napravio.
+
+## D-064 · 24.10.2026 · usvojeno · Aktivna strategija po periodu, ne po brendu
+
+Odluka: aktiviranje strategije (ručno ili Autopilot) arhivira samo aktivne strategije čiji se period preklapa sa novom; nedeljni prolaz traži aktivnu strategiju koja pokriva nedelju. Menja D-058 u delu „jedna aktivna po brendu”.
+Razlog: mesečna strategija se pravi 25. za naredni mesec, a tekuća mora da ostane aktivna do kraja svog perioda.
+
+## D-065 · 24.10.2026 · usvojeno · Kontrola kvaliteta je deterministička; sličnost kroz trojke reči umesto embeddinga
+
+Odluka: QA je čista funkcija (`qaCheck`): dužina i hashtagovi po mreži, zabranjene reči, pismo, sličnost (Jaccard nad trojkama reči ≥ 0,6 sa objavama i uvezenom istorijom iz 90 dana), brojke koje nisu u činjenicama, uslugama, odlomcima sa sajta, temi ili ponudi kampanje, vizual za IG/Pinterest. Pad vraća nacrt korisniku sa izveštajem.
+Razlog: bez dodatnih AI poziva i troška, objašnjivo korisniku, testirano; embedding sličnost (AI9 iz plana) ostaje kao poboljšanje kad bude dovoljno objava da se prag kalibriše.
+
+## D-066 · 24.10.2026 · usvojeno · Budžet Autopilota = `tokens_charged` generacija označenih `input.autopilot`
+
+Odluka: tekst, vizual i strategija koje Autopilot pravi idu kroz istu rezervaciju tokena kao ručne generacije (`user_id = null`, `input.autopilot = true`); potrošnja u UTC mesecu se računa iz `ai_generations.tokens_charged`. Provera ide pre svakog nacrta (cena teksta + vizuala), pa prolaz staje pre prekoračenja; 80 % i 100 % šalju obaveštenje jednom mesečno.
+Razlog: jedan izvor istine za tokene (ledger), bez posebne tabele potrošnje; limit nikad ne prelazi zbog paralelnih koraka jer je jedan run po brendu.
+
+## D-067 · 24.10.2026 · usvojeno · Pun autopilot po nalogu, uz flag i potvrdu imenom brenda
+
+Odluka: nivo 3 traži uključen flag `autopilot_level3`, tačan naziv brenda u `confirm` i bar jedan aktivan nalog u `brands.settings.autopilot.level3AccountIds`; nacrt se zakazuje bez odobrenja samo ako su svi njegovi nalozi na listi, ostali idu na odobrenje. Bilo koji drugi nivo briše potvrdu i listu; trigger `brands_guard` i dalje odbija nivo 3 bez `autopilot_level3_confirmed_at`.
+Razlog: brif 9.2 („izričito, po nalogu, uz dodatnu potvrdu, isključuje se jednim klikom”).
+
+## D-068 · 24.10.2026 · usvojeno · Vizual Autopilota iz šablona bez fotografije
+
+Odluka: za Instagram i Pinterest Autopilot pravi vizual iz šablona (boje, fontovi i logo iz profila brenda, naslov iz hook-a, JPEG 1:1, 2 tokena) bez Unsplash pretrage i vision rangiranja; AI slike i fotografije iz biblioteke korisnik dodaje ručno.
+Razlog: deterministično, jeftino i bez spoljnog ključa; Instagram traži sliku pa bez vizuala QA vraća nacrt. Unsplash za Autopilot ostaje opcija u podešavanjima kad bude ključ.

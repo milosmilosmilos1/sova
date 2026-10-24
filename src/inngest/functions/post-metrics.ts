@@ -2,6 +2,7 @@ import { inngest } from '@/inngest/client'
 import { events } from '@/inngest/events'
 import { CAPTURE_HORIZONS, horizonDue } from '@/lib/analytics/aggregate'
 import { capturePostMetrics, publishedAtOf, type CaptureStatus } from '@/services/analytics/metrics'
+import { checkOutlier } from '@/services/autopilot/triggers'
 
 /**
  * Metrike objave (ARCHITECTURE 6, `post-metrics`): posle objavljivanja spava do +1 h, +24 h, +7 d i
@@ -24,6 +25,8 @@ export const postMetrics = inngest.createFunction(
       if (due.getTime() > Date.now()) await step.sleepUntil(`wait-${horizon}`, due)
       const r = await step.run(`capture-${horizon}`, () => capturePostMetrics(event.data.targetId, horizon))
       results[horizon] = r.status
+      if (horizon === '24h' && r.status === 'captured')
+        await step.run('outlier', () => checkOutlier(event.data.targetId))
       if (r.status === 'deleted') break
       if (r.status === 'skipped' && /target|nalog/.test(r.reason ?? '')) break
     }

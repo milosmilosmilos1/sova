@@ -3,10 +3,13 @@ import { redirect } from 'next/navigation'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { AUTOPILOT_LEVELS, type AutopilotLevel } from '@/lib/autopilot/rules'
+import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { getCurrentWorkspace } from '@/lib/auth/workspace'
 import { listBrands } from '@/services/brands'
 import { getWorkspacePlan } from '@/services/plans'
+import { countNewSuggestions } from '@/services/suggestions'
 
 export default async function AppHomePage({ searchParams }: PageProps<'/app'>) {
   const viewer = await getViewer()
@@ -21,6 +24,9 @@ export default async function AppHomePage({ searchParams }: PageProps<'/app'>) {
     viewer.supabase.rpc('workspace_token_balance', { p_workspace_id: current.workspaceId }),
   ])
   const balance = (balanceRes.data as { total: number; reserved: number; available: number } | null) ?? null
+  const currentBrand = await getCurrentBrand(viewer, current.workspaceId)
+  const inboxCount = currentBrand ? await countNewSuggestions(viewer, currentBrand.id) : 0
+  const level = (currentBrand?.autopilot_level ?? 0) as AutopilotLevel
 
   return (
     <div className="space-y-6">
@@ -62,6 +68,33 @@ export default async function AppHomePage({ searchParams }: PageProps<'/app'>) {
             {brands.map((b) => b.name).join(', ') || 'Još nema brendova.'}
           </CardContent>
         </Card>
+        {currentBrand ? (
+          <Card>
+            <CardHeader>
+              <CardDescription>Inbox predloga · {currentBrand.name}</CardDescription>
+              <CardTitle className="text-3xl">{inboxCount}</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-sm text-muted-foreground">
+              <p>
+                Autopilot: nivo {level} ({AUTOPILOT_LEVELS[level].label}).{' '}
+                {inboxCount ? 'Novi predlozi čekaju odluku.' : 'Nema novih predloga.'}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Button variant="outline" size="sm" nativeButton={false} render={<Link href="/app/inbox" />}>
+                  Otvori Inbox
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  nativeButton={false}
+                  render={<Link href="/app/autopilot" />}
+                >
+                  Autopilot
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        ) : null}
         <Card>
           <CardHeader>
             <CardDescription>Sledeći korak</CardDescription>

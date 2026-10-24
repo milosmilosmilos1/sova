@@ -61,6 +61,41 @@ export const NOTIFICATION_TYPES = {
     description: 'Nedeljni AI uvidi i predlozi za Inbox su spremni.',
     emailDefault: true,
   },
+  autopilot_returned: {
+    label: 'Autopilot vratio objavu',
+    description: 'Nacrt nije prošao kontrolu kvaliteta i čeka doradu.',
+    emailDefault: false,
+  },
+  autopilot_deadline: {
+    label: 'Rok za odobrenje',
+    description: 'Autopilot objava čeka odobrenje ili je zakazana posle roka.',
+    emailDefault: true,
+  },
+  autopilot_skipped: {
+    label: 'Autopilot objava preskočena',
+    description: 'Objava nije odobrena na vreme ili je termin prošao.',
+    emailDefault: true,
+  },
+  autopilot_budget_warning: {
+    label: 'Budžet Autopilota 80 %',
+    description: 'Autopilot je potrošio veći deo mesečnog budžeta tokena.',
+    emailDefault: true,
+  },
+  autopilot_budget_stopped: {
+    label: 'Budžet Autopilota potrošen',
+    description: 'Autopilot je stao do sledećeg meseca ili povećanja budžeta.',
+    emailDefault: true,
+  },
+  autopilot_weekly_report: {
+    label: 'Nedeljni izveštaj Autopilota',
+    description: 'Šta je objavljeno, rezultati i plan za narednu nedelju.',
+    emailDefault: true,
+  },
+  autopilot_strategy: {
+    label: 'Autopilot i strategija',
+    description: 'Nova strategija ili Autopilot čeka strategiju.',
+    emailDefault: true,
+  },
   publish_watchdog_alarm: {
     label: 'Objava kasni',
     description: 'Zakazana objava kasni više od 15 minuta.',

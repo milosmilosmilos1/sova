@@ -271,7 +271,10 @@ afterAll(async () => {
 
 describe('Publisher: uspeh', () => {
   it('Facebook tekst + prvi komentar: published, publish_attempts, status objave, obaveštenje, događaj', async () => {
-    const created = await createPost([{ socialAccountId: fbId }], { firstComment: 'Prvi komentar iz Sove' })
+    const created = await createPost([{ socialAccountId: fbId }], {
+      firstComment: 'Prvi komentar iz Sove',
+      linkUrl: 'https://fixture-site.test/ponuda?ref=sajt',
+    })
     const p = await schedule(created.id, created.version)
     expect(p.status).toBe('scheduled')
     const job = jobFor(p, fbId)
@@ -295,6 +298,12 @@ describe('Publisher: uspeh', () => {
 
     const feed = metaState.publishes.find((x) => x.path === 'page-1/feed')
     expect(feed?.body.message).toContain('Publisher test')
+    // UTM (brif 10): izvor = mreža, medium = social, kampanja = podrazumevano „sova”; postojeći parametri ostaju
+    const link = new URL(feed!.body.link!)
+    expect(link.searchParams.get('ref')).toBe('sajt')
+    expect(link.searchParams.get('utm_source')).toBe('facebook')
+    expect(link.searchParams.get('utm_medium')).toBe('social')
+    expect(link.searchParams.get('utm_campaign')).toBe('sova')
     expect(metaState.publishes.some((x) => x.path.endsWith('/comments'))).toBe(true)
 
     expect(sent).toEqual([{ kind: 'published', targetId: job.targetId, socialAccountId: fbId, brandId }])

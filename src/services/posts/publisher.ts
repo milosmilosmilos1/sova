@@ -90,6 +90,7 @@ interface Bundle {
   account: SocialAccountRow
   brand: BrandLite
   media: Array<{ sortOrder: number; asset: MediaAssetRow }>
+  campaign: { name: string; utm_campaign: string | null } | null
   /** redova u post_media čiji medij više ne postoji (obrisan) */
   missingMedia: number
 }
@@ -150,14 +151,43 @@ async function loadBundle(targetId: string): Promise<Bundle | null> {
     if (asset) media.push({ sortOrder: l.sort_order, asset })
     else missing += 1
   }
-  return { target, post, account, brand, media, missingMedia: missing }
+  let campaign: Bundle['campaign'] = null
+  if (post.campaign_id) {
+    const { data: c } = await admin
+      .from('campaigns')
+      .select('name, utm_campaign')
+      .eq('id', post.campaign_id)
+      .maybeSingle()
+    campaign = c ?? null
+  }
+  return { target, post, account, brand, media, missingMedia: missing, campaign }
 }
 
-function withUtm(link: string | null, utm: Json | null): string | null {
-  if (!link || !utm || typeof utm !== 'object' || Array.isArray(utm)) return link
+function slug(s: string): string {
+  return s
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'dj')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 60)
+}
+
+/** UTM (brif 10): izvor = mreža, medium = social, kampanja = kampanja iz strategije; ručni UTM objave ima prednost. */
+export function withUtm(
+  link: string | null,
+  utm: Json | null,
+  defaults: Record<string, string> = {},
+): string | null {
+  if (!link) return link
+  const explicit = utm && typeof utm === 'object' && !Array.isArray(utm) ? (utm as Record<string, Json>) : {}
   try {
     const url = new URL(link)
-    for (const [k, v] of Object.entries(utm)) {
+    for (const [k, v] of Object.entries(defaults)) {
+      if (v && !url.searchParams.has(k)) url.searchParams.set(k, v)
+    }
+    for (const [k, v] of Object.entries(explicit)) {
       if (typeof v === 'string' && v) url.searchParams.set(k.startsWith('utm_') ? k : `utm_${k}`, v)
     }
     return url.toString()
@@ -179,7 +209,11 @@ async function normalize(b: Bundle): Promise<NormalizedPost> {
   }
   return {
     text: b.target.text_content || b.post.master_text,
-    link: withUtm(b.post.link_url, b.post.utm),
+    link: withUtm(b.post.link_url, b.post.utm, {
+      utm_source: b.target.platform,
+      utm_medium: 'social',
+      utm_campaign: b.campaign ? b.campaign.utm_campaign || slug(b.campaign.name) : 'sova',
+    }),
     media,
     firstComment: b.post.first_comment,
     isAiGenerated: b.media.some((m) => m.asset.is_ai_generated),

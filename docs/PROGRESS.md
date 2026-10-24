@@ -19,10 +19,10 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 | 9b Publisher                            | gotovo      | Inngest publish-target (sleepUntil, cancelOn, 3 pokušaja 1/5/15 min, IG polling), watchdog, rollup statusa, asistirano objavljivanje, retry, obaveštenja sa podešavanjima, K3 |
 | 10a Strategija i kalendar iz strategije | gotovo      | AI strategija (20 tokena, Inngest), vremena iz istorije ili pretpostavke, verzije, stubovi i kampanje, kalendar nacrta bez tokena, UI /app/strategy                           |
 | 10b Metrike i analitika                 | gotovo      | post-metrics (+1h/+24h/+7d/+30d), dnevne metrike naloga, pregled sa poređenjem, AI uvidi nedeljno + predlozi, UI /app/analytics                                               |
-| 10c Autopilot i Inbox predloga          | sledeće     | nivoi 0–3, nedeljni nacrti iz aktivne strategije u budžetu, QA, Inbox (prihvati/odbaci)                                                                                       |
+| 10c Autopilot i Inbox predloga          | gotovo      | nivoi 0–3, nedeljni nacrti iz strategije sa QA i budžetom, rokovi, mesečna strategija, okidači, Pauziraj sve, Inbox, UTM                                                      |
 | 11 Edge case-ovi                        | nije počelo |                                                                                                                                                                               |
 | 12 Plaćanje                             | nije počelo | Stripe nalog vlasnik pravi; preskače se do tada (D-001)                                                                                                                       |
-| 13a–13b Admin                           | nije počelo | gate i placeholder postoje                                                                                                                                                    |
+| 13a–13b Admin                           | sledeće     | gate i placeholder postoje                                                                                                                                                    |
 | 14a–14c Dizajn                          | nije počelo | treba: screenshot Dribbble reference ako link ne radi                                                                                                                         |
 | 15 Testiranje                           | nije počelo | Playwright + Chromium instalirani; `npm run test:e2e` (5 testova) prolazi                                                                                                     |
 | 16 Deploy                               | nije počelo | treba: Vercel, Supabase staging/prod, domen sovaai.rs, Upstash, Inngest, Sentry                                                                                               |
@@ -85,6 +85,34 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - **Env**: `META_GRAPH_VERSION` (default v26.0), `META_LOGIN_CONFIG_ID` (opciono). Feature flagovi `platform.facebook` i `platform.instagram` upravljaju povezivanjem i `assisted_only` oznakom.
 - **Testovi**: 2 unit (signed_request, mapiranje Graph grešaka) i 8 integracionih sa MSW mockom Graph API-ja (connect → 302 sa scope-ovima i state-om, 404 za nepodržanu mrežu; callback → razmena koda, dugotrajan token, 3 naloga na čekanju, ponovljen state 400; izbor aktivira 2 i briše 1, IG asistiran kad je flag isključen, uvoz zakazan, ponovni izbor 404; uvoz istorije idempotentan, sinhronizacija nevidljivog naloga → `disabled`; provider objavljuje tekst/sliku/karusel na stranicu i kontejner na Instagram sa permalinkom, pending ručka i kasniji publish, odbijen medij, validacija, metrike objave i naloga, brisanje; osvežavanje tokena obnavlja Page token i `needs_reauth` posle isteka; webhook-ovi sa potpisom; prekid veze briše istoriju). Publisher koji ove metode poziva po rasporedu stiže u 9b.
 - Napomena: Meta app, test stranica i App Review još ne postoje (INTEGRATIONS 14), pa pravi Graph pozivi nisu provereni; mock prati dokumentaciju pročitanu 24.10.2026 (v26.0, token exchange, content publishing, data deletion).
+
+## Faza 10c — šta je urađeno
+
+- **Nivoi** (brif 9.2, `src/lib/autopilot/rules.ts`): 0 ručno, 1 kopilot (nedeljni nacrti idu na odobrenje), 2 autopilot sa odobrenjem (Sova sama pravi strategiju; neodobrene posle roka se preskaču ili objavljuju po podešavanju), 3 pun autopilot (zakazuje bez odobrenja samo na izabranim nalozima; traži flag `autopilot_level3`, naziv brenda kao potvrdu i izbor naloga; svaki drugi nivo ga isključuje).
+- **Nedeljni prolaz** (`src/services/autopilot/runner.ts`, Inngest `autopilot-weekly` na sat → `autopilot-brand-week` po brendu): ponedeljkom od 06:00 po zoni brenda za narednu nedelju; red u novoj tabeli `autopilot_runs` sa (brend, nedelja) sprečava dupli prolaz. Iz aktivne strategije koja pokriva nedelju pravi nacrte (postojeći nacrti-brifovi iz „Napravi kalendar” se pune), na nivou 2–3 bez strategije prvo sam napravi i aktivira strategiju za 4 nedelje, na nivou 1 ostavlja predlog u Inbox-u. Svaki nacrt je poseban step: tekst (2 tokena), vizual iz šablona za Instagram i Pinterest (2 tokena, JPEG 1:1, boje i logo brenda), kontrola kvaliteta, pa odobrenje ili zakazivanje. Najviše 21 nacrt po nedelji.
+- **Kontrola kvaliteta** (brif 9.3.4): prazan tekst, dužina i hashtagovi po mreži, zabranjene reči, pismo (latinica/ćirilica, AI7), sličnost sa objavama iz 90 dana (Jaccard nad trojkama reči ≥ 0,6, AI9), brojke kojih nema u profilu brenda (cene, procenti, rokovi), vizual za mreže koje ga traže. Pad → nacrt ostaje kod korisnika sa `qa_report` i obaveštenjem „Autopilot je vratio objavu”.
+- **Budžet** (brif 9.3.3): mesečni limit tokena po brendu (`autopilot_token_budget`, prazno = bez limita); potrošnja = `tokens_charged` generacija sa `input.autopilot = true` u UTC mesecu; upozorenje na 80 %, stop na 100 % (prolaz se završava kao „delimično”), obaveštenje jednom mesečno.
+- **Rokovi** (`deadlines.ts`, cron na 15 min): odobrena Autopilot objava se zakazuje za svoj termin; neodobrena posle roka (sati pre termina): nivo ≥ 2 preskoči (otkazivanje) ili objavi (sistemsko odobrenje + zakazivanje), nivo 1 podsetnik jednom pa povratak u nacrt kad termin prođe.
+- **Mesečni prolaz** (`autopilot-daily` u 05:00 UTC, od 25. u mesecu po zoni brenda): nivo ≥ 2 pravi i aktivira strategiju za mesec od prvog ponedeljka (20 tokena iz budžeta Autopilota), nivo 1 predlog u Inbox-u. Aktiviranje strategije sada arhivira samo aktivne strategije čiji se period preklapa (D-064).
+- **Okidači** (`triggers.ts`): praznik u narednih 7 dana → predlog (jednom), objava sa ≥ 2× prosečnim angažovanjem brenda iz 30 dana (bar 5 objava) → predlog „ponovi format” posle snimka od 24 h, istek predloga dnevno. Novi blog i promene sajta već dolaze iz nedeljne provere sajta (faza 6).
+- **Nedeljni izveštaj** (brif 9.3.6): posle prolaza vlasnicima obaveštenje i email sa brojem objava, dosegom i angažovanjem prethodne nedelje i planom za narednu.
+- **„Pauziraj sve”**: brend `paused`, sve zakazane objave pauzirane i run-ovi otkazani (publisher i Autopilot ionako ne rade za pauziran brend); „Nastavi” (vlasnik, administrator) vraća u red objave čiji termin nije prošao.
+- **Inbox predloga** (`src/services/suggestions.ts`): lista po statusu sa brojevima, prihvatanje (blog → nacrt sa linkom, uvid/praznik/ponovi format → nacrt, profil → Brand Brain, strategija → Strategija), odbacivanje, zaštita od dvostruke obrade.
+- **Sistemske radnje nad objavom** (`src/services/posts/system.ts`): slanje na odobrenje, zakazivanje (isti minut → +1 min), sistemsko odobrenje, povlačenje, otkazivanje — isti `transition_post`, `actor = null` u istoriji verzija.
+- **UTM** (brif 10): publisher svakom linku dodaje `utm_source` = mreža, `utm_medium = social`, `utm_campaign` = UTM ili naziv kampanje (podrazumevano `sova`); ručni UTM objave i postojeći parametri imaju prednost.
+- **API**: `GET/PATCH /api/autopilot/[brandId]`, `POST /api/autopilot/[brandId]/{pause,resume,run}`, `GET /api/suggestions`, `POST /api/suggestions/[id]/{accept,dismiss}`.
+- **UI**: `/app/autopilot` (nivoi sa opisom, potvrda za nivo 3 sa izborom naloga, budžet sa trakom i stanjem, rok i ponašanje, „Pauziraj sve” / „Nastavi”, „Pripremi narednu nedelju sada”, aktivna strategija, poslednji prolazi), `/app/inbox` (kartice po statusu, Prihvati / Odbaci), kartica Inbox-a i nivoa na početnoj strani; navigacija: Inbox, Autopilot.
+- **Šema**: tabela `autopilot_runs` (RLS čitanje za članove brenda, upis samo service role) i parcijalni indeks Autopilot objava na odobrenju (nova migracija `20261024000016_autopilot.sql`); `brands.settings.autopilot` nosi naloge za nivo 3 i objave pauzirane kroz „Pauziraj sve”.
+- **Testovi**: 9 unit (budžet, vreme prolaza, rok, kontrola kvaliteta, okidači) i 16 integracionih (podešavanja i nivo 3, ručni prolaz, Inbox, mesečni prolaz nivo 1 i 2, nedeljni prolaz nivo 1 sa vizualom i odobrenjima, povratak zbog zabranjene reči, nivo 3 po nalogu, stop budžeta, rokovi objavi/preskoči/podsetnik/povratak, „Pauziraj sve” i „Nastavi”, praznik, istek, izuzetna objava) + UTM provera u testu publishera.
+
+## Kako da testiraš (faza 10c)
+
+1. `/app/autopilot` → nivo 1 → „Pripremi narednu nedelju sada” (treba aktivna strategija koja pokriva narednu nedelju, `GEMINI_API_KEY` i `npm run inngest:dev`) → nacrti na `/app/posts?status=in_review`, IG nacrt ima vizual iz šablona.
+2. Odobri jedan nacrt → za najviše 15 min `autopilot-deadlines` ga zakazuje za planirani termin. Nivo 2 + „objavi” → neodobrena objava se posle roka sama zakazuje.
+3. Budžet 10 tokena → sledeći prolaz staje posle prvih nacrta, obaveštenje „Budžet Autopilota potrošen”.
+4. „Pauziraj sve” → zakazane objave pauzirane, traka na vrhu; „Nastavi” ih vraća.
+5. `/app/inbox` → prihvati predlog iz bloga → otvara se nacrt sa linkom.
+6. `npm run test` (127), `npm run test:integration` (96), `npm run test:db` (24), `npm run test:e2e` (5).
 
 ## Faza 10b — šta je urađeno
 
@@ -232,5 +260,8 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Studio status posla kroz polling; Realtime pretplata uz dizajn (D-029).
 - Brand kontekst bez profila i dalje pada na `brands.settings`; posle prve analize koristi profil i RAG.
 - Firecrawl (SPA i Cloudflare sajtovi) nije ugrađen: takvi sajtovi dobijaju jasnu poruku i ručni unos (D-035). Realtime napredak analize ide kroz polling do faze 14 (tabela `website_crawls` je u publikaciji).
-- Nedeljna provera pravi predloge, ali ih UI još ne prikazuje (inbox predloga stiže u fazi 10); notifikacije o završenoj analizi se upisuju u `notifications` bez UI-ja.
-- AI7 (odgovor na pogrešnom pismu) i AI9 (sličan tekst u 90 dana) ostaju za fazu 9a kad postoje objave.
+- Predlozi iz nedeljne provere se vide u Inbox-u (faza 10c), a obaveštenja kroz zvono (faza 9b).
+- AI7 i AI9 pokriva kontrola kvaliteta Autopilota (faza 10c, D-065); ručni AI Studio još ne upozorava na sličnost, a embedding sličnost čeka kalibraciju praga.
+- Composer još nema izbor stuba i kampanje (Autopilot i kalendar iz strategije ih upisuju); dodaje se uz dizajn ekrana (14b).
+- Mesečni PDF izveštaj (`reports-monthly`) i grafikoni analitike stižu uz dizajn (D-062).
+- Vizual Autopilota je šablon bez fotografije (D-068); Unsplash i AI slika kao opcija Autopilota kad budu ključevi.

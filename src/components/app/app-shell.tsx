@@ -1,8 +1,10 @@
 import {
+  Bot,
   Brain,
   CalendarDays,
   FileText,
   Home,
+  Inbox,
   LogOut,
   Settings,
   Share2,
@@ -97,6 +99,10 @@ export function AppShell({
             <Home className="size-4" aria-hidden />
             Početna
           </NavLink>
+          <NavLink href="/app/inbox">
+            <Inbox className="size-4" aria-hidden />
+            Inbox
+          </NavLink>
           <NavLink href="/app/posts">
             <FileText className="size-4" aria-hidden />
             Objave
@@ -112,6 +118,10 @@ export function AppShell({
           <NavLink href="/app/analytics">
             <TrendingUp className="size-4" aria-hidden />
             Analitika
+          </NavLink>
+          <NavLink href="/app/autopilot">
+            <Bot className="size-4" aria-hidden />
+            Autopilot
           </NavLink>
           <NavLink href="/app/studio">
             <Sparkles className="size-4" aria-hidden />

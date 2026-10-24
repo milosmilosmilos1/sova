@@ -1244,3 +1244,31 @@ Faza 10b (24.10.2026), bez promene šeme:
 - `account_metrics_daily`: upsert po (nalog, dan); `raw` nosi originalne nazive Meta metrika.
 - `insights.items = [{claim, recommendation, evidenceTargetIds[], confidence 0–1, suggestionKind, suggestionTitle, suggestionBody}]` (camelCase od 10b).
 - `suggestions` iz uvida: `source = 'insight'`, `payload = {insightId, claim, recommendation}`, `evidence = {targetIds[]}`, `score` 0–100, `expires_at` +14 dana.
+
+Faza 10c (24.10.2026), migracija `20261024000016_autopilot.sql`:
+
+```sql
+create table autopilot_runs (
+  id uuid primary key default gen_random_uuid(),
+  brand_id uuid not null references brands(id) on delete cascade,
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  kind text not null check (kind in ('weekly','monthly')),
+  period_start date not null,                  -- ponedeljak nedelje ili prvi ponedeljak meseca
+  level smallint not null check (level between 0 and 3),
+  status text not null default 'running' check (status in ('running','succeeded','partial','skipped','failed')),
+  summary jsonb not null default '{}',         -- planned, submitted, scheduled, returned, budgetStopped, reason
+  tokens_used integer not null default 0,
+  triggered_by uuid references profiles(id) on delete set null,   -- null = cron
+  created_at timestamptz not null default now(),
+  finished_at timestamptz,
+  unique (brand_id, kind, period_start)        -- zaključavanje: jedan prolaz po periodu
+);
+create index posts_autopilot_pending on posts (brand_id, scheduled_for)
+  where source = 'autopilot' and status in ('in_review','approved') and deleted_at is null;
+```
+
+- RLS: `autopilot_runs` čitaju članovi sa pristupom brendu, piše samo service role.
+- `brands.settings.autopilot = {level3AccountIds[], level3ConfirmedBy, pausedPostIds[], pausedBy}`; `autopilot_level3_confirmed_at` se briše pri izlasku sa nivoa 3.
+- Autopilot objave: `source = 'autopilot'`, `qa_report = {passed, checks[{name, ok, message}], similarity}`, `scheduled_for` je plan dok objava nije zakazana.
+- Generacije Autopilota: `ai_generations.user_id = null`, `input.autopilot = true`, `input.runId`, `input.postId` (budžet, D-066).
+- Predlozi: `strategy_proposal` (source `analytics`, `payload.periodStart`), `post_idea` iz praznika (`payload = {date, name, kind}`), `repeat_format` iz analitike (`evidence.targetIds`).

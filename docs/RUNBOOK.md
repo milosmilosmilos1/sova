@@ -31,9 +31,9 @@ Zamke:
 
 ```
 npm run lint && npm run typecheck
-npm run test            # Vitest unit (118)
+npm run test            # Vitest unit (127)
 npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (24); pravi i briše test korisnike
-npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva i Meta Graph kroz MSW (80)
+npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva i Meta Graph kroz MSW (96)
 npm run test:e2e        # Playwright kroz Mailpit (5); traži pokrenut dev server
 npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs 25   # živi crawler bez baze i AI-ja
 npm run build           # produkcijski build
@@ -65,6 +65,9 @@ Faza 16. Vercel: `main` → Production, PR → Preview. Checklista u ARCHITECTUR
 - **Mreža odbija objave masovno (kvota, 5xx)**: `select error_code, count(*) from publish_attempts where started_at > now() - interval '1 hour' group by 1`; kvota pomera termin za 24 h (obaveštenje `post_rescheduled`), 5xx troši 3 pokušaja (1/5/15 min) pa `failed`.
 - **Metrike ne stižu**: `select target_id, horizon, captured_at from post_metrics_snapshots where target_id = '…'`; Inngest run `post-metrics` po `targetId` (spava do sledećeg horizonta); `social-account-metrics` u 04:00 UTC (log `account_metrics_sweep`). Meta insights za nove objave kasne do ~1 h i za stranice ispod 100 pratilaca mogu biti prazni; dugme „Osveži” na analitici upisuje snimak `adhoc`.
 - **Uvidi se ne prave**: treba bar 3 objave sa metrikama u periodu (log `weekly_insights`, `ai_generations` tip `insights`); bez `GEMINI_API_KEY` generacija pada sa porukom.
+- **Autopilot nije napravio nacrte**: `select kind, period_start, status, summary, tokens_used from autopilot_runs where brand_id = '…' order by created_at desc`; razlog piše u `summary.reason` (nivo 0, pauziran brend, nema aktivne strategije, budžet). Ponovni prolaz za istu nedelju: obriši red za tu nedelju u `autopilot_runs` (service role) i klikni „Pripremi narednu nedelju sada”.
+- **Autopilot troši previše**: `select sum(tokens_charged) from ai_generations where brand_id = '…' and input->>'autopilot' = 'true' and created_at >= date_trunc('month', now())`; budžet se menja na `/app/autopilot`, „Pauziraj sve” zaustavlja odmah.
+- **Nacrti vraćeni na doradu**: `select id, qa_report from posts where source = 'autopilot' and status = 'draft' and qa_report->>'passed' = 'false'`; najčešće zabranjena reč, brojka koje nema u profilu ili sličnost sa ranijom objavom.
 - **Asistirani targeti stoje danima**: `select t.id, t.post_id, a.name from post_targets t join social_accounts a on a.id = t.social_account_id where t.status = 'assisted_pending'`; podsetnik stiže sa fazom 11.
 - **Mreža vraća 401 masovno**: isključi feature flag `platform.<mreža>`, banner korisnicima, proveri promenu API verzije (`META_GRAPH_VERSION` u env-u; promena bez deploya koda).
 - **Nalozi prelaze u `needs_reauth`**: `select platform, status, status_reason, last_error, refresh_token_expires_at from social_accounts where status <> 'active'`; Meta korisnički token traje 60 dana i `social-token-refresh` ga produžava dnevno; ako je korisnik promenio lozinku ili uklonio aplikaciju, ponovo povezuje iz `/app/accounts`.

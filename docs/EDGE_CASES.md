@@ -43,9 +43,9 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 | AI4 | Prazan ili nevalidan JSON              | Jedan ponovni pokušaj sa porukom o grešci šeme u promptu; zatim fallback model                                                    | 5     | kod    |
 | AI5 | Slika generisana, upload u Storage pao | Retry uploada 3x unutar istog koraka; ako padne, rezervacija se oslobađa, generacija `failed`                                     | 5     | kod    |
 | AI6 | Model ugašen (404 za model)            | Trajna greška → odmah fallback model + alarm adminu + health crven                                                                | 5     | test   |
-| AI7 | Odgovor na pogrešnom jeziku ili pismu  | Detekcija pisma (udeo ćiriličnih karaktera) i jezika; jedan ponovni pokušaj sa pojačanom instrukcijom; zatim upozorenje korisniku | 5, 6  | plan   |
+| AI7 | Odgovor na pogrešnom jeziku ili pismu  | Detekcija pisma (udeo ćiriličnih karaktera) i jezika; jedan ponovni pokušaj sa pojačanom instrukcijom; zatim upozorenje korisniku | 5, 6  | test   |
 | AI8 | Prompt injection iz sadržaja sajta     | Delimiteri + instrukcija + Zod; činjenice se proveravaju naspram profila                                                          | 6     | test   |
-| AI9 | Sličan tekst već objavljen u 90 dana   | Embedding sličnost > 0,92 → upozorenje i ponuda drugog ugla                                                                       | 6, 9a | plan   |
+| AI9 | Sličan tekst već objavljen u 90 dana   | Embedding sličnost > 0,92 → upozorenje i ponuda drugog ugla                                                                       | 6, 9a | test   |
 
 ## Upload i mediji
 
@@ -159,3 +159,18 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 | A4  | Model navede nepostojeći dokaz                | ID se odbacuje; pouzdanost se svodi na 0–1                                           | 10b  | test   |
 | A5  | Premalo podataka za uvide                     | Bez poziva modela, poruka sa brojem objava koji fali                                 | 10b  | test   |
 | A6  | Nalog izgubi token između horizonata          | Nalog `needs_reauth`, snimak preskočen, run nastavlja na sledeći horizont            | 10b  | kod    |
+
+## Autopilot (faza 10c)
+
+| #    | Slučaj                                             | Ponašanje                                                                                             | Faza | Status |
+| ---- | -------------------------------------------------- | ----------------------------------------------------------------------------------------------------- | ---- | ------ |
+| AP1  | Cron padne u 06:00 ponedeljkom                     | Prolaz važi od 06:00 do kraja ponedeljka; red u `autopilot_runs` sprečava dupli                       | 10c  | kod    |
+| AP2  | Nema aktivne strategije za nedelju                 | Nivo 1: predlog u Inbox-u + obaveštenje; nivo 2–3: Autopilot pravi i aktivira strategiju za 4 nedelje | 10c  | test   |
+| AP3  | Budžet se potroši usred prolaza                    | Provera pre svakog nacrta; prolaz „delimično”, obaveštenje jednom mesečno                             | 10c  | test   |
+| AP4  | AI napiše zabranjenu reč ili izmišljenu cenu       | QA vraća nacrt korisniku sa razlogom, ne šalje se na odobrenje                                        | 10c  | test   |
+| AP5  | Instagram nacrt bez vizuala                        | Vizual iz šablona; ako ne uspe, QA vraća nacrt                                                        | 10c  | test   |
+| AP6  | Objava nije odobrena do roka                       | Nivo ≥ 2: preskoči ili objavi; nivo 1: podsetnik pa povratak u nacrt                                  | 10c  | test   |
+| AP7  | Nivo 3 bez potvrde ili bez naloga                  | 400; flag isključen → 403; trigger u bazi odbija nivo 3 bez potvrde                                   | 10c  | test   |
+| AP8  | „Pauziraj sve” dok Autopilot radi                  | Nacrti se ne prave za pauziran brend, publisher pauzira target; „Nastavi” vraća samo buduće termine   | 10c  | test   |
+| AP9  | Strategija za sledeći mesec se preklapa sa tekućom | Aktiviranje arhivira samo preklapajuće aktivne strategije (D-064)                                     | 10c  | kod    |
+| AP10 | Isti predlog dvaput prihvaćen                      | Uslovni UPDATE po statusu `new` → 409                                                                 | 10c  | test   |

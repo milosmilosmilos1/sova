@@ -227,6 +227,38 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"autopilot_runs": {
+                  Row: {
+                    "brand_id": string,"created_at": string,"finished_at": string | null,"id": string,"kind": string,"level": number,"period_start": string,"status": string,"summary": NonNullable<Json>,"tokens_used": number,"triggered_by": string | null,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "brand_id": string,"created_at"?: string,"finished_at"?: string | null,"id"?: string,"kind": string,"level": number,"period_start": string,"status"?: string,"summary"?: NonNullable<Json>,"tokens_used"?: number,"triggered_by"?: string | null,"workspace_id": string
+                  }
+                  Update: {
+                    "brand_id"?: string,"created_at"?: string,"finished_at"?: string | null,"id"?: string,"kind"?: string,"level"?: number,"period_start"?: string,"status"?: string,"summary"?: NonNullable<Json>,"tokens_used"?: number,"triggered_by"?: string | null,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "autopilot_runs_brand_id_fkey"
+      columns: ["brand_id"]
+isOneToOne: false
+      referencedRelation: "brands"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "autopilot_runs_triggered_by_fkey"
+      columns: ["triggered_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "autopilot_runs_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"brand_profiles": {
                   Row: {
                     "brand_id": string,"crawl_id": string | null,"created_at": string,"created_by": string | null,"data": NonNullable<Json>,"id": string,"is_current": boolean,"locked_fields": (string)[],"version": number

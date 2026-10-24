@@ -626,6 +626,8 @@ export async function updateStrategy(
         .eq('brand_id', row.brand_id)
         .eq('status', 'active')
         .neq('id', id)
+        .lte('period_start', row.period_end)
+        .gte('period_end', row.period_start)
       if (error) throw mapDbError(error)
       update.approved_by = viewer.user.id
       update.approved_at = new Date().toISOString()

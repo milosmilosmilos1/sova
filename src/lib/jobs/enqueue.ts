@@ -138,3 +138,23 @@ export async function enqueueStrategyJob(
     )
   }
 }
+
+/** Nedeljni prolaz Autopilota za jedan brend (cron fan-out ili ručno „Pokreni sada”). */
+export async function enqueueAutopilotWeek(
+  brandId: string,
+  weekStart: string | null,
+  triggeredBy: string | null,
+): Promise<void> {
+  try {
+    await inngest.send(events.autopilotWeekRequested.create({ brandId, weekStart, triggeredBy }))
+  } catch (error) {
+    logger.error('enqueue_autopilot_week_failed', { brandId, error })
+    throw new AiError(
+      'PROVIDER_ERROR',
+      process.env.NODE_ENV === 'development'
+        ? 'Pozadinski servis nije dostupan. Pokrenite `npm run inngest:dev` pa pokušajte ponovo.'
+        : 'Pozadinski servis trenutno nije dostupan. Pokušajte ponovo za minut.',
+      { retryable: true, cause: error },
+    )
+  }
+}

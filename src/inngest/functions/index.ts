@@ -2,6 +2,7 @@ import { aiGenerateImage } from './ai-generate-image'
 import { aiGenerateStrategy } from './ai-generate-strategy'
 import { aiVisualTemplate } from './ai-visual-template'
 import { analyticsInsightsWeekly } from './analytics-insights-weekly'
+import { autopilotBrandWeek, autopilotDaily, autopilotDeadlines, autopilotWeekly } from './autopilot'
 import { brandAnalyze } from './brand-analyze'
 import { brandSiteCheck } from './brand-site-check'
 import { ping } from './ping'
@@ -27,4 +28,8 @@ export const functions = [
   postMetrics,
   socialAccountMetrics,
   analyticsInsightsWeekly,
+  autopilotWeekly,
+  autopilotBrandWeek,
+  autopilotDeadlines,
+  autopilotDaily,
 ]
