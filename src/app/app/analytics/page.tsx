@@ -4,7 +4,7 @@ import { redirect } from 'next/navigation'
 import { AnalyticsClient } from '@/components/analytics/analytics-client'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
-import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
+import { ADMIN_ROLES, EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
 
 export const metadata: Metadata = { title: 'Analitika' }
 
@@ -21,6 +21,8 @@ export default async function AnalyticsPage() {
       brandName={brand.name}
       timezone={brand.timezone}
       canEdit={EDIT_ROLES.includes(current.role)}
+      reportEmails={brand.report_emails}
+      canManageRecipients={ADMIN_ROLES.includes(current.role)}
     />
   )
 }

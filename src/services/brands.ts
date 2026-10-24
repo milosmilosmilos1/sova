@@ -12,7 +12,7 @@ import type { Database } from '@/types/database'
 export type BrandRow = Database['public']['Tables']['brands']['Row']
 
 const BRAND_COLUMNS =
-  'id, workspace_id, name, website_url, timezone, content_locale, autopilot_level, status, logo_asset_id, created_at, updated_at'
+  'id, workspace_id, name, website_url, timezone, content_locale, autopilot_level, status, logo_asset_id, report_emails, created_at, updated_at'
 
 export type BrandSummary = Pick<
   BrandRow,
@@ -25,6 +25,7 @@ export type BrandSummary = Pick<
   | 'autopilot_level'
   | 'status'
   | 'logo_asset_id'
+  | 'report_emails'
   | 'created_at'
   | 'updated_at'
 >
@@ -83,15 +84,22 @@ export async function createBrand(viewer: Viewer, input: CreateBrandInput): Prom
 export async function updateBrand(
   viewer: Viewer,
   brandId: string,
-  patch: Partial<Pick<BrandRow, 'name' | 'website_url' | 'timezone' | 'content_locale' | 'status'>>,
+  patch: Partial<
+    Pick<BrandRow, 'name' | 'website_url' | 'timezone' | 'content_locale' | 'status' | 'report_emails'>
+  >,
 ): Promise<BrandSummary> {
   const brand = await getBrand(viewer, brandId)
-  await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
+  const membership = await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
+  // izveštaj tada odlazi van tima: adrese menja vlasnik ili administrator (D-094)
+  if (patch.report_emails !== undefined && !ADMIN_ROLES.includes(membership.role))
+    throw new ApiError('FORBIDDEN', 'Primaoce mesečnog izveštaja menja vlasnik ili administrator.')
   const update: Database['public']['Tables']['brands']['Update'] = {}
   if (patch.name !== undefined) update.name = patch.name
   if (patch.website_url !== undefined) update.website_url = patch.website_url
   if (patch.timezone !== undefined) update.timezone = patch.timezone
   if (patch.content_locale !== undefined) update.content_locale = patch.content_locale
+  if (patch.report_emails !== undefined)
+    update.report_emails = [...new Set(patch.report_emails.map((e) => e.trim().toLowerCase()))]
   if (patch.status !== undefined) {
     update.status = patch.status
     update.paused_at = patch.status === 'paused' ? new Date().toISOString() : null

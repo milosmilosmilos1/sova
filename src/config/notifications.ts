@@ -61,6 +61,11 @@ export const NOTIFICATION_TYPES = {
     description: 'Termin je pomeren zbog dnevnog limita mreže.',
     emailDefault: true,
   },
+  report_ready: {
+    label: 'Mesečni izveštaj',
+    description: 'PDF izveštaj za prethodni mesec je spreman.',
+    emailDefault: true,
+  },
   post_comment: {
     label: 'Nov komentar',
     description: 'Komentar člana tima ili klijenta na objavi.',

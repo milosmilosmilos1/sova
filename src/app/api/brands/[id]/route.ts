@@ -19,6 +19,7 @@ export const PATCH = createHandler(
       timezone: body.timezone,
       content_locale: body.contentLocale,
       status: body.status,
+      report_emails: body.reportEmails,
     })
     const shifted =
       before && body.timezone && before.timezone !== body.timezone

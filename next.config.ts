@@ -28,6 +28,10 @@ const nextConfig: NextConfig = {
   typedRoutes: true,
   // Native dodaci (.node) ne mogu u Turbopack bundle; učitavaju se iz node_modules u runtime-u (faza 7, resvg).
   serverExternalPackages: ['@resvg/resvg-js', 'sharp'],
+  // Inter se čita sa diska u runtime-u (Satori šabloni, PDF izveštaj, D-094): eksplicitno u trace API ruta.
+  outputFileTracingIncludes: {
+    '/api/**/*': ['src/lib/visuals/fonts/**/*'],
+  },
   turbopack: {
     rules: {
       '*.css': {

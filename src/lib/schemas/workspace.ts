@@ -114,6 +114,11 @@ export const updateBrandSchema = z
     status: z.enum(['active', 'paused', 'archived']).optional(),
     /** uz promenu zone: zakazane objave zadržavaju isto lokalno vreme (EDGE_CASES K7) */
     shiftSchedule: z.boolean().optional(),
+    /** adrese klijenta za mesečni PDF izveštaj (D-094) */
+    reportEmails: z
+      .array(z.email({ error: 'Neispravna email adresa.' }).max(254))
+      .max(5, { error: 'Najviše 5 adresa.' })
+      .optional(),
   })
   .refine((v) => Object.values(v).some((x) => x !== undefined), { error: 'Nema izmena.' })
 

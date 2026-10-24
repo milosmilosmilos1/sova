@@ -580,3 +580,18 @@ Odluka:
 
 Alternative: kolona `post_media.crop` sa sečenjem pri objavi. Odbijeno: mreže preuzimaju fajl po URL-u, pa bi sečenje pri objavi ionako pravilo nov fajl, a pregled ne bi bio isti kao rezultat.
 Razlog: provera objave je javljala pogrešan odnos, ali sliku je trebalo seći van Sove; brisanje medija iz zakazane objave tražilo je otkazivanje i ponovno zakazivanje.
+
+## D-094 · 25.10.2026 · usvojeno · Mesečni PDF izveštaj: @react-pdf, mesec u zoni brenda, PDF klijentu u prilogu
+
+Odluka:
+
+- **Sadržaj.** Isti brojevi kao strana Analitika, za kalendarski mesec u zoni brenda (oktobar počinje u ponoć 1. oktobra po lokalnom vremenu) i uz poređenje sa celim prethodnim mesecom: pet pločica (objave, doseg, prikazi, angažovanje, stopa), doseg po danu objave, tabele po mreži i stubu, pet najboljih objava (tekst objave, ne interni naslov), pratioci po nalogu, AI uvidi iz tog meseca i napomene. Mesec bez objava dobija rečenicu umesto praznih grafikona.
+- **Render.** `@react-pdf/renderer` 4.9.0 (zakucan), A4, Inter iz `src/lib/visuals/fonts` (latinica sa č, ć, đ i strelicama; znak minus U+2212 ne postoji u fontu, pa se koristi obična crta). Grafikon je od pravougaonika po pravilima iz D-092 (bez SVG-a). Next 16 sam drži paket van bundle-a; fontovi su izričito u trace-u API ruta (`outputFileTracingIncludes`), jer se čitaju sa diska.
+- **Čuvanje.** Privatni bucket `exports`, `ws/{ws}/reports/{brand}/{YYYY-MM}-{nasumično}.pdf`; jedan red u `reports` po brendu i mesecu (jedinstven indeks), novo pravljenje istog meseca zamenjuje fajl i briše stari. Preuzimanje samo potpisanim linkom (1 h) sa imenom `izvestaj-{brend}-{YYYY-MM}.pdf`.
+- **Na zahtev.** `POST /api/reports {brandId, month}` za tekući (u toku) ili do 11 meseci unazad; svaki član brenda, 10 u minuti.
+- **Mesečno.** Inngest `reports-monthly` radi na sat 1. i 2. u mesecu (UTC) i šalje događaj brendovima kojima je po njihovoj zoni 1. od 06:00 (2. dan je rezerva), koji su u prethodnom mesecu imali bar jednu objavu i kojima izveštaj još nije poslat. `report-monthly-brand` (jedan po brendu u isto vreme, 2 ponovna pokušaja) pravi PDF, šalje ga emailom kao prilog na adrese iz `brands.report_emails` i obaveštava vlasnika i administratore (`report_ready`, link na Analitiku).
+- **Jednom, ne dvaput.** Oznaka slanja (`sent_to`, prazan niz kad nema adresa) upisuje se pre emailova: posao koji padne posle slanja ne šalje klijentu isti izveštaj ponovo. Radije jedan propušten email (vlasnik ga ionako vidi u aplikaciji) nego duplikat.
+- **Adrese klijenta.** Do 5 adresa po brendu, bez duplikata i malim slovima; menja ih vlasnik ili administrator, jer izveštaj tada izlazi van tima. Svaki primalac dobija zaseban email (ne vidi druge adrese), a poruka kaže kako da se prijem prekine.
+
+Alternative: Satori i resvg pa slike u PDF-u (tekst se ne bi mogao označiti ni pretraživati); Chromium na serveru (pretežak za Vercel funkciju); link umesto priloga (klijent nema nalog, a potpisan link ističe).
+Razlog: brif traži mesečni izveštaj klijentu; agencija ga danas pravi ručno iz više alata.

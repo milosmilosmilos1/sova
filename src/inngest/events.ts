@@ -71,6 +71,11 @@ export const events = {
     schema: z.object({ paymentEventId: uuid, provider: z.enum(['stripe', 'paddle']) }),
   }),
 
+  // Faza 14
+  reportMonthlyRequested: eventType('report/monthly.requested', {
+    schema: z.object({ brandId: uuid, month: z.string().regex(/^[0-9]{4}-(0[1-9]|1[0-2])$/) }),
+  }),
+
   // Nalog
   accountExportRequested: eventType('account/export.requested', {
     schema: z.object({ exportId: uuid, userId: uuid }),

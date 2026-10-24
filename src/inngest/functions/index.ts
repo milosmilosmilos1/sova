@@ -11,6 +11,7 @@ import { ping } from './ping'
 import { postMetrics } from './post-metrics'
 import { publishTarget } from './publish-target'
 import { publishWatchdog } from './publish-watchdog'
+import { reportMonthlyBrand, reportsMonthly } from './reports-monthly'
 import { socialAccountMetrics } from './social-account-metrics'
 import { socialHistoryImport } from './social-history-import'
 import { socialTokenRefresh } from './social-token-refresh'
@@ -37,4 +38,6 @@ export const functions = [
   mediaIncomingCleanup,
   billingProcessEvent,
   billingDaily,
+  reportsMonthly,
+  reportMonthlyBrand,
 ]

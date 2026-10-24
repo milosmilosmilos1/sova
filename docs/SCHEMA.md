@@ -155,6 +155,7 @@ create table brands (
   sitemap_hash text,
   feed_hash text,
   settings jsonb not null default '{}',        -- UTM podrazumevano, zabranjene reči, hashtag setovi
+  report_emails citext[] not null default '{}' check (cardinality(report_emails) <= 5),  -- klijent dobija mesečni PDF (migracija 024)
   created_by uuid references profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
@@ -1305,3 +1306,9 @@ Faza 13 (24.10.2026), tri nove migracije (primenjene sa `migration up`, bez `db:
 - `20261024000019_audit_log_permanent.sql`: `admin_audit_log` bez stranih ključeva i sa kolonom `admin_email` (popunjena za postojeće redove), nova verzija `admin_adjust_tokens` sa parametrom `p_audit` (D-075).
 - Impersonacija ne menja šemu: koristi `impersonation_sessions` i `is_impersonation_readonly()` iz faze 3; `end_reason` je `exit`, `replaced`, `expired`, `sign_out` ili `revoked`.
 - Akcije u `admin_audit_log`: `user.view`, `user.ban`, `user.unban`, `user.logout_all`, `user.resend_verification`, `user.delete`, `tokens.adjust`, `flag.update`, `settings.token_prices`, `settings.active_models`, `settings.maintenance`, `publish.retry`, `audit.export`, `impersonation.start`, `impersonation.full_mode`, `impersonation.request`, `impersonation.end`, `impersonation.expired`.
+
+Faza 14 (25.10.2026): migracija `20261025000024_monthly_reports.sql`:
+
+- `brands.report_emails citext[]` (najviše 5): adrese klijenta kojima mesečni posao šalje PDF izveštaj u prilogu; menja ih vlasnik ili administrator (D-094).
+- Jedinstven indeks `reports_brand_period (brand_id, period_start, period_end)`: jedan izveštaj po brendu i mesecu, novo pravljenje zamenjuje fajl. `reports.sent_to` je oznaka da je mesečni posao izveštaj poslao (prazan niz kad nema adresa klijenta); dok je null, izveštaj je napravljen samo na zahtev.
+- Nov tip obaveštenja `report_ready`. Fajlovi su u bucketu `exports` pod `ws/{workspace}/reports/{brand}/`.

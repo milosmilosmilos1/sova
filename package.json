@@ -32,6 +32,7 @@
     "@hookform/resolvers": "^6.0.0",
     "@react-email/components": "^1.0.12",
     "@react-email/render": "^2.1.1",
+    "@react-pdf/renderer": "4.9.0",
     "@resvg/resvg-js": "^2.6.2",
     "@sentry/nextjs": "^11.9.0",
     "@supabase/ssr": "^0.12.7",

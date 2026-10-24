@@ -162,8 +162,9 @@ export async function computeOverview(
   from: string,
   to: string,
   timeZone = 'UTC',
+  /** period za poređenje; podrazumevano isto trajanje neposredno pre (izveštaj daje prethodni mesec) */
+  prevRange: { from: string; to: string } = periodBefore(from, to),
 ): Promise<OverviewData> {
-  const prevRange = periodBefore(from, to)
   const [targets, prevTargets, accountsRes] = await Promise.all([
     loadTargets(client, brandId, from, to),
     loadTargets(client, brandId, prevRange.from, prevRange.to),

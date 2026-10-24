@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
+import { isReportMonth } from '@/lib/reports/period'
 
 const uuid = z.uuid({ error: 'Neispravan identifikator.' })
 const dateish = z
@@ -30,3 +31,10 @@ export const generateInsightsSchema = z.object({
 export type GenerateInsightsInput = z.infer<typeof generateInsightsSchema>
 
 export const refreshMetricsSchema = z.object({ targetId: uuid })
+
+/** Mesečni PDF izveštaj (D-094). */
+export const reportsQuerySchema = z.object({ brandId: uuid })
+export const createReportSchema = z.object({
+  brandId: uuid,
+  month: z.string().refine(isReportMonth, { error: 'Mesec mora biti u obliku YYYY-MM.' }),
+})

@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
+import { MonthlyReportsCard } from '@/components/analytics/monthly-reports-card'
 import { ColumnChart, type ColumnBar } from '@/components/charts/column-chart'
 import { dayLabel } from '@/components/charts/scale'
 import { TrendChart } from '@/components/charts/trend-chart'
@@ -210,11 +211,15 @@ export function AnalyticsClient({
   brandName,
   timezone,
   canEdit,
+  reportEmails,
+  canManageRecipients,
 }: {
   brandId: string
   brandName: string
   timezone: string
   canEdit: boolean
+  reportEmails: string[]
+  canManageRecipients: boolean
 }) {
   const qc = useQueryClient()
   const [days, setDays] = useState(30)
@@ -512,6 +517,13 @@ export function AnalyticsClient({
           )}
         </CardContent>
       </Card>
+
+      <MonthlyReportsCard
+        brandId={brandId}
+        timezone={timezone}
+        reportEmails={reportEmails}
+        canManageRecipients={canManageRecipients}
+      />
     </div>
   )
 }

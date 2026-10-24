@@ -13,6 +13,8 @@ export interface SendEmailInput {
   react: ReactElement
   replyTo?: string
   tags?: Record<string, string>
+  /** prilozi (mesečni PDF izveštaj, D-094) */
+  attachments?: Array<{ filename: string; content: Buffer }>
 }
 
 let resendSingleton: Resend | null = null
@@ -33,7 +35,12 @@ export async function sendEmail(input: SendEmailInput): Promise<{ id: string | n
     if (isProd) throw new Error('RESEND_API_KEY nije podešen.')
     const html = await render(input.react)
     const links = [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1]).filter((l) => l?.startsWith('http'))
-    logger.info('email_dev_log', { to: input.to, subject: input.subject, links })
+    logger.info('email_dev_log', {
+      to: input.to,
+      subject: input.subject,
+      links,
+      attachments: input.attachments?.map((a) => ({ filename: a.filename, bytes: a.content.length })),
+    })
     return { id: null }
   }
   const { data, error } = await resend.emails.send({
@@ -42,6 +49,7 @@ export async function sendEmail(input: SendEmailInput): Promise<{ id: string | n
     subject: input.subject,
     react: input.react,
     replyTo: input.replyTo,
+    attachments: input.attachments?.map((a) => ({ filename: a.filename, content: a.content })),
     tags: input.tags ? Object.entries(input.tags).map(([name, value]) => ({ name, value })) : undefined,
   })
   if (error) {
