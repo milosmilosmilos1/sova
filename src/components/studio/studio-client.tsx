@@ -11,6 +11,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { PLATFORM_KEYS, PLATFORMS } from '@/config/platforms'
 import type { ApiResponse } from '@/lib/api/response'
+import { uploadMediaFile } from '@/lib/media/client-upload'
 
 /**
  * Najprostija stranica za testiranje tri funkcije iz prve verzije (brif, faza 5).
@@ -165,7 +166,7 @@ export function StudioClient({
           <VisualPanel workspaceId={workspaceId} brandId={brandId} onDone={refreshBalance} />
         </TabsContent>
         <TabsContent value="text">
-          <TextPanel workspaceId={workspaceId} brandId={brandId} onDone={refreshBalance} />
+          <TextPanel brandId={brandId} onDone={refreshBalance} />
         </TabsContent>
         <TabsContent value="photo">
           <ImagePanel workspaceId={workspaceId} brandId={brandId} mode="photo" onDone={refreshBalance} />
@@ -179,24 +180,17 @@ export function StudioClient({
 }
 
 function PhotoUpload({
-  workspaceId,
   brandId,
   value,
   onChange,
 }: {
-  workspaceId: string
   brandId: string
   value: UploadResult | null
   onChange: (asset: UploadResult | null) => void
 }) {
   const upload = useMutation({
-    mutationFn: async (file: File) => {
-      const form = new FormData()
-      form.set('file', file)
-      form.set('workspaceId', workspaceId)
-      form.set('brandId', brandId)
-      return api<UploadResult>('/api/media/upload', { method: 'POST', body: form })
-    },
+    // pravo u skladište (D-082); Vercel funkcija ne prima telo veće od 4,5 MB
+    mutationFn: (file: File): Promise<UploadResult> => uploadMediaFile(file, { brandId }),
     onSuccess: (asset) => onChange(asset),
   })
   return (
@@ -231,15 +225,7 @@ function PhotoUpload({
   )
 }
 
-function TextPanel({
-  workspaceId,
-  brandId,
-  onDone,
-}: {
-  workspaceId: string
-  brandId: string
-  onDone: () => void
-}) {
+function TextPanel({ brandId, onDone }: { brandId: string; onDone: () => void }) {
   const [platforms, setPlatforms] = useState<string[]>(['instagram', 'facebook'])
   const [topic, setTopic] = useState('')
   const [goal, setGoal] = useState('engagement')
@@ -330,7 +316,7 @@ function TextPanel({
             </select>
           </div>
         </div>
-        <PhotoUpload workspaceId={workspaceId} brandId={brandId} value={photo} onChange={setPhoto} />
+        <PhotoUpload brandId={brandId} value={photo} onChange={setPhoto} />
         <Button
           disabled={generate.isPending || platforms.length === 0 || topic.trim().length < 3}
           onClick={() => generate.mutate()}
@@ -455,9 +441,7 @@ function ImagePanel({
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        {mode === 'photo' ? (
-          <PhotoUpload workspaceId={workspaceId} brandId={brandId} value={photo} onChange={setPhoto} />
-        ) : null}
+        {mode === 'photo' ? <PhotoUpload brandId={brandId} value={photo} onChange={setPhoto} /> : null}
         <div className="space-y-1.5">
           <Label htmlFor={`prompt-${mode}`}>{mode === 'photo' ? 'Kakvu objavu želite?' : 'Opis slike'}</Label>
           <Textarea
@@ -799,9 +783,7 @@ function VisualPanel({
               ) : null}
             </div>
           ) : null}
-          {source === 'asset' ? (
-            <PhotoUpload workspaceId={workspaceId} brandId={brandId} value={photo} onChange={setPhoto} />
-          ) : null}
+          {source === 'asset' ? <PhotoUpload brandId={brandId} value={photo} onChange={setPhoto} /> : null}
         </fieldset>
         <Button disabled={!canStart} onClick={() => start.mutate()}>
           {start.isPending ? 'Šaljem…' : 'NAPRAVI VIZUAL'}

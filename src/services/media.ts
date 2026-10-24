@@ -8,8 +8,11 @@ import sharp from 'sharp'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
+import { env } from '@/lib/env'
+import { parseMp4, stripVideoMetadata, type VideoInfo } from '@/lib/media/mp4'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
+import { getBrand } from '@/services/brands'
 import type { Database } from '@/types/database'
 
 export type MediaAssetRow = Database['public']['Tables']['media_assets']['Row']
@@ -17,53 +20,60 @@ export type MediaAssetRow = Database['public']['Tables']['media_assets']['Row']
 export const MAX_IMAGE_BYTES = 20 * 1024 * 1024
 const MAX_DIMENSION = 4096
 const ALLOWED_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp'])
+export const VIDEO_MIME = new Set(['video/mp4', 'video/quicktime'])
+const FORMATS_MESSAGE =
+  'Dozvoljeni formati su JPG, PNG i WebP za slike i MP4 ili MOV za video (proverava se sadržaj fajla, ne ekstenzija).'
 
-/**
- * Upload slike: tip po sadržaju (magic bytes), ograničenje piksela protiv
- * decompression bomb napada, uklanjanje EXIF-a, resize na najviše 4096 px,
- * upis u privatan bucket `uploads` i red u media_assets.
- */
-export async function uploadImage(
-  viewer: Viewer,
-  input: { workspaceId: string; brandId: string | null; bytes: Buffer; originalName?: string },
-): Promise<MediaAssetRow> {
-  await requireMembership(viewer, input.workspaceId, EDIT_ROLES)
-  if (input.brandId) {
-    const { data: brand } = await viewer.supabase
-      .from('brands')
-      .select('id')
-      .eq('id', input.brandId)
-      .maybeSingle()
-    if (!brand) throw new ApiError('NOT_FOUND', 'Brend ne postoji ili nemate pristup.')
-  }
-  if (input.bytes.length === 0) throw new ApiError('VALIDATION', 'Fajl je prazan.')
-  if (input.bytes.length > MAX_IMAGE_BYTES) {
-    throw new ApiError('PAYLOAD_TOO_LARGE', 'Slika može imati najviše 20 MB.')
-  }
+/** Najveći video u bajtovima (`MEDIA_MAX_VIDEO_MB`; Supabase besplatan plan ne prima više od 50 MB). */
+export function maxVideoBytes(): number {
+  return env.MEDIA_MAX_VIDEO_MB * 1024 * 1024
+}
 
-  const detected = await fileTypeFromBuffer(input.bytes)
-  const mime = detected?.mime ?? ''
+function tooLarge(kind: 'image' | 'video'): ApiError {
+  return new ApiError(
+    'PAYLOAD_TOO_LARGE',
+    kind === 'video'
+      ? `Video može imati najviše ${env.MEDIA_MAX_VIDEO_MB} MB.`
+      : 'Slika može imati najviše 20 MB.',
+  )
+}
+
+/** HEIC i GIF imaju svoje poruke (EDGE_CASES U3, U6); ostali nepodržani tipovi dobijaju opštu. */
+function unsupportedImage(mime: string): ApiError | null {
   if (mime === 'image/heic' || mime === 'image/heif') {
-    throw new ApiError(
+    return new ApiError(
       'VALIDATION',
       'HEIC format još nije podržan. Sačuvajte fotografiju kao JPEG pa pokušajte ponovo.',
     )
   }
   if (mime === 'image/gif') {
     // EDGE_CASES U6: Sova slike normalizuje bez animacije, a Instagram i TikTok ionako primaju samo mirne slike
-    throw new ApiError(
+    return new ApiError(
       'VALIDATION',
       'GIF još nije podržan. Sačuvajte željenu sličicu kao JPG ili PNG; Instagram i TikTok ionako primaju samo slike bez animacije.',
     )
   }
-  if (!ALLOWED_IMAGE_MIME.has(mime)) {
-    throw new ApiError(
-      'VALIDATION',
-      'Dozvoljeni formati su JPG, PNG i WebP (proverava se sadržaj fajla, ne ekstenzija).',
-    )
-  }
+  return null
+}
 
-  let pipeline = sharp(input.bytes, { limitInputPixels: 50_000_000, animated: false }).rotate()
+function folderFor(workspaceId: string, brandId: string | null, leaf: string): string {
+  return brandId ? `ws/${workspaceId}/brand/${brandId}/${leaf}` : `ws/${workspaceId}/${leaf}`
+}
+
+interface ProcessedImage {
+  data: Buffer
+  width: number
+  height: number
+  mime: string
+  ext: string
+}
+
+/**
+ * Ograničenje piksela protiv decompression bomb napada, rotacija po EXIF-u pa uklanjanje EXIF-a,
+ * resize na najviše 4096 px, sRGB.
+ */
+async function processImage(bytes: Buffer, mime: string): Promise<ProcessedImage> {
+  let pipeline = sharp(bytes, { limitInputPixels: 50_000_000, animated: false }).rotate()
   const meta = await pipeline.metadata()
   if (!meta.width || !meta.height) throw new ApiError('VALIDATION', 'Slika nije čitljiva.')
   if (meta.width > MAX_DIMENSION || meta.height > MAX_DIMENSION) {
@@ -83,58 +93,265 @@ export async function uploadImage(
       : ext === 'webp'
         ? await pipeline.webp({ quality: 90 }).toBuffer({ resolveWithObject: true })
         : await pipeline.jpeg({ quality: 90, mozjpeg: true }).toBuffer({ resolveWithObject: true })
+  return { data: output.data, width: output.info.width, height: output.info.height, mime, ext }
+}
 
-  const sha256 = createHash('sha256').update(output.data).digest('hex')
-  const admin = createSupabaseAdminClient()
-
-  const existing = await admin
+async function existingBySha(workspaceId: string, sha256: string): Promise<MediaAssetRow | null> {
+  const { data } = await createSupabaseAdminClient()
     .from('media_assets')
     .select('*')
-    .eq('workspace_id', input.workspaceId)
+    .eq('workspace_id', workspaceId)
     .eq('sha256', sha256)
     .is('deleted_at', null)
     .maybeSingle()
-  if (existing.data) return existing.data
+  return data
+}
 
-  const id = randomUUID()
-  const folder = input.brandId
-    ? `ws/${input.workspaceId}/brand/${input.brandId}/uploads`
-    : `ws/${input.workspaceId}/uploads`
-  const storagePath = `${folder}/${id}.${ext}`
-  const upload = await admin.storage.from('uploads').upload(storagePath, output.data, {
-    contentType: mime,
+type AssetInsert = Database['public']['Tables']['media_assets']['Insert']
+
+/** Upis fajla i reda; bez reda u bazi fajl bi ostao siroče u skladištu (EDGE_CASES U7). */
+async function storeUpload(row: AssetInsert & { id: string; storage_path: string }, bytes: Buffer) {
+  const admin = createSupabaseAdminClient()
+  const upload = await admin.storage.from('uploads').upload(row.storage_path, bytes, {
+    contentType: row.mime_type,
     upsert: false,
     cacheControl: '3600',
   })
   if (upload.error) throw new ApiError('INTERNAL', 'Čuvanje fajla nije uspelo.', { cause: upload.error })
+  const inserted = await admin.from('media_assets').insert(row).select('*').single()
+  if (inserted.error || !inserted.data) {
+    await admin.storage.from('uploads').remove([row.storage_path])
+    throw mapDbError(inserted.error, 'Zapis o fajlu nije sačuvan.')
+  }
+  return inserted.data
+}
 
-  const inserted = await admin
-    .from('media_assets')
-    .insert({
+async function storeImage(
+  viewer: Viewer,
+  input: { workspaceId: string; brandId: string | null; image: ProcessedImage; originalName: string | null },
+): Promise<MediaAssetRow> {
+  const sha256 = createHash('sha256').update(input.image.data).digest('hex')
+  const existing = await existingBySha(input.workspaceId, sha256)
+  if (existing) return existing
+  const id = randomUUID()
+  return storeUpload(
+    {
       id,
       workspace_id: input.workspaceId,
       brand_id: input.brandId,
       kind: 'image',
       source: 'upload',
       bucket: 'uploads',
-      storage_path: storagePath,
-      mime_type: mime,
-      size_bytes: output.data.length,
-      width: output.info.width,
-      height: output.info.height,
+      storage_path: `${folderFor(input.workspaceId, input.brandId, 'uploads')}/${id}.${input.image.ext}`,
+      mime_type: input.image.mime,
+      size_bytes: input.image.data.length,
+      width: input.image.width,
+      height: input.image.height,
       sha256,
       exif_stripped: true,
       uploaded_by: viewer.user.id,
-      source_data: input.originalName ? { original_name: input.originalName.slice(0, 200) } : null,
-    })
-    .select('*')
-    .single()
-  if (inserted.error || !inserted.data) {
-    // bez reda u bazi fajl bi ostao siroče u skladištu (EDGE_CASES U7)
-    await admin.storage.from('uploads').remove([storagePath])
-    throw mapDbError(inserted.error, 'Zapis o fajlu nije sačuvan.')
+      source_data: input.originalName ? { original_name: input.originalName } : null,
+    },
+    input.image.data,
+  )
+}
+
+/**
+ * Video iz biblioteke: trajanje i prikazane dimenzije iz MP4/MOV zaglavlja, lokacija i ostali
+ * metapodaci snimka uklonjeni bez ponovnog kodiranja (kao EXIF kod slika).
+ */
+async function storeVideo(
+  viewer: Viewer,
+  input: {
+    workspaceId: string
+    brandId: string | null
+    bytes: Buffer
+    mime: string
+    originalName: string | null
+  },
+): Promise<MediaAssetRow> {
+  if (input.bytes.length > maxVideoBytes()) throw tooLarge('video')
+  let info: VideoInfo
+  try {
+    info = parseMp4(input.bytes)
+  } catch {
+    throw new ApiError(
+      'VALIDATION',
+      'Video nije čitljiv (oštećen ili nepotpun fajl). Sačuvajte ga ponovo kao MP4 pa pokušajte još jednom.',
+    )
   }
-  return inserted.data
+  if (info.durationMs < 1000) throw new ApiError('VALIDATION', 'Video je kraći od jedne sekunde.')
+  const { data } = stripVideoMetadata(input.bytes)
+  const sha256 = createHash('sha256').update(data).digest('hex')
+  const existing = await existingBySha(input.workspaceId, sha256)
+  if (existing) return existing
+  const id = randomUUID()
+  const ext = input.mime === 'video/quicktime' ? 'mov' : 'mp4'
+  return storeUpload(
+    {
+      id,
+      workspace_id: input.workspaceId,
+      brand_id: input.brandId,
+      kind: 'video',
+      source: 'upload',
+      bucket: 'uploads',
+      storage_path: `${folderFor(input.workspaceId, input.brandId, 'uploads')}/${id}.${ext}`,
+      mime_type: input.mime,
+      size_bytes: data.length,
+      width: info.width,
+      height: info.height,
+      duration_ms: info.durationMs,
+      sha256,
+      exif_stripped: true,
+      uploaded_by: viewer.user.id,
+      source_data: {
+        ...(input.originalName ? { original_name: input.originalName } : {}),
+        video_codec: info.videoCodec,
+        audio_codec: info.audioCodec,
+        rotation: info.rotation,
+      },
+    },
+    data,
+  )
+}
+
+/**
+ * Upload slike kroz server (multipart do ~4 MB; pregledač koristi direktno otpremanje ispod):
+ * tip po sadržaju (magic bytes), obrada kao `processImage`, privatan bucket `uploads`.
+ */
+export async function uploadImage(
+  viewer: Viewer,
+  input: { workspaceId: string; brandId: string | null; bytes: Buffer; originalName?: string },
+): Promise<MediaAssetRow> {
+  await requireMembership(viewer, input.workspaceId, EDIT_ROLES)
+  if (input.brandId) {
+    const { data: brand } = await viewer.supabase
+      .from('brands')
+      .select('id')
+      .eq('id', input.brandId)
+      .maybeSingle()
+    if (!brand) throw new ApiError('NOT_FOUND', 'Brend ne postoji ili nemate pristup.')
+  }
+  if (input.bytes.length === 0) throw new ApiError('VALIDATION', 'Fajl je prazan.')
+  if (input.bytes.length > MAX_IMAGE_BYTES) throw tooLarge('image')
+
+  const detected = await fileTypeFromBuffer(input.bytes)
+  const mime = detected?.mime ?? ''
+  const unsupported = unsupportedImage(mime)
+  if (unsupported) throw unsupported
+  if (!ALLOWED_IMAGE_MIME.has(mime)) {
+    throw new ApiError(
+      'VALIDATION',
+      'Dozvoljeni formati su JPG, PNG i WebP (proverava se sadržaj fajla, ne ekstenzija).',
+    )
+  }
+  return storeImage(viewer, {
+    workspaceId: input.workspaceId,
+    brandId: input.brandId,
+    image: await processImage(input.bytes, mime),
+    originalName: input.originalName?.slice(0, 200) ?? null,
+  })
+}
+
+/** Privremena putanja direktnog otpremanja; ID bira server, pa klijent ne može da gađa tuđ fajl. */
+function incomingPath(workspaceId: string, brandId: string, uploadId: string): string {
+  return `${folderFor(workspaceId, brandId, 'incoming')}/${uploadId}`
+}
+
+export interface UploadTarget {
+  uploadId: string
+  signedUrl: string
+  maxBytes: number
+}
+
+/**
+ * Direktno otpremanje, korak 1 (D-082): pregledač šalje fajl pravo u skladište preko potpisanog
+ * URL-a (važi 2 h), mimo Next servera, jer Vercel funkcija ne prima telo veće od 4,5 MB.
+ */
+export async function createUploadTarget(
+  viewer: Viewer,
+  input: { brandId: string; mimeType: string; sizeBytes: number },
+): Promise<UploadTarget> {
+  const brand = await getBrand(viewer, input.brandId)
+  await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
+  const mime = input.mimeType.toLowerCase()
+  const unsupported = unsupportedImage(mime)
+  if (unsupported) throw unsupported
+  const kind = VIDEO_MIME.has(mime) ? 'video' : ALLOWED_IMAGE_MIME.has(mime) ? 'image' : null
+  if (!kind) throw new ApiError('VALIDATION', FORMATS_MESSAGE)
+  const maxBytes = kind === 'video' ? maxVideoBytes() : MAX_IMAGE_BYTES
+  if (input.sizeBytes <= 0) throw new ApiError('VALIDATION', 'Fajl je prazan.')
+  if (input.sizeBytes > maxBytes) throw tooLarge(kind)
+  const uploadId = randomUUID()
+  const { data, error } = await createSupabaseAdminClient()
+    .storage.from('uploads')
+    .createSignedUploadUrl(incomingPath(brand.workspace_id, brand.id, uploadId))
+  if (error || !data)
+    throw new ApiError('INTERNAL', 'Adresa za otpremanje nije napravljena.', { cause: error })
+  return { uploadId, signedUrl: data.signedUrl, maxBytes }
+}
+
+/**
+ * Direktno otpremanje, korak 2: tip po sadržaju, slika kroz `processImage`, video kroz MP4 zaglavlje;
+ * privremeni fajl se briše u svakom ishodu (napuštene briše dnevni posao `media-incoming-cleanup`).
+ */
+export async function completeUpload(
+  viewer: Viewer,
+  input: { brandId: string; uploadId: string; originalName?: string | null },
+): Promise<MediaAssetRow> {
+  const brand = await getBrand(viewer, input.brandId)
+  await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
+  const path = incomingPath(brand.workspace_id, brand.id, input.uploadId)
+  const admin = createSupabaseAdminClient()
+  const { data: blob, error } = await admin.storage.from('uploads').download(path)
+  if (error || !blob) {
+    throw new ApiError(
+      'NOT_FOUND',
+      'Otpremljeni fajl nije pronađen: otpremanje nije završeno ili je prošlo više od dva sata.',
+    )
+  }
+  try {
+    const bytes = Buffer.from(await blob.arrayBuffer())
+    if (!bytes.length) throw new ApiError('VALIDATION', 'Fajl je prazan.')
+    const mime = (await fileTypeFromBuffer(bytes))?.mime ?? ''
+    const unsupported = unsupportedImage(mime)
+    if (unsupported) throw unsupported
+    const target = {
+      workspaceId: brand.workspace_id,
+      brandId: brand.id,
+      originalName: input.originalName?.slice(0, 200) || null,
+    }
+    if (ALLOWED_IMAGE_MIME.has(mime)) {
+      if (bytes.length > MAX_IMAGE_BYTES) throw tooLarge('image')
+      return await storeImage(viewer, { ...target, image: await processImage(bytes, mime) })
+    }
+    if (VIDEO_MIME.has(mime)) return await storeVideo(viewer, { ...target, bytes, mime })
+    throw new ApiError('VALIDATION', FORMATS_MESSAGE)
+  } finally {
+    await admin.storage.from('uploads').remove([path])
+  }
+}
+
+/** Brisanje napuštenih privremenih fajlova starijih od `olderThanHours` (dnevni posao). */
+export async function cleanupIncomingUploads(olderThanHours = 24): Promise<number> {
+  const admin = createSupabaseAdminClient()
+  const before = new Date(Date.now() - olderThanHours * 3_600_000).toISOString()
+  let removed = 0
+  for (let round = 0; round < 10; round++) {
+    const { data, error } = await admin.rpc('stale_incoming_uploads', { p_before: before, p_limit: 500 })
+    if (error) throw mapDbError(error)
+    const names = (data ?? []).map((r) => r.name)
+    if (!names.length) break
+    for (let i = 0; i < names.length; i += 100) {
+      const chunk = names.slice(i, i + 100)
+      const res = await admin.storage.from('uploads').remove(chunk)
+      if (res.error)
+        throw new ApiError('INTERNAL', 'Brisanje privremenih fajlova nije uspelo.', { cause: res.error })
+      removed += chunk.length
+    }
+    if (names.length < 500) break
+  }
+  return removed
 }
 
 export async function getAsset(viewer: Viewer, assetId: string): Promise<MediaAssetRow> {
@@ -185,10 +402,7 @@ export async function storeGeneratedImage(input: {
   const meta = await sharp(input.bytes).metadata()
   const ext = input.mimeType === 'image/jpeg' ? 'jpg' : input.mimeType === 'image/webp' ? 'webp' : 'png'
   const id = randomUUID()
-  const folder = input.brandId
-    ? `ws/${input.workspaceId}/brand/${input.brandId}/generated`
-    : `ws/${input.workspaceId}/generated`
-  const storagePath = `${folder}/${id}.${ext}`
+  const storagePath = `${folderFor(input.workspaceId, input.brandId, 'generated')}/${id}.${ext}`
   const upload = await admin.storage.from('generated').upload(storagePath, input.bytes, {
     contentType: input.mimeType,
     upsert: false,
@@ -227,40 +441,46 @@ export async function storeGeneratedImage(input: {
   return data
 }
 
+export interface MediaListItem {
+  id: string
+  url: string
+  kind: 'image' | 'video'
+  width: number | null
+  height: number | null
+  durationMs: number | null
+  mimeType: string
+  altText: string | null
+  source: string
+  createdAt: string
+}
+
 /** Biblioteka medija brenda (najnovije prve) sa potpisanim URL-ovima za pregled. */
 export async function listMedia(
   viewer: Viewer,
   brandId: string,
   limit = 40,
-): Promise<
-  Array<{
-    id: string
-    url: string
-    width: number | null
-    height: number | null
-    mimeType: string
-    altText: string | null
-    source: string
-    createdAt: string
-  }>
-> {
+  kind?: 'image' | 'video',
+): Promise<MediaListItem[]> {
   const { data: brand } = await viewer.supabase.from('brands').select('id').eq('id', brandId).maybeSingle()
   if (!brand) throw new ApiError('NOT_FOUND', 'Brend ne postoji ili nemate pristup.')
-  const { data, error } = await viewer.supabase
+  let query = viewer.supabase
     .from('media_assets')
-    .select('id, bucket, storage_path, width, height, mime_type, alt_text, source, created_at')
+    .select(
+      'id, kind, bucket, storage_path, width, height, duration_ms, mime_type, alt_text, source, created_at',
+    )
     .eq('brand_id', brandId)
-    .eq('kind', 'image')
     .is('deleted_at', null)
-    .order('created_at', { ascending: false })
-    .limit(limit)
+  if (kind) query = query.eq('kind', kind)
+  const { data, error } = await query.order('created_at', { ascending: false }).limit(limit)
   if (error) throw mapDbError(error)
   return Promise.all(
     (data ?? []).map(async (m) => ({
       id: m.id,
       url: await signedUrl(m),
+      kind: m.kind,
       width: m.width,
       height: m.height,
+      durationMs: m.duration_ms,
       mimeType: m.mime_type,
       altText: m.alt_text,
       source: m.source,

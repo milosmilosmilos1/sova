@@ -711,6 +711,20 @@ async function main() {
     }
   })
 
+  await test('stale_incoming_uploads (spisak napuštenih otpremanja) zove samo service role', async () => {
+    const when = new Date().toISOString()
+    expectError(await A.rpc('stale_incoming_uploads', { p_before: when, p_limit: 10 }), 'permission denied')
+    const anon = createClient(URL, ANON, { auth: { persistSession: false } })
+    expectError(
+      await anon.rpc('stale_incoming_uploads', { p_before: when, p_limit: 10 }),
+      'permission denied',
+    )
+    const ok = await admin.rpc('stale_incoming_uploads', { p_before: '2000-01-01T00:00:00Z', p_limit: 10 })
+    if (ok.error) throw new Error(ok.error.message)
+    if (!Array.isArray(ok.data) || ok.data.length !== 0)
+      throw new Error('očekivan prazan spisak za 2000. godinu')
+  })
+
   await test('seed: planovi, podešavanja i flagovi postoje; anon vidi cenovnik', async () => {
     const anon = createClient(URL, ANON, { auth: { persistSession: false } })
     const { data: plans, error } = await anon.from('plans').select('code').order('sort_order')

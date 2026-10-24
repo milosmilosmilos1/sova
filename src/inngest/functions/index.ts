@@ -5,6 +5,7 @@ import { analyticsInsightsWeekly } from './analytics-insights-weekly'
 import { autopilotBrandWeek, autopilotDaily, autopilotDeadlines, autopilotWeekly } from './autopilot'
 import { brandAnalyze } from './brand-analyze'
 import { brandSiteCheck } from './brand-site-check'
+import { mediaIncomingCleanup } from './media-incoming-cleanup'
 import { ping } from './ping'
 import { postMetrics } from './post-metrics'
 import { publishTarget } from './publish-target'
@@ -32,4 +33,5 @@ export const functions = [
   autopilotBrandWeek,
   autopilotDeadlines,
   autopilotDaily,
+  mediaIncomingCleanup,
 ]

@@ -53,6 +53,8 @@ export interface PostMediaView {
   width: number | null
   height: number | null
   mimeType: string | null
+  durationMs: number | null
+  sizeBytes: number | null
   altText: string | null
   source: string | null
   attributionText: string | null
@@ -145,7 +147,7 @@ export async function getPostView(viewer: Viewer, postId: string): Promise<PostV
     viewer.supabase
       .from('post_media')
       .select(
-        'id, media_asset_id, sort_order, target_id, media_assets(id, bucket, storage_path, width, height, mime_type, alt_text, source, attribution)',
+        'id, media_asset_id, sort_order, target_id, media_assets(id, bucket, storage_path, width, height, mime_type, duration_ms, size_bytes, alt_text, source, attribution)',
       )
       .eq('post_id', postId)
       .order('sort_order', { ascending: true }),
@@ -188,6 +190,8 @@ export async function getPostView(viewer: Viewer, postId: string): Promise<PostV
         width: a?.width ?? null,
         height: a?.height ?? null,
         mimeType: a?.mime_type ?? null,
+        durationMs: a?.duration_ms ?? null,
+        sizeBytes: a?.size_bytes ?? null,
         altText: a?.alt_text ?? null,
         source: a?.source ?? null,
         attributionText: attr?.text ?? null,

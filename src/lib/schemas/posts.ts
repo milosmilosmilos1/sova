@@ -143,6 +143,24 @@ export const queueSlotsQuerySchema = z.object({ brandId: z.uuid() })
 export const mediaListQuerySchema = z.object({
   brandId: z.uuid(),
   limit: z.coerce.number().int().min(1).max(100).default(40),
+  kind: z.enum(['image', 'video']).optional(),
+})
+
+/** Direktno otpremanje (D-082): korak 1 traži potpisan URL, korak 2 javlja da je fajl otpremljen. */
+export const uploadTargetSchema = z.object({
+  brandId: z.uuid(),
+  mimeType: z.string().trim().min(3).max(100),
+  sizeBytes: z
+    .number()
+    .int()
+    .min(0)
+    .max(10 * 1024 ** 3),
+})
+
+export const completeUploadSchema = z.object({
+  brandId: z.uuid(),
+  uploadId: z.uuid(),
+  originalName: z.string().max(500).optional(),
 })
 
 export const platformSchema = platformEnum

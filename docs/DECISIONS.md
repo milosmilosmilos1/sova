@@ -448,3 +448,12 @@ Odluka:
 - **Nacrt editora** (A4): forma se čuva u localStorage pod `sova:nacrt:{brandId}:{postId|nova}` 600 ms posle izmene; traka „Vrati nacrt / Odbaci” se pojavljuje kad sačuvan nacrt nije isti kao forma; posle uspešnog čuvanja nacrt se briše, a tajmer koji još čeka ga ne vraća. Nacrt ostaje samo u tom pregledaču (bez slanja na server).
 - **GIF** (U6) se odbija sa objašnjenjem umesto opšte poruke o formatima; animirani GIF i video ostaju za kasnije faze.
   Razlog: faza 11 zatvara rupe iz EDGE_CASES; dve od njih (meko brisanje, konverzija vremena) su bile stvarne greške nađene tek testovima ovih slučajeva.
+
+## D-082 · 24.10.2026 · usvojeno · Direktno otpremanje u skladište i video u biblioteci
+
+Odluka:
+
+- **Bajtovi ne idu kroz Next server.** Vercel funkcija ne prima telo veće od 4,5 MB, pa bi slika od 5–20 MB i svaki video pali na produkciji. Pregledač traži potpisan URL (`POST /api/media/upload-url`: brend, tip, veličina; provera uloge i limita), šalje fajl PUT-om pravo u Supabase skladište (`ws/{ws}/brand/{brand}/incoming/{uploadId}`, ID bira server), pa javlja `POST /api/media/complete`. Tek tada server preuzima fajl, proverava tip po sadržaju, sliku obrađuje kao do sada (EXIF, 4096 px, sRGB), a video čita iz MP4/MOV zaglavlja i premešta u `uploads/`. Privremeni fajl se briše u svakom ishodu; napuštene (zatvoren tab) briše dnevni posao `media-incoming-cleanup` preko RPC-a `stale_incoming_uploads` (samo service role). Stara ruta `POST /api/media/upload` ostaje za male slike iz skripti i testova.
+- **Video bez ffmpeg-a.** Trajanje, prikazane dimenzije (rotacija iz matrice `tkhd`, jer telefon vertikalan snimak čuva kao položen sa rotacijom 90°) i kodeci se čitaju iz ISO BMFF kutija (`src/lib/media/mp4.ts`). Lokacija i ostali metapodaci snimka (`©xyz`, QuickTime `meta` ključevi) se brišu bez ponovnog kodiranja: kutija postaje `free` iste veličine sa nulama, pa fajl ostaje ispravan (kao EXIF kod slika). Sličica za pregled je `<video preload="metadata">` u pregledaču.
+- **Limiti.** Slika do 20 MB; video MP4 ili MOV do `MEDIA_MAX_VIDEO_MB` (podrazumevano 50, koliko Supabase besplatan plan prima po fajlu), najmanje 1 s. Pravila po mreži (trajanje, odnos stranica) proverava provider pri proveri objave.
+  Razlog: video je uslov za YouTube Shorts, TikTok video, Reels i Pinterest video; a otpremanje kroz server je na Vercel-u ograničeno na 4,5 MB.

@@ -104,18 +104,28 @@ test.describe.serial('registracija, potvrda emaila, onboarding, tim, nacrt, odja
     await expect(page).toHaveURL(/\/app$/)
 
     const text = `Nacrt koji preživljava osvežavanje ${stamp}`
+    const banner = page.getByRole('status').filter({ hasText: 'Imate nesačuvan nacrt' })
     await page.goto('/app/posts/new')
-    await page.getByLabel('Tekst objave').fill(text)
-    await page.getByLabel('Termin objave').fill('2030-03-31T02:30')
+    await page.getByLabel('Tekst objave').fill(text.slice(0, 10))
     // čuvanje u localStorage kreće 600 ms posle poslednje izmene
     await expect
       .poll(() =>
         page.evaluate(() => Object.keys(localStorage).filter((k) => k.startsWith('sova:nacrt:')).length),
       )
       .toBe(1)
+    // nacrt iz iste sesije se ne nudi dok korisnik kuca dalje
+    await page.getByLabel('Tekst objave').fill(text)
+    await page.getByLabel('Termin objave').fill('2030-03-31T02:30')
+    await expect
+      .poll(() =>
+        page.evaluate(() =>
+          localStorage.getItem(Object.keys(localStorage).find((k) => k.startsWith('sova:nacrt:'))!),
+        ),
+      )
+      .toContain('2030-03-31T02:30')
+    await expect(banner).toHaveCount(0)
 
     await page.reload()
-    const banner = page.getByRole('status').filter({ hasText: 'Imate nesačuvan nacrt' })
     await expect(banner).toBeVisible()
     await expect(page.getByLabel('Tekst objave')).toHaveValue('')
     await page.getByRole('button', { name: 'Vrati nacrt' }).click()

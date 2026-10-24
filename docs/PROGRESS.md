@@ -15,7 +15,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 | 7 Vizuelni pipeline                     | gotovo      | Unsplash + vision rangiranje, 4 šablona (Satori), Canva Connect (PKCE, dizajn, export); čeka: UNSPLASH_ACCESS_KEY, Canva app                                                                             |
 | 8a Facebook + Instagram                 | gotovo      | OAuth, izbor naloga, tokeni, uvoz istorije, osvežavanje, webhook-ovi, provider za objave; čeka: Meta app i App Review                                                                                    |
 | 8b LinkedIn i TikTok                    | gotovo      | LinkedIn profil i stranice, TikTok foto (video spreman u provideru), panel u editoru, osvežavanje tokena; čeka: app-ovi i odobrenja (INTEGRATIONS 14)                                                    |
-| 8c–8d Ostale mreže                      | sledeće     | Google Business Profile, Pinterest, YouTube Shorts (8c), X (8d); treba: app-ovi i prijave iz INTEGRATIONS 14                                                                                             |
+| 8c–8d Ostale mreže                      | u toku      | gotovo: direktno otpremanje u skladište i video u biblioteci (D-082); sledi Google Business Profile, Pinterest, YouTube Shorts (8c), X (8d); treba: app-ovi i prijave iz INTEGRATIONS 14                 |
 | 9a Objave, odobravanje, kalendar        | gotovo      | state machine, composer backend, verzije, javni link, komentari, kalendar, red objava; UI /app/posts, /app/calendar, /approve                                                                            |
 | 9b Publisher                            | gotovo      | Inngest publish-target (sleepUntil, cancelOn, 3 pokušaja 1/5/15 min, IG polling), watchdog, rollup statusa, asistirano objavljivanje, retry, obaveštenja sa podešavanjima, K3                            |
 | 10a Strategija i kalendar iz strategije | gotovo      | AI strategija (20 tokena, Inngest), vremena iz istorije ili pretpostavke, verzije, stubovi i kampanje, kalendar nacrta bez tokena, UI /app/strategy                                                      |
@@ -97,6 +97,20 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Provereno 24.10.2026 u Chromium-u: početna, Inbox, Objave, detalj objave, Kalendar, Strategija, Analitika, Autopilot, Obaveštenja, Mreže i Podešavanja rade bez grešaka u konzoli i API odgovorima. Usput ispravljeno: legenda kalendara je prikazivala interne nazive statusa, horizonti snimaka u analitici nisu bili poređani, editor nije prikazivao zašto je Autopilot vratio nacrt (sada prikazuje, a izveštaj se briše čim se tekst promeni).
 - Provereno 24.10.2026 u Chromium-u (faza 11b): nacrt editora (čuvanje, traka posle osvežavanja, vraćanje, brisanje posle čuvanja), termin se vraća isti posle čuvanja, forma zone brenda sa ponudom zadržavanja lokalnog vremena; bez grešaka u konzoli.
 - Provereno 24.10.2026 u Chromium-u (faza 13): svih sedam admin strana, „Gledaj kao” za demo nalog (traka, izmena u read-only režimu dobija 403 sa objašnjenjem, „Izađi” vraća na detalj korisnika), `/admin/users` na 390 px bez horizontalnog skrola. Usput ispravljeno: stara provera u `requireMembership` je tokom read-only pregleda rušila svaku stranu aplikacije.
+
+## Faza 8c, deo 1 — šta je urađeno
+
+- **Direktno otpremanje** (D-082): editor objave i AI Studio šalju fajl pravo u Supabase skladište preko potpisanog URL-a, uz traku napretka; server zatim proverava tip po sadržaju i upisuje fajl. Na Vercel-u bi otpremanje kroz server palo na 4,5 MB.
+- **Video u biblioteci**: MP4 i MOV do 50 MB (`MEDIA_MAX_VIDEO_MB`). Trajanje i dimenzije se čitaju iz zaglavlja (vertikalan snimak sa telefona ostaje vertikalan), lokacija snimka se briše. U biblioteci video ima sličicu i trajanje. Objavljivanje videa po mrežama stiže sa YouTube-om, TikTok-om i ostalima; Facebook i Instagram ga zasad jasno odbijaju.
+- **Čišćenje**: privremeni fajl se briše odmah posle obrade; napuštene briše dnevni posao `media-incoming-cleanup` (migracija 022, RPC `stale_incoming_uploads`).
+- **Ispravke usput**: otpremanje u editoru objave nije radilo (ruta je tražila `workspaceId`, editor ga nije slao); traka „Vrati nacrt” se pojavljivala usred kucanja jer je čitala nacrt koji ista sesija upravo sačuva (sad se nacrt čita jednom, pri otvaranju editora; E2E to proverava).
+- **Testovi**: 5 integracionih (`api.media-upload`: slika bez EXIF-a, video sa rotacijom i lokacijom, duplikat, MOV, oštećen i lažan video, limiti, tuđi brend, čišćenje), 7 unit (MP4 zaglavlje, rotacija, 64-bitne kutije, brisanje lokacije), 1 test baze (RPC samo za service role). Provereno u Chromium-u: video od 6 MB i slika kroz editor, bez grešaka.
+
+## Kako da testiraš (faza 8c, deo 1)
+
+1. Objave → Nova objava → Mediji → izaberi MP4 ili MOV sa telefona → traka napretka, pa pločica sa trajanjem.
+2. Isto sa fotografijom većom od 5 MB → prolazi (ne ide kroz server).
+3. `npm run test` (171), `npm run test:integration` (140), `npm run test:db` (30), `npm run test:e2e` (6).
 
 ## Faza 11b — šta je urađeno
 
@@ -341,7 +355,8 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 
 ## Poznati bagovi
 
-- Nema poznatih. Ispravljeno u fazi 11b: brisanje brenda iz Podešavanja i brisanje radnog prostora nisu radili (meko brisanje kroz RLS je vraćalo 403, a akcija je grešku prećutala); na dan prelaza na letnje ili zimsko vreme noćni termini su bili pomereni za sat (Beograd 01:00–02:00, Njujork 01:00–06:00); nacrt editora se vraćao posle čuvanja ako se čuvalo odmah posle kucanja.
+- Nema poznatih. Ispravljeno u fazi 8c: otpremanje u editoru objave je vraćalo 400 (nedostajao `workspaceId`); traka „Vrati nacrt” se pojavljivala usred kucanja.
+- Ispravljeno u fazi 11b: brisanje brenda iz Podešavanja i brisanje radnog prostora nisu radili (meko brisanje kroz RLS je vraćalo 403, a akcija je grešku prećutala); na dan prelaza na letnje ili zimsko vreme noćni termini su bili pomereni za sat (Beograd 01:00–02:00, Njujork 01:00–06:00); nacrt editora se vraćao posle čuvanja ako se čuvalo odmah posle kucanja.
 - Ispravljeno u fazi 5: onboarding tipa „Jedan biznis” je padao na validaciji jer je prazno skriveno polje `brandName` stizalo kao prazan string (sad `parseForm` prazna polja tretira kao neuneta).
 
 ## Tehnički dug
@@ -349,7 +364,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Tekstovi stranica faze 4 su na srpskom u kodu; selidba u next-intl poruke ide uz dizajn (faza 14) kad se ekrani finalizuju.
 - Sentry `withSentryConfig` samo sa `SENTRY_DSN`; upload source mapa tek sa `SENTRY_AUTH_TOKEN`.
 - CI pokreće samo unit testove; testovi baze i integracioni zahtevaju Supabase u CI-ju (faza 15).
-- `complete_upload` RPC iz plana zamenjen serverskim uploadom (`POST /api/media/upload`); HEIC konverzija (WASM dekoder) i video upload idu u fazu 7.
+- HEIC konverzija (WASM dekoder) još nije ugrađena: HEIC dobija poruku da se sačuva kao JPEG. Video se ne transkoduje (mreže primaju MP4/H.264 kakav jeste).
 - Studio status posla kroz polling; Realtime pretplata uz dizajn (D-029).
 - Brand kontekst bez profila i dalje pada na `brands.settings`; posle prve analize koristi profil i RAG.
 - Firecrawl (SPA i Cloudflare sajtovi) nije ugrađen: takvi sajtovi dobijaju jasnu poruku i ručni unos (D-035). Realtime napredak analize ide kroz polling do faze 14 (tabela `website_crawls` je u publikaciji).

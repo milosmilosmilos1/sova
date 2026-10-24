@@ -30,6 +30,8 @@ export function buildServerEnvSchema(mode: EnvMode) {
     // javni URL medija za mreže koje same preuzimaju fajl (TikTok PULL_FROM_URL traži domen
     // verifikovan u TikTok portalu); prazno = NEXT_PUBLIC_APP_URL
     PUBLIC_MEDIA_BASE_URL: z.url().optional(),
+    // najveći video u biblioteci (MB); Supabase besplatan plan ne prima fajl veći od 50 MB
+    MEDIA_MAX_VIDEO_MB: z.coerce.number().int().min(5).max(5000).default(50),
 
     // Supabase
     NEXT_PUBLIC_SUPABASE_URL: always(z.url()),

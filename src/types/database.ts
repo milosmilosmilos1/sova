@@ -1840,6 +1840,11 @@ isOneToOne: false
 "shares_workspace_with":
 { Args: { "other": string }; Returns: boolean
                            },
+"stale_incoming_uploads":
+{ Args: { "p_before": string,"p_limit"?: number }; Returns: {
+              "name": string
+            }[]
+                           },
 "storage_brand_id":
 { Args: { "p_name": string }; Returns: string
                            },

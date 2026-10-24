@@ -264,6 +264,10 @@ export class MetaProvider implements SocialProvider {
     if (input.media.length > c.imageMaxPerPost)
       problems.push(`${c.label} dozvoljava najviše ${c.imageMaxPerPost} slika po objavi.`)
     for (const m of input.media) {
+      if (m.mimeType.startsWith('video/')) {
+        problems.push(`Video na ${c.label} Sova još ne objavljuje; uklonite video za ovaj nalog.`)
+        continue
+      }
       if (!c.imageMime.includes(m.mimeType))
         problems.push(
           `${c.label} prihvata ${c.imageMime.map((x) => x.split('/')[1]!.toUpperCase()).join(', ')}; „${m.mimeType}” nije podržan.`,

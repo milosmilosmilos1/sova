@@ -17,6 +17,7 @@ import { readTikTokOptions } from '@/config/tiktok'
 import { targetStatusLabel } from '@/config/post-labels'
 import type { ApiResponse } from '@/lib/api/response'
 import type { WorkspaceRole } from '@/lib/auth/workspace'
+import { formatDuration, uploadMediaFile } from '@/lib/media/client-upload'
 import { wallClock, zonedToUtc } from '@/lib/zoned-time'
 
 /**
@@ -34,9 +35,11 @@ interface Account {
 interface MediaItem {
   id: string
   url: string
+  kind?: 'image' | 'video'
   mimeType?: string
   width: number | null
   height: number | null
+  durationMs?: number | null
   altText: string | null
 }
 interface Target {
@@ -194,10 +197,27 @@ function parseDraft(raw: string | null): StoredDraft | null {
   }
 }
 
-function subscribeStorage(onChange: () => void): () => void {
-  window.addEventListener('storage', onChange)
-  return () => window.removeEventListener('storage', onChange)
+/**
+ * Nacrt kakav je bio kad se editor otvorio: čita se jednom po otvaranju, pa čuvanje iz iste sesije ne
+ * izaziva ponudu „Vrati nacrt” dok korisnik kuca. Unos se briše pri zatvaranju editora, da sledeće
+ * otvaranje (i bez osvežavanja strane) pročita sveže stanje.
+ */
+const draftsAtOpen = new Map<string, string | null>()
+
+function draftAtOpen(key: string): string | null {
+  if (!draftsAtOpen.has(key)) {
+    let raw: string | null = null
+    try {
+      raw = window.localStorage.getItem(key)
+    } catch {
+      // skladište nedostupno: nema ponude
+    }
+    draftsAtOpen.set(key, raw)
+  }
+  return draftsAtOpen.get(key) ?? null
 }
+
+const noSubscription = () => () => {}
 
 function removeDraft(key: string): void {
   try {
@@ -300,17 +320,17 @@ function EditorForm({
   const draftKey = draftKeyFor(brandId, postId)
   const [baseline] = useState(() => JSON.stringify(initialForm(p, timezone)))
   const formJson = JSON.stringify(form)
-  // nacrt iz prethodne sesije; server nema localStorage (null), klijent čita posle hidracije
+  // nacrt iz prethodnog otvaranja; server nema localStorage (null), klijent čita posle hidracije
   const storedRaw = useSyncExternalStore(
-    subscribeStorage,
-    () => {
-      try {
-        return window.localStorage.getItem(draftKey)
-      } catch {
-        return null
-      }
-    },
+    noSubscription,
+    () => draftAtOpen(draftKey),
     () => null,
+  )
+  useEffect(
+    () => () => {
+      draftsAtOpen.delete(draftKey)
+    },
+    [draftKey],
   )
   const stored = useMemo(() => parseDraft(storedRaw), [storedRaw])
   const [draftDismissed, setDraftDismissed] = useState(false)
@@ -440,16 +460,11 @@ function EditorForm({
       }),
     onSuccess: (r) => setLinkUrlCreated(r.url),
   })
+  const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const upload = useMutation({
-    mutationFn: async (file: File) => {
-      const fd = new FormData()
-      fd.set('file', file)
-      fd.set('brandId', brandId)
-      const res = await fetch('/api/media/upload', { method: 'POST', body: fd })
-      const data = (await res.json()) as ApiResponse<MediaItem>
-      if (!data.ok) throw new Error(data.error.message)
-      return data.data
-    },
+    // pravo u skladište (D-082): Vercel funkcija ne prima telo veće od 4,5 MB
+    mutationFn: (file: File) => uploadMediaFile(file, { brandId, onProgress: setUploadProgress }),
+    onSettled: () => setUploadProgress(null),
     onSuccess: (m) => {
       set('mediaIds', [...form.mediaIds, m.id])
       void qc.invalidateQueries({ queryKey: ['media', brandId] })
@@ -642,17 +657,36 @@ function EditorForm({
           <CardHeader>
             <CardTitle className="text-base">Mediji</CardTitle>
             <CardDescription>
-              Iz biblioteke brenda (upload, Unsplash, šabloni, AI slike) ili otpremite novu fotografiju.
+              Iz biblioteke brenda (upload, Unsplash, šabloni, AI slike) ili otpremite fotografiju ili video
+              (MP4, MOV).
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {editable ? (
               <Input
                 type="file"
-                accept="image/jpeg,image/png,image/webp"
+                aria-label="Otpremi fotografiju ili video"
+                accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
                 disabled={upload.isPending}
-                onChange={(e) => e.target.files?.[0] && upload.mutate(e.target.files[0])}
+                onChange={(e) => {
+                  const file = e.target.files?.[0]
+                  e.target.value = ''
+                  if (file) upload.mutate(file)
+                }}
               />
+            ) : null}
+            {upload.isPending ? (
+              <div className="space-y-1" role="status">
+                <p className="text-sm text-muted-foreground">
+                  Otpremam…{uploadProgress !== null ? ` ${Math.round(uploadProgress * 100)} %` : ''}
+                </p>
+                <progress
+                  className="h-1.5 w-full"
+                  max={1}
+                  value={uploadProgress ?? undefined}
+                  aria-label="Napredak otpremanja"
+                />
+              </div>
             ) : null}
             <ErrorBox error={upload.error} />
             <div className="grid grid-cols-4 gap-2 sm:grid-cols-6">
@@ -674,13 +708,29 @@ function EditorForm({
                     className={`relative overflow-hidden rounded-md border ${idx >= 0 ? 'ring-2 ring-primary' : ''}`}
                     title={m.altText ?? ''}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={m.url}
-                      alt={m.altText ?? ''}
-                      className="aspect-square w-full object-cover"
-                      loading="lazy"
-                    />
+                    {m.kind === 'video' || m.mimeType?.startsWith('video/') ? (
+                      <>
+                        <video
+                          src={m.url}
+                          muted
+                          playsInline
+                          preload="metadata"
+                          className="aspect-square w-full bg-black object-cover"
+                          aria-label={m.altText || 'Video'}
+                        />
+                        <span className="absolute right-1 bottom-1 rounded bg-black/70 px-1 text-[10px] text-white">
+                          ▶ {formatDuration(m.durationMs)}
+                        </span>
+                      </>
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={m.url}
+                        alt={m.altText ?? ''}
+                        className="aspect-square w-full object-cover"
+                        loading="lazy"
+                      />
+                    )}
                     {idx >= 0 ? (
                       <span className="absolute top-1 left-1 rounded bg-primary px-1.5 text-xs text-primary-foreground">
                         {idx + 1}

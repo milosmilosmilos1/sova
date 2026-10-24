@@ -164,6 +164,8 @@ export async function validatePostContent(
             height: m.height,
             alt: m.altText,
             assetId: m.mediaAssetId,
+            durationMs: m.durationMs,
+            sizeBytes: m.sizeBytes,
           })),
           firstComment: view.firstComment,
           isAiGenerated: false,
