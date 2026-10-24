@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { mapGraphError } from './graph'
+import { igStatusMessage, isFacebookReel } from './provider'
 import { makeSignedRequest, parseSignedRequest } from './signed-request'
 
 describe('Meta signed_request', () => {
@@ -41,5 +42,37 @@ describe('mapGraphError', () => {
     })
     expect(mapGraphError(400, body(31337))).toMatchObject({ code: 'UNKNOWN' })
     expect(mapGraphError(400, body(190)).userMessage).toMatch(/Povežite nalog ponovo/)
+  })
+})
+
+describe('Meta video (D-089)', () => {
+  const media = (width: number, height: number, durationMs: number) => ({
+    url: 'https://x.test/v.mp4',
+    mimeType: 'video/mp4',
+    width,
+    height,
+    alt: null,
+    durationMs,
+  })
+  it('Facebook Reel samo za uspravan video 9:16 od 3 do 90 s i bar 540×960', () => {
+    expect(isFacebookReel(media(1080, 1920, 20_000))).toBe(true)
+    expect(isFacebookReel(media(1080, 1920, 95_000))).toBe(false)
+    expect(isFacebookReel(media(1080, 1920, 2_000))).toBe(false)
+    expect(isFacebookReel(media(1080, 1350, 20_000))).toBe(false)
+    expect(isFacebookReel(media(480, 854, 20_000))).toBe(false)
+    expect(isFacebookReel({ ...media(1080, 1920, 20_000), durationMs: null })).toBe(false)
+  })
+
+  it('status IG kontejnera sa podkodom daje razumljivu poruku', () => {
+    expect(igStatusMessage('Error: Media upload has failed with error code 2207026')).toMatch(/MP4/)
+    expect(igStatusMessage('Error: 2207052')).toMatch(/preuzme/)
+    expect(igStatusMessage(undefined)).toBe('Instagram je odbio medij.')
+  })
+
+  it('greške Facebook videa: 6001 se ponavlja, Reels specifikacija i file_url su odbijen medij', () => {
+    const body = (code: number) => ({ error: { message: 'x', code } })
+    expect(mapGraphError(400, body(6001))).toMatchObject({ code: 'PROVIDER_DOWN', retryable: true })
+    expect(mapGraphError(400, body(1363128))).toMatchObject({ code: 'MEDIA_REJECTED' })
+    expect(mapGraphError(400, body(389))).toMatchObject({ code: 'MEDIA_REJECTED' })
   })
 })

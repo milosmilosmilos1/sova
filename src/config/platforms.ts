@@ -35,7 +35,7 @@ export const PLATFORMS: Record<SocialPlatform, PlatformConstraints> = {
     imageMime: ['image/jpeg', 'image/png', 'image/webp'],
     imageAspect: { min: 0.8, max: 1.91 },
     imageMaxPerPost: 10,
-    video: { maxSeconds: 14400, maxBytes: 4 * 1024 ** 3 },
+    video: { maxSeconds: 1200, maxBytes: 1024 ** 3 },
     aiLabel: false,
   },
   instagram: {
@@ -46,7 +46,7 @@ export const PLATFORMS: Record<SocialPlatform, PlatformConstraints> = {
     imageMime: ['image/jpeg'],
     imageAspect: { min: 0.8, max: 1.91 },
     imageMaxPerPost: 20,
-    video: { maxSeconds: 900, maxBytes: 1024 ** 3 },
+    video: { maxSeconds: 900, maxBytes: 300 * 1024 ** 2 },
     aiLabel: true,
   },
   linkedin: {

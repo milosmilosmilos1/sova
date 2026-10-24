@@ -47,9 +47,9 @@ Zamke:
 
 ```
 npm run lint && npm run typecheck
-npm run test            # Vitest unit (195)
+npm run test            # Vitest unit (198)
 npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (30); pravi i briše test korisnike
-npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (175)
+npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (183)
 npm run test:e2e        # Playwright kroz Mailpit (6); traži pokrenut dev server; posle brisanja .next prvi run traje oko 2 min
 npm run test:live       # pravi Gemini i pravi sajt nad lokalnim Supabase-om (oko 0,2 USD); samo ručno, nikad u CI-ju
 npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs 25   # živi crawler bez baze i AI-ja
@@ -92,6 +92,7 @@ Faza 16. Vercel: `main` → Production, PR → Preview. Checklista u ARCHITECTUR
 - **Asistirani targeti stoje danima**: `select t.id, t.post_id, a.name from post_targets t join social_accounts a on a.id = t.social_account_id where t.status = 'assisted_pending'`; podsetnik stiže sa fazom 11.
 - **LinkedIn veze ističu**: token traje 60 dana; bez programskog refresh-a vlasnici dobijaju obaveštenje 7 dana ranije, a posle isteka nalog je `needs_reauth`. Spisak: `select id, name, token_expires_at, refresh_token_enc is not null as ima_refresh from social_accounts where platform = 'linkedin' order by token_expires_at`. Ponovno povezivanje bez ekrana za saglasnost radi dok je korisnik prijavljen na LinkedIn i token još važi.
 - **X**: 402 `credits depleted` znači da su potrošeni krediti Sovinog X naloga: objave se pomeraju za 24 h dok se krediti ne dopune u Developer Console. 403 „duplicate content” je ista objava kao ranija. Odgovori i citati nisu dozvoljeni na self-serve pristupu.
+- **Meta video**: IG kontejner u ERROR nosi podkod (2207026 format, 2207052 preuzimanje, 2207020 istek); posle 10 provera bez kraja target pada sa ASYNC_TIMEOUT. Facebook Reel ide samo za uspravan video 3–90 s, najviše 30 API Reelova po stranici dnevno. Nalozi povezani pre D-089 nemaju `read_insights`: Facebook uvidi im ne stižu dok se ne povežu ponovo.
 - **YouTube**: `quotaExceeded` znači da je potrošena dnevna kvota celog Google projekta (100 uploada; reset u ponoć po pacifičkom vremenu): objave se same pomeraju za 24 h, a trajno rešenje je YouTube audit i zahtev za kvotu (support.google.com/youtube/contact/yt_api_form). `uploadLimitExceeded` je limit jednog kanala. Video zaključan kao privatan posle uploada znači da projekat još nije prošao audit.
 - **TikTok odbija objave**: `unaudited_client_can_only_post_to_private_accounts` (aplikacija nije prošla audit: samo privatni nalozi i „Samo ja”), `url_ownership_unverified` (domen iz `PUBLIC_MEDIA_BASE_URL` nije verifikovan u URL properties), `spam_risk_too_many_posts` (dnevni limit naloga, publisher pomera za 24 h), `privacy_level_option_mismatch` (korisnik je promenio privatnost naloga; bira ponovo u objavi). `fail_reason` iz statusa je u `last_error_message`.
 - **TikTok objava bez linka**: dok moderacija traje `external_post_id` je `publish:{id}`; povlačenje metrika ga zameni pravim ID-jem. Ako ostane danima: `select id, external_post_id from post_targets where platform = 'tiktok' and external_post_id like 'publish:%'`.

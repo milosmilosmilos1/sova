@@ -332,7 +332,7 @@ describe('Meta povezivanje', () => {
     const im = await provider.fetchPostMetrics('ig-post-1', igRef, fbToken)
     expect(im).toMatchObject({ likes: 5, comments: 1, reach: 100 })
     const am = await provider.fetchAccountMetrics(igRef, fbToken, '2026-10-20')
-    expect(am.followers).toBe(101)
+    expect(am).toMatchObject({ followers: 860, reach: 100, impressions: 100, engagement: 102 })
     await provider.deletePost('page-1_901', fbToken)
     expect(metaState.deletes).toContain('page-1_901')
     expect(await provider.findExistingPost(text, fbRef, fbToken)).toBeNull()

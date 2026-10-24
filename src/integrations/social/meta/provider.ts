@@ -10,6 +10,7 @@ import type {
   Capabilities,
   ExternalAccount,
   HistoricalPost,
+  NormalizedMedia,
   NormalizedMetrics,
   NormalizedPost,
   PollHandle,
@@ -38,9 +39,34 @@ export const META_SCOPES = [
   'instagram_content_publish',
   'instagram_manage_insights',
   'instagram_manage_comments',
+  // uvidi stranica i objava (D-089)
+  'read_insights',
 ] as const
 
 const PUBLISH_TASKS = new Set(['CREATE_CONTENT', 'MANAGE'])
+const VIDEO_MIME = new Set(['video/mp4', 'video/quicktime'])
+const IG_REEL_MIN_MS = 3_000
+const IG_REEL_MAX_MS = 15 * 60_000
+const IG_REEL_MAX_BYTES = 300 * 1024 * 1024
+// video u karuselu: tekuća dokumentacija ne navodi ograničenja, važe ranija (60 s, 100 MB)
+const IG_CAROUSEL_VIDEO_MAX_MS = 60_000
+const IG_CAROUSEL_VIDEO_MAX_BYTES = 100 * 1024 * 1024
+const FB_VIDEO_MAX_MS = 20 * 60_000
+const FB_VIDEO_MAX_BYTES = 1024 ** 3
+
+const isVideo = (m: NormalizedMedia) => m.mimeType.startsWith('video/')
+
+/** Facebook Reel: uspravan video (9:16, bar 540×960) od 3 do 90 s; ostalo ide kao običan video (D-089). */
+export function isFacebookReel(m: NormalizedMedia): boolean {
+  if (!m.width || !m.height || !m.durationMs) return false
+  return (
+    m.width / m.height <= 0.6 &&
+    m.width >= 540 &&
+    m.height >= 960 &&
+    m.durationMs >= 3_000 &&
+    m.durationMs <= 90_000
+  )
+}
 
 export interface MetaProviderOptions {
   fetchImpl?: typeof fetch
@@ -69,6 +95,27 @@ interface PageNode {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
+/** `status` IG kontejnera u stanju ERROR nosi podkod greške; korisnik dobija razumljiv razlog. */
+export function igStatusMessage(status: string | undefined): string {
+  const s = status ?? ''
+  if (s.includes('2207026'))
+    return 'Instagram ne prihvata format videa. Sačuvajte ga kao MP4 (H.264) pa pokušajte ponovo.'
+  if (s.includes('2207052') || s.includes('9004'))
+    return 'Instagram nije uspeo da preuzme medij. Pokušajte ponovo.'
+  if (s.includes('2207020')) return 'Medij je istekao pre objave. Pokušajte ponovo.'
+  if (s.includes('2207053'))
+    return 'Instagram nije uspeo da obradi video. Pokušajte ponovo ili sačuvajte video kao MP4.'
+  return s ? `Instagram je odbio medij (${s}).` : 'Instagram je odbio medij.'
+}
+
+/** Sačuvano telo zahteva (JSON) → parametri Graph poziva. */
+function graphParams(body: Record<string, Json>): Record<string, string | number | boolean> {
+  const out: Record<string, string | number | boolean> = {}
+  for (const [k, v] of Object.entries(body))
+    if (typeof v === 'string' || typeof v === 'number' || typeof v === 'boolean') out[k] = v
+  return out
+}
+
 export class MetaProvider implements SocialProvider {
   readonly platforms = ['facebook', 'instagram'] as const
   private readonly fetchImpl: typeof fetch | undefined
@@ -81,8 +128,8 @@ export class MetaProvider implements SocialProvider {
     this.pollAttempts = options.pollAttempts ?? 10
   }
 
-  private client(token: string | null): GraphClient {
-    return new GraphClient(token, { version: env.META_GRAPH_VERSION, fetchImpl: this.fetchImpl })
+  private client(token: string | null, host?: string): GraphClient {
+    return new GraphClient(token, { version: env.META_GRAPH_VERSION, fetchImpl: this.fetchImpl, host })
   }
 
   static isConfigured(): boolean {
@@ -221,8 +268,8 @@ export class MetaProvider implements SocialProvider {
     return {
       image: true,
       carousel: true,
-      video: false,
-      reels: false,
+      video: true,
+      reels: true,
       stories: false,
       link: true,
       text: true,
@@ -236,8 +283,8 @@ export class MetaProvider implements SocialProvider {
     return {
       image: true,
       carousel: true,
-      video: false,
-      reels: false,
+      video: true,
+      reels: true,
       stories: false,
       link: false,
       text: false,
@@ -262,12 +309,10 @@ export class MetaProvider implements SocialProvider {
     const text = validateText(platform, input.text)
     const problems = [...text.problems]
     if (input.media.length > c.imageMaxPerPost)
-      problems.push(`${c.label} dozvoljava najviše ${c.imageMaxPerPost} slika po objavi.`)
+      problems.push(`${c.label} dozvoljava najviše ${c.imageMaxPerPost} slika ili videa po objavi.`)
+    problems.push(...this.videoProblems(platform, input.media))
     for (const m of input.media) {
-      if (m.mimeType.startsWith('video/')) {
-        problems.push(`Video na ${c.label} Sova još ne objavljuje; uklonite video za ovaj nalog.`)
-        continue
-      }
+      if (isVideo(m)) continue
       if (!c.imageMime.includes(m.mimeType))
         problems.push(
           `${c.label} prihvata ${c.imageMime.map((x) => x.split('/')[1]!.toUpperCase()).join(', ')}; „${m.mimeType}” nije podržan.`,
@@ -282,15 +327,51 @@ export class MetaProvider implements SocialProvider {
       }
     }
     if (platform === 'instagram' && input.media.length === 0)
-      problems.push('Instagram objava mora imati bar jednu sliku.')
+      problems.push('Instagram objava mora imati bar jednu sliku ili video.')
     if (platform === 'instagram' && input.link)
       problems.push('Instagram ne podržava klikabilan link u objavi; link ide u bio ili prvi komentar.')
     return { ok: problems.length === 0, problems }
   }
 
+  /** Jedan video na Facebook-u (Reel ili običan), Reel ili video u karuselu na Instagramu (D-089). */
+  private videoProblems(platform: string, media: NormalizedMedia[]): string[] {
+    const videos = media.filter(isVideo)
+    if (!videos.length) return []
+    const problems: string[] = []
+    if (videos.some((v) => !VIDEO_MIME.has(v.mimeType)))
+      problems.push('Meta prihvata video u formatu MP4 ili MOV.')
+    if (platform === 'facebook') {
+      const v = videos[0]!
+      if (videos.length > 1) problems.push('Facebook objava može imati jedan video.')
+      if (media.length > videos.length) problems.push('Facebook ne meša slike i video u istoj objavi.')
+      if (v.durationMs && v.durationMs > FB_VIDEO_MAX_MS)
+        problems.push('Video na Facebook-u može trajati najviše 20 minuta.')
+      if (v.sizeBytes && v.sizeBytes > FB_VIDEO_MAX_BYTES)
+        problems.push('Video na Facebook-u može imati najviše 1 GB.')
+      return problems
+    }
+    if (media.length === 1) {
+      const v = videos[0]!
+      if (v.durationMs && (v.durationMs < IG_REEL_MIN_MS || v.durationMs > IG_REEL_MAX_MS))
+        problems.push('Instagram Reel traje od 3 sekunde do 15 minuta.')
+      if (v.sizeBytes && v.sizeBytes > IG_REEL_MAX_BYTES)
+        problems.push('Instagram Reel može imati najviše 300 MB.')
+      return problems
+    }
+    if (videos.some((v) => v.durationMs && v.durationMs > IG_CAROUSEL_VIDEO_MAX_MS))
+      problems.push('Video u Instagram karuselu može trajati najviše 60 sekundi.')
+    if (videos.some((v) => v.sizeBytes && v.sizeBytes > IG_CAROUSEL_VIDEO_MAX_BYTES))
+      problems.push('Video u Instagram karuselu može imati najviše 100 MB.')
+    return problems
+  }
+
   async publish(input: NormalizedPost, account: AccountRef, accessToken: string): Promise<PublishResult> {
     const g = this.client(accessToken)
-    if (account.platform === 'facebook') return this.publishFacebook(g, input, account)
+    if (account.platform === 'facebook') {
+      const video = input.media.find(isVideo)
+      if (video) return this.publishFacebookVideo(input, account, accessToken, video)
+      return this.publishFacebook(g, input, account)
+    }
     return this.publishInstagram(g, input, account)
   }
 
@@ -331,14 +412,168 @@ export class MetaProvider implements SocialProvider {
       const r = await g.post<{ id: string }>(`${page}/feed`, params)
       postId = r.id
     }
-    if (input.firstComment) {
-      try {
-        await g.post(`${postId}/comments`, { message: input.firstComment })
-      } catch (error) {
-        logger.warn('meta_first_comment_failed', { postId, error })
+    if (input.firstComment) await this.comment(g, postId, input.firstComment)
+    return { externalId: postId, permalink: `https://www.facebook.com/${postId}`, pending: null }
+  }
+
+  /**
+   * Facebook video (D-089): Reel kroz `video_reels` (bajtovi idu na rupload, pa ne zavisi od robots.txt
+   * skladišta), ostalo kroz `/videos` sa `file_url`. Objava se završava kad Facebook obradi video.
+   */
+  private async publishFacebookVideo(
+    input: NormalizedPost,
+    account: AccountRef,
+    accessToken: string,
+    video: NormalizedMedia,
+  ): Promise<PublishResult> {
+    const page = account.externalId
+    const g = this.client(accessToken)
+    const firstComment = input.firstComment?.trim() || null
+    const text =
+      input.link && !input.text.includes(input.link) ? `${input.text}\n\n${input.link}` : input.text
+    if (isFacebookReel(video)) {
+      const start = await g.post<{ video_id: string }>(`${page}/video_reels`, { upload_phase: 'start' })
+      await this.rupload(start.video_id, await this.download(video), accessToken)
+      await g.post(`${page}/video_reels`, {
+        upload_phase: 'finish',
+        video_id: start.video_id,
+        video_state: 'PUBLISHED',
+        description: text,
+      })
+      return {
+        externalId: null,
+        permalink: null,
+        pending: {
+          kind: 'fb_video',
+          videoId: start.video_id,
+          reel: true,
+          firstComment,
+          accountExternalId: page,
+        },
       }
     }
-    return { externalId: postId, permalink: `https://www.facebook.com/${postId}`, pending: null }
+    const r = await this.client(accessToken, 'graph-video.facebook.com').post<{ id: string }>(
+      `${page}/videos`,
+      {
+        // potpisan link skladišta (24 h): javna ruta drži ceo fajl u memoriji i nije za video
+        file_url: video.url,
+        description: text,
+        title: input.title?.slice(0, 255) || undefined,
+      },
+    )
+    return {
+      externalId: null,
+      permalink: null,
+      pending: { kind: 'fb_video', videoId: r.id, reel: false, firstComment, accountExternalId: page },
+    }
+  }
+
+  private async download(media: NormalizedMedia): Promise<Buffer> {
+    let res: Response
+    try {
+      res = await (this.fetchImpl ?? fetch)(media.url, { signal: AbortSignal.timeout(120_000) })
+    } catch (error) {
+      throw new ProviderError('PROVIDER_DOWN', {
+        message: 'Video nije preuzet iz skladišta.',
+        raw: error,
+        retryable: true,
+      })
+    }
+    if (!res.ok)
+      throw new ProviderError('MEDIA_REJECTED', {
+        message: `Skladište je vratilo ${res.status} za video.`,
+        userMessage: 'Video više nije dostupan u biblioteci. Dodajte ga ponovo.',
+      })
+    return Buffer.from(await res.arrayBuffer())
+  }
+
+  /** Upload bajtova Reela u jednom zahtevu (`offset: 0`, `file_size`). */
+  private async rupload(videoId: string, bytes: Buffer, accessToken: string): Promise<void> {
+    let res: Response
+    try {
+      res = await (this.fetchImpl ?? fetch)(
+        `https://rupload.facebook.com/video-upload/${env.META_GRAPH_VERSION}/${videoId}`,
+        {
+          method: 'POST',
+          headers: {
+            authorization: `OAuth ${accessToken}`,
+            offset: '0',
+            file_size: String(bytes.length),
+            'content-type': 'application/octet-stream',
+          },
+          body: new Uint8Array(bytes),
+          signal: AbortSignal.timeout(300_000),
+        },
+      )
+    } catch (error) {
+      throw new ProviderError('PROVIDER_DOWN', {
+        message: 'Upload videa na Facebook je prekinut.',
+        raw: error,
+        retryable: true,
+      })
+    }
+    const body = (await res.json().catch(() => null)) as {
+      success?: boolean
+      debug_info?: { type?: string; message?: string }
+    } | null
+    if (!res.ok || !body?.success)
+      throw new ProviderError('MEDIA_REJECTED', {
+        message: `rupload ${res.status}: ${body?.debug_info?.type ?? ''} ${body?.debug_info?.message ?? ''}`,
+        raw: body,
+        userMessage: 'Facebook nije primio video. Sačuvajte ga kao MP4 (H.264) pa pokušajte ponovo.',
+      })
+  }
+
+  /** Status videa: `video_status` i faze obrade i objave (Reels i običan video isto). */
+  private async facebookVideoStatus(
+    g: GraphClient,
+    handle: Extract<PollHandle, { kind: 'fb_video' }>,
+  ): Promise<PublishStatus> {
+    const v = await g.get<{
+      status?: {
+        video_status?: string
+        processing_phase?: { status?: string; error?: { message?: string } }
+        publishing_phase?: { status?: string; publish_status?: string }
+      }
+    }>(handle.videoId, { fields: 'status' })
+    const s = v.status ?? {}
+    const failed =
+      s.video_status === 'error' ||
+      s.video_status === 'upload_failed' ||
+      s.processing_phase?.status === 'error' ||
+      s.publishing_phase?.status === 'error' ||
+      s.publishing_phase?.publish_status === 'error'
+    if (failed) {
+      const reason = s.processing_phase?.error?.message
+      return {
+        state: 'failed',
+        message: `Facebook nije obradio video${reason ? ` (${reason})` : ''}. Sačuvajte ga kao MP4 (H.264) pa pokušajte ponovo.`,
+        retryable: false,
+      }
+    }
+    if (s.video_status === 'expired')
+      return { state: 'failed', message: 'Facebook upload je istekao. Pokušajte ponovo.', retryable: true }
+    const publishing = s.publishing_phase?.status ?? 'complete'
+    const done =
+      s.publishing_phase?.publish_status === 'published' ||
+      (s.video_status === 'ready' && (publishing === 'complete' || publishing === 'completed'))
+    if (!done) return { state: 'pending' }
+    let permalink = handle.reel
+      ? `https://www.facebook.com/reel/${handle.videoId}`
+      : `https://www.facebook.com/${handle.accountExternalId}/videos/${handle.videoId}`
+    if (!handle.reel) {
+      try {
+        const p = await g.get<{ permalink_url?: string }>(handle.videoId, { fields: 'permalink_url' })
+        if (p.permalink_url)
+          permalink = p.permalink_url.startsWith('http')
+            ? p.permalink_url
+            : `https://www.facebook.com${p.permalink_url}`
+      } catch {
+        // ostaje sastavljen link
+      }
+    }
+    if (handle.firstComment) await this.comment(g, handle.videoId, handle.firstComment)
+    return { state: 'published', externalId: handle.videoId, permalink }
   }
 
   private async waitForContainer(
@@ -375,75 +610,90 @@ export class MetaProvider implements SocialProvider {
     const ig = account.externalId
     if (input.media.length === 0)
       throw new ProviderError('CONTENT_REJECTED', { userMessage: 'Instagram objava mora imati sliku.' })
-    let creationId: string
+    const firstComment = input.firstComment?.trim() || null
+    const aiFlag = input.isAiGenerated ? true : undefined
     if (input.media.length === 1) {
       const m = input.media[0]!
+      if (isVideo(m)) {
+        // Reel se obrađuje i do nekoliko minuta, pa se objava završava kroz proveru statusa
+        const r = await g.post<{ id: string }>(`${ig}/media`, {
+          media_type: 'REELS',
+          video_url: m.url,
+          caption: input.text,
+          share_to_feed: true,
+          is_ai_generated: aiFlag,
+        })
+        return {
+          externalId: null,
+          permalink: null,
+          pending: { kind: 'ig_container', containerId: r.id, accountExternalId: ig, firstComment },
+        }
+      }
       const r = await g.post<{ id: string }>(`${ig}/media`, {
         image_url: m.url,
         caption: input.text,
         alt_text: m.alt ?? undefined,
-        is_ai_generated: input.isAiGenerated ? true : undefined,
+        is_ai_generated: aiFlag,
       })
-      creationId = r.id
-    } else {
-      const children: string[] = []
-      for (const m of input.media.slice(0, 20)) {
-        const r = await g.post<{ id: string }>(`${ig}/media`, {
-          image_url: m.url,
-          is_carousel_item: true,
-          alt_text: m.alt ?? undefined,
-        })
-        children.push(r.id)
-      }
-      const r = await g.post<{ id: string }>(`${ig}/media`, {
-        media_type: 'CAROUSEL',
-        children: children.join(','),
-        caption: input.text,
-        is_ai_generated: input.isAiGenerated ? true : undefined,
-      })
-      creationId = r.id
+      return this.finishContainer(g, ig, r.id, firstComment)
     }
-    const state = await this.waitForContainer(g, creationId)
+    const children: string[] = []
+    for (const m of input.media.slice(0, 20)) {
+      const r = await g.post<{ id: string }>(
+        `${ig}/media`,
+        isVideo(m)
+          ? { media_type: 'VIDEO', video_url: m.url, is_carousel_item: true }
+          : { image_url: m.url, is_carousel_item: true, alt_text: m.alt ?? undefined },
+      )
+      children.push(r.id)
+    }
+    const carousel: Record<string, string | boolean> = {
+      media_type: 'CAROUSEL',
+      children: children.join(','),
+      caption: input.text,
+      ...(aiFlag ? { is_ai_generated: true } : {}),
+    }
+    // karusel sa videom se pravi tek kad Instagram obradi svaki deo
+    if (input.media.some(isVideo))
+      return {
+        externalId: null,
+        permalink: null,
+        pending: {
+          kind: 'ig_carousel_items',
+          itemIds: children,
+          carousel,
+          firstComment,
+          accountExternalId: ig,
+        },
+      }
+    const r = await g.post<{ id: string }>(`${ig}/media`, carousel)
+    return this.finishContainer(g, ig, r.id, firstComment)
+  }
+
+  /** Kratko čekanje kontejnera; ako obrada traje, objava se završava kroz proveru statusa. */
+  private async finishContainer(
+    g: GraphClient,
+    ig: string,
+    containerId: string,
+    firstComment: string | null,
+  ): Promise<PublishResult> {
+    const state = await this.waitForContainer(g, containerId)
     if (state === 'IN_PROGRESS')
       return {
         externalId: null,
         permalink: null,
-        pending: { kind: 'ig_container', containerId: creationId, accountExternalId: ig },
+        pending: { kind: 'ig_container', containerId, accountExternalId: ig, firstComment },
       }
-    const published = await g.post<{ id: string }>(`${ig}/media_publish`, { creation_id: creationId })
-    let permalink: string | null = null
-    try {
-      const info = await g.get<{ permalink?: string }>(published.id, { fields: 'permalink' })
-      permalink = info.permalink ?? null
-    } catch {
-      permalink = null
-    }
-    if (input.firstComment) {
-      try {
-        await g.post(`${published.id}/comments`, { message: input.firstComment })
-      } catch (error) {
-        logger.warn('meta_first_comment_failed', { postId: published.id, error })
-      }
-    }
-    return { externalId: published.id, permalink, pending: null }
+    return { ...(await this.publishContainer(g, ig, containerId, firstComment)), pending: null }
   }
 
-  async getPublishStatus(handle: PollHandle, accessToken: string): Promise<PublishStatus> {
-    if (handle.kind !== 'ig_container')
-      throw new ProviderError('NOT_SUPPORTED', { message: `Meta ne obrađuje ručku ${handle.kind}.` })
-    const g = this.client(accessToken)
-    const s = await g.get<{ status_code?: string; status?: string }>(handle.containerId, {
-      fields: 'status_code,status',
-    })
-    const code = s.status_code ?? 'IN_PROGRESS'
-    if (code === 'IN_PROGRESS') return { state: 'pending' }
-    if (code === 'ERROR')
-      return { state: 'failed', message: s.status ?? 'Instagram je odbio medij.', retryable: false }
-    if (code === 'EXPIRED')
-      return { state: 'failed', message: 'Instagram kontejner je istekao.', retryable: true }
-    const published = await g.post<{ id: string }>(`${handle.accountExternalId}/media_publish`, {
-      creation_id: handle.containerId,
-    })
+  private async publishContainer(
+    g: GraphClient,
+    ig: string,
+    containerId: string,
+    firstComment: string | null,
+  ): Promise<{ externalId: string; permalink: string | null }> {
+    const published = await g.post<{ id: string }>(`${ig}/media_publish`, { creation_id: containerId })
     let permalink: string | null = null
     try {
       permalink =
@@ -451,7 +701,57 @@ export class MetaProvider implements SocialProvider {
     } catch {
       permalink = null
     }
-    return { state: 'published', externalId: published.id, permalink }
+    if (firstComment) await this.comment(g, published.id, firstComment)
+    return { externalId: published.id, permalink }
+  }
+
+  /** Prvi komentar: neuspeh se beleži i ne obara objavu. */
+  private async comment(g: GraphClient, objectId: string, message: string): Promise<void> {
+    try {
+      await g.post(`${objectId}/comments`, { message })
+    } catch (error) {
+      logger.warn('meta_first_comment_failed', { postId: objectId, error })
+    }
+  }
+
+  async getPublishStatus(handle: PollHandle, accessToken: string): Promise<PublishStatus> {
+    const g = this.client(accessToken)
+    if (handle.kind === 'ig_container') {
+      const s = await g.get<{ status_code?: string; status?: string }>(handle.containerId, {
+        fields: 'status_code,status',
+      })
+      const code = s.status_code ?? 'IN_PROGRESS'
+      if (code === 'IN_PROGRESS') return { state: 'pending' }
+      if (code === 'ERROR') return { state: 'failed', message: igStatusMessage(s.status), retryable: false }
+      if (code === 'EXPIRED')
+        return { state: 'failed', message: 'Instagram kontejner je istekao.', retryable: true }
+      const done = await this.publishContainer(
+        g,
+        handle.accountExternalId,
+        handle.containerId,
+        handle.firstComment ?? null,
+      )
+      return { state: 'published', ...done }
+    }
+    if (handle.kind === 'ig_carousel_items') {
+      const items = await Promise.all(
+        handle.itemIds.map((id) =>
+          g.get<{ status_code?: string; status?: string }>(id, { fields: 'status_code,status' }),
+        ),
+      )
+      const bad = items.find((s) => s.status_code === 'ERROR' || s.status_code === 'EXPIRED')
+      if (bad) return { state: 'failed', message: igStatusMessage(bad.status), retryable: false }
+      if (items.some((s) => s.status_code !== 'FINISHED')) return { state: 'pending' }
+      const r = await g.post<{ id: string }>(
+        `${handle.accountExternalId}/media`,
+        graphParams(handle.carousel),
+      )
+      const result = await this.finishContainer(g, handle.accountExternalId, r.id, handle.firstComment)
+      if (result.pending) return { state: 'pending', next: result.pending }
+      return { state: 'published', externalId: result.externalId!, permalink: result.permalink }
+    }
+    if (handle.kind === 'fb_video') return this.facebookVideoStatus(g, handle)
+    throw new ProviderError('NOT_SUPPORTED', { message: `Meta ne obrađuje ručku ${handle.kind}.` })
   }
 
   /** Posle pada bez ID-ja: traži skorašnju objavu sa istim tekstom (Meta nema idempotency ključ). */
@@ -612,6 +912,8 @@ export class MetaProvider implements SocialProvider {
       }
     }
     if (account.platform === 'facebook') {
+      // ID objave je `{stranica}_{objava}`; video i Reel imaju samo broj (D-089)
+      if (!externalId.includes('_')) return this.facebookVideoMetrics(g, externalId)
       const basic = await g.get<{
         shares?: { count?: number }
         likes?: { summary?: { total_count?: number } }
@@ -623,26 +925,27 @@ export class MetaProvider implements SocialProvider {
       values.comments = basic.comments?.summary?.total_count ?? 0
       values.shares = basic.shares?.count ?? 0
       try {
-        await readInsights('post_impressions,post_impressions_unique,post_clicks,post_engaged_users')
+        // post_impressions* su ugašeni (zamena: post_media_view i post_total_media_view_unique), post_engaged_users više ne postoji
+        await readInsights('post_media_view,post_total_media_view_unique,post_clicks')
       } catch (error) {
         logger.warn('meta_post_insights_failed', { externalId, error })
       }
       return {
-        impressions: values.post_impressions ?? null,
-        reach: values.post_impressions_unique ?? null,
+        impressions: values.post_media_view ?? null,
+        reach: values.post_total_media_view_unique ?? null,
         likes: values.likes ?? null,
         comments: values.comments ?? null,
         shares: values.shares ?? null,
         saves: null,
         clicks: values.post_clicks ?? null,
-        engagement:
-          values.post_engaged_users ?? (values.likes ?? 0) + (values.comments ?? 0) + (values.shares ?? 0),
+        engagement: (values.likes ?? 0) + (values.comments ?? 0) + (values.shares ?? 0),
         raw,
       }
     }
-    const basic = await g.get<{ like_count?: number; comments_count?: number }>(externalId, {
-      fields: 'like_count,comments_count',
-    })
+    const basic = await g.get<{ like_count?: number; comments_count?: number; media_product_type?: string }>(
+      externalId,
+      { fields: 'like_count,comments_count,media_product_type' },
+    )
     values.likes = basic.like_count ?? 0
     values.comments = basic.comments_count ?? 0
     try {
@@ -659,6 +962,59 @@ export class MetaProvider implements SocialProvider {
       saves: values.saved ?? null,
       clicks: null,
       engagement: values.total_interactions ?? values.likes + values.comments,
+      videoViews: basic.media_product_type === 'REELS' ? (values.views ?? null) : null,
+      raw,
+    }
+  }
+
+  /** Facebook video i Reel: lajkovi i komentari sa videa, pregledi iz `video_insights` (Reel ili video). */
+  private async facebookVideoMetrics(g: GraphClient, videoId: string): Promise<NormalizedMetrics> {
+    const raw: Record<string, Json> = {}
+    let likes: number | null = null
+    let comments: number | null = null
+    try {
+      const basic = await g.get<{
+        likes?: { summary?: { total_count?: number } }
+        comments?: { summary?: { total_count?: number } }
+      }>(videoId, { fields: 'likes.summary(true),comments.summary(true)' })
+      likes = basic.likes?.summary?.total_count ?? 0
+      comments = basic.comments?.summary?.total_count ?? 0
+    } catch (error) {
+      logger.warn('meta_video_basic_failed', { videoId, error })
+    }
+    const read = async (metrics: string): Promise<Record<string, number>> => {
+      const r = await g.get<{ data?: Array<{ name: string; values?: Array<{ value?: number }> }> }>(
+        `${videoId}/video_insights`,
+        { metric: metrics, period: 'lifetime' },
+      )
+      const out: Record<string, number> = {}
+      for (const d of r.data ?? []) {
+        const v = d.values?.[0]?.value
+        if (typeof v === 'number') out[d.name] = v
+        raw[d.name] = v ?? null
+      }
+      return out
+    }
+    let v: Record<string, number> = {}
+    try {
+      v = await read('blue_reels_play_count,fb_reels_total_plays,post_video_avg_time_watched')
+    } catch {
+      try {
+        v = await read('total_video_views,total_video_impressions,total_video_impressions_unique')
+      } catch (error) {
+        logger.warn('meta_video_insights_failed', { videoId, error })
+      }
+    }
+    return {
+      impressions: v.total_video_impressions ?? null,
+      reach: v.total_video_impressions_unique ?? null,
+      likes,
+      comments,
+      shares: null,
+      saves: null,
+      clicks: null,
+      engagement: likes === null && comments === null ? null : (likes ?? 0) + (comments ?? 0),
+      videoViews: v.blue_reels_play_count ?? v.total_video_views ?? null,
       raw,
     }
   }
@@ -669,50 +1025,53 @@ export class MetaProvider implements SocialProvider {
     const values: Record<string, number> = {}
     const since = Math.floor(new Date(`${date}T00:00:00Z`).getTime() / 1000)
     const until = since + 86_400
-    const metrics =
-      account.platform === 'facebook'
-        ? 'page_impressions_unique,page_post_engagements,page_fans'
-        : 'reach,follower_count,profile_views'
-    try {
-      const r = await g.get<{ data?: Array<{ name: string; values?: Array<{ value?: number }> }> }>(
-        `${account.externalId}/insights`,
-        { metric: metrics, period: 'day', since, until },
-      )
-      for (const d of r.data ?? []) {
-        const v = d.values?.[d.values.length - 1]?.value
-        if (typeof v === 'number') values[d.name] = v
-        raw[d.name] = (v as Json) ?? null
-      }
-    } catch (error) {
-      logger.warn('meta_account_insights_failed', { account: account.externalId, error })
-    }
-    if (account.platform === 'instagram' && values.follower_count === undefined) {
+    // vrednost za dan: `values` (time_series) ili `total_value` (metrike koje drugo ne podržavaju)
+    const read = async (metric: string, metricType?: 'total_value' | 'time_series') => {
       try {
-        const r = await g.get<{ followers_count?: number }>(account.externalId, { fields: 'followers_count' })
-        if (typeof r.followers_count === 'number') values.follower_count = r.followers_count
-      } catch {
-        // nije kritično
+        const r = await g.get<{
+          data?: Array<{ name: string; values?: Array<{ value?: number }>; total_value?: { value?: number } }>
+        }>(`${account.externalId}/insights`, { metric, period: 'day', since, until, metric_type: metricType })
+        for (const d of r.data ?? []) {
+          const v = d.total_value?.value ?? d.values?.[d.values.length - 1]?.value
+          if (typeof v === 'number') values[d.name] = v
+          raw[d.name] = v ?? null
+        }
+      } catch (error) {
+        logger.warn('meta_account_insights_failed', { account: account.externalId, metric, error })
       }
     }
-    return account.platform === 'facebook'
-      ? {
-          date,
-          followers: values.page_fans ?? null,
-          reach: values.page_impressions_unique ?? null,
-          impressions: null,
-          engagement: values.page_post_engagements ?? null,
-          profileViews: null,
-          raw,
-        }
-      : {
-          date,
-          followers: values.follower_count ?? null,
-          reach: values.reach ?? null,
-          impressions: null,
-          engagement: null,
-          profileViews: values.profile_views ?? null,
-          raw,
-        }
+    if (account.platform === 'facebook') {
+      // page_impressions_unique i page_fans su ugašeni; zamene su page_total_media_view_unique i page_follows
+      await read('page_total_media_view_unique,page_media_view,page_post_engagements,page_follows')
+      return {
+        date,
+        followers: values.page_follows ?? null,
+        reach: values.page_total_media_view_unique ?? null,
+        impressions: values.page_media_view ?? null,
+        engagement: values.page_post_engagements ?? null,
+        profileViews: null,
+        raw,
+      }
+    }
+    // Instagram: reach je time_series, ostale dnevne metrike samo total_value; profile_views više ne postoji
+    await read('reach', 'time_series')
+    await read('views,accounts_engaged,total_interactions', 'total_value')
+    let followers: number | null = null
+    try {
+      const r = await g.get<{ followers_count?: number }>(account.externalId, { fields: 'followers_count' })
+      if (typeof r.followers_count === 'number') followers = r.followers_count
+    } catch {
+      // nije kritično
+    }
+    return {
+      date,
+      followers,
+      reach: values.reach ?? null,
+      impressions: values.views ?? null,
+      engagement: values.total_interactions ?? null,
+      profileViews: null,
+      raw,
+    }
   }
 
   async revoke(tokens: TokenSet, externalUserId: string | null): Promise<void> {

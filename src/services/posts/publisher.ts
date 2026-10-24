@@ -846,7 +846,9 @@ async function attemptOnce(
 }
 
 type PollResult =
-  { kind: 'success'; externalId: string | null } | { kind: 'pending' } | { kind: 'failed'; message: string }
+  | { kind: 'success'; externalId: string | null }
+  | { kind: 'pending'; handle?: PollHandle }
+  | { kind: 'failed'; message: string }
 
 async function pollOnce(
   job: PublishJob,
@@ -879,7 +881,7 @@ async function pollOnce(
         await failTarget(b, attemptNo, startedAt, failure, runId)
         return { kind: 'failed', message: failure.message }
       }
-      return { kind: 'pending' }
+      return { kind: 'pending', handle: status.next }
     }
     if (status.state === 'failed') {
       await settleCharge(charge, 'release', 'MEDIA_REJECTED')
@@ -988,12 +990,18 @@ export async function runPublishTarget(job: PublishJob, ctx: PublishContext): Pr
       return report('published', null, r.externalId, attemptNo)
     }
     // pending: asinhrona mreža (IG kontejner, TikTok, YouTube obrada, Pinterest i X video)
+    let handle = r.handle
     for (let pollNo = 1; pollNo <= ASYNC_POLL_MAX; pollNo++) {
       await ctx.sleep(`poll-wait-${attemptNo}-${pollNo}`, ASYNC_POLL_INTERVAL_MS)
+      const current = handle
       const p = await ctx.run(`poll-${attemptNo}-${pollNo}`, () =>
-        pollOnce(job, r.handle, attemptNo, pollNo, ctx.runId, r.charge),
+        pollOnce(job, current, attemptNo, pollNo, ctx.runId, r.charge),
       )
-      if (p.kind === 'pending') continue
+      if (p.kind === 'pending') {
+        // sledeća faza obrade (npr. IG karusel posle obrade delova) zamenjuje ručku
+        if (p.handle) handle = p.handle
+        continue
+      }
       if (p.kind === 'failed') return report('failed', p.message, null, attemptNo)
       await ctx.sendEvent('published', {
         kind: 'published',

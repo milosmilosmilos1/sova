@@ -28,7 +28,10 @@ const PERMISSION_CODES = new Set([
 ])
 const MEDIA_CODES = new Set([
   9004, 9005, 36000, 36001, 36003, 36004, 2207003, 2207004, 2207005, 2207006, 2207008, 2207009, 2207010,
-  2207026, 2207032, 2207051, 2207052, 2207053, 2207057,
+  2207020, 2207026, 2207032, 2207051, 2207052, 2207053, 2207057,
+  // Facebook video: premali fajl, file_url nedostupan, problem sa fajlom; Reels: odnos, rezolucija, trajanje, fps
+  382,
+  389, 6000, 1363040, 1363127, 1363128, 1363129,
 ])
 
 export function mapGraphError(status: number, body: GraphErrorBody | null): ProviderError {
@@ -55,7 +58,8 @@ export function mapGraphError(status: number, body: GraphErrorBody | null): Prov
   if (MEDIA_CODES.has(code) || MEDIA_CODES.has(sub)) return mk('MEDIA_REJECTED', false, e?.error_user_msg)
   if (PERMISSION_CODES.has(code)) return mk('PERMISSION_LOST', false)
   if (code === 100 || code === 1500) return mk('CONTENT_REJECTED', false, e?.error_user_msg)
-  if (code === 1 || code === 2 || e?.is_transient || status >= 500) return mk('PROVIDER_DOWN', true)
+  if (code === 1 || code === 2 || code === 6001 || e?.is_transient || status >= 500)
+    return mk('PROVIDER_DOWN', true)
   if (status === 429) return mk('RATE_LIMITED', true)
   return mk('UNKNOWN', false)
 }
@@ -64,6 +68,8 @@ export interface GraphClientOptions {
   version: string
   fetchImpl?: typeof fetch
   timeoutMs?: number
+  /** `graph-video.facebook.com` za video na stranici */
+  host?: string
 }
 
 export class GraphClient {
@@ -75,7 +81,7 @@ export class GraphClient {
     private readonly accessToken: string | null,
     options: GraphClientOptions,
   ) {
-    this.base = `https://graph.facebook.com/${options.version}`
+    this.base = `https://${options.host ?? 'graph.facebook.com'}/${options.version}`
     this.fetchImpl = options.fetchImpl ?? fetch
     this.timeoutMs = options.timeoutMs ?? 20_000
   }

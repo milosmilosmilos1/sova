@@ -78,7 +78,23 @@ export interface ValidationResult {
 }
 
 export type PollHandle =
-  | { kind: 'ig_container'; containerId: string; accountExternalId: string }
+  | { kind: 'ig_container'; containerId: string; accountExternalId: string; firstComment?: string | null }
+  /** IG karusel sa videom: delovi se obrađuju pre nego što se napravi karusel */
+  | {
+      kind: 'ig_carousel_items'
+      itemIds: string[]
+      carousel: Record<string, Json>
+      firstComment: string | null
+      accountExternalId: string
+    }
+  /** Facebook video ili Reel: čeka se da Facebook obradi i objavi video */
+  | {
+      kind: 'fb_video'
+      videoId: string
+      reel: boolean
+      firstComment: string | null
+      accountExternalId: string
+    }
   | {
       kind: 'tiktok_publish'
       publishId: string
@@ -118,6 +134,10 @@ export function pollHandleId(handle: PollHandle): string {
       return handle.videoId
     case 'linkedin_video':
       return handle.videoUrn
+    case 'ig_carousel_items':
+      return handle.itemIds.join(',')
+    case 'fb_video':
+      return handle.videoId
     case 'pinterest_media':
     case 'x_media':
       return handle.mediaId
@@ -131,7 +151,8 @@ export interface PublishResult {
 }
 
 export type PublishStatus =
-  | { state: 'pending' }
+  /** `next`: sledeća faza obrade (npr. karusel posle obrade delova) */
+  | { state: 'pending'; next?: PollHandle }
   | { state: 'published'; externalId: string; permalink: string | null }
   | { state: 'failed'; message: string; retryable: boolean }
 

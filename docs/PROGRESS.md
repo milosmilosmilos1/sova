@@ -13,7 +13,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 | 5 Token engine i AI jezgro              | gotovo      | tokeni, idempotentnost, Gemini sloj, Studio; Gemini ključ proveren 24.10.2026 (tekst, slika, embedding; D-088)                                                                                           |
 | 6 Brand Brain                           | gotovo      | crawler + profil + RAG + nedeljna provera; živi smoke nad tangerineseo.rs prošao; bez ključa radi heuristički                                                                                            |
 | 7 Vizuelni pipeline                     | gotovo      | Unsplash + vision rangiranje, 4 šablona (Satori), Canva Connect (PKCE, dizajn, export); čeka: UNSPLASH_ACCESS_KEY, Canva app                                                                             |
-| 8a Facebook + Instagram                 | gotovo      | OAuth, izbor naloga, tokeni, uvoz istorije, osvežavanje, webhook-ovi, provider za objave; čeka: Meta app i App Review                                                                                    |
+| 8a Facebook + Instagram                 | gotovo      | OAuth, izbor naloga, tokeni, uvoz istorije, osvežavanje, webhook-ovi, provider za objave, Reels i video (D-089); čeka: Meta app i App Review                                                             |
 | 8b LinkedIn i TikTok                    | gotovo      | LinkedIn profil i stranice, video i prvi komentar (D-087), TikTok foto (video spreman u provideru), panel u editoru, osvežavanje tokena; čeka: app-ovi i odobrenja (INTEGRATIONS 14)                     |
 | 8c–8d Ostale mreže                      | gotovo      | direktno otpremanje i video (D-082), zajednički tok (D-083), Google poslovni profil i YouTube Shorts (D-084), Pinterest (D-085), X (D-086); čeka: app-ovi, ključevi i odobrenja iz INTEGRATIONS 14       |
 | 9a Objave, odobravanje, kalendar        | gotovo      | state machine, composer backend, verzije, javni link, komentari, kalendar, red objava; UI /app/posts, /app/calendar, /approve                                                                            |
@@ -97,6 +97,13 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Provereno 24.10.2026 u Chromium-u: početna, Inbox, Objave, detalj objave, Kalendar, Strategija, Analitika, Autopilot, Obaveštenja, Mreže i Podešavanja rade bez grešaka u konzoli i API odgovorima. Usput ispravljeno: legenda kalendara je prikazivala interne nazive statusa, horizonti snimaka u analitici nisu bili poređani, editor nije prikazivao zašto je Autopilot vratio nacrt (sada prikazuje, a izveštaj se briše čim se tekst promeni).
 - Provereno 24.10.2026 u Chromium-u (faza 11b): nacrt editora (čuvanje, traka posle osvežavanja, vraćanje, brisanje posle čuvanja), termin se vraća isti posle čuvanja, forma zone brenda sa ponudom zadržavanja lokalnog vremena; bez grešaka u konzoli.
 - Provereno 24.10.2026 u Chromium-u (faza 13): svih sedam admin strana, „Gledaj kao” za demo nalog (traka, izmena u read-only režimu dobija 403 sa objašnjenjem, „Izađi” vraća na detalj korisnika), `/admin/users` na 390 px bez horizontalnog skrola. Usput ispravljeno: stara provera u `requireMembership` je tokom read-only pregleda rušila svaku stranu aplikacije.
+
+## Meta video i nove metrike — šta je urađeno
+
+- **Instagram Reels i video u karuselu** (D-089): Reel kroz proveru statusa, karusel sa videom se pravi tek kad Instagram obradi delove (provera statusa sada može da pređe u sledeću fazu), prvi komentar i posle odložene objave, razumljive poruke za podkodove grešaka.
+- **Facebook Reels i video**: uspravan kratak video ide kao Reel (bajtovi na rupload), ostalo kao video kroz `file_url`; objava kad Facebook obradi video; link Reela ili videa.
+- **Metrike posle gašenja starih**: Facebook objava, stranica i video, Instagram nalog i Reel sa novim nazivima; mock sada odbija ugašene metrike kao pravi Graph API. Dodata dozvola `read_insights`.
+- **Testovi**: 8 integracionih (`api.meta-video`), 3 unit.
 
 ## LinkedIn video, prvi komentar i Gemini ključ — šta je urađeno
 

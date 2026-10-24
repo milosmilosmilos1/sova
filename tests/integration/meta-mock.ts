@@ -3,6 +3,8 @@ import { http, HttpResponse } from 'msw'
 /**
  * MSW mock Meta Graph API-ja (v26.0) za fazu 8a: OAuth razmena, /me, /me/accounts sa stranicama i
  * Instagram nalozima, istorija objava, objavljivanje (feed, photos, IG kontejner), insights, permissions.
+ * Video (D-089): IG Reels i video u karuselu, Facebook Reels (video_reels + rupload) i video (/videos),
+ * status obrade, video_insights; ugašene metrike vraćaju grešku kao pravi Graph API.
  */
 export const metaState = {
   tokenExchanges: [] as Record<string, string>[],
@@ -19,6 +21,21 @@ export const metaState = {
   mediaRejected: false,
   /** ID-jevi objava koje mreža više ne zna (code 100 / subcode 33) */
   goneIds: [] as string[],
+  containers: {} as Record<string, Record<string, string>>,
+  containerPolls: {} as Record<string, number>,
+  /** koliko prvih provera video kontejner (REELS ili VIDEO) vraća IN_PROGRESS */
+  videoProcessingPolls: 0,
+  videoFinalStatus: 'FINISHED' as 'FINISHED' | 'ERROR',
+  fbVideos: {} as Record<string, { reel: boolean; polls: number }>,
+  fbVideoProcessingPolls: 0,
+  fbVideoFails: false,
+  ruploads: [] as Array<{
+    videoId: string
+    auth: string | null
+    offset: string | null
+    fileSize: string | null
+    size: number
+  }>,
 }
 
 export function resetMetaState(): void {
@@ -33,7 +50,26 @@ export function resetMetaState(): void {
   metaState.feedFailuresLeft = 0
   metaState.mediaRejected = false
   metaState.goneIds = []
+  metaState.containers = {}
+  metaState.containerPolls = {}
+  metaState.videoProcessingPolls = 0
+  metaState.videoFinalStatus = 'FINISHED'
+  metaState.fbVideos = {}
+  metaState.fbVideoProcessingPolls = 0
+  metaState.fbVideoFails = false
+  metaState.ruploads = []
 }
+
+// ugašene metrike (Page Insights 15.6.2025 i 15.11.2025, IG impressions i profile_views): Graph vraća #100
+const DEPRECATED_METRICS = new Set([
+  'post_impressions',
+  'post_impressions_unique',
+  'post_engaged_users',
+  'page_impressions_unique',
+  'page_fans',
+  'impressions',
+  'profile_views',
+])
 
 const G = 'https://graph.facebook.com/:version'
 const err = (code: number, message: string, status = 400, sub?: number) =>
@@ -172,22 +208,123 @@ export const metaHandlers = [
     metaState.publishes.push({ path: 'ig-1/media', body })
     if (metaState.mediaRejected || body.image_url?.includes('bad-image'))
       return err(9004, 'Only photo or video can be accepted as media type.')
-    return HttpResponse.json({ id: `container-${metaState.publishes.length}` })
+    const id = `container-${metaState.publishes.length}`
+    metaState.containers[id] = body
+    return HttpResponse.json({ id })
+  }),
+  // Facebook Reel: start → rupload → finish
+  http.post(`${G}/:page/video_reels`, async ({ request, params }) => {
+    const body = Object.fromEntries(new URLSearchParams(await request.text()))
+    metaState.publishes.push({ path: `${String(params.page)}/video_reels`, body })
+    if (body.upload_phase === 'start') {
+      const id = `reel-${metaState.publishes.length}`
+      metaState.fbVideos[id] = { reel: true, polls: 0 }
+      return HttpResponse.json({
+        video_id: id,
+        upload_url: `https://rupload.facebook.com/video-upload/v26.0/${id}`,
+      })
+    }
+    return HttpResponse.json({ success: true })
+  }),
+  http.post('https://rupload.facebook.com/video-upload/:version/:videoId', async ({ request, params }) => {
+    const buf = await request.arrayBuffer()
+    metaState.ruploads.push({
+      videoId: String(params.videoId),
+      auth: request.headers.get('authorization'),
+      offset: request.headers.get('offset'),
+      fileSize: request.headers.get('file_size'),
+      size: buf.byteLength,
+    })
+    return HttpResponse.json({ success: true })
+  }),
+  http.post('https://graph-video.facebook.com/:version/:page/videos', async ({ request, params }) => {
+    const body = Object.fromEntries(new URLSearchParams(await request.text()))
+    metaState.publishes.push({ path: `graph-video:${String(params.page)}/videos`, body })
+    const id = `vid-${metaState.publishes.length}`
+    metaState.fbVideos[id] = { reel: false, polls: 0 }
+    return HttpResponse.json({ id })
+  }),
+  http.get(`${G}/:id/video_insights`, ({ request, params }) => {
+    const id = String(params.id)
+    const names = (new URL(request.url).searchParams.get('metric') ?? '').split(',')
+    const reelMetric = names.some((n) => n.includes('reels'))
+    if (id.startsWith('reel-') !== reelMetric)
+      return err(100, '(#100) The value must be a valid insights metric')
+    return HttpResponse.json({
+      data: names.map((name, i) => ({ name, period: 'lifetime', values: [{ value: 300 + i }] })),
+    })
   }),
   http.get(`${G}/:id`, ({ request, params }) => {
     const id = String(params.id)
     if (metaState.goneIds.includes(id))
       return err(100, `Unsupported get request. Object with ID '${id}' does not exist`, 400, 33)
     const fields = new URL(request.url).searchParams.get('fields') ?? ''
-    if (id.startsWith('container-'))
+    if (id.startsWith('container-')) {
+      const body = metaState.containers[id]
+      if (body?.media_type === 'REELS' || body?.media_type === 'VIDEO') {
+        const polls = (metaState.containerPolls[id] = (metaState.containerPolls[id] ?? 0) + 1)
+        if (polls <= metaState.videoProcessingPolls)
+          return HttpResponse.json({ id, status_code: 'IN_PROGRESS', status: 'In Progress' })
+        if (metaState.videoFinalStatus === 'ERROR')
+          return HttpResponse.json({
+            id,
+            status_code: 'ERROR',
+            status: 'Error: Media upload has failed with error code 2207026',
+          })
+        return HttpResponse.json({ id, status_code: 'FINISHED', status: 'Finished: Media has been uploaded' })
+      }
       return HttpResponse.json({
         id,
         status_code: metaState.containerStatus,
         status: metaState.containerStatus,
       })
+    }
+    const video = metaState.fbVideos[id]
+    if (video && fields === 'status') {
+      video.polls++
+      if (metaState.fbVideoFails)
+        return HttpResponse.json({
+          id,
+          status: {
+            video_status: 'error',
+            processing_phase: { status: 'error', error: { message: 'Unsupported video codec' } },
+          },
+        })
+      if (video.polls <= metaState.fbVideoProcessingPolls)
+        return HttpResponse.json({
+          id,
+          status: {
+            video_status: 'processing',
+            processing_phase: { status: 'in_progress' },
+            publishing_phase: { status: 'not_started' },
+          },
+        })
+      return HttpResponse.json({
+        id,
+        status: {
+          video_status: 'ready',
+          processing_phase: { status: 'complete' },
+          publishing_phase: { status: 'complete', publish_status: 'published' },
+        },
+      })
+    }
+    if (fields.includes('permalink_url'))
+      return HttpResponse.json({ id, permalink_url: `/page-1/videos/${id}/` })
     if (fields.includes('permalink'))
       return HttpResponse.json({ id, permalink: `https://www.instagram.com/p/${id}/` })
-    if (fields.includes('like_count')) return HttpResponse.json({ id, like_count: 5, comments_count: 1 })
+    if (fields.includes('like_count'))
+      return HttpResponse.json({
+        id,
+        like_count: 5,
+        comments_count: 1,
+        media_product_type: id.startsWith('ig-reel') ? 'REELS' : 'FEED',
+      })
+    if ((id.startsWith('reel-') || id.startsWith('vid-')) && fields.includes('likes.summary'))
+      return HttpResponse.json({
+        id,
+        likes: { summary: { total_count: 7 } },
+        comments: { summary: { total_count: 2 } },
+      })
     if (fields.includes('shares'))
       return HttpResponse.json({
         id,
@@ -201,7 +338,8 @@ export const metaHandlers = [
   http.post(`${G}/ig-1/media_publish`, async ({ request }) => {
     const body = Object.fromEntries(new URLSearchParams(await request.text()))
     metaState.publishes.push({ path: 'ig-1/media_publish', body })
-    return HttpResponse.json({ id: `ig-post-${metaState.publishes.length}` })
+    const reel = metaState.containers[body.creation_id ?? '']?.media_type === 'REELS'
+    return HttpResponse.json({ id: `${reel ? 'ig-reel' : 'ig-post'}-${metaState.publishes.length}` })
   }),
   http.post(`${G}/:id/comments`, async ({ request, params }) => {
     const body = Object.fromEntries(new URLSearchParams(await request.text()))
@@ -209,17 +347,21 @@ export const metaHandlers = [
     return HttpResponse.json({ id: `comment-${metaState.publishes.length}` })
   }),
   http.get(`${G}/:id/insights`, ({ request, params }) => {
-    const metric = new URL(request.url).searchParams.get('metric') ?? ''
-    const names = metric.split(',')
+    const url = new URL(request.url)
+    const names = (url.searchParams.get('metric') ?? '').split(',')
     const id = String(params.id)
     if (metaState.goneIds.includes(id))
       return err(100, `Unsupported get request. Object with ID '${id}' does not exist`, 400, 33)
+    if (names.some((n) => DEPRECATED_METRICS.has(n)))
+      return err(100, '(#100) The value must be a valid insights metric')
+    const totalValue = url.searchParams.get('metric_type') === 'total_value'
     return HttpResponse.json({
-      data: names.map((name, i) => ({
-        name,
-        period: 'lifetime',
-        values: [{ value: id.startsWith('ig') ? 100 + i : 200 + i }],
-      })),
+      data: names.map((name, i) => {
+        const value = id.startsWith('ig') ? 100 + i : 200 + i
+        return totalValue
+          ? { name, period: 'day', total_value: { value } }
+          : { name, period: 'lifetime', values: [{ value }] }
+      }),
     })
   }),
   http.delete(`${G}/:id`, ({ params }) => {

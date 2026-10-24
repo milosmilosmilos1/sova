@@ -519,3 +519,13 @@ Odluka:
 - Živi testovi (`npm run test:live`, samo ručno, oko 0,2 USD): pravi API mora da prihvati svih šest JSON šema izlaza i odgovor mora da prođe Zod, plus Studio tekst, slika, Brand Brain nad pravim sajtom i strategija. Prvi prolaz 24.10.2026: sve šeme prolaze; profil tangerineseo.rs (30 strana) i strategija su tačni.
 - Upit za tekst objave nosi datum objave, dan u nedelji i godišnje doba u zoni brenda (Studio: danas, Autopilot: planirani dan). Bez toga je model krajem oktobra pisao o letnjim vrućinama.
   Razlog: u Studiju korisnik čeka odgovor, a 3.8 bi uz rok od 30 s i tri pokušaja držao korisnika i do 90 s pre fallback-a.
+
+## D-089 · 24.10.2026 · usvojeno · Meta: Reels i video, metrike posle gašenja starih, dozvola read_insights
+
+Odluka:
+
+- **Instagram**: jedan video ide kao Reel (`media_type=REELS`, `video_url` = potpisan link skladišta, `share_to_feed=true`), uvek kroz proveru statusa (obrada traje). Video u karuselu je dozvoljen i meša se sa slikama (`media_type=VIDEO`, `is_carousel_item`); karusel se pravi tek kad je svaki deo `FINISHED`, pa ručka `ig_carousel_items` prelazi u `ig_container` (provera statusa sada može da vrati sledeću fazu, `next`). Prvi komentar ide i posle odložene objave. Ograničenja: Reel 3 s do 15 min i do 300 MB, video u karuselu do 60 s i 100 MB (tekuća dokumentacija ga ne navodi, važe raniji limiti).
+- **Facebook**: uspravan video 9:16, bar 540×960, od 3 do 90 s ide kao Reel (`video_reels`: start, bajtovi na `rupload.facebook.com` sa `offset` i `file_size`, finish sa `video_state=PUBLISHED`); ostalo kao običan video kroz `graph-video.facebook.com/{page}/videos` sa `file_url`. Objava je gotova kad `GET /{video}?fields=status` kaže `ready` i objavljeno; link Reela `facebook.com/reel/{id}`, običnog videa iz `permalink_url`. Jedan video po objavi, bez slika uz video, do 20 min i 1 GB.
+- **Metrike**: Meta je ugasila `post_impressions*`, `page_impressions_unique`, `page_fans` i `post_engaged_users` (Page Insights, 15.6. i 15.11.2025), kao i IG `impressions` i `profile_views`. Sada: objava `post_media_view`, `post_total_media_view_unique`, `post_clicks`; stranica `page_total_media_view_unique`, `page_media_view`, `page_post_engagements`, `page_follows`; Facebook video i Reel iz `video_insights`; IG nalog `reach` (time_series) i `views`, `accounts_engaged`, `total_interactions` (total_value), pratioci iz `followers_count`; IG Reel puni i preglede videa.
+- **Dozvola `read_insights`** je dodata: uvidi stranica i objava je traže uz `pages_read_engagement`. `publish_video` se ne traži (samo za live video).
+  Razlog: video je najjači format na obe mreže, a stari nazivi metrika na v26 vraćaju grešku za ceo upit, pa Facebook uvidi ne bi stizali uopšte.
