@@ -40,3 +40,46 @@ jobs:
       - run: npm run typecheck
       - run: npm run test -- --coverage.enabled=false
       - run: npm run build
+
+  integration:
+    name: Baza i integracioni testovi (lokalni Supabase)
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      NEXT_TELEMETRY_DISABLED: 1
+      NEXT_PUBLIC_APP_URL: http://localhost:3001
+      # Google prijava je uključena u supabase/config.toml (env(...)); u CI-ju probne vrednosti
+      GOOGLE_CLIENT_ID: test-google-client.apps.googleusercontent.com
+      GOOGLE_CLIENT_SECRET: test-google-secret-0123456789
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+      - run: npm ci
+      - name: Lokalni Supabase (migracije i seed)
+        run: supabase start -x studio,imgproxy,edge-runtime,logflare,vector,supavisor
+      - name: Env iz lokalnog Supabase-a i probne tajne
+        run: |
+          eval "$(supabase status -o env)"
+          token_key="v1:$(openssl rand -base64 32)"
+          cron_secret="$(openssl rand -hex 32)"
+          imp_secret="$(openssl rand -hex 32)"
+          echo "::add-mask::$token_key"
+          echo "::add-mask::$cron_secret"
+          echo "::add-mask::$imp_secret"
+          {
+            echo "NEXT_PUBLIC_SUPABASE_URL=$API_URL"
+            echo "NEXT_PUBLIC_SUPABASE_ANON_KEY=$ANON_KEY"
+            echo "SUPABASE_SERVICE_ROLE_KEY=$SERVICE_ROLE_KEY"
+            echo "SUPABASE_JWT_SECRET=$JWT_SECRET"
+            echo "TOKEN_ENCRYPTION_KEY=$token_key"
+            echo "CRON_SECRET=$cron_secret"
+            echo "IMPERSONATION_SECRET=$imp_secret"
+          } >> "$GITHUB_ENV"
+      - run: npm run test:db
+      - run: npm run test:integration

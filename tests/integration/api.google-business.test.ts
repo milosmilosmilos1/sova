@@ -182,7 +182,7 @@ describe('Povezivanje (Google OAuth, nalozi i lokacije)', () => {
     expect(gState.tokenRequests[0]).toMatchObject({
       grant_type: 'authorization_code',
       code: 'gbp-code',
-      client_id: 'test-google-client.apps.googleusercontent.com',
+      client_id: process.env.GOOGLE_CLIENT_ID,
       redirect_uri: `${APP}/api/integrations/google_business/callback`,
     })
     const pendingState = new URL(back.headers.get('location')!).searchParams.get('pending')!
