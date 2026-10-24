@@ -368,6 +368,8 @@ create table strategies (
   hashtag_strategy jsonb not null default '{}',
   best_times jsonb not null default '{}',      -- {platform: [{weekday, hour, source: 'data'|'assumption'}]}
   uses_assumptions boolean not null default true,
+  summary text,                                -- 2–3 rečenice (faza 10a)
+  assumptions jsonb not null default '[]',     -- šta je AI pretpostavio jer nije bilo podataka
   ai_generation_id uuid,
   approved_by uuid references profiles(id) on delete set null,
   approved_at timestamptz,
@@ -1229,3 +1231,9 @@ Faza 9b (24.10.2026): jedina promena šeme je red `('post', 'publishing', 'sched
 - `post_targets`: publisher pri zaključavanju piše `attempt_count`, `last_attempt_at`, `inngest_run_id`; `last_error_code` nosi i servisne kodove (`WATCHDOG_RESENT`, `QUOTA_EXCEEDED`, `MEDIA_MISSING`, `ASYNC_TIMEOUT`, `NO_EXTERNAL_ID`, `BRAND_PAUSED`, `ACCOUNT_INACTIVE`, `INTERNAL`); `publish_latency_ms` = objavljeno − termin; `assisted`, `assisted_done_at` i `permalink` kod ručnog objavljivanja.
 - `publish_attempts`: jedan red po završenom pokušaju (append-only, pa se upisuje tek po ishodu), `outcome` success/retryable_error/permanent_error, `response_excerpt` nosi ID i link ili pending kontejner.
 - `notification_preferences`: red postoji samo kad korisnik promeni podrazumevano iz `src/config/notifications.ts`; `notifications.data` nosi `link`, `postId`, `targetId` (dedupe alarma watchdog-a kroz `contains`).
+
+Faza 10a (24.10.2026): `strategies.summary text` i `strategies.assumptions jsonb` (migracija izmenjena u mestu + `db:reset`).
+
+- Oblici JSON polja: `network_mix = {platform: {per_week, formats[], role}}`, `best_times = {platform: [{weekday 0–6, hour, minute, source: 'data'|'assumption'}]}`, `weekly_themes = [{week, theme, angle, pillar, campaign}]`, `hashtag_strategy = {core[], niche[], local[], avoid[]}`, `goals = [{goal, kpi, target}]`.
+- `content_pillars.strategy_id` i `campaigns.strategy_id` vezuju AI izlaz za verziju; stub sa istim imenom se ne duplira (D-058).
+- Nacrti iz strategije: `posts.strategy_id`, `source = 'ai'`, `scheduled_for` upisan dok je status još `draft` (termin je plan, ne zakazivanje); `post_targets` bez `scheduled_at` dok korisnik ne zakaže.

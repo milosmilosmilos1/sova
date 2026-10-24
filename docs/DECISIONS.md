@@ -296,3 +296,23 @@ Razlog: brif 9; bez novih tabela; jasno gde se dodaje nov tip (jedan objekat, ti
 
 Odluka: događaj `post/target.published` se šalje od 9b, a funkcija sa `sleepUntil` +1 h/+24 h/+7 d/+30 d i upisom u `post_metrics_snapshots` stiže uz analitiku (10b) gde se određuju i izvedene metrike.
 Razlog: 9b je publisher; snimci bez prikaza ne donose ništa korisniku, a provider metode (`fetchPostMetrics`) već postoje.
+
+## D-056 · 24.10.2026 · usvojeno · Strategija: AI izlaz se normalizuje u kodu, najbolja vremena iz podataka računa kod
+
+Odluka: model vraća strukturu (ciljevi, mix, stubovi, teme, hashtagovi, kampanje, pretpostavke), a `normalizeStrategyOutput` je svodi na tražene mreže, udele koji daju 100, tačno N nedelja, datume u periodu i hashtagove malim slovima. Vremena objavljivanja iz istorije (`bestTimesFromHistory`, prag 10 objava po mreži, lokalni sat kroz Intl) računa kod; model predlaže vremena samo za mreže bez podataka i to se obeležava `source: assumption` i `uses_assumptions`.
+Razlog: deterministično i testirano bez modela; korisnik vidi šta je podatak, a šta pretpostavka (brif 7).
+
+## D-057 · 24.10.2026 · usvojeno · Kalendar iz strategije pravi nacrte bez tokena; tekst stiže iz AI Studija ili Autopilota
+
+Odluka: `generate-calendar` raspoređuje termine (`planCalendar`: rotacija najboljih vremena po nedeljama, neradni praznik +1 dan, bez duplog termina po mreži) i upisuje nacrte sa brifom kao tekstom, stubom, kampanjom, `strategy_id` i `scheduled_for`, plus targete za aktivne naloge mreže. Idempotentno po (mreža, minut) i preskače prošlost.
+Razlog: 20 nacrta × 2 tokena bi trošilo tokene bez pregleda; ovako korisnik bira šta piše ručno, šta kroz AI Studio, a Autopilot (10c) puni tekst u okviru budžeta.
+
+## D-058 · 24.10.2026 · usvojeno · Verzije strategije po `period_start`; jedna aktivna po brendu; stubovi se vezuju po imenu
+
+Odluka: nova generacija za isti početak perioda dobija `version + 1`; `status: active` arhivira ostale aktivne strategije brenda i upisuje `approved_by/at`; stubovi iz AI izlaza sa istim imenom kao postojeći se vezuju za novu strategiju (udeo se osveži) umesto da se dupliraju, novi se dodaju sa bojom iz palete; kampanje se uvek vezuju za strategiju.
+Razlog: stubovi su dugoročna osovina sadržaja (analitika po stubu u 10b), a strategija je periodična.
+
+## D-059 · 24.10.2026 · usvojeno · `strategies.summary` i `assumptions` kao kolone
+
+Odluka: dve kolone umesto guranja u `goals`/`network_mix` JSON; migracija izmenjena u mestu (pre lansiranja, RUNBOOK 3) uz `db:reset` i `db:types`.
+Razlog: JSON polja imaju opisan oblik u SCHEMA.md i služe kalendaru; sažetak i pretpostavke su tekst za prikaz i izveštaj.

@@ -1,4 +1,5 @@
 import { aiGenerateImage } from './ai-generate-image'
+import { aiGenerateStrategy } from './ai-generate-strategy'
 import { aiVisualTemplate } from './ai-visual-template'
 import { brandAnalyze } from './brand-analyze'
 import { brandSiteCheck } from './brand-site-check'
@@ -13,6 +14,7 @@ export const functions = [
   ping,
   aiGenerateImage,
   aiVisualTemplate,
+  aiGenerateStrategy,
   brandAnalyze,
   brandSiteCheck,
   socialHistoryImport,

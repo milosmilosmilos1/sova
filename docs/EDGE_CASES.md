@@ -136,3 +136,15 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 | V8  | Canva pristup opozvan                           | `invalid_grant` → `needs_reauth`, 403 korisniku bez naplate, podešavanja nude ponovno povezivanje             | 7    | test   |
 | V9  | Canva export traži plaćeni plan                 | `license_required`/`approval_required` → jasna poruka, tokeni vraćeni                                         | 7    | kod    |
 | V10 | OAuth state ponovljen ili istekao               | 400 „Povezivanje je isteklo ili je već iskorišćeno”; state važi 10 min i jednokratan je                       | 7    | test   |
+
+## Strategija (faza 10a)
+
+| #   | Slučaj                                           | Ponašanje                                                                                      | Faza | Status |
+| --- | ------------------------------------------------ | ---------------------------------------------------------------------------------------------- | ---- | ------ |
+| S1  | Brend bez povezanih mreža                        | 400 sa porukom; korisnik može da pošalje `platforms` u zahtevu                                 | 10a  | kod    |
+| S2  | AI vrati mrežu koja nije tražena ili udele ≠ 100 | Mreža se odbacuje, udeli se normalizuju na 100, nedostajuće nedelje se popunjavaju             | 10a  | test   |
+| S3  | Neradni praznik na terminu iz kalendara          | Objava se pomera za dan (verski i komercijalni datumi ostaju)                                  | 10a  | test   |
+| S4  | Ponovni „Napravi kalendar”                       | Isti (mreža, minut) se preskače; broj preskočenih (postoji, prošlost, bez naloga) u odgovoru   | 10a  | test   |
+| S5  | Istorija prelazi letnje/zimsko vreme             | Sat se računa u zoni brenda po objavi (Intl), ne fiksnim pomakom                               | 10a  | kod    |
+| S6  | Druga strategija za isti period                  | `version + 1`; aktiviranje arhivira prethodnu aktivnu                                          | 10a  | test   |
+| S7  | Posao strategije padne (model, šema)             | `ai_generations.failed` sa porukom, rezervacija 20 tokena se oslobađa, UI nudi ponovni pokušaj | 10a  | kod    |

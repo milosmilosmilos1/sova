@@ -118,3 +118,23 @@ export async function enqueueTargetUnscheduled(targetId: string): Promise<void> 
     logger.warn('enqueue_target_unscheduled_failed', { targetId, error })
   }
 }
+
+/** Strategija (faza 10a): 20 tokena, radi se u pozadini do 2 min. */
+export async function enqueueStrategyJob(
+  generationId: string,
+  brandId: string,
+  workspaceId: string,
+): Promise<void> {
+  try {
+    await inngest.send(events.strategyGenerateRequested.create({ generationId, brandId, workspaceId }))
+  } catch (error) {
+    logger.error('enqueue_strategy_failed', { generationId, error })
+    throw new AiError(
+      'PROVIDER_ERROR',
+      process.env.NODE_ENV === 'development'
+        ? 'Pozadinski servis nije dostupan. Pokrenite `npm run inngest:dev` pa pokušajte ponovo.'
+        : 'Pozadinski servis trenutno nije dostupan. Pokušajte ponovo za minut.',
+      { retryable: true, cause: error },
+    )
+  }
+}

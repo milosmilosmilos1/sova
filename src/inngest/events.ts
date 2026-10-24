@@ -56,6 +56,11 @@ export const events = {
     schema: z.object({ targetId: uuid, socialAccountId: uuid, brandId: uuid }),
   }),
 
+  // Faza 10a
+  strategyGenerateRequested: eventType('strategy/generate.requested', {
+    schema: z.object({ generationId: uuid, brandId: uuid, workspaceId: uuid }),
+  }),
+
   // Faza 12
   billingWebhookReceived: eventType('billing/webhook.received', {
     schema: z.object({ paymentEventId: uuid, provider: z.enum(['stripe', 'paddle']) }),

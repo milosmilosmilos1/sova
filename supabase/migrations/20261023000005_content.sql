@@ -45,6 +45,8 @@ create table public.strategies (
   hashtag_strategy jsonb not null default '{}'::jsonb,
   best_times jsonb not null default '{}'::jsonb,
   uses_assumptions boolean not null default true,
+  summary text,
+  assumptions jsonb not null default '[]'::jsonb,
   ai_generation_id uuid,
   approved_by uuid references public.profiles(id) on delete set null,
   approved_at timestamptz,

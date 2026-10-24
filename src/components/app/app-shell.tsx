@@ -8,6 +8,7 @@ import {
   Share2,
   ShieldCheck,
   Sparkles,
+  Target,
   Users,
 } from 'lucide-react'
 import Link from 'next/link'
@@ -102,6 +103,10 @@ export function AppShell({
           <NavLink href="/app/calendar">
             <CalendarDays className="size-4" aria-hidden />
             Kalendar
+          </NavLink>
+          <NavLink href="/app/strategy">
+            <Target className="size-4" aria-hidden />
+            Strategija
           </NavLink>
           <NavLink href="/app/studio">
             <Sparkles className="size-4" aria-hidden />

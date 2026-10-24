@@ -40,7 +40,7 @@ export interface PostTextResult {
  * Brand kontekst: profil iz Brand Brain-a (faza 6) kad postoji, inače osnovni podaci iz `brands`.
  * Uz to RAG: do 5 odlomaka sa sajta relevantnih za temu (prazno bez indeksa ili ključa).
  */
-async function buildBrandContext(
+export async function buildBrandContext(
   brand: { id: string; name: string; content_locale: string; settings: unknown },
   topic: string,
   override?: string,
