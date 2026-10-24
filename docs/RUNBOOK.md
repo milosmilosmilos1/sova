@@ -47,10 +47,11 @@ Zamke:
 
 ```
 npm run lint && npm run typecheck
-npm run test            # Vitest unit (194)
+npm run test            # Vitest unit (195)
 npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (30); pravi i briše test korisnike
 npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (175)
 npm run test:e2e        # Playwright kroz Mailpit (6); traži pokrenut dev server; posle brisanja .next prvi run traje oko 2 min
+npm run test:live       # pravi Gemini i pravi sajt nad lokalnim Supabase-om (oko 0,2 USD); samo ručno, nikad u CI-ju
 npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs 25   # živi crawler bez baze i AI-ja
 npx tsx --env-file=.env.local --conditions=react-server scripts/ai-smoke.ts [--image putanja.jpg]   # pravi Gemini: tekst, embedding, slika (par centi)
 npm run build           # produkcijski build
@@ -101,6 +102,7 @@ Faza 16. Vercel: `main` → Production, PR → Preview. Checklista u ARCHITECTUR
 - **Dupli tokeni ili ledger ne štima**: `select workspace_id, sum(delta) from token_ledger group by 1` naspram `sum(amount - remaining)` iz `token_grants`; razlika je bag u RPC-u, ne popravljati ručno bez zapisa.
 - **Webhook plaćanja ne stiže**: provajderov dashboard → ponovno slanje; `payment_events (provider, event_id)` UNIQUE sprečava dupliranje.
 - **Gemini spor**: u logu `ai_call_failed` sa `code: TIMEOUT` ili 504 za glavni model, `fallback_used` u `ai_generations`. Istek roka odmah ide na fallback; ako traje, izaberi brži model u Admin → Platforma → AI modeli. Brzina modela: `scripts/ai-smoke.ts` ispisuje trajanje.
+- **Gemini 503 „high demand”**: Google-ovo privremeno preopterećenje; aplikacija ponavlja zahtev i prelazi na fallback model. Ako se ponavlja satima, proveri da li Cloud projekat ključa ima uključenu naplatu (plaćeni nivo ima veće limite) i izaberi drugi model u adminu.
 - **Gemini pad**: circuit breaker preskače model 5 min; ako traje, Admin → Platforma → AI modeli: izaberi drugi model sa dozvoljene liste (važi za najviše minut, bez deploya). Nov model se prvo dodaje u `platform_settings.allowed_models`.
 - **Analiza sajta visi**: `select id, status, phase, progress->>'message', started_at from website_crawls where status in ('queued','running')`; Inngest dashboard → run `brand-analyze` po `crawlId`. Otkazivanje iz UI-ja šalje `brand/analyze.canceled` i vraća tokene; ručno: `update website_crawls set status='canceled', finished_at=now()` pa `release_reservation` za `ai_generations.token_reservation_id`.
 - **Vlasnik sajta se žali na SovaBot**: User-Agent je `SovaBot/1.0 (+https://sovaai.rs/bot)`; bot čita samo sajtove koje je korisnik uneo, poštuje robots.txt i Crawl-delay, najviše 60 strana po analizi i nedeljnu proveru sitemap/RSS. Blokada: `User-agent: SovaBot` / `Disallow: /`. Proveri `website_crawls` po `url` da vidiš ko je pokrenuo.

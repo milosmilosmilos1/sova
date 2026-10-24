@@ -21,6 +21,7 @@ import type { TextRequestInput } from '@/lib/schemas/ai'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getTokenPrice } from '@/lib/tokens/prices'
 import { confirmReservation } from '@/lib/tokens/reservation'
+import { wallClock } from '@/lib/zoned-time'
 import { assertDailyQuota, failGeneration, startGeneration } from '@/services/ai/generations'
 import { searchKnowledge } from '@/services/brand-brain/embed'
 import { getBrandContextForBrand } from '@/services/brand-brain/profile'
@@ -139,6 +140,7 @@ export async function generatePostText(
     includeHashtags: input.includeHashtags,
     variantsPerPlatform: input.variantsPerPlatform,
     hasImage: Boolean(images),
+    publishDate: wallClock(new Date().toISOString(), brand.timezone).date,
   })
 
   try {

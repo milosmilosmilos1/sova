@@ -41,6 +41,8 @@ export interface PostTextInput {
   includeHashtags: boolean
   variantsPerPlatform: 1 | 2 | 3
   hasImage: boolean
+  /** dan objave (YYYY-MM-DD) u zoni brenda: bez njega model pogađa godišnje doba */
+  publishDate?: string
 }
 
 export const postVariantSchema = z.object({
@@ -65,6 +67,28 @@ const GOAL_LABEL: Record<PostGoal, string> = {
   engagement: 'angažovanje (komentari, deljenja, čuvanja)',
   sales: 'prodaja ili upit',
   education: 'edukacija publike',
+}
+
+const WEEKDAYS = ['nedelja', 'ponedeljak', 'utorak', 'sreda', 'četvrtak', 'petak', 'subota']
+const SEASONS = [
+  'zima',
+  'zima',
+  'proleće',
+  'proleće',
+  'proleće',
+  'leto',
+  'leto',
+  'leto',
+  'jesen',
+  'jesen',
+  'jesen',
+  'zima',
+]
+
+/** „2026-10-24, subota, jesen” (severna hemisfera, kao i tržište Sove) */
+export function publishDateLine(date: string): string {
+  const d = new Date(`${date}T12:00:00Z`)
+  return `${date}, ${WEEKDAYS[d.getUTCDay()]}, ${SEASONS[d.getUTCMonth()]}`
 }
 
 const LOCALE_INSTRUCTION: Record<ContentLocale, string> = {
@@ -139,6 +163,11 @@ export function buildPostTextPrompt(input: PostTextInput): string {
     ...knowledgeLines,
     '',
     'ZADATAK',
+    ...(input.publishDate
+      ? [
+          `Datum objave: ${publishDateLine(input.publishDate)}. Ne pominji godišnje doba, vreme ni praznik koji ne odgovaraju tom datumu, osim ako ih opis traži.`,
+        ]
+      : []),
     `Cilj objave: ${GOAL_LABEL[input.goal]}.`,
     input.cta
       ? `Poziv na akciju koji treba uključiti: ${input.cta}`
@@ -149,7 +178,7 @@ export function buildPostTextPrompt(input: PostTextInput): string {
     input.hasImage
       ? 'Priložena je fotografija. Prvo je opiši u polju image_description (šta se vidi, atmosfera, boje), pa tekst gradi na tome. alt_text opisuje fotografiju za čitače ekrana.'
       : 'Nema fotografije: image_description ostavi null, a alt_text napiši kao predlog opisa vizuala koji bi pratio objavu.',
-    'first_comment: za Instagram i Facebook predloži prvi komentar (npr. link ili hashtagovi) ili null.',
+    'first_comment: za Instagram, Facebook i LinkedIn predloži prvi komentar (npr. link, pitanje za publiku ili hashtagovi) ili null.',
     '',
     '<<<PODACI>>>',
     input.topic,

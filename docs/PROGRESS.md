@@ -103,6 +103,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - **LinkedIn video** (D-087): otpremanje u delovima kroz Videos API, objava tek kad LinkedIn obradi video, poruka kad obrada ne uspe; provera ne pušta sliku i video zajedno.
 - **LinkedIn prvi komentar**: posle objave (kod videa posle obrade), samo za naloge sa dozvolom `*_feed` iz Community Management API-ja; greška komentara ne obara objavu. Editor sada piše da prvi komentar važi i za LinkedIn.
 - **Gemini ključ** (D-088): u `.env.local`, proveren živim pozivima (tekst 1,7 s, embedding 1536 dimenzija, slika 10 s). Glavni tekstualni model je `gemini-3.6-flash` jer je 3.8 trenutno spor; istek roka odmah ide na fallback model.
+- **Živi testovi sa pravim Gemini-jem** (`npm run test:live`, samo ručno): svih šest JSON šema prolazi kod pravog API-ja i kroz Zod; Studio, slika (0,07 USD, 21 s), Brand Brain nad tangerineseo.rs (30 strana, tačan profil sa uslugama) i strategija rade. Prva provera je našla da upit za objavu ne zna datum; sada ga nosi.
 - **Testovi bez pravih ključeva**: integracioni testovi uvek koriste lažne ključeve spoljnih servisa, a opcioni servisi su isključeni.
 - **Testovi**: 5 novih integracionih (LinkedIn video u delovima, neuspela obrada, slika i video zajedno, prvi komentar sa dozvolom i bez nje, 504 ide na fallback), 2 unit (klasifikacija grešaka).
 

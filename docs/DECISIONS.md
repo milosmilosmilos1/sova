@@ -516,4 +516,6 @@ Odluka:
 - Gemini 504 `DEADLINE_EXCEEDED` je istek roka (`TIMEOUT`), ne greška servera. Istek roka se ne ponavlja na istom modelu dok u lancu ima sledećeg, nego odmah ide fallback.
 - Integracioni testovi uvek dobijaju lažne ključeve spoljnih servisa, i kad `.env.local` ima prave, a opcioni servisi (Stripe, Resend, Upstash, Sentry, Inngest, Turnstile, PostHog, Firecrawl) su u testovima isključeni (`tests/integration/setup.ts`).
 - `scripts/ai-smoke.ts` proverava pravi tekst, embedding i, uz `--image`, sliku.
+- Živi testovi (`npm run test:live`, samo ručno, oko 0,2 USD): pravi API mora da prihvati svih šest JSON šema izlaza i odgovor mora da prođe Zod, plus Studio tekst, slika, Brand Brain nad pravim sajtom i strategija. Prvi prolaz 24.10.2026: sve šeme prolaze; profil tangerineseo.rs (30 strana) i strategija su tačni.
+- Upit za tekst objave nosi datum objave, dan u nedelji i godišnje doba u zoni brenda (Studio: danas, Autopilot: planirani dan). Bez toga je model krajem oktobra pisao o letnjim vrućinama.
   Razlog: u Studiju korisnik čeka odgovor, a 3.8 bi uz rok od 30 s i tri pokušaja držao korisnika i do 90 s pre fallback-a.

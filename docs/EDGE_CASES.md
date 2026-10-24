@@ -47,18 +47,20 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 
 ## AI
 
-| #    | Slučaj                                                   | Ponašanje                                                                                                                         | Faza  | Status |
-| ---- | -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ----- | ------ |
-| AI1  | Timeout                                                  | Retry do 3x, zatim fallback model, zatim poruka i oslobađanje tokena                                                              | 5     | test   |
-| AI2  | 429 od provajdera                                        | Backoff sa jitter-om; breaker posle 50 % grešaka u 2 min                                                                          | 5     | kod    |
-| AI3  | Safety blokada                                           | `AI_BLOCKED`, bez retry-a, bez naplate, poruka „Sadržaj nije prošao proveru, promeni opis”; brojač u `user_flags`                 | 5     | test   |
-| AI4  | Prazan ili nevalidan JSON                                | Jedan ponovni pokušaj sa porukom o grešci šeme u promptu; zatim fallback model                                                    | 5     | kod    |
-| AI5  | Slika generisana, upload u Storage pao                   | Retry uploada 3x unutar istog koraka; ako padne, rezervacija se oslobađa, generacija `failed`                                     | 5     | kod    |
-| AI6  | Model ugašen (404 za model)                              | Trajna greška → odmah fallback model + alarm adminu + health crven                                                                | 5     | test   |
-| AI7  | Odgovor na pogrešnom jeziku ili pismu                    | Detekcija pisma (udeo ćiriličnih karaktera) i jezika; jedan ponovni pokušaj sa pojačanom instrukcijom; zatim upozorenje korisniku | 5, 6  | test   |
-| AI8  | Prompt injection iz sadržaja sajta                       | Delimiteri + instrukcija + Zod; činjenice se proveravaju naspram profila                                                          | 6     | test   |
-| AI9  | Sličan tekst već objavljen u 90 dana                     | Embedding sličnost > 0,92 → upozorenje i ponuda drugog ugla                                                                       | 6, 9a | test   |
-| AI10 | Glavni model spor (504 DEADLINE_EXCEEDED ili istek roka) | Bez ponavljanja na istom modelu: odmah fallback; admin menja aktivni model bez deploya (D-088)                                    | 5     | test   |
+| #    | Slučaj                                                     | Ponašanje                                                                                                                         | Faza   | Status |
+| ---- | ---------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- | ------ | ------ |
+| AI1  | Timeout                                                    | Retry do 3x, zatim fallback model, zatim poruka i oslobađanje tokena                                                              | 5      | test   |
+| AI2  | 429 od provajdera                                          | Backoff sa jitter-om; breaker posle 50 % grešaka u 2 min                                                                          | 5      | kod    |
+| AI3  | Safety blokada                                             | `AI_BLOCKED`, bez retry-a, bez naplate, poruka „Sadržaj nije prošao proveru, promeni opis”; brojač u `user_flags`                 | 5      | test   |
+| AI4  | Prazan ili nevalidan JSON                                  | Jedan ponovni pokušaj sa porukom o grešci šeme u promptu; zatim fallback model                                                    | 5      | kod    |
+| AI5  | Slika generisana, upload u Storage pao                     | Retry uploada 3x unutar istog koraka; ako padne, rezervacija se oslobađa, generacija `failed`                                     | 5      | kod    |
+| AI6  | Model ugašen (404 za model)                                | Trajna greška → odmah fallback model + alarm adminu + health crven                                                                | 5      | test   |
+| AI7  | Odgovor na pogrešnom jeziku ili pismu                      | Detekcija pisma (udeo ćiriličnih karaktera) i jezika; jedan ponovni pokušaj sa pojačanom instrukcijom; zatim upozorenje korisniku | 5, 6   | test   |
+| AI8  | Prompt injection iz sadržaja sajta                         | Delimiteri + instrukcija + Zod; činjenice se proveravaju naspram profila                                                          | 6      | test   |
+| AI9  | Sličan tekst već objavljen u 90 dana                       | Embedding sličnost > 0,92 → upozorenje i ponuda drugog ugla                                                                       | 6, 9a  | test   |
+| AI10 | Glavni model spor (504 DEADLINE_EXCEEDED ili istek roka)   | Bez ponavljanja na istom modelu: odmah fallback; admin menja aktivni model bez deploya (D-088)                                    | 5      | test   |
+| AI11 | Model ne zna današnji datum (godišnje doba, dan u nedelji) | Upit nosi datum objave, dan i godišnje doba u zoni brenda; Studio danas, Autopilot planirani dan (D-088)                          | 5, 10c | test   |
+| AI12 | Gemini 503 „high demand”                                   | Ponovni pokušaj sa pauzom, pa fallback model; breaker preskače model posle niza grešaka                                           | 5      | test   |
 
 ## Upload i mediji
 

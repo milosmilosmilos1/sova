@@ -52,6 +52,8 @@ export async function generateDraftText(
     cta: string | null
     postId: string
     runId: string
+    /** planirani dan objave u zoni brenda */
+    publishDate?: string
   },
 ): Promise<DraftText> {
   const price = await getTokenPrice('text')
@@ -86,6 +88,7 @@ export async function generateDraftText(
             includeHashtags: true,
             variantsPerPlatform: 1,
             hasImage: false,
+            publishDate: input.publishDate,
           }),
           jsonSchema: postTextJsonSchema(),
           maxOutputTokens: 2048,

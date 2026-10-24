@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { buildPostTextPrompt, postTextJsonSchema, postTextOutputSchema } from './post-text'
+import { buildPostTextPrompt, postTextJsonSchema, postTextOutputSchema, publishDateLine } from './post-text'
 
 describe('post-text prompt', () => {
   it('odvaja korisnički unos delimiterima i ubacuje limite mreža', () => {
@@ -19,6 +19,24 @@ describe('post-text prompt', () => {
     expect(prompt).toContain('najviše 2200 karaktera')
     expect(prompt).toContain('latinicom')
     expect(prompt).toContain('vi (persiranje)')
+  })
+
+  it('datum objave sa danom i godišnjim dobom, da model ne piše o letu u oktobru', () => {
+    expect(publishDateLine('2026-10-24')).toBe('2026-10-24, subota, jesen')
+    expect(publishDateLine('2027-01-04')).toBe('2027-01-04, ponedeljak, zima')
+    const base = {
+      brand: { name: 'Klima24', locale: 'sr-Latn' as const },
+      platforms: ['facebook' as const],
+      topic: 'Servis klime',
+      goal: 'sales' as const,
+      includeHashtags: false,
+      variantsPerPlatform: 1 as const,
+      hasImage: false,
+    }
+    expect(buildPostTextPrompt({ ...base, publishDate: '2026-07-15' })).toContain(
+      'Datum objave: 2026-07-15, sreda, leto.',
+    )
+    expect(buildPostTextPrompt(base)).not.toContain('Datum objave')
   })
 
   it('JSON šema za Gemini nema $schema i traži variants', () => {

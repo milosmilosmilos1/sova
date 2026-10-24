@@ -34,7 +34,7 @@ import {
 } from '@/services/autopilot/content'
 import { autopilotSettings, autopilotUsage } from '@/services/autopilot/settings'
 import { notifyUsers, usersWithRoles } from '@/services/notifications'
-import { zonedToUtc } from '@/lib/zoned-time'
+import { wallClock, zonedToUtc } from '@/lib/zoned-time'
 import { systemSchedule, systemSubmitForReview } from '@/services/posts/system'
 import { runStrategyGeneration } from '@/services/strategy/strategy'
 import type { Database, Json } from '@/types/database'
@@ -520,6 +520,7 @@ async function draftOne(runId: string, postId: string): Promise<DraftResult> {
       cta: campaign?.cta ?? null,
       postId,
       runId,
+      publishDate: post.scheduled_for ? wallClock(post.scheduled_for, brand.timezone).date : undefined,
     })
     tokens += text.tokens
     let hasMedia = false
