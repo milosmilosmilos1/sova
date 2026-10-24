@@ -622,4 +622,4 @@ export async function listVersions(viewer: Viewer, postId: string) {
   )
 }
 
-export { loadPost, getMembership }
+export { assertMedia, getMembership, loadPost, snapshotVersion }

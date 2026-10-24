@@ -3,6 +3,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
+import { ColumnChart, type ColumnBar } from '@/components/charts/column-chart'
+import { dayLabel } from '@/components/charts/scale'
+import { TrendChart } from '@/components/charts/trend-chart'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -12,7 +15,8 @@ import type { ApiResponse } from '@/lib/api/response'
 /**
  * Analitika (faza 10b): period 7/30/90 dana, četiri ključna broja sa promenom u odnosu na prethodni
  * period, tabele po mreži i stubu, najbolje objave, pratioci po nalogu, sve objave sa metrikama,
- * AI uvidi sa dokazima. Brojevi su tekst u tokenima teksta; nema grafikona sa više serija.
+ * AI uvidi sa dokazima. Trend po danu i pratioci po nalogu su grafikoni jedne serije (mali višestruki
+ * grafikoni umesto više boja), uvek uz tabelu (D-092).
  */
 interface Totals {
   posts: number
@@ -73,9 +77,48 @@ interface Overview {
     first: number | null
     last: number | null
     delta: number | null
+    points: Array<{ date: string; followers: number }>
   }>
+  daily: Array<{ date: string; posts: number; reach: number; engagement: number }>
   notes: string[]
 }
+type DailyRow = Overview['daily'][number]
+
+const longDay = (iso: string) =>
+  new Date(`${iso}T12:00:00Z`).toLocaleDateString('sr-Latn-RS', {
+    weekday: 'short',
+    day: 'numeric',
+    month: 'short',
+    timeZone: 'UTC',
+  })
+
+/** Do mesec dana po danu, duže po nedelji od ponedeljka (90 stubova se ne čita). */
+function columnBars(daily: DailyRow[], pick: (d: DailyRow) => number): ColumnBar[] {
+  if (daily.length <= 31)
+    return daily.map((d) => ({
+      key: d.date,
+      label: dayLabel(d.date),
+      longLabel: longDay(d.date),
+      value: pick(d),
+    }))
+  const weeks = new Map<string, ColumnBar>()
+  for (const d of daily) {
+    const day = new Date(`${d.date}T12:00:00Z`)
+    const monday = new Date(day.getTime() - ((day.getUTCDay() + 6) % 7) * 86_400_000)
+      .toISOString()
+      .slice(0, 10)
+    const bar = weeks.get(monday) ?? {
+      key: monday,
+      label: dayLabel(monday),
+      longLabel: `nedelja od ${dayLabel(monday)}`,
+      value: 0,
+    }
+    bar.value += pick(d)
+    weeks.set(monday, bar)
+  }
+  return [...weeks.values()]
+}
+
 interface Insight {
   id: string
   periodStart: string
@@ -180,6 +223,8 @@ export function AnalyticsClient({
   const overview = useQuery({
     queryKey: ['analytics-overview', brandId, days],
     queryFn: () => api<Overview>(`/api/analytics/overview?${q}`),
+    // pri promeni perioda prethodni prikaz ostaje (prigušen) dok stižu novi brojevi
+    placeholderData: (prev) => prev,
   })
   const posts = useQuery({
     queryKey: ['analytics-posts', brandId, days],
@@ -284,6 +329,28 @@ export function AnalyticsClient({
             </ul>
           ) : null}
 
+          <Card>
+            <CardHeader>
+              <CardTitle className="text-base">Doseg i angažovanje po danu objave</CardTitle>
+              <CardDescription>
+                Svaka objava se računa na dan kad je izašla, sa poslednjim snimkom metrika ({o.timezone}).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="grid gap-8 lg:grid-cols-2">
+              <ColumnChart
+                title={o.daily.length > 31 ? 'Doseg po nedelji' : 'Doseg po danu'}
+                bars={columnBars(o.daily, (d) => d.reach)}
+                dim={overview.isPlaceholderData}
+              />
+              <ColumnChart
+                title={o.daily.length > 31 ? 'Angažovanje po nedelji' : 'Angažovanje po danu'}
+                description="reakcije + komentari + deljenja + čuvanja"
+                bars={columnBars(o.daily, (d) => d.engagement)}
+                dim={overview.isPlaceholderData}
+              />
+            </CardContent>
+          </Card>
+
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
               <CardHeader>
@@ -327,7 +394,23 @@ export function AnalyticsClient({
             <CardHeader>
               <CardTitle className="text-base">Pratioci</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
+              {o.followers.some((f) => f.points.length > 1) ? (
+                <div className="grid gap-8 md:grid-cols-2">
+                  {o.followers
+                    .filter((f) => f.points.length > 1)
+                    .map((f) => (
+                      <TrendChart
+                        key={f.accountId}
+                        title={f.name ?? 'Nalog'}
+                        description={f.platform ? PLATFORMS[f.platform].label : undefined}
+                        points={f.points.map((p) => ({ date: p.date, value: p.followers }))}
+                        zeroBaseline={false}
+                        dim={overview.isPlaceholderData}
+                      />
+                    ))}
+                </div>
+              ) : null}
               {o.followers.length ? (
                 <table className="w-full text-sm">
                   <thead className="text-left text-xs text-muted-foreground">

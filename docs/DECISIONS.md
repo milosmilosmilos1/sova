@@ -554,3 +554,29 @@ Odluka:
 - Znak Sove (`src/components/brand/sova-logo.tsx`): oči sove u kvadratu sa plavim gradijentom, gradijent kroz CSS (bez SVG ID-jeva).
 - Početna aplikacije postaje pregled: tokeni, zakazano za 7 dana, doseg za 7 dana sa promenom, Inbox, sledeće objave u zoni brenda i „Prvi koraci” (Brand Brain, mreže, strategija, prva objava); svaki izvor ima svoju rezervu, pa jedan pad ne obara stranu.
   Razlog: brif traži moderan izgled u plavoj boji po Dribbble referenci; tamna površina radi za prodaju i prvi utisak, a svetla je odmornija za višesatni rad u kalendaru i editoru.
+
+## D-092 · 25.10.2026 · usvojeno · Grafikoni: sopstvene SVG komponente jedne serije
+
+Odluka: `src/components/charts/` ima dve komponente bez spoljne biblioteke. `TrendChart` crta liniju od 2 px sa blagom površinom (pratioci po mreži kao male zasebne slike, osa ne kreće od nule). `ColumnChart` crta stubove do 24 px sa zaobljenim vrhom (dnevni zbir do 31 dana, preko toga nedeljni). Pravila za obe:
+
+- jedna serija nema legendu, naslov kaže šta je nacrtano; nema dve ose u istom grafikonu;
+- vrednost se piše samo na kraju linije ili na najvišem stubu, ostalo nose osa, oblačić (miš i strelice) i dugme „Tabela”;
+- boja je `--chart-1`, proverena validatorom palete za svetlu i tamnu površinu (na tamnoj svetlina 0,64, jer 0,74 izlazi iz opsega);
+- oznake ose su skraćene („1,2 hilj.”) tek kad je korak ose bar 1.000, da se ista oznaka ne ponavlja;
+- prazan period ima rečenicu umesto praznog grafikona.
+
+Doseg i angažovanje po danu objave računa `dailySeries` u zoni brenda, sa nulom za dane bez objava. Admin pregled i AI troškovi koriste iste komponente (registracije, trošak i generisanja po danu); serverske strane prosleđuju `unit`, ne funkciju za format.
+
+Alternative: Recharts ili Chart.js (oko 100 KB i teže uklapanje u pravila i temu).
+Razlog: tri vrste grafikona ne opravdavaju biblioteku, a sopstvene komponente prate temu kroz tokene i imaju tastaturu i tabelu bez dodatnog rada.
+
+## D-093 · 25.10.2026 · usvojeno · Sečenje slike i zamena medija u zakazanoj objavi
+
+Odluka:
+
+- **Sečenje (EDGE_CASES N9).** Editor poredi odnos stranica svake izabrane slike sa opsegom izabranih mreža (YouTube se preskače jer prima samo video). Kad je slika van opsega, nudi sečenje na najbliži odnos iz preseka opsega (npr. 9:16 → 4:5 za Instagram), uz pregled celog kadra, zatamnjen deo koji otpada i klizač za položaj isečka. `POST /api/media/[id]/crop {aspect, position}` pravi novu sliku u biblioteci po istom pravougaoniku kao pregled (`src/lib/media/crop.ts`). Original ostaje jer može biti u drugim objavama; isečak nasleđuje izvor, atribuciju, opis i oznaku AI sadržaja, a `source_data.cropped_from` pamti original. Isti isečak se ne čuva dvaput (sha256).
+- **Zamena (EDGE_CASES U9).** U zakazanoj ili pauziranoj objavi vlasnik ili administrator menja medij bez otkazivanja termina (`POST /api/posts/[id]/media/replace`). Nov medij pre upisa prolazi istu proveru po mreži kao zakazivanje, verzija raste („zamena medija” u istoriji), a stari medij posle toga može da se obriše iz biblioteke. Urednik dobija 403 jer bi tako zaobišao odobravanje: on otkazuje zakazivanje i menja objavu u editoru. Zaključana objava (objavljivanje je počelo) se ne menja; verzija i zaključavanje se proveravaju u istom upitu.
+- **Dedup po brendu.** Isti fajl u drugom brendu istog prostora je sada poseban medij. Ranije je dedup vraćao medij drugog brenda, pa je čuvanje objave padalo sa „pripadaju drugom brendu”.
+
+Alternative: kolona `post_media.crop` sa sečenjem pri objavi. Odbijeno: mreže preuzimaju fajl po URL-u, pa bi sečenje pri objavi ionako pravilo nov fajl, a pregled ne bi bio isti kao rezultat.
+Razlog: provera objave je javljala pogrešan odnos, ali sliku je trebalo seći van Sove; brisanje medija iz zakazane objave tražilo je otkazivanje i ponovno zakazivanje.

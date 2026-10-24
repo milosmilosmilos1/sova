@@ -4,7 +4,7 @@ import type { NotificationType } from '@/config/notifications'
 import { PLATFORMS, validateText, type SocialPlatform } from '@/config/platforms'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
-import { requireMembership, type Membership } from '@/lib/auth/workspace'
+import { ADMIN_ROLES, EDIT_ROLES, requireMembership, type Membership } from '@/lib/auth/workspace'
 import { enqueueTargetScheduled, enqueueTargetUnscheduled } from '@/lib/jobs/enqueue'
 import { logger } from '@/lib/logger'
 import {
@@ -20,7 +20,15 @@ import { mapDbError } from '@/lib/supabase/errors'
 import { connectKeyFor, providerFor } from '@/integrations/social/registry'
 import type { NormalizedPost } from '@/integrations/social/types'
 import { notifyUsers, usersWithRoles } from '@/services/notifications'
-import { getPostView, loadPost, type PostRow, type PostView } from '@/services/posts/posts'
+import { getAsset, signedUrl } from '@/services/media'
+import {
+  assertMedia,
+  getPostView,
+  loadPost,
+  snapshotVersion,
+  type PostRow,
+  type PostView,
+} from '@/services/posts/posts'
 import { loadAccountRow, refFor } from '@/services/social/account-rows'
 
 /**
@@ -120,12 +128,17 @@ async function findDuplicateOnAccount(
   return null
 }
 
-/** Validacija sadržaja po mreži (dužina, hashtagovi, mediji) pre odobrenja ili zakazivanja. */
+/**
+ * Validacija sadržaja po mreži (dužina, hashtagovi, mediji) pre odobrenja ili zakazivanja.
+ * `transform` proverava izmenu pre upisa (zamena medija, U9).
+ */
 export async function validatePostContent(
   viewer: Viewer,
   postId: string,
+  transform?: (view: PostView) => PostView,
 ): Promise<{ ok: boolean; problems: ContentProblem[] }> {
-  const view = await getPostView(viewer, postId)
+  const loaded = await getPostView(viewer, postId)
+  const view = transform ? transform(loaded) : loaded
   const problems: ContentProblem[] = []
   if (!view.targets.length) {
     return {
@@ -186,6 +199,88 @@ export async function validatePostContent(
       problems.push({ socialAccountId: t.socialAccountId, platform: t.platform, problems: list })
   }
   return { ok: problems.length === 0, problems }
+}
+
+/** Statusi u kojima editor ne menja sadržaj, a medij se ipak menja bez otkazivanja termina (U9). */
+const REPLACE_MEDIA_STATUSES: ReadonlySet<PostStatus> = new Set(['scheduled', 'paused'])
+const STALE_POST = 'Objavu je u međuvremenu neko izmenio. Osvežite je pa pokušajte ponovo.'
+
+/**
+ * Zamena medija u zakazanoj ili pauziranoj objavi (EDGE_CASES U9, D-093): termin ostaje, novi medij
+ * prolazi istu proveru po mreži kao zakazivanje, verzija raste i beleži se u istoriji. Menja samo
+ * vlasnik ili administrator: oni i zakazuju bez odobravanja, a urednik bi tako zaobišao odobrenje
+ * (on otkazuje zakazivanje, menja objavu u editoru i šalje je na odobrenje).
+ */
+export async function replacePostMedia(
+  viewer: Viewer,
+  postId: string,
+  input: { version: number; fromMediaId: string; toMediaId: string },
+): Promise<PostView> {
+  const post = await loadPost(viewer, postId)
+  const membership = await requireMembership(viewer, post.workspace_id, EDIT_ROLES)
+  if (!REPLACE_MEDIA_STATUSES.has(post.status))
+    throw new ApiError(
+      'CONFLICT',
+      'Ovako se menja medij samo u zakazanoj ili pauziranoj objavi; ostale objave menjate u editoru.',
+    )
+  if (!ADMIN_ROLES.includes(membership.role))
+    throw new ApiError(
+      'FORBIDDEN',
+      'Medij u zakazanoj objavi menja vlasnik ili administrator. Urednik otkazuje zakazivanje, menja objavu i šalje je na odobrenje.',
+    )
+  if (post.locked_at) throw new ApiError('POST_LOCKED')
+  if (post.version !== input.version)
+    throw new ApiError('CONFLICT', STALE_POST, { details: { currentVersion: post.version } })
+  if (input.fromMediaId === input.toMediaId) throw new ApiError('VALIDATION', 'Izaberite drugi medij.')
+  const current = await getPostView(viewer, postId)
+  if (!current.media.some((m) => m.mediaAssetId === input.fromMediaId))
+    throw new ApiError('NOT_FOUND', 'Medij nije u ovoj objavi.')
+  if (current.media.some((m) => m.mediaAssetId === input.toMediaId))
+    throw new ApiError('VALIDATION', 'Novi medij je već u ovoj objavi.')
+  await assertMedia(viewer, post.brand_id, [input.toMediaId])
+  const asset = await getAsset(viewer, input.toMediaId)
+  const attribution = (asset.attribution as { text?: string } | null) ?? null
+  const replacement = {
+    mediaAssetId: asset.id,
+    url: await signedUrl(asset),
+    width: asset.width,
+    height: asset.height,
+    mimeType: asset.mime_type,
+    durationMs: asset.duration_ms,
+    sizeBytes: asset.size_bytes,
+    altText: asset.alt_text,
+    source: asset.source,
+    attributionText: attribution?.text ?? null,
+  }
+  const validation = await validatePostContent(viewer, postId, (v) => ({
+    ...v,
+    media: v.media.map((m) => (m.mediaAssetId === input.fromMediaId ? { ...m, ...replacement } : m)),
+  }))
+  if (!validation.ok)
+    throw new ApiError('VALIDATION', 'Novi medij ne prolazi proveru za mreže ove objave.', {
+      details: { problems: validation.problems },
+    })
+
+  const admin = createSupabaseAdminClient()
+  // verzija i zaključavanje u istom uslovu: objavljivanje koje je upravo počelo ima prednost
+  const { data: claimed, error } = await admin
+    .from('posts')
+    .update({ version: post.version + 1 })
+    .eq('id', postId)
+    .eq('version', post.version)
+    .is('locked_at', null)
+    .select('id')
+    .maybeSingle()
+  if (error) throw mapDbError(error)
+  if (!claimed) throw new ApiError('CONFLICT', STALE_POST)
+  const swap = await admin
+    .from('post_media')
+    .update({ media_asset_id: input.toMediaId })
+    .eq('post_id', postId)
+    .eq('media_asset_id', input.fromMediaId)
+  if (swap.error) throw mapDbError(swap.error)
+  await snapshotVersion(postId, post.version + 1, 'zamena medija', viewer.user.id)
+  return getPostView(viewer, postId)
 }
 
 async function notifyApprovers(post: PostRow, byUserId: string): Promise<void> {

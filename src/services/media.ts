@@ -9,16 +9,19 @@ import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import { env } from '@/lib/env'
+import { cropRect } from '@/lib/media/crop'
 import { parseMp4, stripVideoMetadata, type VideoInfo } from '@/lib/media/mp4'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
 import { getBrand } from '@/services/brands'
-import type { Database } from '@/types/database'
+import type { Database, Json } from '@/types/database'
 
 export type MediaAssetRow = Database['public']['Tables']['media_assets']['Row']
 
 export const MAX_IMAGE_BYTES = 20 * 1024 * 1024
 const MAX_DIMENSION = 4096
+/** Najmanja stranica isečka; manje od toga mreže odbijaju ili prikazuju mutno. */
+const MIN_CROP_SIDE = 200
 const ALLOWED_IMAGE_MIME = new Set(['image/jpeg', 'image/png', 'image/webp'])
 export const VIDEO_MIME = new Set(['video/mp4', 'video/quicktime'])
 const FORMATS_MESSAGE =
@@ -85,7 +88,11 @@ async function processImage(bytes: Buffer, mime: string): Promise<ProcessedImage
     })
   }
   // CMYK → sRGB; bez withMetadata() EXIF se ne prenosi
-  pipeline = pipeline.toColorspace('srgb')
+  return encodeImage(pipeline.toColorspace('srgb'), mime)
+}
+
+/** Kodiranje u zadati format (JPG kroz mozjpeg, kvalitet 90), isto za upload i isečak. */
+async function encodeImage(pipeline: ReturnType<typeof sharp>, mime: string): Promise<ProcessedImage> {
   const ext = mime === 'image/png' ? 'png' : mime === 'image/webp' ? 'webp' : 'jpg'
   const output =
     ext === 'png'
@@ -93,16 +100,30 @@ async function processImage(bytes: Buffer, mime: string): Promise<ProcessedImage
       : ext === 'webp'
         ? await pipeline.webp({ quality: 90 }).toBuffer({ resolveWithObject: true })
         : await pipeline.jpeg({ quality: 90, mozjpeg: true }).toBuffer({ resolveWithObject: true })
-  return { data: output.data, width: output.info.width, height: output.info.height, mime, ext }
+  return {
+    data: output.data,
+    width: output.info.width,
+    height: output.info.height,
+    mime: ext === 'jpg' ? 'image/jpeg' : mime,
+    ext,
+  }
 }
 
-async function existingBySha(workspaceId: string, sha256: string): Promise<MediaAssetRow | null> {
-  const { data } = await createSupabaseAdminClient()
+/** Isti fajl u istom brendu se ne čuva dvaput; u drugom brendu je poseban medij (objava traži medij svog brenda). */
+async function existingBySha(
+  workspaceId: string,
+  brandId: string | null,
+  sha256: string,
+): Promise<MediaAssetRow | null> {
+  const query = createSupabaseAdminClient()
     .from('media_assets')
     .select('*')
     .eq('workspace_id', workspaceId)
     .eq('sha256', sha256)
     .is('deleted_at', null)
+  const { data } = await (brandId ? query.eq('brand_id', brandId) : query.is('brand_id', null))
+    .order('created_at', { ascending: true })
+    .limit(1)
     .maybeSingle()
   return data
 }
@@ -131,7 +152,7 @@ async function storeImage(
   input: { workspaceId: string; brandId: string | null; image: ProcessedImage; originalName: string | null },
 ): Promise<MediaAssetRow> {
   const sha256 = createHash('sha256').update(input.image.data).digest('hex')
-  const existing = await existingBySha(input.workspaceId, sha256)
+  const existing = await existingBySha(input.workspaceId, input.brandId, sha256)
   if (existing) return existing
   const id = randomUUID()
   return storeUpload(
@@ -183,7 +204,7 @@ async function storeVideo(
   if (info.durationMs < 1000) throw new ApiError('VALIDATION', 'Video je kraći od jedne sekunde.')
   const { data } = stripVideoMetadata(input.bytes)
   const sha256 = createHash('sha256').update(data).digest('hex')
-  const existing = await existingBySha(input.workspaceId, sha256)
+  const existing = await existingBySha(input.workspaceId, input.brandId, sha256)
   if (existing) return existing
   const id = randomUUID()
   const ext = input.mime === 'video/quicktime' ? 'mov' : 'mp4'
@@ -384,6 +405,69 @@ export async function downloadAsset(asset: Pick<MediaAssetRow, 'bucket' | 'stora
   const { data, error } = await admin.storage.from(asset.bucket).download(asset.storage_path)
   if (error || !data) throw new ApiError('INTERNAL', 'Fajl nije preuzet iz skladišta.', { cause: error })
   return Buffer.from(await data.arrayBuffer())
+}
+
+/**
+ * Sečenje slike na odnos stranica mreže (EDGE_CASES N9, D-093): isečak je nova slika u biblioteci, a
+ * original ostaje jer može biti u drugim objavama. Isečak nasleđuje izvor, atribuciju (Unsplash), opis
+ * i oznaku AI sadržaja originala; `source_data.cropped_from` pamti odakle je.
+ */
+export async function cropImage(
+  viewer: Viewer,
+  assetId: string,
+  input: { aspect: number; position: number },
+): Promise<MediaAssetRow> {
+  const asset = await getAsset(viewer, assetId)
+  await requireMembership(viewer, asset.workspace_id, EDIT_ROLES)
+  if (asset.kind !== 'image') throw new ApiError('VALIDATION', 'Seći se mogu samo slike.')
+  const source = sharp(await downloadAsset(asset), { limitInputPixels: 50_000_000, animated: false })
+  const meta = await source.metadata()
+  if (!meta.width || !meta.height) throw new ApiError('VALIDATION', 'Slika nije čitljiva.')
+  // EXIF orijentacija 5–8 zamenjuje širinu i visinu (AI slike nisu prošle `processImage`)
+  const turned = (meta.orientation ?? 1) >= 5
+  const rect = cropRect(
+    turned ? meta.height : meta.width,
+    turned ? meta.width : meta.height,
+    input.aspect,
+    input.position,
+  )
+  if (rect.width < MIN_CROP_SIDE || rect.height < MIN_CROP_SIDE)
+    throw new ApiError('VALIDATION', 'Slika je premala za ovaj odnos stranica.')
+  // rotate() pre extract(): sharp prvo okreće po EXIF-u, pa seče
+  const image = await encodeImage(
+    source.rotate().extract(rect).toColorspace('srgb'),
+    ALLOWED_IMAGE_MIME.has(asset.mime_type) ? asset.mime_type : 'image/jpeg',
+  )
+  const sha256 = createHash('sha256').update(image.data).digest('hex')
+  const existing = await existingBySha(asset.workspace_id, asset.brand_id, sha256)
+  if (existing) return existing
+  const id = randomUUID()
+  const original = (asset.source_data as { [key: string]: Json | undefined } | null) ?? {}
+  return storeUpload(
+    {
+      id,
+      workspace_id: asset.workspace_id,
+      brand_id: asset.brand_id,
+      kind: 'image',
+      source: asset.source,
+      bucket: 'uploads',
+      storage_path: `${folderFor(asset.workspace_id, asset.brand_id, 'uploads')}/${id}.${image.ext}`,
+      mime_type: image.mime,
+      size_bytes: image.data.length,
+      width: image.width,
+      height: image.height,
+      sha256,
+      alt_text: asset.alt_text,
+      tags: asset.tags,
+      attribution: asset.attribution,
+      is_ai_generated: asset.is_ai_generated,
+      ai_generation_id: asset.ai_generation_id,
+      exif_stripped: true,
+      uploaded_by: viewer.user.id,
+      source_data: { ...original, cropped_from: asset.id, crop: { aspect: input.aspect, ...rect } },
+    },
+    image.data,
+  )
 }
 
 /** Čuva generisanu sliku u bucket `generated` i pravi media_assets red (service role). */

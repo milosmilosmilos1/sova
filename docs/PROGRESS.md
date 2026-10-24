@@ -2,7 +2,7 @@
 
 Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Režim rada: više faza zaredom bez potvrde po fazi (D-012).
 
-## Stanje (24.10.2026)
+## Stanje (25.10.2026)
 
 | Faza                                    | Status      | Napomena                                                                                                                                                                                                 |
 | --------------------------------------- | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -25,7 +25,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 | 11b Ostali ivični slučajevi             | gotovo      | nacrt editora, siročići uploada, brisanje medija u upotrebi, promena zone brenda, dupli tekst, GIF, letnje/zimsko vreme; ispravljeno meko brisanje brenda i prostora; plaćanje (T4–T13, K6) čeka fazu 12 |
 | 12 Plaćanje                             | gotovo      | Stripe Checkout, Portal, webhook i tokeni kroz mock (D-090); čeka: Stripe nalog, cene, webhook endpoint, Portal i poreski model                                                                          |
 | 13a–13b Admin                           | gotovo      | pregled, korisnici i radnje, monitor objava, AI troškovi i marža, platforma (flagovi, cene, modeli, održavanje), audit sa CSV-om, impersonacija (D-070, D-075)                                           |
-| 14a–14c Dizajn                          | u toku      | plava tema i tamne javne strane, nov landing, okvir aplikacije i početna (D-091); sledi: grafikoni, PDF izveštaj, stub i kampanja u editoru, zamena medija, sečenje slike, SEO                           |
+| 14a–14c Dizajn                          | u toku      | plava tema i tamne javne strane, nov landing, okvir aplikacije i početna (D-091), grafikoni (D-092), stub i kampanja u editoru, sečenje i zamena medija (D-093); sledi: PDF izveštaj, SEO                |
 | 15 Testiranje                           | nije počelo | Playwright + Chromium instalirani; `npm run test:e2e` (6 testova) prolazi                                                                                                                                |
 | 16 Deploy                               | nije počelo | treba: Vercel, Supabase staging/prod, domen sovaai.rs, Upstash, Inngest, Sentry                                                                                                                          |
 
@@ -97,6 +97,15 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Provereno 24.10.2026 u Chromium-u: početna, Inbox, Objave, detalj objave, Kalendar, Strategija, Analitika, Autopilot, Obaveštenja, Mreže i Podešavanja rade bez grešaka u konzoli i API odgovorima. Usput ispravljeno: legenda kalendara je prikazivala interne nazive statusa, horizonti snimaka u analitici nisu bili poređani, editor nije prikazivao zašto je Autopilot vratio nacrt (sada prikazuje, a izveštaj se briše čim se tekst promeni).
 - Provereno 24.10.2026 u Chromium-u (faza 11b): nacrt editora (čuvanje, traka posle osvežavanja, vraćanje, brisanje posle čuvanja), termin se vraća isti posle čuvanja, forma zone brenda sa ponudom zadržavanja lokalnog vremena; bez grešaka u konzoli.
 - Provereno 24.10.2026 u Chromium-u (faza 13): svih sedam admin strana, „Gledaj kao” za demo nalog (traka, izmena u read-only režimu dobija 403 sa objašnjenjem, „Izađi” vraća na detalj korisnika), `/admin/users` na 390 px bez horizontalnog skrola. Usput ispravljeno: stara provera u `requireMembership` je tokom read-only pregleda rušila svaku stranu aplikacije.
+
+## Faza 14, deo 2 — šta je urađeno
+
+- **Grafikoni** (D-092): sopstvene SVG komponente jedne serije u `src/components/charts/`. Analitika ima doseg i angažovanje po danu objave (preko 31 dana po nedelji) i pratioce po mreži kao male zasebne linije; admin pregled ima registracije po danu, a AI troškovi trošak i generisanja po danu. Svaki grafikon ima oblačić na miš i strelice, prikaz kao tabelu i prazno stanje.
+- **Editor**: izbor stuba sadržaja i kampanje (neaktivni stubovi i završene kampanje se ne nude, osim već izabranih); stari lokalni nacrt se dopunjuje novim poljima.
+- **Sečenje slike** (N9, D-093): slika van opsega izabranih mreža dobija upozorenje i sečenje uz pregled; isečak je nova slika, original ostaje.
+- **Zamena medija u zakazanoj objavi** (U9, D-093): vlasnik ili administrator menja sliku ili video bez otkazivanja termina; posle toga stari medij može da se obriše.
+- **Ispravke**: isti fajl u drugom brendu više ne vraća medij tog brenda (objava je padala); red naloga u editoru se prelama na telefonu (strana je bila šira od ekrana za 49 px).
+- **Testovi**: 4 integraciona (zamena, pravila zamene, sečenje, odbijeni zahtevi), 7 unit (odnos stranica i isečak, dnevni niz u zoni brenda).
 
 ## Faza 14, deo 1 — šta je urađeno
 

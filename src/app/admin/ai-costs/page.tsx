@@ -2,6 +2,8 @@ import type { Metadata, Route } from 'next'
 import Link from 'next/link'
 
 import { fmtN, fmtUsd } from '@/components/admin/format'
+import { ColumnChart } from '@/components/charts/column-chart'
+import { dayLabel } from '@/components/charts/scale'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { requireAdmin } from '@/services/admin/context'
@@ -47,6 +49,31 @@ export default async function AdminAiCostsPage({ searchParams }: PageProps<'/adm
           od tokena).
         </p>
       ) : null}
+      <Card>
+        <CardContent className="grid gap-8 lg:grid-cols-2">
+          <ColumnChart
+            title="Trošak provajdera po danu (USD)"
+            unit="usd"
+            bars={d.byDay.map((x) => ({
+              key: x.day,
+              label: dayLabel(x.day),
+              longLabel: dayLabel(x.day),
+              value: x.costUsd,
+            }))}
+            emptyText="U periodu nije bilo AI poziva."
+          />
+          <ColumnChart
+            title="Generisanja po danu"
+            bars={d.byDay.map((x) => ({
+              key: x.day,
+              label: dayLabel(x.day),
+              longLabel: dayLabel(x.day),
+              value: x.generations,
+            }))}
+            emptyText="U periodu nije bilo AI poziva."
+          />
+        </CardContent>
+      </Card>
       <div className="grid gap-6 lg:grid-cols-2">
         <Card>
           <CardHeader>

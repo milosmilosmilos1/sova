@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  dailySeries,
   followersSeries,
   groupTotals,
   horizonDue,
@@ -102,5 +103,58 @@ describe('zbirovi', () => {
     expect(s).toHaveLength(1)
     expect(s[0]).toMatchObject({ accountId: 'a', first: 100, last: 110, delta: 10 })
     expect(horizonDue('2026-10-19T12:00:00Z', '24h').toISOString()).toBe('2026-10-20T12:00:00.000Z')
+  })
+})
+
+describe('dailySeries', () => {
+  const target = (id: string, publishedAt: string) => ({
+    targetId: id,
+    postId: id,
+    platform: 'instagram' as const,
+    socialAccountId: 'a',
+    publishedAt,
+    permalink: null,
+    pillarId: null,
+    pillarName: null,
+    title: null,
+    excerpt: '',
+  })
+  const snap = (id: string, reach: number, reactions: number) => ({
+    targetId: id,
+    horizon: '24h' as const,
+    capturedAt: '2026-10-20T12:00:00Z',
+    impressions: null,
+    reach,
+    reactions,
+    comments: 1,
+    shares: 0,
+    saves: 0,
+    linkClicks: null,
+    engagementRate: null,
+  })
+
+  it('dan objave u zoni brenda, nule za dane bez objava, zbir dosega i angažovanja', () => {
+    const targets = [
+      target('t1', '2026-10-20T08:00:00Z'),
+      // 23:30 UTC je već 21. oktobar u Beogradu
+      target('t2', '2026-10-20T23:30:00Z'),
+      target('t3', '2026-10-21T10:00:00Z'),
+    ]
+    const latest = new Map([
+      ['t1', snap('t1', 100, 9)],
+      ['t2', snap('t2', 50, 4)],
+      ['t3', snap('t3', 30, 2)],
+    ])
+    const days = dailySeries(
+      targets,
+      latest,
+      '2026-10-19T00:00:00Z',
+      '2026-10-22T20:00:00Z',
+      'Europe/Belgrade',
+    )
+    expect(days.map((d) => d.date)).toEqual(['2026-10-19', '2026-10-20', '2026-10-21', '2026-10-22'])
+    expect(days[0]).toEqual({ date: '2026-10-19', posts: 0, reach: 0, engagement: 0 })
+    expect(days[1]).toEqual({ date: '2026-10-20', posts: 1, reach: 100, engagement: 10 })
+    expect(days[2]).toEqual({ date: '2026-10-21', posts: 2, reach: 80, engagement: 8 })
   })
 })

@@ -24,6 +24,14 @@ import { targetStatusLabel } from '@/config/post-labels'
 import type { ApiResponse } from '@/lib/api/response'
 import type { WorkspaceRole } from '@/lib/auth/workspace'
 import { formatDuration, uploadMediaFile } from '@/lib/media/client-upload'
+import {
+  aspectFits,
+  aspectLabel,
+  commonAspectRange,
+  cropRect,
+  cropTarget,
+  type AspectRange,
+} from '@/lib/media/crop'
 import { pluralSr } from '@/lib/plural'
 import { containsUrl } from '@/lib/x-text'
 import { wallClock, zonedToUtc } from '@/lib/zoned-time'
@@ -73,6 +81,8 @@ interface PostView {
   masterText: string
   firstComment: string | null
   linkUrl: string | null
+  pillarId: string | null
+  campaignId: string | null
   scheduledFor: string | null
   lockedAt: string | null
   source?: string
@@ -81,6 +91,9 @@ interface PostView {
   media: Array<{
     mediaAssetId: string
     url: string | null
+    width: number | null
+    height: number | null
+    mimeType: string | null
     altText: string | null
     socialAccountId: string | null
   }>
@@ -115,7 +128,7 @@ async function api<T>(path: string, init: RequestInit & { json?: unknown } = {})
   if (!data.ok) {
     const details = (data.error as { details?: { problems?: Problem[] } }).details
     const extra = details?.problems?.length
-      ? ` ${details.problems.map((p) => `${p.platform}: ${p.problems.join(' ')}`).join(' | ')}`
+      ? ` ${details.problems.map((p) => `${PLATFORMS[p.platform as keyof typeof PLATFORMS]?.label ?? p.platform}: ${p.problems.join(' ')}`).join(' | ')}`
       : ''
     throw new Error(`${data.error.message}${extra}`)
   }
@@ -175,6 +188,9 @@ interface FormState {
   masterText: string
   firstComment: string
   linkUrl: string
+  /** '' = bez stuba ili kampanje */
+  pillarId: string
+  campaignId: string
   selected: Record<string, SelectedTarget>
   mediaIds: string[]
   when: string
@@ -255,6 +271,8 @@ function initialForm(p: PostView | null, timezone: string): FormState {
     masterText: p?.masterText ?? '',
     firstComment: p?.firstComment ?? '',
     linkUrl: p?.linkUrl ?? '',
+    pillarId: p?.pillarId ?? '',
+    campaignId: p?.campaignId ?? '',
     selected,
     mediaIds: p?.media.map((m) => m.mediaAssetId) ?? [],
     when: toLocalInput(p?.scheduledFor ?? null, timezone),
@@ -320,6 +338,20 @@ function EditorForm({
     queryKey: ['social-accounts', brandId, null],
     queryFn: () => api<{ accounts: Account[] }>(`/api/social-accounts?brandId=${brandId}`),
   })
+  const pillars = useQuery({
+    queryKey: ['pillars', brandId],
+    queryFn: () =>
+      api<{ pillars: Array<{ id: string; name: string; isActive: boolean }> }>(
+        `/api/pillars?brandId=${brandId}`,
+      ),
+  })
+  const campaigns = useQuery({
+    queryKey: ['campaigns', brandId],
+    queryFn: () =>
+      api<{ campaigns: Array<{ id: string; name: string; endsOn: string | null }> }>(
+        `/api/campaigns?brandId=${brandId}`,
+      ),
+  })
   const library = useQuery({
     queryKey: ['media', brandId],
     queryFn: () => api<MediaItem[]>(`/api/media?brandId=${brandId}&limit=40`),
@@ -380,12 +412,15 @@ function EditorForm({
   const [comment, setComment] = useState('')
   const [linkUrlCreated, setLinkUrlCreated] = useState<string | null>(null)
   const set = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm((f) => ({ ...f, [k]: v }))
+  const today = new Date().toISOString().slice(0, 10)
 
   const body = () => ({
     title: form.title || null,
     masterText: form.masterText,
     firstComment: form.firstComment || null,
     linkUrl: form.linkUrl || null,
+    pillarId: form.pillarId || null,
+    campaignId: form.campaignId || null,
     targets: Object.entries(form.selected)
       .filter(([, v]) => v.on)
       .map(([socialAccountId, v]) => ({
@@ -416,6 +451,8 @@ function EditorForm({
             title: b.title ?? undefined,
             firstComment: b.firstComment ?? undefined,
             linkUrl: b.linkUrl ?? undefined,
+            pillarId: b.pillarId ?? undefined,
+            campaignId: b.campaignId ?? undefined,
             scheduledFor: b.scheduledFor ?? undefined,
           },
         })
@@ -479,24 +516,86 @@ function EditorForm({
       }),
     onSuccess: (r) => setLinkUrlCreated(r.url),
   })
+  const [cropping, setCropping] = useState<{ id: string; position: number } | null>(null)
+  const [replacing, setReplacing] = useState<string | null>(null)
+  const crop = useMutation({
+    mutationFn: (c: { id: string; aspect: number; position: number }) =>
+      api<MediaItem>(`/api/media/${c.id}/crop`, {
+        method: 'POST',
+        json: { aspect: c.aspect, position: c.position },
+      }),
+    onSuccess: (m, c) => {
+      // isečak zauzima mesto originala; ako je isti isečak već izabran, original samo otpada
+      setForm((f) => ({
+        ...f,
+        mediaIds: f.mediaIds.includes(m.id)
+          ? f.mediaIds.filter((x) => x !== c.id)
+          : f.mediaIds.map((x) => (x === c.id ? m.id : x)),
+      }))
+      setCropping(null)
+      void qc.invalidateQueries({ queryKey: ['media', brandId] })
+    },
+  })
+  const replaceMedia = useMutation({
+    mutationFn: (toMediaId: string) =>
+      api<PostView>(`/api/posts/${postId}/media/replace`, {
+        method: 'POST',
+        json: { version: p!.version, fromMediaId: replacing, toMediaId },
+      }),
+    onSuccess: () => {
+      setReplacing(null)
+      refresh()
+      void qc.invalidateQueries({ queryKey: ['media', brandId] })
+    },
+  })
   const [uploadProgress, setUploadProgress] = useState<number | null>(null)
   const upload = useMutation({
     // pravo u skladište (D-082): Vercel funkcija ne prima telo veće od 4,5 MB
     mutationFn: (file: File) => uploadMediaFile(file, { brandId, onProgress: setUploadProgress }),
     onSettled: () => setUploadProgress(null),
     onSuccess: (m) => {
-      set('mediaIds', [...form.mediaIds, m.id])
+      if (replacing) replaceMedia.mutate(m.id)
+      else set('mediaIds', [...form.mediaIds, m.id])
       void qc.invalidateQueries({ queryKey: ['media', brandId] })
     },
   })
 
   const actions = p?.actions ?? []
   const editable = canEdit && (!p || actions.includes('edit'))
+  // zakazanu objavu editor ne menja, ali vlasnik ili administrator menja medij bez otkazivanja (U9)
+  const canReplace = Boolean(
+    p && !p.lockedAt && ['scheduled', 'paused'].includes(p.status) && ['owner', 'admin'].includes(role),
+  )
+
+  // odnos stranica izabranih slika prema izabranim mrežama (N9); YouTube prima samo video
+  const imageRanges = Object.entries(form.selected)
+    .filter(([, v]) => v.on)
+    .map(([id]) => accounts.data?.accounts.find((a) => a.id === id)?.platform)
+    .filter((pl): pl is keyof typeof PLATFORMS => Boolean(pl) && pl !== 'youtube')
+    .filter((pl, i, all) => all.indexOf(pl) === i)
+  const common = commonAspectRange(imageRanges.map((pl) => PLATFORMS[pl].imageAspect))
+  const mediaInfo = new Map<
+    string,
+    { url: string | null; width: number | null; height: number | null; mimeType?: string | null }
+  >([
+    ...(p?.media.map((m) => [m.mediaAssetId, m] as const) ?? []),
+    ...(library.data?.map((m) => [m.id, m] as const) ?? []),
+  ])
+  const aspectIssues = form.mediaIds.flatMap((id, index) => {
+    const m = mediaInfo.get(id)
+    if (!m?.url || !m.width || !m.height || m.mimeType?.startsWith('video/')) return []
+    const ratio = m.width / m.height
+    const bad = imageRanges.filter((pl) => !aspectFits(ratio, PLATFORMS[pl].imageAspect))
+    if (!bad.length) return []
+    const target = common ? cropTarget(ratio, common) : null
+    return [{ id, index, ratio, bad, target, url: m.url, width: m.width, height: m.height }]
+  })
   const hasContent = form.masterText.trim().length > 0 || form.mediaIds.length > 0
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
-      <div className="space-y-4">
+      {/* min-w-0: dugačak sadržaj ne širi kolonu preko ekrana telefona */}
+      <div className="min-w-0 space-y-4">
         <div className="flex flex-wrap items-center gap-2">
           <h1 className="text-2xl font-semibold tracking-tight">{postId ? 'Objava' : 'Nova objava'}</h1>
           {p ? <Badge>{p.statusLabel}</Badge> : <Badge variant="secondary">nacrt</Badge>}
@@ -523,7 +622,7 @@ function EditorForm({
               size="sm"
               variant="outline"
               onClick={() => {
-                setForm(stored.form)
+                setForm({ ...initialForm(p, timezone), ...stored.form })
                 setDraftDismissed(true)
               }}
             >
@@ -594,6 +693,44 @@ function EditorForm({
                   disabled={!editable}
                 />
               </div>
+              <div className="space-y-1">
+                <Label htmlFor="p-pillar">Stub sadržaja (opciono)</Label>
+                <select
+                  id="p-pillar"
+                  value={form.pillarId}
+                  onChange={(e) => set('pillarId', e.target.value)}
+                  disabled={!editable}
+                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 dark:bg-input/30"
+                >
+                  <option value="">Bez stuba</option>
+                  {(pillars.data?.pillars ?? [])
+                    .filter((x) => x.isActive || x.id === form.pillarId)
+                    .map((x) => (
+                      <option key={x.id} value={x.id}>
+                        {x.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+              <div className="space-y-1">
+                <Label htmlFor="p-campaign">Kampanja (opciono)</Label>
+                <select
+                  id="p-campaign"
+                  value={form.campaignId}
+                  onChange={(e) => set('campaignId', e.target.value)}
+                  disabled={!editable}
+                  className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 dark:bg-input/30"
+                >
+                  <option value="">Bez kampanje</option>
+                  {(campaigns.data?.campaigns ?? [])
+                    .filter((x) => !x.endsOn || x.endsOn >= today || x.id === form.campaignId)
+                    .map((x) => (
+                      <option key={x.id} value={x.id}>
+                        {x.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
             </div>
           </CardContent>
         </Card>
@@ -615,7 +752,7 @@ function EditorForm({
               const sel = form.selected[a.id] ?? { on: false, text: '', options: {} }
               return (
                 <div key={a.id} className="rounded-md border p-3">
-                  <label className="flex items-center gap-2 text-sm">
+                  <label className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
                     <input
                       type="checkbox"
                       checked={sel.on}
@@ -732,12 +869,58 @@ function EditorForm({
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
-            {editable ? (
+            {canReplace && p ? (
+              <div className="space-y-2 rounded-md border p-3">
+                <p className="text-sm font-medium">Zamena medija bez otkazivanja termina</p>
+                <p className="text-xs text-muted-foreground">
+                  Novi fajl prolazi istu proveru za mreže kao pri zakazivanju, a termin ostaje isti.
+                </p>
+                <ul className="flex flex-wrap gap-2">
+                  {p.media.map((m, i) => {
+                    const on = replacing === m.mediaAssetId
+                    return (
+                      <li
+                        key={`${m.mediaAssetId}:${m.socialAccountId ?? ''}`}
+                        className="flex items-center gap-2 rounded-md border p-1.5 pr-2"
+                      >
+                        {m.mimeType?.startsWith('video/') ? (
+                          <span className="grid size-10 place-items-center rounded bg-black text-xs text-white">
+                            ▶
+                          </span>
+                        ) : m.url ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={m.url} alt={m.altText ?? ''} className="size-10 rounded object-cover" />
+                        ) : null}
+                        <span className="text-xs text-muted-foreground">{i + 1}.</span>
+                        <Button
+                          size="sm"
+                          variant={on ? 'default' : 'outline'}
+                          aria-pressed={on}
+                          disabled={replaceMedia.isPending}
+                          onClick={() => setReplacing(on ? null : m.mediaAssetId)}
+                        >
+                          {on ? 'Odustani' : 'Zameni'}
+                        </Button>
+                      </li>
+                    )
+                  })}
+                </ul>
+                {replacing ? (
+                  <p role="status" className="text-sm">
+                    {replaceMedia.isPending
+                      ? 'Menjam medij…'
+                      : 'Izaberite novi medij iz biblioteke ispod ili otpremite fajl.'}
+                  </p>
+                ) : null}
+                <ErrorBox error={replaceMedia.error} />
+              </div>
+            ) : null}
+            {editable || replacing ? (
               <Input
                 type="file"
                 aria-label="Otpremi fotografiju ili video"
                 accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
-                disabled={upload.isPending}
+                disabled={upload.isPending || replaceMedia.isPending}
                 onChange={(e) => {
                   const file = e.target.files?.[0]
                   e.target.value = ''
@@ -766,14 +949,16 @@ function EditorForm({
                   <button
                     key={m.id}
                     type="button"
-                    disabled={!editable}
+                    disabled={replacing ? form.mediaIds.includes(m.id) || replaceMedia.isPending : !editable}
                     onClick={() =>
-                      set(
-                        'mediaIds',
-                        form.mediaIds.includes(m.id)
-                          ? form.mediaIds.filter((x) => x !== m.id)
-                          : [...form.mediaIds, m.id],
-                      )
+                      replacing
+                        ? replaceMedia.mutate(m.id)
+                        : set(
+                            'mediaIds',
+                            form.mediaIds.includes(m.id)
+                              ? form.mediaIds.filter((x) => x !== m.id)
+                              : [...form.mediaIds, m.id],
+                          )
                     }
                     className={`relative overflow-hidden rounded-md border ${idx >= 0 ? 'ring-2 ring-primary' : ''}`}
                     title={m.altText ?? ''}
@@ -813,6 +998,27 @@ function EditorForm({
             {library.data && library.data.length === 0 ? (
               <p className="text-sm text-muted-foreground">Biblioteka je prazna.</p>
             ) : null}
+            {editable
+              ? aspectIssues.map((issue) => (
+                  <AspectIssueBox
+                    key={issue.id}
+                    issue={issue}
+                    cropping={cropping?.id === issue.id ? cropping.position : null}
+                    pending={crop.isPending}
+                    error={cropping?.id === issue.id ? crop.error : null}
+                    onStart={() => {
+                      crop.reset()
+                      setCropping({ id: issue.id, position: 0.5 })
+                    }}
+                    onPosition={(position) => setCropping({ id: issue.id, position })}
+                    onCancel={() => setCropping(null)}
+                    onCrop={() =>
+                      issue.target !== null &&
+                      crop.mutate({ id: issue.id, aspect: issue.target, position: cropping?.position ?? 0.5 })
+                    }
+                  />
+                ))
+              : null}
           </CardContent>
         </Card>
 
@@ -952,7 +1158,7 @@ function EditorForm({
         ) : null}
       </div>
 
-      <aside className="space-y-4">
+      <aside className="min-w-0 space-y-4">
         {p ? (
           <Card>
             <CardHeader>
@@ -1057,6 +1263,148 @@ function EditorForm({
           </Card>
         ) : null}
       </aside>
+    </div>
+  )
+}
+
+const rangeLabel = (r: AspectRange) =>
+  r.min === r.max ? aspectLabel(r.min) : `${aspectLabel(r.min)} do ${aspectLabel(r.max)}`
+
+interface AspectIssue {
+  id: string
+  index: number
+  ratio: number
+  bad: Array<keyof typeof PLATFORMS>
+  /** odnos na koji se seče; null kad izabrane mreže nemaju zajednički opseg */
+  target: number | null
+  url: string
+  width: number
+  height: number
+}
+
+/** Slika van opsega mreže (EDGE_CASES N9): šta ne valja i sečenje uz pregled pre upisa. */
+function AspectIssueBox({
+  issue,
+  cropping,
+  pending,
+  error,
+  onStart,
+  onPosition,
+  onCancel,
+  onCrop,
+}: {
+  issue: AspectIssue
+  /** položaj isečka dok je pregled otvoren, inače null */
+  cropping: number | null
+  pending: boolean
+  error: unknown
+  onStart: () => void
+  onPosition: (position: number) => void
+  onCancel: () => void
+  onCrop: () => void
+}) {
+  return (
+    <div
+      role="status"
+      className="space-y-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950"
+    >
+      <p>
+        Slika {issue.index + 1} ima odnos {aspectLabel(issue.ratio)}, a{' '}
+        {issue.bad
+          .map((pl) => `${PLATFORMS[pl].label} prima ${rangeLabel(PLATFORMS[pl].imageAspect)}`)
+          .join(', ')}
+        .
+      </p>
+      {issue.target === null ? (
+        <p>
+          Izabrane mreže nemaju zajednički odnos stranica. Napravite posebnu objavu za mrežu koja traži
+          drugačiji format.
+        </p>
+      ) : cropping === null ? (
+        <Button size="sm" variant="outline" onClick={onStart}>
+          Iseci na {aspectLabel(issue.target)}
+        </Button>
+      ) : (
+        <div className="space-y-3">
+          <CropPreview
+            url={issue.url}
+            width={issue.width}
+            height={issue.height}
+            target={issue.target}
+            position={cropping}
+            onPosition={onPosition}
+          />
+          <div className="flex flex-wrap gap-2">
+            <Button size="sm" onClick={onCrop} disabled={pending}>
+              {pending ? 'Sečem…' : `Iseci na ${aspectLabel(issue.target)}`}
+            </Button>
+            <Button size="sm" variant="ghost" onClick={onCancel} disabled={pending}>
+              Odustani
+            </Button>
+          </div>
+          <p className="text-xs">Isečak postaje nova slika u biblioteci; original ostaje netaknut.</p>
+          <ErrorBox error={error} />
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** Ceo kadar sa zatamnjenim delom koji otpada; klizač pomera isečak po osi koja se seče. */
+function CropPreview({
+  url,
+  width,
+  height,
+  target,
+  position,
+  onPosition,
+}: {
+  url: string
+  width: number
+  height: number
+  target: number
+  position: number
+  onPosition: (position: number) => void
+}) {
+  const rect = cropRect(width, height, target, position)
+  const acrossWidth = rect.width < width
+  const pct = (v: number, of: number) => `${(v / of) * 100}%`
+  return (
+    <div className="space-y-2">
+      <div
+        className="relative mx-auto overflow-hidden rounded-md bg-muted"
+        style={{
+          aspectRatio: `${width} / ${height}`,
+          width: `min(100%, ${Math.round((260 * width) / height)}px)`,
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={url} alt="" className="size-full object-cover" />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute rounded-sm border-2 border-white"
+          style={{
+            left: pct(rect.left, width),
+            top: pct(rect.top, height),
+            width: pct(rect.width, width),
+            height: pct(rect.height, height),
+            boxShadow: '0 0 0 9999px rgb(0 0 0 / 0.55)',
+          }}
+        />
+      </div>
+      <label className="flex items-center gap-3 text-xs">
+        <span className="shrink-0">{acrossWidth ? 'Levo – desno' : 'Gore – dole'}</span>
+        <input
+          type="range"
+          min={0}
+          max={100}
+          step={1}
+          value={Math.round(position * 100)}
+          onChange={(e) => onPosition(Number(e.target.value) / 100)}
+          className="w-full accent-primary"
+          aria-label="Položaj isečka"
+        />
+      </label>
     </div>
   )
 }

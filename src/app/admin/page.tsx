@@ -2,6 +2,8 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 
 import { fmtN, fmtPct, fmtUsd } from '@/components/admin/format'
+import { ColumnChart } from '@/components/charts/column-chart'
+import { dayLabel } from '@/components/charts/scale'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { requireAdmin } from '@/services/admin/context'
@@ -24,8 +26,6 @@ function Tile({ label, value, hint }: { label: string; value: string; hint?: str
 export default async function AdminHomePage() {
   await requireAdmin()
   const d = await getDashboard(30)
-  const lastDays = d.users.perDay.slice(-14)
-  const maxDay = Math.max(1, ...lastDays.map((x) => x.count))
   return (
     <div className="space-y-8">
       <div>
@@ -52,28 +52,18 @@ export default async function AdminHomePage() {
           <Tile label="Radni prostori / brendovi" value={`${fmtN(d.workspaces)} / ${fmtN(d.brands)}`} />
         </div>
         <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Nove registracije po danu (14 dana)</CardTitle>
-          </CardHeader>
           <CardContent>
-            <table className="w-full text-sm">
-              <tbody>
-                {lastDays.map((x) => (
-                  <tr key={x.day} className="border-t first:border-t-0">
-                    <td className="w-28 py-1 pr-2 text-muted-foreground">
-                      {x.day.slice(8, 10)}.{x.day.slice(5, 7)}.
-                    </td>
-                    <td className="py-1 pr-2">
-                      <div
-                        className="h-2 rounded-full bg-primary/70"
-                        style={{ width: `${(x.count / maxDay) * 100}%`, minWidth: x.count ? 4 : 0 }}
-                      />
-                    </td>
-                    <td className="w-12 py-1 text-right tabular-nums">{x.count}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <ColumnChart
+              title="Nove registracije po danu"
+              description="Poslednjih 30 dana"
+              bars={d.users.perDay.map((x) => ({
+                key: x.day,
+                label: dayLabel(x.day),
+                longLabel: dayLabel(x.day),
+                value: x.count,
+              }))}
+              emptyText="Nema novih registracija u poslednjih 30 dana."
+            />
           </CardContent>
         </Card>
       </section>
@@ -82,7 +72,7 @@ export default async function AdminHomePage() {
         <h2 className="text-sm font-medium text-muted-foreground uppercase">Naplata</h2>
         {!d.billing.enabled ? (
           <p className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
-            Još nema aktivnih pretplata: naplata stiže u fazi 12, pa su MRR, ARR i churn za sada nula.
+            Još nema aktivnih pretplata, pa su MRR, ARR i churn nula.
           </p>
         ) : null}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">

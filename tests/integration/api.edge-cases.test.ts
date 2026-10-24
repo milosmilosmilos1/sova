@@ -16,9 +16,11 @@ import { NextRequest } from 'next/server'
 import sharp from 'sharp'
 
 import { DELETE as brandDelete, PATCH as brandPatch } from '@/app/api/brands/[id]/route'
+import { POST as cropPost } from '@/app/api/media/[id]/crop/route'
 import { DELETE as mediaDelete } from '@/app/api/media/[id]/route'
 import { POST as uploadPost } from '@/app/api/media/upload/route'
 import { POST as actionPost } from '@/app/api/posts/[id]/[action]/route'
+import { POST as replacePost } from '@/app/api/posts/[id]/media/replace/route'
 import { POST as postsPost } from '@/app/api/posts/route'
 import { DELETE as workspaceDelete } from '@/app/api/workspaces/[id]/route'
 import { POST as workspacesPost } from '@/app/api/workspaces/route'
@@ -41,12 +43,30 @@ interface PostView {
   id: string
   version: number
   status: string
+  scheduledFor?: string | null
   targets: Array<{ id: string; scheduledAt: string | null }>
+  media?: Array<{ mediaAssetId: string }>
 }
 
-async function jpeg(): Promise<Buffer> {
-  return sharp({ create: { width: 800, height: 800, channels: 3, background: { r: 20, g: 90, b: 160 } } })
+/** Jednobojna slika; `tint` daje drugi fajl (isti bajtovi bi se spojili u jedan medij). */
+async function jpeg(width = 800, height = 800, tint = 20): Promise<Buffer> {
+  return sharp({ create: { width, height, channels: 3, background: { r: tint, g: 90, b: 160 } } })
     .jpeg({ quality: 80 })
+    .toBuffer()
+}
+
+/** Prelaz boja po obe ose: isečci sa različitih položaja daju različite fajlove. */
+async function gradient(width: number, height: number): Promise<Buffer> {
+  const raw = Buffer.alloc(width * height * 3)
+  for (let y = 0; y < height; y++)
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 3
+      raw[i] = Math.round((y / height) * 255)
+      raw[i + 1] = 90
+      raw[i + 2] = Math.round((x / width) * 255)
+    }
+  return sharp(raw, { raw: { width, height, channels: 3 } })
+    .jpeg({ quality: 85 })
     .toBuffer()
 }
 
@@ -71,8 +91,8 @@ async function uploadRaw(
   }
 }
 
-async function upload(): Promise<string> {
-  const r = await uploadRaw(await jpeg(), 'slika.jpg', 'image/jpeg')
+async function upload(width?: number, height?: number, tint?: number): Promise<string> {
+  const r = await uploadRaw(await jpeg(width, height, tint), 'slika.jpg', 'image/jpeg')
   return r.json.data!.id
 }
 
@@ -130,6 +150,15 @@ async function schedule(p: PostView, whenIso: string): Promise<PostView> {
   })
   if (r.status !== 200) throw new Error(JSON.stringify(r.json.error))
   return r.json.data!
+}
+
+async function unschedule(postId: string, version: number): Promise<void> {
+  const r = await call(actionPost, `/api/posts/${postId}/unschedule`, {
+    token: owner.token,
+    params: { id: postId, action: 'unschedule' },
+    body: { version },
+  })
+  if (r.status !== 200) throw new Error(JSON.stringify(r.json.error))
 }
 
 function tomorrow(): string {
@@ -192,6 +221,65 @@ describe('Mediji (U6, U7, U9)', () => {
     expect(ok.status).toBe(200)
     const { data } = await admin.from('media_assets').select('deleted_at').eq('id', asset).single()
     expect(data!.deleted_at).not.toBeNull()
+  })
+
+  it('zamena medija u zakazanoj objavi zadržava termin; stari medij se posle toga briše', async () => {
+    const a = await upload(800, 800, 41)
+    const b = await upload(800, 800, 42)
+    const p = await createPost('Objava kojoj se menja slika bez otkazivanja termina', [a])
+    const s = await schedule(p, zonedToUtc(tomorrow(), '10:17', 'Europe/Belgrade'))
+    const replace = (body: Record<string, unknown>, token = owner.token) =>
+      call<PostView>(replacePost, `/api/posts/${p.id}/media/replace`, { token, params: { id: p.id }, body })
+
+    const r = await replace({ version: s.version, fromMediaId: a, toMediaId: b })
+    expect(r.status).toBe(200)
+    expect(r.json.data).toMatchObject({
+      status: 'scheduled',
+      version: s.version + 1,
+      scheduledFor: s.scheduledFor,
+    })
+    expect(r.json.data!.media!.map((m) => m.mediaAssetId)).toEqual([b])
+    const { data: ver } = await admin
+      .from('post_versions')
+      .select('change_summary')
+      .eq('post_id', p.id)
+      .eq('version', s.version + 1)
+      .single()
+    expect(ver!.change_summary).toBe('zamena medija')
+
+    const del = (id: string) =>
+      call(mediaDelete, `/api/media/${id}`, { method: 'DELETE', token: owner.token, params: { id } })
+    expect((await del(a)).status).toBe(200)
+    expect((await del(b)).status).toBe(409)
+    expect((await replace({ version: s.version, fromMediaId: b, toMediaId: a })).status).toBe(409)
+    await unschedule(p.id, s.version + 1)
+  })
+
+  it('zamena: nacrt 409, medij van opsega mreže 400, urednik 403', async () => {
+    const a = await upload(800, 800, 51)
+    const b = await upload(800, 800, 52)
+    const tall = (await uploadRaw(await gradient(540, 960), 'uspravna.jpg', 'image/jpeg')).json.data!.id
+    const p = await createPost('Objava za pravila zamene medija u zakazanoj objavi', [a])
+    const replace = (body: Record<string, unknown>, token = owner.token) =>
+      call<PostView>(replacePost, `/api/posts/${p.id}/media/replace`, { token, params: { id: p.id }, body })
+
+    expect((await replace({ version: p.version, fromMediaId: a, toMediaId: b })).status).toBe(409)
+    const s = await schedule(p, zonedToUtc(tomorrow(), '11:23', 'Europe/Belgrade'))
+    const bad = await replace({ version: s.version, fromMediaId: a, toMediaId: tall })
+    expect(bad.status).toBe(400)
+    expect(JSON.stringify(bad.json.error)).toContain('Odnos stranica 9:16 je van opsega od 4:5 do 1,91:1')
+    expect((await replace({ version: s.version, fromMediaId: b, toMediaId: a })).status).toBe(404)
+
+    const editor = await createTestUser('edge-editor')
+    try {
+      await admin.from('workspace_members').insert({ workspace_id: wsId, user_id: editor.id, role: 'editor' })
+      expect((await replace({ version: s.version, fromMediaId: a, toMediaId: b }, editor.token)).status).toBe(
+        403,
+      )
+    } finally {
+      await deleteTestUser(editor)
+      await unschedule(p.id, s.version)
+    }
   })
 
   it('kad upis u bazu ne uspe, fajl se briše iz skladišta (bez siročića)', async () => {
@@ -402,5 +490,70 @@ describe('Meko brisanje brenda i radnog prostora', () => {
       .eq('id', scheduled.targets[0]!.id)
       .single()
     expect(t!.status).toBe('canceled')
+  })
+})
+
+describe('Sečenje slike (N9)', () => {
+  const cut = (id: string, body: Record<string, unknown>) =>
+    call<{ id: string; width: number; height: number }>(cropPost, `/api/media/${id}/crop`, {
+      token: owner.token,
+      params: { id },
+      body,
+    })
+
+  it('9:16 se seče na 4:5 kao nova slika; original ostaje, opis i AI oznaka se nasleđuju', async () => {
+    const original = (await uploadRaw(await gradient(540, 960), 'vertikalna.jpg', 'image/jpeg')).json.data!.id
+    await admin
+      .from('media_assets')
+      .update({ alt_text: 'Vertikalni kadar', is_ai_generated: true })
+      .eq('id', original)
+    const r = await cut(original, { aspect: 0.8 })
+    expect(r.status).toBe(200)
+    expect(r.json.data).toMatchObject({ width: 540, height: 675 })
+    expect(r.json.data!.id).not.toBe(original)
+    const { data: row } = await admin.from('media_assets').select('*').eq('id', r.json.data!.id).single()
+    expect(row).toMatchObject({ alt_text: 'Vertikalni kadar', is_ai_generated: true, brand_id: brandId })
+    expect((row!.source_data as { cropped_from?: string }).cropped_from).toBe(original)
+    const file = await admin.storage.from('uploads').download(row!.storage_path)
+    const meta = await sharp(Buffer.from(await file.data!.arrayBuffer())).metadata()
+    expect([meta.width, meta.height]).toEqual([540, 675])
+    const { data: orig } = await admin
+      .from('media_assets')
+      .select('deleted_at, height')
+      .eq('id', original)
+      .single()
+    expect(orig).toMatchObject({ deleted_at: null, height: 960 })
+
+    // drugi položaj je drugi isečak, a isti zahtev ponovo vraća postojeći (bez duplikata)
+    const top = await cut(original, { aspect: 0.8, position: 0 })
+    expect(top.json.data!.id).not.toBe(r.json.data!.id)
+    expect((await cut(original, { aspect: 0.8 })).json.data!.id).toBe(r.json.data!.id)
+  })
+
+  it('video se ne seče, premala slika i neispravan odnos se odbijaju', async () => {
+    const small = await upload(300, 300, 61)
+    const tooSmall = await cut(small, { aspect: 0.5 })
+    expect(tooSmall.status).toBe(400)
+    expect(tooSmall.json.error?.message).toContain('premala')
+    expect((await cut(small, { aspect: 9 })).status).toBe(400)
+
+    const videoId = randomUUID()
+    await admin.from('media_assets').insert({
+      id: videoId,
+      workspace_id: wsId,
+      brand_id: brandId,
+      kind: 'video',
+      source: 'upload',
+      bucket: 'uploads',
+      storage_path: `ws/${wsId}/brand/${brandId}/uploads/${videoId}.mp4`,
+      mime_type: 'video/mp4',
+      size_bytes: 1000,
+      width: 1080,
+      height: 1920,
+      duration_ms: 5000,
+    })
+    const video = await cut(videoId, { aspect: 0.8 })
+    expect(video.status).toBe(400)
+    expect(video.json.error?.message).toContain('samo slike')
   })
 })

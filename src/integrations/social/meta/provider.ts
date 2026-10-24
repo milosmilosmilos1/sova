@@ -3,6 +3,7 @@ import 'server-only'
 import { PLATFORMS, validateText } from '@/config/platforms'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
+import { aspectFits, aspectLabel } from '@/lib/media/crop'
 import { ProviderError } from '@/integrations/social/errors'
 import type {
   AccountMetrics,
@@ -319,9 +320,9 @@ export class MetaProvider implements SocialProvider {
         )
       if (m.width && m.height) {
         const ratio = m.width / m.height
-        if (ratio < c.imageAspect.min - 0.01 || ratio > c.imageAspect.max + 0.01) {
+        if (!aspectFits(ratio, c.imageAspect)) {
           problems.push(
-            `Odnos stranica ${ratio.toFixed(2)} je van opsega ${c.imageAspect.min}–${c.imageAspect.max} za ${c.label}.`,
+            `Odnos stranica ${aspectLabel(ratio)} je van opsega od ${aspectLabel(c.imageAspect.min)} do ${aspectLabel(c.imageAspect.max)} za ${c.label}.`,
           )
         }
       }

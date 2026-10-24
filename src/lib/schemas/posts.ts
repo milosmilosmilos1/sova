@@ -164,3 +164,16 @@ export const completeUploadSchema = z.object({
 })
 
 export const platformSchema = platformEnum
+
+/** Sečenje slike (N9): odnos širina/visina i položaj isečka po osi koja se seče (0–1). */
+export const cropMediaSchema = z.object({
+  aspect: z.number().min(0.3).max(3.5),
+  position: z.number().min(0).max(1).default(0.5),
+})
+
+/** Zamena medija u zakazanoj objavi (U9). */
+export const replaceMediaSchema = z.object({
+  version: z.number().int().min(1),
+  fromMediaId: z.uuid(),
+  toMediaId: z.uuid(),
+})

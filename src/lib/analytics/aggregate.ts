@@ -205,3 +205,54 @@ export function topTargets(targets: TargetLite[], latest: Map<string, SnapshotLi
     .sort((a, b) => b.engagement - a.engagement)
     .slice(0, limit)
 }
+
+export interface DailyPoint {
+  date: string
+  posts: number
+  reach: number
+  engagement: number
+}
+
+/**
+ * Doseg i angažovanje po danu objave, u zoni brenda (grafikon trenda, D-062): svaka objava doprinosi
+ * svom danu merodavnim snimkom. Dani bez objava su nule, da linija ne preskače period.
+ */
+export function dailySeries(
+  targets: TargetLite[],
+  latest: Map<string, SnapshotLite>,
+  from: string,
+  to: string,
+  timeZone: string,
+): DailyPoint[] {
+  const fmt = new Intl.DateTimeFormat('en-CA', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  })
+  const dayOf = (iso: string) => fmt.format(new Date(iso))
+  const end = dayOf(to)
+  const days: DailyPoint[] = []
+  for (
+    let d = new Date(`${dayOf(from)}T12:00:00Z`);
+    days.length < 400;
+    d = new Date(d.getTime() + 86_400_000)
+  ) {
+    const date = d.toISOString().slice(0, 10)
+    days.push({ date, posts: 0, reach: 0, engagement: 0 })
+    if (date >= end) break
+  }
+  const index = new Map(days.map((p, i) => [p.date, i]))
+  for (const t of targets) {
+    const i = index.get(dayOf(t.publishedAt))
+    if (i === undefined) continue
+    const p = days[i]!
+    p.posts += 1
+    const s = latest.get(t.targetId)
+    if (s) {
+      p.reach += s.reach ?? 0
+      p.engagement += engagementOfSnapshot(s)
+    }
+  }
+  return days
+}

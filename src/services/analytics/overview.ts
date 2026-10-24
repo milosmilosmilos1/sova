@@ -5,6 +5,7 @@ import type { SupabaseClient } from '@supabase/supabase-js'
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import {
   ANALYTICS_TARGET_STATUSES,
+  dailySeries,
   followersSeries,
   groupTotals,
   latestSnapshots,
@@ -12,6 +13,7 @@ import {
   periodBefore,
   topTargets,
   totalsOf,
+  type DailyPoint,
   type FollowerSeries,
   type GroupRow,
   type Horizon,
@@ -71,6 +73,8 @@ export interface OverviewData {
   }
   perPlatform: Array<GroupRow<SocialPlatform> & { platformLabel: string }>
   perPillar: GroupRow<string>[]
+  /** doseg i angažovanje po danu objave, u zoni brenda */
+  daily: DailyPoint[]
   topPosts: TopPost[]
   weakPosts: TopPost[]
   followers: Array<FollowerSeries & { platform: SocialPlatform | null; name: string | null }>
@@ -157,6 +161,7 @@ export async function computeOverview(
   brandId: string,
   from: string,
   to: string,
+  timeZone = 'UTC',
 ): Promise<OverviewData> {
   const prevRange = periodBefore(from, to)
   const [targets, prevTargets, accountsRes] = await Promise.all([
@@ -258,6 +263,7 @@ export async function computeOverview(
     perPillar: groupTotals(targets, latest, (t) =>
       t.pillarId ? { key: t.pillarId, label: t.pillarName ?? 'Stub' } : null,
     ),
+    daily: dailySeries(targets, latest, from, to, timeZone),
     topPosts: ranked.slice(0, 5),
     weakPosts: ranked.length > 5 ? ranked.slice(-3).reverse() : [],
     followers,
@@ -289,7 +295,7 @@ export async function getOverview(
 ): Promise<OverviewView> {
   const brand = await getBrand(viewer, brandId)
   const range = normalizeRange(from, to)
-  const data = await computeOverview(viewer.supabase, brandId, range.from, range.to)
+  const data = await computeOverview(viewer.supabase, brandId, range.from, range.to, brand.timezone)
   return { ...data, timezone: brand.timezone }
 }
 
