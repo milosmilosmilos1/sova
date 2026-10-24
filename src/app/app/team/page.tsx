@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 
 import { AutoSubmitSelect } from '@/components/app/auto-submit-select'
 import { InviteForm } from '@/components/app/team-forms'
+import { TransferOwnershipForm } from '@/components/app/transfer-ownership-form'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -119,6 +120,28 @@ export default async function TeamPage() {
           </Table>
         </CardContent>
       </Card>
+
+      {current.role === 'owner' ? (
+        <Card>
+          <CardHeader>
+            <CardTitle>Prenos vlasništva</CardTitle>
+            <CardDescription>
+              Vlasnik upravlja naplatom i može da obriše radni prostor. Posle prenosa ostajete administrator.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <TransferOwnershipForm
+              workspaceId={current.workspaceId}
+              members={members
+                .filter((m) => m.userId !== viewer.user.id)
+                .map((m) => ({
+                  userId: m.userId,
+                  label: `${m.fullName ?? m.email} (${ROLE_LABEL[m.role]})`,
+                }))}
+            />
+          </CardContent>
+        </Card>
+      ) : null}
 
       {isAdmin ? (
         <div className="grid gap-6 lg:grid-cols-2">

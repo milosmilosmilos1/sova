@@ -18,6 +18,7 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 
 import { ImpersonationBanner } from '@/components/admin/impersonation-banner'
+import { AuthSync } from '@/components/app/auth-sync'
 import { AutoSubmitSelect } from '@/components/app/auto-submit-select'
 import { NotificationsBell } from '@/components/app/notifications-bell'
 import { CurrentPathInput, NavLink } from '@/components/app/nav-link'
@@ -60,6 +61,7 @@ export function AppShell({
 }) {
   return (
     <>
+      <AuthSync />
       {viewer.impersonation ? (
         <ImpersonationBanner
           userEmail={viewer.email}

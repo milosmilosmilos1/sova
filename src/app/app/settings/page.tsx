@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation'
 
 import { CanvaCard } from '@/components/app/canva-card'
 import { NotificationPrefsCard } from '@/components/app/notification-prefs-card'
+import { PrivacyCard } from '@/components/app/privacy-card'
 import { CreateBrandForm, ProfileForm, WorkspaceForm } from '@/components/app/settings-forms'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -11,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { deleteBrandAction } from '@/lib/auth/actions'
 import { getViewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
+import { authProviders } from '@/services/account'
 import { listBrands } from '@/services/brands'
 import { getWorkspacePlan } from '@/services/plans'
 import { countScheduledPosts } from '@/services/posts/publisher'
@@ -24,9 +26,10 @@ export default async function SettingsPage({ searchParams }: PageProps<'/app/set
   if (!current) redirect('/app/onboarding')
   const sp = await searchParams
   const canvaNotice = typeof sp.canva === 'string' ? sp.canva : null
-  const [brands, plan] = await Promise.all([
+  const [brands, plan, auth] = await Promise.all([
     listBrands(viewer, current.workspaceId),
     getWorkspacePlan(current.workspaceId),
+    authProviders(viewer.user.id),
   ])
   const scheduledCounts = await countScheduledPosts(
     viewer,
@@ -126,6 +129,14 @@ export default async function SettingsPage({ searchParams }: PageProps<'/app/set
       </Card>
 
       <CanvaCard workspaceId={current.workspaceId} canEdit={canEdit} notice={canvaNotice} />
+
+      <PrivacyCard
+        email={viewer.user.email}
+        hasPassword={auth.providers.includes('email')}
+        disabledReason={
+          viewer.impersonation ? 'Izvoz i brisanje naloga nisu dostupni tokom impersonacije.' : null
+        }
+      />
     </div>
   )
 }

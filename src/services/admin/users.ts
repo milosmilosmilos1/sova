@@ -6,6 +6,7 @@ import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError } from '@/lib/supabase/errors'
 import { getTokenBalance } from '@/lib/tokens/reservation'
+import { planAccountDeletion, revokeWorkspaceSocialAccounts } from '@/services/account'
 import { listAudit, logAdminAction, type AdminContext, type AuditRow } from '@/services/admin/audit'
 import { listImpersonationSessions, type SessionView } from '@/services/admin/impersonation'
 import type { Database } from '@/types/database'
@@ -608,50 +609,22 @@ export async function deleteUserAccount(
       fields: { confirmEmail: ['email ne odgovara'] },
     })
   }
-  const admin = createSupabaseAdminClient()
-  const { data: owned } = await admin
-    .from('workspaces')
-    .select('id, name')
-    .eq('owner_id', userId)
-    .is('deleted_at', null)
-  const blocking: string[] = []
-  const solo: string[] = []
-  for (const w of owned ?? []) {
-    const { count } = await admin
-      .from('workspace_members')
-      .select('user_id', { count: 'exact', head: true })
-      .eq('workspace_id', w.id)
-      .neq('user_id', userId)
-    if ((count ?? 0) > 0) blocking.push(w.name)
-    else solo.push(w.id)
-  }
-  if (blocking.length) {
+  const plan = await planAccountDeletion(userId)
+  if (plan.blocking.length) {
     throw new ApiError(
       'CONFLICT',
-      `Korisnik je vlasnik radnih prostora sa drugim članovima (${blocking.join(', ')}). Prvo prenesite vlasništvo.`,
+      `Korisnik je vlasnik radnih prostora sa drugim članovima (${plan.blocking.map((b) => b.name).join(', ')}). Prvo prenesite vlasništvo.`,
     )
   }
+  const solo = plan.solo
   const before = {
     email: target.email,
     fullName: target.full_name,
     createdAt: target.created_at,
     workspaces: solo.length,
   }
-  if (solo.length) {
-    const { data: brands } = await admin.from('brands').select('id').in('workspace_id', solo)
-    const brandIds = (brands ?? []).map((b) => b.id)
-    if (brandIds.length) {
-      await admin
-        .from('social_accounts')
-        .update({
-          status: 'revoked',
-          access_token_enc: null,
-          refresh_token_enc: null,
-          status_reason: 'Nalog obrisan iz admin panela.',
-        })
-        .in('brand_id', brandIds)
-    }
-  }
+  await revokeWorkspaceSocialAccounts(solo, { atNetwork: true, reason: 'Nalog obrisan iz admin panela.' })
+  const admin = createSupabaseAdminClient()
   // audit pre brisanja: posle njega korisnik više ne postoji
   await logAdminAction(ctx, { action: 'user.delete', targetType: 'user', targetId: userId, before })
   const { error } = await admin.auth.admin.deleteUser(userId)

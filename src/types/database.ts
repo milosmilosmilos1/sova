@@ -1846,6 +1846,9 @@ isOneToOne: false
 "storage_workspace_id":
 { Args: { "p_name": string }; Returns: string
                            },
+"transfer_workspace_ownership":
+{ Args: { "p_new_owner": string,"p_workspace_id": string }; Returns: undefined
+                           },
 "transition_post":
 { Args: { "p_actor": string,"p_expected_version": number,"p_post_id": string,"p_summary"?: string,"p_to": Database["public"]['Enums']["post_status"] }; Returns: number
                            },

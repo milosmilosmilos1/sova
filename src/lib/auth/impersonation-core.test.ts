@@ -82,6 +82,8 @@ describe('blokade tokom impersonacije', () => {
     expect(impersonationBlock(false, 'PATCH', '/api/posts/abc')).toBeNull()
     expect(impersonationBlock(false, 'POST', '/api/posts/abc/submit')).toBeNull()
     expect(impersonationBlock(false, 'DELETE', '/api/posts/abc')).toContain('Brisanje')
+    expect(impersonationBlock(false, 'POST', '/api/workspaces/abc/transfer')).toContain('Vlasništvo')
+    expect(impersonationBlock(false, 'POST', '/api/account/delete')).toContain('Nalog')
     expect(impersonationBlock(false, 'POST', '/api/posts/abc/schedule')).toContain('Objavljivanje')
     expect(impersonationBlock(false, 'POST', '/api/posts/abc/publish-now')).toContain('Objavljivanje')
     expect(impersonationBlock(false, 'POST', '/api/posts/abc/targets/t/retry')).toContain('Objavljivanje')

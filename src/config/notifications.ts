@@ -46,6 +46,11 @@ export const NOTIFICATION_TYPES = {
     description: 'Objava čeka da je neko ručno postavi na mrežu.',
     emailDefault: true,
   },
+  workspace_ownership: {
+    label: 'Vlasništvo radnog prostora',
+    description: 'Neko vam je preneo vlasništvo nad radnim prostorom.',
+    emailDefault: true,
+  },
   account_expiring: {
     label: 'Veza sa mrežom ističe',
     description: 'LinkedIn veza traje 60 dana; povežite nalog ponovo pre isteka.',

@@ -583,14 +583,19 @@ async function main() {
   })
 
   await test('odložena provera i dalje odbija nepostojećeg roditelja (na kraju transakcije)', async () => {
-    const r = await admin
-      .from('strategies')
-      .insert({
-        brand_id: '00000000-0000-4000-8000-000000000000',
-        period_start: '2026-11-02',
-        period_end: '2026-11-29',
-      })
+    const r = await admin.from('strategies').insert({
+      brand_id: '00000000-0000-4000-8000-000000000000',
+      period_start: '2026-11-02',
+      period_end: '2026-11-29',
+    })
     expectError(r, 'foreign key')
+  })
+
+  await test('transfer_workspace_ownership: ne-vlasnik ne može ni direktno kroz RPC', async () => {
+    const r = await B.rpc('transfer_workspace_ownership', { p_workspace_id: wsA, p_new_owner: users.b.id })
+    expectError(r, 'FORBIDDEN')
+    const { data: ws } = await admin.from('workspaces').select('owner_id').eq('id', wsA).single()
+    assert(ws.owner_id === users.a.id, 'vlasnik se promenio')
   })
 
   // admin bez prijave (samo kroz allowlist), da ne troši limit prijava lokalnog Auth-a

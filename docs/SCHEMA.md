@@ -1286,6 +1286,8 @@ Faza 8b (24.10.2026), bez nove migracije:
 - Nov tip obaveštenja `account_expiring` (kolona `type` je tekst, bez migracije).
 - Migracija `20261024000020_deferred_cascade_fks.sql`: svi strani ključevi sa `ON DELETE CASCADE` ili `SET NULL` su `DEFERRABLE INITIALLY DEFERRED` (D-079); jedini neodložen je `subscriptions.plan_id` (NO ACTION, namerno).
 
+Faza 11a (24.10.2026): migracija `20261024000021_transfer_ownership.sql` sa RPC-om `transfer_workspace_ownership(workspace, new_owner)` (security definer, poziva `authenticated`): proverava da je pozivalac vlasnik i da novi vlasnik je član koji nije blokiran, odbija impersonaciju (claim `imp`), pa u jednoj transakciji unapređuje novog vlasnika (`owner`, `all_brands`), spušta starog na `admin` i menja `workspaces.owner_id`. Nov tip obaveštenja `workspace_ownership`.
+
 Faza 13 (24.10.2026), tri nove migracije (primenjene sa `migration up`, bez `db:reset`):
 
 - `20261024000017_admin.sql`: RPC-ovi `admin_dashboard_stats`, `admin_activity_counts`, `admin_auth_users`, `admin_revoke_user_sessions`, `admin_ai_costs` (security definer, samo service role); indeksi `admin_audit_log` po vremenu, cilju i akciji i delimični indeks aktivnih `impersonation_sessions`; red `platform_settings.active_models = {}` (D-072).

@@ -87,6 +87,7 @@ const FULL_MODE_FORBIDDEN: Array<{ re: RegExp; reason: string }> = [
     re: /^\/api\/(account|auth|profile\/(password|email))(\/|$)/,
     reason: 'Nalog, lozinka i email se ne menjaju tokom impersonacije.',
   },
+  { re: /^\/api\/workspaces\/[^/]+\/transfer$/, reason: 'Vlasništvo se ne prenosi tokom impersonacije.' },
   { re: /^\/api\/integrations\//, reason: 'Povezivanje mreža i Canve nije dozvoljeno tokom impersonacije.' },
   {
     re: /^\/api\/social-accounts(\/|$)/,

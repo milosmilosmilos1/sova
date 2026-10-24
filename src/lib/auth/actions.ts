@@ -244,7 +244,8 @@ export async function signOutAction(): Promise<void> {
   }
   const supabase = await createSupabaseServerClient()
   await supabase.auth.signOut()
-  redirect('/login')
+  // `odjava=1`: strana za prijavu javlja ostalim tabovima da je sesija završena (EDGE_CASES A7)
+  redirect('/login?odjava=1')
 }
 
 // ---------------------------------------------------------------------------

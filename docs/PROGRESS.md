@@ -21,7 +21,8 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 | 10a Strategija i kalendar iz strategije | gotovo      | AI strategija (20 tokena, Inngest), vremena iz istorije ili pretpostavke, verzije, stubovi i kampanje, kalendar nacrta bez tokena, UI /app/strategy                           |
 | 10b Metrike i analitika                 | gotovo      | post-metrics (+1h/+24h/+7d/+30d), dnevne metrike naloga, pregled sa poređenjem, AI uvidi nedeljno + predlozi, UI /app/analytics                                               |
 | 10c Autopilot i Inbox predloga          | gotovo      | nivoi 0–3, nedeljni nacrti iz strategije sa QA i budžetom, rokovi, mesečna strategija, okidači, Pauziraj sve, Inbox, UTM                                                      |
-| 11 Edge case-ovi                        | nije počelo |                                                                                                                                                                               |
+| 11a GDPR i nalog                        | gotovo      | izvoz podataka, brisanje naloga uz ponovnu potvrdu identiteta, prenos vlasništva, odjava u svim tabovima                                                                      |
+| 11b Ostali ivični slučajevi             | sledeće     | nacrt editora, siročići uploada, brisanje medija u upotrebi, promena zone brenda, dupli tekst, GIF; plaćanje (T4–T13, K6) čeka fazu 12                                        |
 | 12 Plaćanje                             | nije počelo | Stripe nalog vlasnik pravi; preskače se do tada (D-001)                                                                                                                       |
 | 13a–13b Admin                           | gotovo      | pregled, korisnici i radnje, monitor objava, AI troškovi i marža, platforma (flagovi, cene, modeli, održavanje), audit sa CSV-om, impersonacija (D-070, D-075)                |
 | 14a–14c Dizajn                          | nije počelo | treba: screenshot Dribbble reference ako link ne radi                                                                                                                         |
@@ -95,6 +96,22 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Admin panel: isti `npm run demo:seed` pravi i `admin@sova.local` sa uključenim TOTP-om i ispisuje lozinku i TOTP tajnu. Posle prijave: Podešavanja → Bezbednost → kod iz aplikacije za kodove (ili `npm run demo:totp -- <tajna>`), pa http://localhost:3001/admin.
 - Provereno 24.10.2026 u Chromium-u: početna, Inbox, Objave, detalj objave, Kalendar, Strategija, Analitika, Autopilot, Obaveštenja, Mreže i Podešavanja rade bez grešaka u konzoli i API odgovorima. Usput ispravljeno: legenda kalendara je prikazivala interne nazive statusa, horizonti snimaka u analitici nisu bili poređani, editor nije prikazivao zašto je Autopilot vratio nacrt (sada prikazuje, a izveštaj se briše čim se tekst promeni).
 - Provereno 24.10.2026 u Chromium-u (faza 13): svih sedam admin strana, „Gledaj kao” za demo nalog (traka, izmena u read-only režimu dobija 403 sa objašnjenjem, „Izađi” vraća na detalj korisnika), `/admin/users` na 390 px bez horizontalnog skrola. Usput ispravljeno: stara provera u `requireMembership` je tokom read-only pregleda rušila svaku stranu aplikacije.
+
+## Faza 11a — šta je urađeno
+
+- **Izvoz podataka** (D-080): `GET /api/account/export` vraća JSON fajl (`sova-podaci-YYYYMMDD.json`): profil, način prijave, članstva, sve iz radnih prostora čiji ste vlasnik (bez tokena mreža i internih troškova, mediji sa linkovima na 7 dana), vaše objave i komentari u tuđim prostorima, obaveštenja i podešavanja. Najviše 3 na sat, ne tokom impersonacije.
+- **Brisanje naloga**: Podešavanja → Privatnost i podaci → kucanje emaila i lozinka (nalog bez lozinke: prijava u poslednjih 15 minuta). Vlasnik tima prvo prenosi vlasništvo; solo radni prostori se brišu, veze sa mrežama opozivaju, objave u tuđim prostorima ostaju bez autora. Isti plan brisanja koristi admin panel (`src/services/account.ts`).
+- **Prenos vlasništva**: Tim → Prenos vlasništva (samo vlasnik, na postojećeg člana); RPC `transfer_workspace_ownership` (migracija 021), stari vlasnik postaje administrator, novi dobija obaveštenje `workspace_ownership`.
+- **Odjava u svim tabovima** (EDGE_CASES A6, A7): BroadcastChannel `sova-auth` posle odjave ili brisanja, provera `/api/me` pri povratku fokusa; odjava vodi na `/login?odjava=1`, brisanje na `/login?nalog=obrisan` sa porukom.
+- **Testovi**: 5 integracionih (izvoz bez tokena, limit izvoza, blokada vlasnika tima i pogrešan email, prenos sa proverama i obaveštenjem, brisanje sa lozinkom, opozivom TikTok veze i zadržavanjem objave u tuđem prostoru), 1 test baze (RPC prenosa odbija ne-vlasnika), 2 unit (pravila impersonacije). Provereno u Chromium-u: kartica privatnosti, izvoz, prenos, odjava u dva taba.
+
+## Kako da testiraš (faza 11a)
+
+1. Podešavanja → Privatnost i podaci → „Preuzmi moje podatke (JSON)”.
+2. Tim (kao vlasnik sa bar jednim članom) → Prenos vlasništva → izaberi člana, potvrdi → vi ste administrator.
+3. Otvori aplikaciju u dva taba, odjavi se u jednom → drugi prelazi na prijavu.
+4. Probni nalog → Podešavanja → Obriši nalog… → email + lozinka → prijava sa porukom da je nalog obrisan.
+5. `npm run test` (154), `npm run test:integration` (129), `npm run test:db` (29), `npm run test:e2e` (5).
 
 ## Faza 8b — šta je urađeno
 
@@ -309,7 +326,6 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 ## Tehnički dug
 
 - Tekstovi stranica faze 4 su na srpskom u kodu; selidba u next-intl poruke ide uz dizajn (faza 14) kad se ekrani finalizuju.
-- Prenos vlasništva radnog prostora i brisanje naloga iz aplikacije (izvoz, kaskada, opoziv tokena mreža) stižu uz GDPR deo (faza 11) i integracije (faza 8).
 - Sentry `withSentryConfig` samo sa `SENTRY_DSN`; upload source mapa tek sa `SENTRY_AUTH_TOKEN`.
 - CI pokreće samo unit testove; testovi baze i integracioni zahtevaju Supabase u CI-ju (faza 15).
 - `complete_upload` RPC iz plana zamenjen serverskim uploadom (`POST /api/media/upload`); HEIC konverzija (WASM dekoder) i video upload idu u fazu 7.

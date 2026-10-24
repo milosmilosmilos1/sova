@@ -38,8 +38,8 @@ Zamke:
 ```
 npm run lint && npm run typecheck
 npm run test            # Vitest unit (154)
-npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (28); pravi i briše test korisnike
-npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (124)
+npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (29); pravi i briše test korisnike
+npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (129)
 npm run test:e2e        # Playwright kroz Mailpit (5); traži pokrenut dev server
 npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs 25   # živi crawler bez baze i AI-ja
 npm run build           # produkcijski build
@@ -91,6 +91,9 @@ Faza 16. Vercel: `main` → Production, PR → Preview. Checklista u ARCHITECTUR
 - **Analiza sajta visi**: `select id, status, phase, progress->>'message', started_at from website_crawls where status in ('queued','running')`; Inngest dashboard → run `brand-analyze` po `crawlId`. Otkazivanje iz UI-ja šalje `brand/analyze.canceled` i vraća tokene; ručno: `update website_crawls set status='canceled', finished_at=now()` pa `release_reservation` za `ai_generations.token_reservation_id`.
 - **Vlasnik sajta se žali na SovaBot**: User-Agent je `SovaBot/1.0 (+https://sovaai.rs/bot)`; bot čita samo sajtove koje je korisnik uneo, poštuje robots.txt i Crawl-delay, najviše 60 strana po analizi i nedeljnu proveru sitemap/RSS. Blokada: `User-agent: SovaBot` / `Disallow: /`. Proveri `website_crawls` po `url` da vidiš ko je pokrenuo.
 - **Lažno pozitivna SSRF blokada**: `assertPublicHost` odbija domen ako bilo koja A/AAAA adresa padne u privatni opseg; proveri `nslookup` i, ako je sajt iza CDN-a sa javnim adresama, prijavi kao bag (ne dodavati izuzetke bez pregleda).
+
+- **Zahtev za podacima ili brisanjem stiže emailom**: korisnik sam izvozi i briše nalog u Podešavanja → Privatnost i podaci (D-080). Ako ne može da se prijavi: potvrdi identitet sa adrese naloga, pa Admin → Korisnici → Brisanje naloga (kucanje emaila). Izvoz u ime korisnika nije ugrađen; u izuzetnom slučaju korisnik privremeno vraća pristup kroz reset lozinke.
+- **Brisanje naloga vraća 409**: korisnik je vlasnik radnog prostora sa drugim članovima; prenosi vlasništvo na strani Tim (ili ga uklanja iz tima), pa briše nalog.
 
 ## 7. Dnevnik incidenata
 

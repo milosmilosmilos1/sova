@@ -4,16 +4,28 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 
 ## Auth i nalog
 
-| #   | Slučaj                                              | Ponašanje                                                                                                 | Faza  | Status                 |
-| --- | --------------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ----- | ---------------------- |
-| A1  | Email već postoji                                   | Poruka bez otkrivanja da nalog postoji („Ako nalog postoji, poslali smo uputstvo”), link na login i reset | 4     | kod                    |
-| A2  | Nepotvrđen email pokušava da troši tokene           | 403 `EMAIL_NOT_VERIFIED`, dugme „Pošalji ponovo” sa rate limitom 3/h                                      | 4, 5  | kod (handler verified) |
-| A3  | Istekao magic link ili reset link                   | Stranica sa objašnjenjem i dugmetom za nov link                                                           | 4     | kod                    |
-| A4  | Sesija istekla usred rada                           | Nacrt composera čuva se u localStorage po brand_id; posle prijave ponuda „Vrati nacrt”                    | 4, 9a | plan                   |
-| A5  | Korisnik banovan dok je ulogovan                    | `is_banned` proverava `getViewer()` na svakom zahtevu; RLS funkcije vraćaju false; proxy odjavljuje       | 4     | kod                    |
-| A6  | Korisnik obrisan dok je ulogovan                    | isto kao A5                                                                                               | 4     | plan                   |
-| A7  | Više tabova, odjava u jednom                        | Supabase `onAuthStateChange` sinhronizuje; ostali tabovi preusmeravaju na login                           | 4     | plan                   |
-| A8  | Google prijava emailom koji već postoji sa lozinkom | Supabase povezuje identitete ako je email potvrđen; inače poruka                                          | 4     | kod                    |
+| #   | Slučaj                                              | Ponašanje                                                                                                   | Faza   | Status                 |
+| --- | --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- | ------ | ---------------------- |
+| A1  | Email već postoji                                   | Poruka bez otkrivanja da nalog postoji („Ako nalog postoji, poslali smo uputstvo”), link na login i reset   | 4      | kod                    |
+| A2  | Nepotvrđen email pokušava da troši tokene           | 403 `EMAIL_NOT_VERIFIED`, dugme „Pošalji ponovo” sa rate limitom 3/h                                        | 4, 5   | kod (handler verified) |
+| A3  | Istekao magic link ili reset link                   | Stranica sa objašnjenjem i dugmetom za nov link                                                             | 4      | kod                    |
+| A4  | Sesija istekla usred rada                           | Nacrt composera čuva se u localStorage po brand_id; posle prijave ponuda „Vrati nacrt”                      | 4, 9a  | plan                   |
+| A5  | Korisnik banovan dok je ulogovan                    | `is_banned` proverava `getViewer()` na svakom zahtevu; RLS funkcije vraćaju false; proxy odjavljuje         | 4      | kod                    |
+| A6  | Korisnik obrisan dok je ulogovan                    | Token ne prolazi (`/api/me` 401); tab na fokusu ide na prijavu, ostali tabovi kroz BroadcastChannel         | 4, 11a | test                   |
+| A7  | Više tabova, odjava u jednom                        | Strana za prijavu posle odjave šalje poruku kroz BroadcastChannel `sova-auth`; ostali tabovi idu na prijavu | 4, 11a | test (Chromium)        |
+| A8  | Google prijava emailom koji već postoji sa lozinkom | Supabase povezuje identitete ako je email potvrđen; inače poruka                                            | 4      | kod                    |
+
+## GDPR i nalog (faza 11a)
+
+| #   | Slučaj                                          | Ponašanje                                                                                 | Faza | Status |
+| --- | ----------------------------------------------- | ----------------------------------------------------------------------------------------- | ---- | ------ |
+| G1  | Izvoz podataka                                  | JSON odmah, bez tokena mreža i internih troškova; mediji kroz linkove na 7 dana; 3 na sat | 11a  | test   |
+| G2  | Brisanje naloga vlasnika tima                   | 409 sa spiskom radnih prostora dok se vlasništvo ne prenese                               | 11a  | test   |
+| G3  | Brisanje naloga bez lozinke (Google)            | Dozvoljeno 15 minuta posle prijave, inače poruka da se prijavi ponovo                     | 11a  | kod    |
+| G4  | Objave korisnika u tuđem radnom prostoru        | Ostaju, bez autora (created_by NULL)                                                      | 11a  | test   |
+| G5  | Veze sa mrežama obrisanog naloga                | Opoziv kod mreže (jednom po korisniku mreže) i brisanje tokena pre brisanja naloga        | 11a  | test   |
+| G6  | Prenos vlasništva na nečlana ili od ne-vlasnika | 404 / 403, i RPC odbija direktan poziv                                                    | 11a  | test   |
+| G7  | Izvoz ili brisanje tokom impersonacije          | 403 (servis i handler)                                                                    | 11a  | kod    |
 
 ## Tokeni i naplata
 
