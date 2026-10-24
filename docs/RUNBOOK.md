@@ -21,6 +21,8 @@ Mreže iz faze 8b: `LINKEDIN_CLIENT_ID/SECRET`, `LINKEDIN_PAGES` i `LINKEDIN_MEM
 
 Google poslovni profil i YouTube (faza 8c): isti `GOOGLE_CLIENT_ID/SECRET` kao Google prijava; u Google Cloud konzoli dodati redirect URI-je `{APP}/api/integrations/google_business/callback` i `{APP}/api/integrations/youtube/callback`. Flagovi `platform.google_business` i `platform.youtube` u admin panelu uključuju povezivanje. Dok je OAuth ekran u režimu „Testing”, Google refresh token ističe za 7 dana.
 
+X (faza 8d): `X_CLIENT_ID/SECRET` (OAuth 2.0, poverljiv klijent), redirect URI `{APP}/api/integrations/x/callback`, flag `platform.x`. X je pay-per-use: krediti i limit potrošnje u Developer Console; stanje kredita `GET /2/usage/credits`.
+
 Pinterest (faza 8c): `PINTEREST_APP_ID/SECRET`, redirect URI `{APP}/api/integrations/pinterest/callback`, flag `platform.pinterest`. Dok app ima samo Trial pristup: `PINTEREST_SANDBOX=true` (pinovi vidljivi samo autoru); posle odobrenja Standard pristupa `false`.
 
 Mediji (faza 8c): `MEDIA_MAX_VIDEO_MB` (podrazumevano 50) je najveći video u biblioteci. Supabase besplatan plan ne prima fajl veći od 50 MB bez obzira na ovu vrednost; na Pro planu podići i „Upload file size limit” u Storage podešavanjima projekta. Pregledač otprema pravo u skladište, pa `NEXT_PUBLIC_SUPABASE_URL` mora biti dostupan iz pregledača (CSP `connect-src` ga već dozvoljava).
@@ -43,9 +45,9 @@ Zamke:
 
 ```
 npm run lint && npm run typecheck
-npm run test            # Vitest unit (184)
+npm run test            # Vitest unit (192)
 npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (30); pravi i briše test korisnike
-npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (161)
+npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (170)
 npm run test:e2e        # Playwright kroz Mailpit (6); traži pokrenut dev server; posle brisanja .next prvi run traje oko 2 min
 npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs 25   # živi crawler bez baze i AI-ja
 npm run build           # produkcijski build
@@ -85,6 +87,7 @@ Faza 16. Vercel: `main` → Production, PR → Preview. Checklista u ARCHITECTUR
 - **Nacrti vraćeni na doradu**: `select id, qa_report from posts where source = 'autopilot' and status = 'draft' and qa_report->>'passed' = 'false'`; najčešće zabranjena reč, brojka koje nema u profilu ili sličnost sa ranijom objavom.
 - **Asistirani targeti stoje danima**: `select t.id, t.post_id, a.name from post_targets t join social_accounts a on a.id = t.social_account_id where t.status = 'assisted_pending'`; podsetnik stiže sa fazom 11.
 - **LinkedIn veze ističu**: token traje 60 dana; bez programskog refresh-a vlasnici dobijaju obaveštenje 7 dana ranije, a posle isteka nalog je `needs_reauth`. Spisak: `select id, name, token_expires_at, refresh_token_enc is not null as ima_refresh from social_accounts where platform = 'linkedin' order by token_expires_at`. Ponovno povezivanje bez ekrana za saglasnost radi dok je korisnik prijavljen na LinkedIn i token još važi.
+- **X**: 402 `credits depleted` znači da su potrošeni krediti Sovinog X naloga: objave se pomeraju za 24 h dok se krediti ne dopune u Developer Console. 403 „duplicate content” je ista objava kao ranija. Odgovori i citati nisu dozvoljeni na self-serve pristupu.
 - **YouTube**: `quotaExceeded` znači da je potrošena dnevna kvota celog Google projekta (100 uploada; reset u ponoć po pacifičkom vremenu): objave se same pomeraju za 24 h, a trajno rešenje je YouTube audit i zahtev za kvotu (support.google.com/youtube/contact/yt_api_form). `uploadLimitExceeded` je limit jednog kanala. Video zaključan kao privatan posle uploada znači da projekat još nije prošao audit.
 - **TikTok odbija objave**: `unaudited_client_can_only_post_to_private_accounts` (aplikacija nije prošla audit: samo privatni nalozi i „Samo ja”), `url_ownership_unverified` (domen iz `PUBLIC_MEDIA_BASE_URL` nije verifikovan u URL properties), `spam_risk_too_many_posts` (dnevni limit naloga, publisher pomera za 24 h), `privacy_level_option_mismatch` (korisnik je promenio privatnost naloga; bira ponovo u objavi). `fail_reason` iz statusa je u `last_error_message`.
 - **TikTok objava bez linka**: dok moderacija traje `external_post_id` je `publish:{id}`; povlačenje metrika ga zameni pravim ID-jem. Ako ostane danima: `select id, external_post_id from post_targets where platform = 'tiktok' and external_post_id like 'publish:%'`.

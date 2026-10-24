@@ -1,3 +1,4 @@
+import { xWeightedLength } from '@/lib/x-text'
 import type { Database } from '@/types/database'
 
 export type SocialPlatform = Database['public']['Enums']['social_platform']
@@ -78,7 +79,8 @@ export const PLATFORMS: Record<SocialPlatform, PlatformConstraints> = {
     imageMime: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
     imageAspect: { min: 0.33, max: 3.0 },
     imageMaxPerPost: 4,
-    video: { maxSeconds: 140, maxBytes: 512 * 1024 ** 2 },
+    // od 1.9.2026: 20 minuta i 8 GB (Premium više); 140 s važi još samo za DM
+    video: { maxSeconds: 1200, maxBytes: 8 * 1024 ** 3 },
     aiLabel: false,
     linkNote: 'Objava sa linkom košta više (pay-per-use); URL se broji kao 23 karaktera.',
   },
@@ -119,13 +121,9 @@ export const PLATFORMS: Record<SocialPlatform, PlatformConstraints> = {
 
 export const PLATFORM_KEYS = Object.keys(PLATFORMS) as SocialPlatform[]
 
-/** X broji svaki URL kao 23 karaktera. */
+/** X broji po težini (link 23, emoji i CJK 2, `src/lib/x-text.ts`); ostale mreže broje znakove. */
 export function countTextLength(platform: SocialPlatform, text: string): number {
-  if (platform !== 'x') return [...text].length
-  const urlRe = /https?:\/\/[^\s]+/g
-  let length = [...text.replace(urlRe, '')].length
-  for (const _ of text.match(urlRe) ?? []) length += 23
-  return length
+  return platform === 'x' ? xWeightedLength(text) : [...text].length
 }
 
 export interface TextValidation {

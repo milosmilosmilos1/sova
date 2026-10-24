@@ -487,3 +487,14 @@ Odluka:
 - **Pinovi**: slika (`image_url`; WebP kroz našu JPEG varijantu), karusel 2–5 slika (`multiple_image_urls`) ili video: registracija `POST /v5/media`, multipart upload na S3 sa svim poljima koja Pinterest vrati (bez Bearer tokena), ručka `pinterest_media` dok status ne bude `succeeded`, pa pin sa `video_id`. Naslovna slika videa je slika iz objave ako postoji, inače kadar iz videa (`cover_image_key_frame_time`; dokumentacija preporučuje sliku, pa ovo treba proveriti pri prvom pravom pinu). Naslov pina iz podešavanja, naslova objave ili prvog reda; opis je tekst (do 800); link je link objave sa UTM-om.
 - **Trial pristup**: `PINTEREST_SANDBOX=true` šalje sve pozive na `api-sandbox.pinterest.com` (pinovi vidljivi samo autoru, bez analitike) dok Pinterest ne odobri Standard pristup.
   Razlog: Pinterest ukida pristup aplikacijama koje krše pravila za programere; bolje je da Sova to poštuje od prvog dana nego da posle mora da briše podatke i menja Autopilot.
+
+## D-086 · 24.10.2026 · usvojeno · X: PKCE, mediji v2, štednja plaćenih čitanja
+
+Odluka:
+
+- **OAuth 2.0 sa PKCE** (prva mreža koja ga traži, zajednički tok iz D-083), poverljiv klijent sa Basic autentikacijom; scope-ovi `tweet.read tweet.write users.read offline.access media.write`. Pristupni token 2 h; refresh token je jednokratan (svako osvežavanje vraća nov, čuva se odmah). Opoziv `POST /2/oauth2/revoke` sa refresh tokenom.
+- **Objava**: tekst (link objave ide na kraj teksta, jer X nema polje za link), do 4 slike ili jedan video. Slika ide jednim zahtevom (veća od 5 MB se smanjuje u JPEG), opis slike kroz `/2/media/metadata`; video kroz `initialize` → `append` (delovi od 4 MB) → `finalize`, pa ručka `x_media` dok obrada ne bude `succeeded`, i tek tada objava. Link `https://x.com/{korisnik}/status/{id}`.
+- **Brojanje teksta** kao na X-u (`src/lib/x-text.ts`): NFC, link 23, emoji i CJK 2, i domen bez `https://` je link. Isto pravilo određuje cenu: objava sa linkom ili domenom troši 6 tokena (X je naplaćuje $0.20), bez njega 1; editor to prikazuje uz X nalog. Naplata je posle uspeha (D-083); duplikat ili potrošeni X krediti Sove ne troše tokene korisnika.
+- **Štednja plaćenih čitanja**: metrike objava samo na 24 h i 7 dana (`public_metrics` i `non_public_metrics`, parser prima i stara i nova imena polja: `retweet_count`/`repost_count`), bez dnevnih metrika naloga (pratioci pri sinhronizaciji), uvoz istorije najviše 20 objava, provera „da li je objava ipak prošla” čita samo poslednjih 5.
+- **Greške**: 402 (krediti Sove potrošeni) i `usage-capped` → QUOTA_EXCEEDED (termin +24 h, obaveštenje); 403 duplikat → DUPLICATE; odgovor ili citat bez pomena → PERMISSION_LOST sa objašnjenjem (self-serve pravila od 23.2.2026; Sova zato ne pravi odgovore ni citate).
+  Razlog: na pay-per-use X-u svako čitanje košta platformu, a objava sa linkom košta 13 puta više od obične, pa korisnik mora da vidi cenu pre zakazivanja.

@@ -106,7 +106,7 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 | N23 | Događaj ili ponuda bez naslova ili vremena                       | Problem pri proveri pre zakazivanja; vreme je lokalno vreme lokacije                                                                 | 8c    | test   |
 | N24 | Mala ili WebP fotografija za Google poslovni profil              | Bar 250 px i 10 KB; WebP ide kroz JPEG varijantu na našem domenu                                                                     | 8c    | test   |
 | N25 | Opoziv Google veze kad isti nalog koristi i drugi brend          | Opoziv ukida sve dozvole projekta, pa se radi tek kad nijedan nalog istog identiteta ne ostane (sve mreže iz grupe, svi brendovi)    | 8c    | test   |
-| N26 | Objava na X bez dovoljno tokena                                  | Rezervacija pre slanja; nedovoljno → target pada sa porukom (1 token, 6 sa linkom); greška oslobađa rezervaciju                      | 8d    | kod    |
+| N26 | Objava na X bez dovoljno tokena                                  | Rezervacija pre slanja; nedovoljno → target pada sa porukom; greška, duplikat i potrošeni X krediti oslobađaju rezervaciju           | 8d    | test   |
 | N27 | Google nalog bez YouTube kanala                                  | Povratak sa porukom da se napravi kanal (`connect=empty`)                                                                            | 8c    | test   |
 | N28 | Položen ili duži od 3 minuta video za Short                      | Problem pri proveri pre zakazivanja                                                                                                  | 8c    | test   |
 | N29 | YouTube odbije video (duplikat, autorska prava) ili ga ne obradi | Target pada sa razlogom iz `rejectionReason` ili `failureReason`                                                                     | 8c    | test   |
@@ -116,6 +116,10 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 | N33 | Pinterest istorija i metrike                                     | Ne čuvaju se (pravila Pinterest-a); table se čitaju uživo                                                                            | 8c    | test   |
 | N34 | Pinterest refresh token se menja pri svakom osvežavanju          | Nov se čuva odmah; cron osvežava pre isteka pristupnog, pa refresh token (60 dana) ne ističe                                         | 8c    | test   |
 | N35 | Isti medij dvaput u objavi (isti fajl otpremljen ponovo)         | Upisuje se jednom, bez greške o duplikatu                                                                                            | 8c    | test   |
+| N36 | Domen bez https:// u tekstu za X                                 | X ga sam pretvara u link: broji se kao 23 znaka i naplaćuje kao objava sa linkom (6 tokena)                                          | 8d    | test   |
+| N37 | X krediti Sove potrošeni (402)                                   | QUOTA_EXCEEDED: termin +24 h i obaveštenje; tokeni korisnika se ne troše                                                             | 8d    | test   |
+| N38 | X refresh token je jednokratan                                   | Nov se čuva odmah; cron ga obnavlja i kad nalog miruje                                                                               | 8d    | test   |
+| N39 | Tekst sa emoji i CJK znakovima na X-u                            | Brojanje po težini (emoji i CJK 2, cela emoji sekvenca 2) pre zakazivanja                                                            | 8d    | test   |
 
 ## Kalendar i objave
 

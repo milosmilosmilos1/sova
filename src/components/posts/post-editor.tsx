@@ -24,6 +24,8 @@ import { targetStatusLabel } from '@/config/post-labels'
 import type { ApiResponse } from '@/lib/api/response'
 import type { WorkspaceRole } from '@/lib/auth/workspace'
 import { formatDuration, uploadMediaFile } from '@/lib/media/client-upload'
+import { pluralSr } from '@/lib/plural'
+import { containsUrl } from '@/lib/x-text'
 import { wallClock, zonedToUtc } from '@/lib/zoned-time'
 
 /**
@@ -143,6 +145,17 @@ function fromLocalInput(value: string, timeZone: string): string | null {
   if (!value) return null
   const [date, time] = value.split('T')
   return zonedToUtc(date!, time!.slice(0, 5), timeZone)
+}
+
+/** X je pay-per-use: objava sa linkom (i domenom bez https://) košta više (D-013, D-083). */
+function XCostNote({ withLink }: { withLink: boolean }) {
+  const cost = withLink ? 6 : 1
+  return (
+    <p className="mt-2 text-xs text-muted-foreground">
+      Objava na X troši {cost} {pluralSr(cost, 'token', 'tokena', 'tokena')}
+      {withLink ? ' jer ima link' : ''} (bez linka 1, sa linkom 6); naplaćuje se tek kad objava prođe.
+    </p>
+  )
 }
 
 const ACTION_LABEL: Record<string, string> = {
@@ -650,6 +663,13 @@ function EditorForm({
                           ...form.selected,
                           [a.id]: { ...sel, options: { ...sel.options, tiktok } },
                         })
+                      }
+                    />
+                  ) : null}
+                  {sel.on && a.platform === 'x' ? (
+                    <XCostNote
+                      withLink={
+                        Boolean(form.linkUrl.trim()) || containsUrl(sel.text.trim() || form.masterText)
                       }
                     />
                   ) : null}

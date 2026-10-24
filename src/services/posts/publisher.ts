@@ -38,6 +38,7 @@ import { markAccountStatus, refFor, type SocialAccountRow } from '@/services/soc
 import { accessTokenFor } from '@/services/social/tokens'
 import { publicMediaUrl, type MediaVariant } from '@/lib/media/public-url'
 import { getTokenPrice } from '@/lib/tokens/prices'
+import { containsUrl } from '@/lib/x-text'
 import { confirmReservation, releaseReservation, reserveTokens } from '@/lib/tokens/reservation'
 import type { Database, Json } from '@/types/database'
 
@@ -605,7 +606,8 @@ async function recheck(job: PublishJob, runId: string | null, now: Date): Promis
  * pokriva i obradu videa.
  */
 export function xChargeAction(post: Pick<NormalizedPost, 'text' | 'link'>): 'x_post' | 'x_post_with_link' {
-  return post.link || /https?:\/\//i.test(post.text) ? 'x_post_with_link' : 'x_post'
+  // X sam pretvara i domen bez https:// u link, pa i on menja cenu
+  return post.link || containsUrl(post.text) ? 'x_post_with_link' : 'x_post'
 }
 
 async function reservePublishCharge(b: Bundle, post: NormalizedPost): Promise<string | null> {

@@ -15,7 +15,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 | 7 Vizuelni pipeline                     | gotovo      | Unsplash + vision rangiranje, 4 šablona (Satori), Canva Connect (PKCE, dizajn, export); čeka: UNSPLASH_ACCESS_KEY, Canva app                                                                             |
 | 8a Facebook + Instagram                 | gotovo      | OAuth, izbor naloga, tokeni, uvoz istorije, osvežavanje, webhook-ovi, provider za objave; čeka: Meta app i App Review                                                                                    |
 | 8b LinkedIn i TikTok                    | gotovo      | LinkedIn profil i stranice, TikTok foto (video spreman u provideru), panel u editoru, osvežavanje tokena; čeka: app-ovi i odobrenja (INTEGRATIONS 14)                                                    |
-| 8c–8d Ostale mreže                      | u toku      | gotovo: direktno otpremanje i video (D-082), zajednički tok (D-083), Google poslovni profil i YouTube Shorts (D-084), Pinterest (D-085); sledi X (8d); treba: app-ovi i prijave iz INTEGRATIONS 14       |
+| 8c–8d Ostale mreže                      | gotovo      | direktno otpremanje i video (D-082), zajednički tok (D-083), Google poslovni profil i YouTube Shorts (D-084), Pinterest (D-085), X (D-086); čeka: app-ovi, ključevi i odobrenja iz INTEGRATIONS 14       |
 | 9a Objave, odobravanje, kalendar        | gotovo      | state machine, composer backend, verzije, javni link, komentari, kalendar, red objava; UI /app/posts, /app/calendar, /approve                                                                            |
 | 9b Publisher                            | gotovo      | Inngest publish-target (sleepUntil, cancelOn, 3 pokušaja 1/5/15 min, IG polling), watchdog, rollup statusa, asistirano objavljivanje, retry, obaveštenja sa podešavanjima, K3                            |
 | 10a Strategija i kalendar iz strategije | gotovo      | AI strategija (20 tokena, Inngest), vremena iz istorije ili pretpostavke, verzije, stubovi i kampanje, kalendar nacrta bez tokena, UI /app/strategy                                                      |
@@ -97,6 +97,13 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Provereno 24.10.2026 u Chromium-u: početna, Inbox, Objave, detalj objave, Kalendar, Strategija, Analitika, Autopilot, Obaveštenja, Mreže i Podešavanja rade bez grešaka u konzoli i API odgovorima. Usput ispravljeno: legenda kalendara je prikazivala interne nazive statusa, horizonti snimaka u analitici nisu bili poređani, editor nije prikazivao zašto je Autopilot vratio nacrt (sada prikazuje, a izveštaj se briše čim se tekst promeni).
 - Provereno 24.10.2026 u Chromium-u (faza 11b): nacrt editora (čuvanje, traka posle osvežavanja, vraćanje, brisanje posle čuvanja), termin se vraća isti posle čuvanja, forma zone brenda sa ponudom zadržavanja lokalnog vremena; bez grešaka u konzoli.
 - Provereno 24.10.2026 u Chromium-u (faza 13): svih sedam admin strana, „Gledaj kao” za demo nalog (traka, izmena u read-only režimu dobija 403 sa objašnjenjem, „Izađi” vraća na detalj korisnika), `/admin/users` na 390 px bez horizontalnog skrola. Usput ispravljeno: stara provera u `requireMembership` je tokom read-only pregleda rušila svaku stranu aplikacije.
+
+## Faza 8d — šta je urađeno
+
+- **X** (D-086): povezivanje sa PKCE, objava teksta, do 4 slike (sa opisom slike) ili videa (u delovima, sa čekanjem obrade), link objave u tekstu, metrike na 24 h i 7 dana, uvoz poslednjih 20 objava, opoziv pri odvajanju.
+- **Naplata u tokenima**: 1 token, a sa linkom ili domenom 6; editor pokazuje cenu uz X nalog; naplaćuje se tek kad objava prođe (duplikat i potrošeni X krediti ne troše tokene).
+- **Brojanje teksta kao na X-u** (`src/lib/x-text.ts`): link 23, emoji i CJK 2, domen bez `https://` je link.
+- **Testovi**: 9 integracionih (`api.x`: PKCE i Basic, naplata sa linkom i bez, domen kao link, slike sa opisom, video sa obradom, nedovoljno tokena, duplikat i 402 bez troška, jednokratan refresh token, metrike po horizontima, istorija, opoziv), 8 unit (brojanje, linkovi, greške, tekst sa linkom).
 
 ## Faza 8c, deo 4 — šta je urađeno
 
