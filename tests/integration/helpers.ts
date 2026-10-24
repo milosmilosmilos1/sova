@@ -29,7 +29,10 @@ export async function createTestUser(tag: string): Promise<TestUser> {
 
 export async function deleteTestUser(user: TestUser | undefined): Promise<void> {
   if (!user) return
-  await admin.auth.admin.deleteUser(user.id).catch(() => {})
+  const { error } = await admin.auth.admin.deleteUser(user.id)
+  // ne sme tiho da padne: tako su se gomilali test podaci i sakrivali bagovi kaskade (migracije 018 i 020)
+  if (error && !/not found/i.test(error.message))
+    throw new Error(`Brisanje test korisnika ${user.email}: ${error.message}`)
 }
 
 type RouteHandler = (req: NextRequest, ctx: { params: Promise<Record<string, string>> }) => Promise<Response>

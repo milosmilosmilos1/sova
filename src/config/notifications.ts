@@ -46,6 +46,11 @@ export const NOTIFICATION_TYPES = {
     description: 'Objava čeka da je neko ručno postavi na mrežu.',
     emailDefault: true,
   },
+  account_expiring: {
+    label: 'Veza sa mrežom ističe',
+    description: 'LinkedIn veza traje 60 dana; povežite nalog ponovo pre isteka.',
+    emailDefault: true,
+  },
   post_rescheduled: {
     label: 'Objava pomerena',
     description: 'Termin je pomeren zbog dnevnog limita mreže.',

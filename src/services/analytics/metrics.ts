@@ -6,7 +6,8 @@ import type { NormalizedMetrics } from '@/integrations/social/types'
 import { ANALYTICS_TARGET_STATUSES, type Horizon } from '@/lib/analytics/aggregate'
 import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import { markAccountStatus, refFor, tokensFor } from '@/services/social/accounts'
+import { markAccountStatus, refFor } from '@/services/social/account-rows'
+import { accessTokenFor } from '@/services/social/tokens'
 import type { Json } from '@/types/database'
 
 /**
@@ -30,7 +31,7 @@ export function isGoneError(error: unknown): boolean {
   return /does not exist|not found|deleted/i.test(error.message)
 }
 
-const SUPPORTED_PLATFORMS = ['facebook', 'instagram'] as const
+const SUPPORTED_PLATFORMS = ['facebook', 'instagram', 'linkedin', 'tiktok'] as const
 
 export async function publishedAtOf(targetId: string): Promise<string | null> {
   const admin = createSupabaseAdminClient()
@@ -86,11 +87,21 @@ export async function capturePostMetrics(targetId: string, horizon: Horizon): Pr
   if (!account) return { status: 'skipped', reason: 'nalog ne postoji' }
   if (account.status !== 'active') return { status: 'skipped', reason: `nalog je ${account.status}` }
   try {
-    const metrics = await providerFor(target.platform).fetchPostMetrics(
-      target.external_post_id,
-      refFor(account),
-      tokensFor(account).accessToken,
-    )
+    const provider = providerFor(target.platform)
+    const token = await accessTokenFor(account)
+    let externalId = target.external_post_id
+    // TikTok daje ID objave tek posle moderacije; do tada je u bazi `publish:<id>`
+    if (provider.resolveExternalId && externalId.startsWith('publish:')) {
+      const resolved = await provider.resolveExternalId(externalId, refFor(account), token)
+      if (resolved) {
+        externalId = resolved.externalId
+        await admin
+          .from('post_targets')
+          .update({ external_post_id: resolved.externalId, permalink: resolved.permalink })
+          .eq('id', target.id)
+      }
+    }
+    const metrics = await provider.fetchPostMetrics(externalId, refFor(account), token)
     const { error } = await admin.from('post_metrics_snapshots').insert({
       target_id: target.id,
       social_account_id: account.id,
@@ -140,7 +151,7 @@ export async function captureAccountMetrics(accountId: string, date: string): Pr
   try {
     const m = await providerFor(account.platform).fetchAccountMetrics(
       refFor(account),
-      tokensFor(account).accessToken,
+      await accessTokenFor(account),
       date,
     )
     const { error } = await admin.from('account_metrics_daily').upsert(

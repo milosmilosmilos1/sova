@@ -547,6 +547,52 @@ async function main() {
     assert(ledger.length === 0, 'ledger ostao posle kaskade')
   })
 
+  await test('brisanje korisnika: strategija sa dva SET NULL ključa u istoj kaskadi ne obara brisanje (migracija 020)', async () => {
+    const u = await makeUser('cascade2')
+    const { data: ws } = await u.client.rpc('create_workspace', { p_name: 'Kaskada sa strategijom' })
+    assert(ws?.workspace_id && ws?.brand_id, 'workspace nije napravljen')
+    const { data: gen, error: gErr } = await admin
+      .from('ai_generations')
+      .insert({
+        workspace_id: ws.workspace_id,
+        brand_id: ws.brand_id,
+        user_id: u.id,
+        type: 'strategy',
+        status: 'succeeded',
+      })
+      .select('id')
+      .single()
+    assert(!gErr, `generacija: ${gErr?.message}`)
+    const { data: st, error: sErr } = await admin
+      .from('strategies')
+      .insert({
+        brand_id: ws.brand_id,
+        period_start: '2026-11-02',
+        period_end: '2026-11-29',
+        created_by: u.id,
+        approved_by: u.id,
+        ai_generation_id: gen.id,
+      })
+      .select('id')
+      .single()
+    assert(!sErr, `strategija: ${sErr?.message}`)
+    const { error } = await admin.auth.admin.deleteUser(u.id)
+    assert(!error, `brisanje: ${error?.message}`)
+    const { data: left } = await admin.from('strategies').select('id').eq('id', st.id)
+    assert(left.length === 0, 'strategija ostala posle brisanja korisnika')
+  })
+
+  await test('odložena provera i dalje odbija nepostojećeg roditelja (na kraju transakcije)', async () => {
+    const r = await admin
+      .from('strategies')
+      .insert({
+        brand_id: '00000000-0000-4000-8000-000000000000',
+        period_start: '2026-11-02',
+        period_end: '2026-11-29',
+      })
+    expectError(r, 'foreign key')
+  })
+
   // admin bez prijave (samo kroz allowlist), da ne troši limit prijava lokalnog Auth-a
   const dbAdminEmail = `test-admin-${stamp}@sova.local`
   let dbAdmin = null

@@ -2,8 +2,8 @@ import type { SocialPlatform } from '@/config/platforms'
 import type { Json } from '@/types/database'
 
 /**
- * Zajednički ugovor za mreže (docs/INTEGRATIONS.md 1). Faza 8a popunjava Meta (Facebook + Instagram);
- * ostale mreže dodaju svoje providere u 8b–8d. Objavljivanje koristi publisher iz faze 9b.
+ * Zajednički ugovor za mreže (docs/INTEGRATIONS.md 1): Meta (Facebook + Instagram, faza 8a), LinkedIn i
+ * TikTok (faza 8b); ostale mreže stižu u 8c–8d. Objavljivanje koristi publisher iz faze 9b.
  */
 export interface TokenSet {
   accessToken: string
@@ -42,11 +42,17 @@ export interface ExternalAccount {
 }
 
 export interface NormalizedMedia {
+  /** potpisan URL skladišta (24 h), za mreže kojima šaljemo bajtove ili URL bez provere domena */
   url: string
   mimeType: string
   width: number | null
   height: number | null
   alt: string | null
+  assetId?: string | null
+  /** URL na našem domenu (TikTok PULL_FROM_URL traži verifikovan domen); null kad nije podešen */
+  publicUrl?: string | null
+  sizeBytes?: number | null
+  durationMs?: number | null
 }
 
 export interface NormalizedPost {
@@ -57,6 +63,10 @@ export interface NormalizedPost {
   isAiGenerated: boolean
   /** ključ idempotentnosti objave (target id + verzija) */
   clientKey: string
+  /** naslov objave (TikTok foto naslov, LinkedIn članak) */
+  title?: string | null
+  /** podešavanja targeta po mreži (`post_targets.options`, npr. `tiktok`) */
+  options?: Record<string, Json>
 }
 
 export interface ValidationResult {
@@ -64,10 +74,19 @@ export interface ValidationResult {
   problems: string[]
 }
 
-export interface PollHandle {
-  kind: 'ig_container'
-  containerId: string
-  accountExternalId: string
+export type PollHandle =
+  | { kind: 'ig_container'; containerId: string; accountExternalId: string }
+  | {
+      kind: 'tiktok_publish'
+      publishId: string
+      accountExternalId: string
+      username: string | null
+      mediaType: 'photo' | 'video'
+    }
+
+/** Oznaka ručke za logove i poruke. */
+export function pollHandleId(handle: PollHandle): string {
+  return handle.kind === 'ig_container' ? handle.containerId : handle.publishId
 }
 
 export interface PublishResult {
@@ -142,4 +161,12 @@ export interface SocialProvider {
   fetchAccountMetrics(account: AccountRef, accessToken: string, date: string): Promise<AccountMetrics>
   revoke(tokens: TokenSet, externalUserId: string | null): Promise<void>
   capabilities(account: AccountRef): Capabilities
+  /**
+   * Konačan ID i link objave kad ga mreža da tek kasnije (TikTok posle moderacije); `null` dok ga nema.
+   */
+  resolveExternalId?(
+    externalId: string,
+    account: AccountRef,
+    accessToken: string,
+  ): Promise<{ externalId: string; permalink: string | null } | null>
 }

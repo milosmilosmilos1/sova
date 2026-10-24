@@ -297,6 +297,8 @@ sequenceDiagram
     CB->>DB: event social/history.import.requested
 ```
 
+Ključ toka u URL-u je `meta` (Facebook i Instagram), `linkedin` ili `tiktok` (`src/integrations/social/registry.ts`). PKCE se šalje samo gde ga mreža traži (Canva; TikTok web i LinkedIn ga ne traže). Posle povezivanja svi pozivi mreže uzimaju token kroz `accessTokenFor` (`src/services/social/tokens.ts`), koji TikTok token osvežava pre isteka. Mreže koje fajl preuzimaju same dobijaju javni URL medija na našem domenu (`/api/media/public/{token}`, D-077).
+
 ### 3.5 Analiza sajta (Brand Brain)
 
 Koraci Inngest funkcije `brand-analyze`, svaki kao poseban `step.run` da bi se preživeo pad:

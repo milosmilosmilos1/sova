@@ -6,7 +6,7 @@ import type { SocialPlatform } from '@/config/platforms'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
-import { currentKeyVersion, decryptSecret, encryptSecret, sha256Hex, toPgBytea } from '@/lib/crypto/tokens'
+import { currentKeyVersion, encryptSecret, sha256Hex, toPgBytea } from '@/lib/crypto/tokens'
 import { env } from '@/lib/env'
 import { isFeatureEnabled } from '@/lib/flags'
 import { enqueueHistoryImport } from '@/lib/jobs/enqueue'
@@ -16,48 +16,70 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
 import { providerToApiError } from '@/integrations/social/errors'
 import {
+  CONNECT_PROVIDERS,
   connectKeyFor,
-  getMetaProvider,
   isProviderConfigured,
   providerFor,
+  providerForKey,
   type ConnectProviderKey,
 } from '@/integrations/social/registry'
-import type { AccountRef, ExternalAccount, TokenSet } from '@/integrations/social/types'
+import type { ExternalAccount, TokenSet } from '@/integrations/social/types'
 import { getBrand } from '@/services/brands'
 import type { Database, Json } from '@/types/database'
 
+import {
+  aadFor,
+  loadAccountRow,
+  markAccountStatus,
+  refFor,
+  tokensFor,
+  type SocialAccountRow,
+} from './account-rows'
+import { accessTokenFor } from './tokens'
+
+export { loadAccountRow, markAccountStatus, refFor, tokensFor, type SocialAccountRow }
+
 /**
  * Nalozi mreža (docs/ARCHITECTURE.md 3.4): povezivanje kroz OAuth, izbor naloga, tokeni AES-256-GCM
- * u `social_accounts`, čitanje kroz `social_accounts_public` (bez tokena). Faza 8a: Meta (FB + IG).
+ * u `social_accounts`, čitanje kroz `social_accounts_public` (bez tokena). Meta (FB + IG) od faze 8a,
+ * LinkedIn i TikTok od faze 8b; ključ toka i mreže dolaze iz registry-ja.
  */
-export type SocialAccountRow = Database['public']['Tables']['social_accounts']['Row']
 export type SocialAccountPublic = Database['public']['Views']['social_accounts_public']['Row']
 
 const PENDING_TTL_MS = 60 * 60_000
-
-function aadFor(brandId: string, platform: string, externalId: string): string {
-  return `social:${brandId}:${platform}:${externalId}`
-}
 
 function callbackUrl(key: ConnectProviderKey): string {
   return `${env.NEXT_PUBLIC_APP_URL}/api/integrations/${key}/callback`
 }
 
+/** ID korisnika na mreži (osnova za grupisanje naloga istog korisnika); Meta zadržava stari ključ. */
+function providerUserIdOf(meta: Record<string, Json> | null | undefined): string | null {
+  const m = meta ?? {}
+  const id = m.providerUserId ?? m.metaUserId
+  return typeof id === 'string' && id ? id : null
+}
+
 export interface ConnectAvailability {
   provider: ConnectProviderKey
+  label: string
   configured: boolean
   enabledPlatforms: SocialPlatform[]
 }
 
 export async function connectAvailability(): Promise<ConnectAvailability[]> {
-  const [fb, ig] = await Promise.all([
-    isFeatureEnabled('platform.facebook'),
-    isFeatureEnabled('platform.instagram'),
-  ])
-  const enabled: SocialPlatform[] = []
-  if (fb) enabled.push('facebook')
-  if (ig) enabled.push('instagram')
-  return [{ provider: 'meta', configured: isProviderConfigured('meta'), enabledPlatforms: enabled }]
+  const out: ConnectAvailability[] = []
+  for (const key of Object.keys(CONNECT_PROVIDERS) as ConnectProviderKey[]) {
+    const def = CONNECT_PROVIDERS[key]
+    const enabled: SocialPlatform[] = []
+    for (const p of def.platforms) if (await isFeatureEnabled(`platform.${p}`)) enabled.push(p)
+    out.push({
+      provider: key,
+      label: def.label,
+      configured: isProviderConfigured(key),
+      enabledPlatforms: enabled,
+    })
+  }
+  return out
 }
 
 /** Početak OAuth toka: state + redirect; vraća URL mreže. */
@@ -71,14 +93,15 @@ export async function beginSocialConnect(
   if (!key) throw new ApiError('NOT_FOUND', 'Ova mreža još nije podržana.')
   const brand = await getBrand(viewer, brandId)
   await requireMembership(viewer, brand.workspace_id, ADMIN_ROLES)
+  const label = CONNECT_PROVIDERS[key].label
   if (!isProviderConfigured(key))
     throw new ApiError(
       'AI_UNAVAILABLE',
-      'Integracija sa Facebook-om i Instagram-om još nije podešena (nedostaju ključevi aplikacije).',
+      `Integracija sa mrežom ${label} još nije podešena (nedostaju ključevi aplikacije).`,
     )
   const availability = (await connectAvailability()).find((a) => a.provider === key)!
   if (!availability.enabledPlatforms.length)
-    throw new ApiError('FORBIDDEN', 'Povezivanje Facebook-a i Instagram-a još nije uključeno.')
+    throw new ApiError('FORBIDDEN', `Povezivanje mreže ${label} još nije uključeno.`)
 
   const state = randomBytes(24).toString('base64url')
   const admin = createSupabaseAdminClient()
@@ -91,7 +114,7 @@ export async function beginSocialConnect(
     redirect_to: redirectTo && redirectTo.startsWith('/') ? redirectTo : '/app/accounts',
   })
   if (error) throw mapDbError(error)
-  return getMetaProvider().getAuthUrl({ state, redirectUri: callbackUrl(key) })
+  return providerForKey(key).getAuthUrl({ state, redirectUri: callbackUrl(key) })
 }
 
 export interface ConnectCallbackResult {
@@ -134,10 +157,10 @@ export async function completeSocialConnect(
       error: params.error,
       description: params.errorDescription,
     })
-    return { redirectTo: `${base}?connect=denied` }
+    return { redirectTo: `${base}?connect=denied&provider=${key}` }
   }
 
-  const provider = getMetaProvider()
+  const provider = providerForKey(key)
   let tokens: TokenSet & { externalUserId: string; externalUserName: string | null }
   let accounts: ExternalAccount[]
   try {
@@ -146,13 +169,13 @@ export async function completeSocialConnect(
   } catch (error) {
     throw providerToApiError(error)
   }
-  if (!accounts.length) return { redirectTo: `${base}?connect=empty` }
+  if (!accounts.length) return { redirectTo: `${base}?connect=empty&provider=${key}` }
 
   const { data: existing } = await admin
     .from('social_accounts')
     .select('id, platform, external_id, status, metadata')
     .eq('brand_id', row.brand_id)
-    .in('platform', ['facebook', 'instagram'])
+    .in('platform', CONNECT_PROVIDERS[key].platforms)
   const existingByKey = new Map((existing ?? []).map((a) => [`${a.platform}:${a.external_id}`, a]))
 
   for (const a of accounts) {
@@ -163,9 +186,11 @@ export async function completeSocialConnect(
     const metadata: Record<string, Json> = {
       ...((prev?.metadata as Record<string, Json> | null) ?? {}),
       ...a.metadata,
-      metaUserId: tokens.externalUserId,
-      metaUserName: tokens.externalUserName,
+      providerUserId: tokens.externalUserId,
+      providerUserName: tokens.externalUserName,
+      ...(key === 'meta' ? { metaUserId: tokens.externalUserId, metaUserName: tokens.externalUserName } : {}),
     }
+    delete metadata.expiryNotifiedAt
     const keepActive = prev && prev.status === 'active' && !(metadata.pending === true)
     if (!keepActive) {
       metadata.pending = true
@@ -360,77 +385,30 @@ export async function removeSocialAccount(viewer: Viewer, accountId: string): Pr
   if (!row) throw new ApiError('NOT_FOUND', 'Nalog ne postoji.')
   const brand = await getBrand(viewer, row.brand_id)
   await requireMembership(viewer, brand.workspace_id, ADMIN_ROLES)
-  // opoziv na mreži je najbolji napor; ako je isti korisnički token i na drugim nalozima brenda, ne opozivamo celu aplikaciju
-  const { count } = await admin
-    .from('social_accounts')
-    .select('id', { count: 'exact', head: true })
-    .eq('brand_id', row.brand_id)
-    .contains('metadata', { metaUserId: (row.metadata as Record<string, Json>)?.metaUserId ?? '' })
-    .neq('id', row.id)
-  if ((count ?? 0) === 0 && row.refresh_token_enc) {
+  // opoziv na mreži je najbolji napor; ako isti korisnički token koristi i drugi nalog brenda
+  // (npr. stranica i IG nalog, ili profil i stranica firme), aplikacija se ne opoziva
+  const meta = (row.metadata as Record<string, Json> | null) ?? {}
+  const userId = providerUserIdOf(meta)
+  let shared = 0
+  if (userId) {
+    const field = meta.providerUserId ? 'providerUserId' : 'metaUserId'
+    const { count } = await admin
+      .from('social_accounts')
+      .select('id', { count: 'exact', head: true })
+      .eq('brand_id', row.brand_id)
+      .contains('metadata', { [field]: userId })
+      .neq('id', row.id)
+    shared = count ?? 0
+  }
+  if (shared === 0 && (row.refresh_token_enc || row.access_token_enc)) {
     try {
-      const tokens = tokensFor(row)
-      await providerFor(row.platform).revoke(
-        tokens,
-        ((row.metadata as Record<string, Json>)?.metaUserId as string) ?? null,
-      )
+      await providerFor(row.platform).revoke(tokensFor(row), userId)
     } catch (error) {
       logger.warn('social_revoke_failed', { accountId, error })
     }
   }
   const { error } = await admin.from('social_accounts').delete().eq('id', accountId)
   if (error) throw mapDbError(error)
-}
-
-export function tokensFor(row: SocialAccountRow): TokenSet {
-  const aad = aadFor(row.brand_id, row.platform, row.external_id)
-  return {
-    accessToken: row.access_token_enc
-      ? decryptSecret(row.access_token_enc as unknown as string, row.key_version, aad)
-      : '',
-    refreshToken: row.refresh_token_enc
-      ? decryptSecret(row.refresh_token_enc as unknown as string, row.key_version, aad)
-      : null,
-    expiresAt: row.token_expires_at,
-    refreshExpiresAt: row.refresh_token_expires_at,
-    scopes: row.scopes,
-  }
-}
-
-export function refFor(row: SocialAccountRow): AccountRef {
-  return {
-    id: row.id,
-    platform: row.platform,
-    externalId: row.external_id,
-    parentExternalId: row.external_parent_id,
-    accountType: row.account_type,
-    metadata: (row.metadata as Record<string, Json> | null) ?? {},
-  }
-}
-
-/** Za pozadinske poslove i publisher: red sa tokenima (service role). */
-export async function loadAccountRow(accountId: string): Promise<SocialAccountRow | null> {
-  const admin = createSupabaseAdminClient()
-  const { data } = await admin.from('social_accounts').select('*').eq('id', accountId).maybeSingle()
-  return data
-}
-
-export async function markAccountStatus(
-  accountId: string,
-  status: SocialAccountRow['status'],
-  reason: string | null,
-  lastError?: string | null,
-): Promise<void> {
-  const admin = createSupabaseAdminClient()
-  await admin
-    .from('social_accounts')
-    .update({
-      status,
-      status_reason: reason,
-      ...(lastError !== undefined ? { last_error: lastError } : {}),
-      updated_at: new Date().toISOString(),
-    })
-    .eq('id', accountId)
 }
 
 /** Ponovno čitanje podataka naloga sa mreže (ime, avatar, pratioci) + uvoz istorije. */
@@ -440,25 +418,30 @@ export async function syncSocialAccount(viewer: Viewer, accountId: string): Prom
   const brand = await getBrand(viewer, row.brand_id)
   await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
   if (row.status !== 'active') throw new ApiError('CONFLICT', 'Nalog nije aktivan; povežite ga ponovo.')
+  const key = connectKeyFor(row.platform)
+  const label = key ? CONNECT_PROVIDERS[key].label : row.platform
   const admin = createSupabaseAdminClient()
   try {
-    const provider = getMetaProvider()
-    const tokens = tokensFor(row)
+    const provider = providerFor(row.platform)
+    const tokens = { ...tokensFor(row), accessToken: await accessTokenFor(row) }
     const accounts = await provider.listAccounts(tokens)
     const fresh = accounts.find((a) => a.platform === row.platform && a.externalId === row.external_id)
     if (!fresh) {
       await markAccountStatus(
         row.id,
         'disabled',
-        'Nalog više nije dostupan kroz vašu Facebook prijavu (promenjen tip naloga ili uklonjena uloga).',
+        `Nalog više nije dostupan kroz vašu ${label} prijavu (promenjen tip naloga ili uklonjena uloga).`,
       )
       throw new ApiError(
         'CONFLICT',
-        'Nalog više nije dostupan kroz vašu Facebook prijavu. Proverite uloge na stranici pa povežite ponovo.',
+        `Nalog više nije dostupan kroz vašu ${label} prijavu. Proverite uloge na mreži pa povežite ponovo.`,
       )
     }
     const aad = aadFor(row.brand_id, row.platform, row.external_id)
+    // Meta daje nov Page token pri svakom čitanju; LinkedIn i TikTok vraćaju isti korisnički token
     const access = encryptSecret(fresh.token.accessToken, aad)
+    const refreshToken = fresh.token.refreshToken ?? tokens.refreshToken
+    const refresh = refreshToken ? encryptSecret(refreshToken, aad) : null
     await admin
       .from('social_accounts')
       .update({
@@ -466,6 +449,7 @@ export async function syncSocialAccount(viewer: Viewer, accountId: string): Prom
         username: fresh.username,
         avatar_url: fresh.avatarUrl,
         access_token_enc: toPgBytea(access.ciphertext),
+        refresh_token_enc: refresh ? toPgBytea(refresh.ciphertext) : null,
         key_version: access.keyVersion,
         capabilities: fresh.capabilities as unknown as NonNullable<Json>,
         metadata: {

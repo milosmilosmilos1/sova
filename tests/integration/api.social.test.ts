@@ -119,10 +119,15 @@ describe('Meta povezivanje', () => {
     expect(loc.searchParams.get('scope')).toContain('instagram_content_publish')
     expect(loc.searchParams.get('redirect_uri')).toBe(`${APP}/api/integrations/meta/callback`)
     pendingState = loc.searchParams.get('state')!
-    const unknown = await connectGet(authed(`/api/integrations/tiktok/connect?brandId=${brandId}`), {
-      params: Promise.resolve({ provider: 'tiktok' }),
+    const unknown = await connectGet(authed(`/api/integrations/pinterest/connect?brandId=${brandId}`), {
+      params: Promise.resolve({ provider: 'pinterest' }),
     })
     expect(unknown.status).toBe(404)
+    // TikTok je podržan od faze 8b, ali bez uključenog flaga povezivanje nije dozvoljeno
+    const flaggedOff = await connectGet(authed(`/api/integrations/tiktok/connect?brandId=${brandId}`), {
+      params: Promise.resolve({ provider: 'tiktok' }),
+    })
+    expect(flaggedOff.status).toBe(403)
   })
 
   it('callback: razmena koda → dugotrajan token → stranice i IG nalozi na čekanju', async () => {

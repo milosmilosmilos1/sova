@@ -27,6 +27,9 @@ export function buildServerEnvSchema(mode: EnvMode) {
 
     // Aplikacija
     NEXT_PUBLIC_APP_URL: always(z.url()),
+    // javni URL medija za mreže koje same preuzimaju fajl (TikTok PULL_FROM_URL traži domen
+    // verifikovan u TikTok portalu); prazno = NEXT_PUBLIC_APP_URL
+    PUBLIC_MEDIA_BASE_URL: z.url().optional(),
 
     // Supabase
     NEXT_PUBLIC_SUPABASE_URL: always(z.url()),
@@ -69,6 +72,10 @@ export function buildServerEnvSchema(mode: EnvMode) {
       .string()
       .regex(/^\d{6}$/)
       .default('202610'),
+    // Community Management API (stranice firmi) i Member Post Analytics traže odobrenje LinkedIn-a;
+    // dok ga nema, ti scope-ovi se ne traže (scope koji aplikacija nema obara prijavu)
+    LINKEDIN_PAGES: z.stringbool().default(false),
+    LINKEDIN_MEMBER_ANALYTICS: z.stringbool().default(false),
     TIKTOK_CLIENT_KEY: z.string().optional(),
     TIKTOK_CLIENT_SECRET: z.string().optional(),
     X_CLIENT_ID: z.string().optional(),

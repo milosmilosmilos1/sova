@@ -11,7 +11,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { TikTokPanel } from '@/components/posts/tiktok-panel'
 import { PLATFORMS } from '@/config/platforms'
+import { readTikTokOptions } from '@/config/tiktok'
 import { targetStatusLabel } from '@/config/post-labels'
 import type { ApiResponse } from '@/lib/api/response'
 import type { WorkspaceRole } from '@/lib/auth/workspace'
@@ -31,6 +33,7 @@ interface Account {
 interface MediaItem {
   id: string
   url: string
+  mimeType?: string
   width: number | null
   height: number | null
   altText: string | null
@@ -42,6 +45,7 @@ interface Target {
   accountName: string | null
   text: string
   usesMaster: boolean
+  options?: Record<string, unknown>
   status: string
   scheduledAt: string | null
   permalink: string | null
@@ -183,15 +187,22 @@ interface FormState {
   masterText: string
   firstComment: string
   linkUrl: string
-  selected: Record<string, { on: boolean; text: string }>
+  selected: Record<string, SelectedTarget>
   mediaIds: string[]
   when: string
 }
 
+/** Izbor naloga u formi; `options` čuva podešavanja po mreži (npr. `tiktok`) i šalje se uz target. */
+interface SelectedTarget {
+  on: boolean
+  text: string
+  options: Record<string, unknown>
+}
+
 function initialForm(p: PostView | null, timezone: string): FormState {
-  const selected: Record<string, { on: boolean; text: string }> = {}
+  const selected: Record<string, SelectedTarget> = {}
   for (const t of p?.targets ?? [])
-    selected[t.socialAccountId] = { on: true, text: t.usesMaster ? '' : t.text }
+    selected[t.socialAccountId] = { on: true, text: t.usesMaster ? '' : t.text, options: t.options ?? {} }
   return {
     title: p?.title ?? '',
     masterText: p?.masterText ?? '',
@@ -289,7 +300,11 @@ function EditorForm({
     linkUrl: form.linkUrl || null,
     targets: Object.entries(form.selected)
       .filter(([, v]) => v.on)
-      .map(([socialAccountId, v]) => ({ socialAccountId, text: v.text || undefined })),
+      .map(([socialAccountId, v]) => ({
+        socialAccountId,
+        text: v.text || undefined,
+        ...(Object.keys(v.options).length ? { options: v.options } : {}),
+      })),
     media: form.mediaIds.map((mediaAssetId, i) => ({ mediaAssetId, sortOrder: i })),
     scheduledFor: fromLocalInput(form.when, timezone),
   })
@@ -481,7 +496,7 @@ function EditorForm({
               </p>
             ) : null}
             {accounts.data?.accounts.map((a) => {
-              const sel = form.selected[a.id] ?? { on: false, text: '' }
+              const sel = form.selected[a.id] ?? { on: false, text: '', options: {} }
               return (
                 <div key={a.id} className="rounded-md border p-3">
                   <label className="flex items-center gap-2 text-sm">
@@ -492,7 +507,7 @@ function EditorForm({
                       onChange={(e) =>
                         set('selected', {
                           ...form.selected,
-                          [a.id]: { on: e.target.checked, text: sel.text },
+                          [a.id]: { ...sel, on: e.target.checked },
                         })
                       }
                     />
@@ -512,7 +527,26 @@ function EditorForm({
                       value={sel.text}
                       disabled={!editable}
                       onChange={(e) =>
-                        set('selected', { ...form.selected, [a.id]: { on: true, text: e.target.value } })
+                        set('selected', {
+                          ...form.selected,
+                          [a.id]: { ...sel, on: true, text: e.target.value },
+                        })
+                      }
+                    />
+                  ) : null}
+                  {sel.on && a.platform === 'tiktok' ? (
+                    <TikTokPanel
+                      accountId={a.id}
+                      value={readTikTokOptions(sel.options.tiktok)}
+                      disabled={!editable}
+                      isVideo={form.mediaIds.some((id) =>
+                        library.data?.find((m) => m.id === id)?.mimeType?.startsWith('video/'),
+                      )}
+                      onChange={(tiktok) =>
+                        set('selected', {
+                          ...form.selected,
+                          [a.id]: { ...sel, options: { ...sel.options, tiktok } },
+                        })
                       }
                     />
                   ) : null}

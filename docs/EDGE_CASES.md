@@ -63,20 +63,28 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 
 ## Mreže
 
-| #   | Slučaj                                         | Ponašanje                                                                                                                            | Faza  | Status |
-| --- | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----- | ------ |
-| N1  | Token opozvan na strani mreže                  | `TOKEN_INVALID` → nalog `needs_reauth`, targeti `needs_reauth`, email + banner                                                       | 8a    | test   |
-| N2  | Korisnik izgubio admin prava na stranici       | `PERMISSION_LOST` → isto kao N1 sa drugom porukom                                                                                    | 8a    | test   |
-| N3  | Nalog promenjen iz poslovnog u lični           | `listAccounts` ga više ne vraća → `disabled` sa objašnjenjem i asistiranim fallbackom                                                | 8a    | test   |
-| N4  | Promena verzije API-ja                         | Verzija u env-u (`META_GRAPH_VERSION`); MSW testovi; deprecation header-i se loguju (8b)                                             | 8     | kod    |
-| N5  | Uspeh bez ID-ja objave                         | `findExistingPost` po idempotency ključu ili vremenu; ako nema, target `published` sa `external_post_id = null` i oznakom za proveru | 9b    | kod    |
-| N6  | Objava uklonjena zbog pravila mreže            | Pri povlačenju metrika 404 → `deleted_externally`                                                                                    | 10b   | test   |
-| N7  | Dnevni limit objava (IG 100, TikTok ~15)       | Provera pre zakazivanja i pre objave; `QUOTA_EXCEEDED` → pomeranje na sledeći slobodan termin uz obaveštenje                         | 9b    | test   |
-| N8  | Neauditovan TikTok klijent                     | Samo privatne objave; banner i objašnjenje u composer-u                                                                              | 8b    | plan   |
-| N9  | Pogrešan odnos stranica slike                  | `validatePost` pre zakazivanja; Sharp auto-crop uz pregled                                                                           | 7, 9a | plan   |
-| N10 | YouTube kvota potrošena                        | Dnevni brojač; `QUOTA_EXCEEDED` → sledeći dan ili asistirano                                                                         | 8c    | plan   |
-| N11 | Instagram kontejner `EXPIRED`                  | Novi kontejner, jedan ponovni pokušaj                                                                                                | 8a    | test   |
-| N12 | Mediji nedostupni mreži (potpisan URL istekao) | URL se generiše neposredno pre objave sa 24 h važenja                                                                                | 9b    | kod    |
+| #   | Slučaj                                          | Ponašanje                                                                                                                            | Faza  | Status |
+| --- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ | ----- | ------ |
+| N1  | Token opozvan na strani mreže                   | `TOKEN_INVALID` → nalog `needs_reauth`, targeti `needs_reauth`, email + banner                                                       | 8a    | test   |
+| N2  | Korisnik izgubio admin prava na stranici        | `PERMISSION_LOST` → isto kao N1 sa drugom porukom                                                                                    | 8a    | test   |
+| N3  | Nalog promenjen iz poslovnog u lični            | `listAccounts` ga više ne vraća → `disabled` sa objašnjenjem i asistiranim fallbackom                                                | 8a    | test   |
+| N4  | Promena verzije API-ja                          | Verzija u env-u (`META_GRAPH_VERSION`, `LINKEDIN_API_VERSION` = 202610; 202511 se gasi 16.11.2026); MSW testovi                      | 8     | kod    |
+| N5  | Uspeh bez ID-ja objave                          | `findExistingPost` po idempotency ključu ili vremenu; ako nema, target `published` sa `external_post_id = null` i oznakom za proveru | 9b    | kod    |
+| N6  | Objava uklonjena zbog pravila mreže             | Pri povlačenju metrika 404 → `deleted_externally`                                                                                    | 10b   | test   |
+| N7  | Dnevni limit objava (IG 100, TikTok ~15)        | Provera pre zakazivanja i pre objave; `QUOTA_EXCEEDED` → pomeranje na sledeći slobodan termin uz obaveštenje                         | 9b    | test   |
+| N8  | Neauditovan TikTok klijent                      | Greška `unaudited_client_…` → poruka da do audita idu samo privatni nalozi i „Samo ja”                                               | 8b    | test   |
+| N9  | Pogrešan odnos stranica slike                   | `validatePost` pre zakazivanja; Sharp auto-crop uz pregled                                                                           | 7, 9a | plan   |
+| N10 | YouTube kvota potrošena                         | Dnevni brojač; `QUOTA_EXCEEDED` → sledeći dan ili asistirano                                                                         | 8c    | plan   |
+| N11 | Instagram kontejner `EXPIRED`                   | Novi kontejner, jedan ponovni pokušaj                                                                                                | 8a    | test   |
+| N12 | Mediji nedostupni mreži (potpisan URL istekao)  | URL se generiše neposredno pre objave sa 24 h važenja                                                                                | 9b    | kod    |
+| N13 | LinkedIn veza ističe (60 dana, bez refresh-a)   | Obaveštenje vlasnicima 7 dana ranije (jednom), posle isteka `needs_reauth` i u publisheru                                            | 8b    | test   |
+| N14 | LinkedIn link bez pregleda (API ne čita link)   | Naslov i opis sa stranice kroz SSRF-bezbedan fetch; ako ne uspe, naslov je domen                                                     | 8b    | test   |
+| N15 | TikTok privatnost se promeni posle zakazivanja  | `creator_info` pri objavi; objava pada sa porukom da se privatnost izabere ponovo                                                    | 8b    | test   |
+| N16 | TikTok ID tek posle moderacije                  | `external_post_id = publish:{id}`; povlačenje metrika ga zameni pravim ID-jem i linkom                                               | 8b    | test   |
+| N17 | TikTok int64 ID u JSON-u                        | Brojevi od 16+ cifara se parsiraju kao stringovi (bez zaokruživanja)                                                                 | 8b    | test   |
+| N18 | TikTok refresh token se promeni pri osvežavanju | Nov se čuva odmah; ako drugi proces upravo osvežava, koristi se stanje iz baze                                                       | 8b    | test   |
+| N19 | WebP slika na LinkedIn                          | Pretvara se u JPEG pri uploadu                                                                                                       | 8b    | kod    |
+| N20 | Javni link medija procuri                       | HMAC token za jedan medij, važi 2 h, bez listanja; obrisan medij 404                                                                 | 8b    | test   |
 
 ## Kalendar i objave
 
@@ -97,22 +105,23 @@ Status: `plan` (opisano, bez koda), `kod` (implementirano), `test` (pokriveno au
 
 ## Admin
 
-| #    | Slučaj                                              | Ponašanje                                                                                          | Faza | Status |
-| ---- | --------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---- | ------ |
-| AD1  | Uklanjanje poslednjeg admina platforme              | Uloga se ne menja iz aplikacije (samo allowlist i seed); admin ne može da blokira ni obriše admina | 13a  | test   |
-| AD2  | Impersonacija istekla usred akcije                  | Sledeći zahtev ide kao admin, sesija se zatvara (`expired`) i beleži, traka nestaje                | 13b  | test   |
-| AD3  | Admin pokušava impersonaciju drugog admina ili sebe | 403 za drugog admina, 400 za sopstveni nalog                                                       | 13b  | test   |
-| AD4  | Admin bez MFA                                       | Stranice vode na Bezbednost sa objašnjenjem, API 403 sa porukom                                    | 13a  | test   |
-| AD5  | Ukraden ili prepravljen `sova_imp` cookie           | Bez admin sesije koja ga je napravila ili sa lažnim potpisom se ignoriše                           | 13b  | test   |
-| AD6  | Upis zahteva u audit ne uspe tokom impersonacije    | Zahtev ide kao admin (fail closed)                                                                 | 13b  | kod    |
-| AD7  | Brisanje impersoniranog korisnika ili bivšeg admina | Prolazi; audit zapisi ostaju nepromenjeni (D-075)                                                  | 13a  | test   |
-| AD8  | Brisanje vlasnika tima sa drugim članovima          | 409 dok se vlasništvo ne prenese                                                                   | 13a  | test   |
-| AD9  | Oduzimanje više tokena nego što radni prostor ima   | 400 sa stanjem, ništa se ne menja                                                                  | 13a  | test   |
-| AD10 | Ponovni pokušaj objave koja nije neuspela           | 409 sa razlogom; neaktivan nalog takođe 409 (korisnik ga ponovo povezuje)                          | 13a  | test   |
-| AD11 | Dva admina menjaju isti flag ili cenu               | Važi poslednja izmena; obe su u auditu sa stanjem pre i posle                                      | 13a  | kod    |
-| AD12 | MFA panel tokom impersonacije                       | Isključen, jer browser nosi adminovu sesiju                                                        | 13b  | kod    |
-| AD13 | Odjava tokom impersonacije                          | Završava samo impersonaciju; admin ostaje prijavljen i vraća se na detalj korisnika                | 13b  | kod    |
-| AD14 | Nova impersonacija dok je stara aktivna             | Stara se zatvara (`replaced`); admin ima najviše jednu aktivnu sesiju                              | 13b  | test   |
+| #    | Slučaj                                                    | Ponašanje                                                                                          | Faza | Status |
+| ---- | --------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---- | ------ |
+| AD1  | Uklanjanje poslednjeg admina platforme                    | Uloga se ne menja iz aplikacije (samo allowlist i seed); admin ne može da blokira ni obriše admina | 13a  | test   |
+| AD2  | Impersonacija istekla usred akcije                        | Sledeći zahtev ide kao admin, sesija se zatvara (`expired`) i beleži, traka nestaje                | 13b  | test   |
+| AD3  | Admin pokušava impersonaciju drugog admina ili sebe       | 403 za drugog admina, 400 za sopstveni nalog                                                       | 13b  | test   |
+| AD4  | Admin bez MFA                                             | Stranice vode na Bezbednost sa objašnjenjem, API 403 sa porukom                                    | 13a  | test   |
+| AD5  | Ukraden ili prepravljen `sova_imp` cookie                 | Bez admin sesije koja ga je napravila ili sa lažnim potpisom se ignoriše                           | 13b  | test   |
+| AD6  | Upis zahteva u audit ne uspe tokom impersonacije          | Zahtev ide kao admin (fail closed)                                                                 | 13b  | kod    |
+| AD15 | Brisanje korisnika čiju strategiju kaskada menja dva puta | Prolazi; FK provera ide na kraj transakcije (D-079)                                                | 8b   | test   |
+| AD7  | Brisanje impersoniranog korisnika ili bivšeg admina       | Prolazi; audit zapisi ostaju nepromenjeni (D-075)                                                  | 13a  | test   |
+| AD8  | Brisanje vlasnika tima sa drugim članovima                | 409 dok se vlasništvo ne prenese                                                                   | 13a  | test   |
+| AD9  | Oduzimanje više tokena nego što radni prostor ima         | 400 sa stanjem, ništa se ne menja                                                                  | 13a  | test   |
+| AD10 | Ponovni pokušaj objave koja nije neuspela                 | 409 sa razlogom; neaktivan nalog takođe 409 (korisnik ga ponovo povezuje)                          | 13a  | test   |
+| AD11 | Dva admina menjaju isti flag ili cenu                     | Važi poslednja izmena; obe su u auditu sa stanjem pre i posle                                      | 13a  | kod    |
+| AD12 | MFA panel tokom impersonacije                             | Isključen, jer browser nosi adminovu sesiju                                                        | 13b  | kod    |
+| AD13 | Odjava tokom impersonacije                                | Završava samo impersonaciju; admin ostaje prijavljen i vraća se na detalj korisnika                | 13b  | kod    |
+| AD14 | Nova impersonacija dok je stara aktivna                   | Stara se zatvara (`replaced`); admin ima najviše jednu aktivnu sesiju                              | 13b  | test   |
 
 ## Brand Brain (iz brifa 5.7)
 

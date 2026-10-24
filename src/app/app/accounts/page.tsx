@@ -24,6 +24,7 @@ export default async function AccountsPage({ searchParams }: PageProps<'/app/acc
       canEdit={EDIT_ROLES.includes(current.role)}
       pendingState={typeof sp.pending === 'string' ? sp.pending : null}
       notice={typeof sp.connect === 'string' ? sp.connect : null}
+      noticeProvider={typeof sp.provider === 'string' ? sp.provider : null}
     />
   )
 }

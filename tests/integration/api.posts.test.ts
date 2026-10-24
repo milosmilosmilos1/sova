@@ -28,6 +28,7 @@ import { admin, call, createTestUser, deleteTestUser, type TestUser } from './he
 
 let owner: TestUser
 let editor: TestUser
+let stranger: TestUser | undefined
 let wsId = ''
 let brandId = ''
 let fbAccountId = ''
@@ -124,6 +125,7 @@ afterEach(() => {
 
 afterAll(async () => {
   await deleteTestUser(editor)
+  await deleteTestUser(stranger)
   await deleteTestUser(owner)
 })
 
@@ -192,7 +194,7 @@ describe('Objave: kreiranje i izmene', () => {
     )
     expect(versions.json.data!.map((v) => v.version)).toEqual([2, 1])
     const other = await call(postGet, `/api/posts/${postId}`, {
-      token: (await createTestUser('posts-stranac')).token,
+      token: (stranger = await createTestUser('posts-stranac')).token,
       params: { id: postId },
     })
     expect(other.status).toBe(404)

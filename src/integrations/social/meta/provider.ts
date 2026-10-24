@@ -425,6 +425,8 @@ export class MetaProvider implements SocialProvider {
   }
 
   async getPublishStatus(handle: PollHandle, accessToken: string): Promise<PublishStatus> {
+    if (handle.kind !== 'ig_container')
+      throw new ProviderError('NOT_SUPPORTED', { message: `Meta ne obrađuje ručku ${handle.kind}.` })
     const g = this.client(accessToken)
     const s = await g.get<{ status_code?: string; status?: string }>(handle.containerId, {
       fields: 'status_code,status',

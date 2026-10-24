@@ -5,7 +5,9 @@ import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { isProviderError } from '@/integrations/social/errors'
 import { getMetaProvider } from '@/integrations/social/registry'
-import { markAccountStatus, tokensFor, type SocialAccountRow } from '@/services/social/accounts'
+import { markAccountStatus, tokensFor, type SocialAccountRow } from '@/services/social/account-rows'
+import { refreshAccountTokens } from '@/services/social/tokens'
+import { notifyUsers, usersWithRoles } from '@/services/notifications'
 import type { Json } from '@/types/database'
 
 export interface RefreshSummary {
@@ -91,4 +93,89 @@ export async function refreshExpiringTokens(withinDays = 7): Promise<RefreshSumm
   }
   logger.info('social_token_refresh_done', summary as unknown as Record<string, unknown>)
   return summary
+}
+
+/**
+ * LinkedIn i TikTok (faza 8b, D-076): TikTok pristupni token (24 h) se osvežava kad ističe za manje od
+ * 6 h; LinkedIn sa programskim refresh-om kad ističe za manje od 7 dana. LinkedIn bez refresh tokena
+ * se ne može produžiti: vlasnici dobijaju obaveštenje 7 dana pre isteka (jednom), a posle isteka
+ * nalog prelazi u `needs_reauth` i publisher ga ne koristi dok se ne poveže ponovo.
+ */
+export async function refreshOtherTokens(): Promise<RefreshSummary> {
+  const admin = createSupabaseAdminClient()
+  const now = Date.now()
+  const { data, error } = await admin
+    .from('social_accounts')
+    .select('*')
+    .in('platform', ['linkedin', 'tiktok'])
+    .eq('status', 'active')
+    .not('token_expires_at', 'is', null)
+    .lt('token_expires_at', new Date(now + 7 * 86_400_000).toISOString())
+    .limit(500)
+  if (error) throw error
+  const rows = data ?? []
+  const summary: RefreshSummary = { checked: rows.length, refreshed: 0, needsReauth: 0, errors: 0 }
+  for (const r of rows) {
+    const exp = new Date(r.token_expires_at!).getTime()
+    const hasRefresh = Boolean(r.refresh_token_enc)
+    try {
+      if (r.platform === 'tiktok') {
+        if (exp - now > 6 * 3600_000) continue
+        await refreshAccountTokens(r)
+        summary.refreshed++
+        continue
+      }
+      if (hasRefresh) {
+        await refreshAccountTokens(r)
+        summary.refreshed++
+        continue
+      }
+      if (exp <= now) {
+        await markAccountStatus(
+          r.id,
+          'needs_reauth',
+          'LinkedIn veza je istekla (60 dana). Povežite nalog ponovo.',
+        )
+        summary.needsReauth++
+        continue
+      }
+      await notifyLinkedInExpiry(r, exp)
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Osvežavanje nije uspelo.'
+      if (isProviderError(err) && (err.code === 'TOKEN_INVALID' || err.code === 'PERMISSION_LOST')) {
+        await markAccountStatus(r.id, 'needs_reauth', err.userMessage, message)
+        summary.needsReauth++
+      } else {
+        await admin
+          .from('social_accounts')
+          .update({ last_error: message.slice(0, 500) })
+          .eq('id', r.id)
+        summary.errors++
+      }
+      logger.warn('social_token_refresh_failed', { accountId: r.id, platform: r.platform, message })
+    }
+  }
+  logger.info('social_token_refresh_other_done', summary as unknown as Record<string, unknown>)
+  return summary
+}
+
+async function notifyLinkedInExpiry(row: SocialAccountRow, exp: number): Promise<void> {
+  const meta = (row.metadata as Record<string, Json> | null) ?? {}
+  if (typeof meta.expiryNotifiedAt === 'string') return
+  const days = Math.max(1, Math.ceil((exp - Date.now()) / 86_400_000))
+  const admin = createSupabaseAdminClient()
+  await notifyUsers({
+    userIds: await usersWithRoles(row.workspace_id, row.brand_id, ['owner', 'admin']),
+    workspaceId: row.workspace_id,
+    brandId: row.brand_id,
+    type: 'account_expiring',
+    title: 'LinkedIn veza uskoro ističe',
+    body: `${row.name}: veza ističe za ${days} ${days === 1 ? 'dan' : 'dana'}. Povežite nalog ponovo na strani Mreže da objave ne bi stale.`,
+    link: '/app/accounts',
+    data: { socialAccountId: row.id, platform: row.platform },
+  })
+  await admin
+    .from('social_accounts')
+    .update({ metadata: { ...meta, expiryNotifiedAt: new Date().toISOString() } as NonNullable<Json> })
+    .eq('id', row.id)
 }

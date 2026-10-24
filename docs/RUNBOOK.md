@@ -17,6 +17,8 @@ npm run inngest:dev                # Inngest dev server na :8288 (poseban termin
 
 Vrednosti za `.env.local` lokalnog Supabase-a: `npx supabase status -o env` (ANON_KEY → NEXT_PUBLIC_SUPABASE_ANON_KEY, SERVICE_ROLE_KEY → SUPABASE_SERVICE_ROLE_KEY, JWT_SECRET → SUPABASE_JWT_SECRET). Tajne: `openssl rand -base64 32` za TOKEN_ENCRYPTION_KEY (sa prefiksom `v1:`), `openssl rand -hex 32` za CRON_SECRET i IMPERSONATION_SECRET.
 
+Mreže iz faze 8b: `LINKEDIN_CLIENT_ID/SECRET`, `LINKEDIN_PAGES` i `LINKEDIN_MEMBER_ANALYTICS` (`true` tek kad LinkedIn odobri Community Management API odnosno Member Post Analytics), `TIKTOK_CLIENT_KEY/SECRET`, `PUBLIC_MEDIA_BASE_URL` (domen verifikovan u TikTok portalu; prazno = adresa aplikacije). Lokalno TikTok ne može da preuzme fajl sa localhost-a, pa foto objava traži javni tunel ili staging.
+
 Provera: http://localhost:3001/api/health vraća `status: ok`; `database: ok`.
 
 Demo nalog za pregled ekrana: `npm run demo:seed` pravi `demo@sova.local` (lozinka iz `DEMO_PASSWORD` ili nasumična, ispisuje se samo u konzoli), radni prostor „Sova demo” sa lažnim Facebook i Instagram nalogom (asistirano objavljivanje, ništa ne ide na prave mreže), aktivnom strategijom, 20 objavljenih objava sa metrikama, nacrtima Autopilota, uvidima, predlozima i obaveštenjima. Ponovno pokretanje briše prethodni demo. Skripta odbija Supabase URL koji nije localhost. Lokalni mejlovi (potvrda registracije, pozivnice) stižu u Mailpit na http://localhost:54324, ne u pravi sandučić. `npm run db:reset` briše i demo i sve lokalne naloge.
@@ -35,9 +37,9 @@ Zamke:
 
 ```
 npm run lint && npm run typecheck
-npm run test            # Vitest unit (138)
-npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (26); pravi i briše test korisnike
-npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva i Meta Graph kroz MSW (111)
+npm run test            # Vitest unit (154)
+npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (28); pravi i briše test korisnike
+npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (124)
 npm run test:e2e        # Playwright kroz Mailpit (5); traži pokrenut dev server
 npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs 25   # živi crawler bez baze i AI-ja
 npm run build           # produkcijski build
@@ -48,6 +50,7 @@ npm run build           # produkcijski build
 - Nova migracija: `npx supabase migration new <naziv>` → fajl u `supabase/migrations/`. Do lansiranja se postojeće migracije menjaju u mestu i radi se `db:reset`; posle lansiranja samo nove migracije, unazad kompatibilne (expand → migrate → contract).
 - Posle promene šeme: `npm run db:reset`, `npm run test:db`, `npm run db:types` (regeneriše `src/types/database.ts`), `npm run typecheck`.
 - Bez brisanja lokalnih podataka (demo nalozi): `npx supabase migration up --local` primenjuje samo nove migracije; posle toga `npm run db:types`. Ispravka već primenjene migracije ide novom migracijom ili ručno kroz `psql`, jer `migration up` ne ponavlja zabeleženu verziju.
+- Novi strani ključ sa `ON DELETE CASCADE` ili `SET NULL` piše se kao `DEFERRABLE INITIALLY DEFERRED` (D-079), inače brisanje naloga može da padne usred kaskade.
 - Append-only tabele (`admin_audit_log`, `token_ledger`, `publish_attempts`, `post_versions`, `approvals`) se ne menjaju ni u migraciji; jedini izuzetak je popuna nove kolone uz privremeno isključen okidač (primer: migracija 019).
 - Security definer funkcije: `revoke all ... from public, anon, authenticated` pa `grant execute ... to service_role` (Supabase podrazumevano daje EXECUTE svim ulogama).
 - Staging i prod: kroz GitHub Actions posle odobrenja vlasnika (dodaje se u fazi 16), nikad `db push` sa lokalne mašine na prod.
@@ -75,6 +78,10 @@ Faza 16. Vercel: `main` → Production, PR → Preview. Checklista u ARCHITECTUR
 - **Autopilot troši previše**: `select sum(tokens_charged) from ai_generations where brand_id = '…' and input->>'autopilot' = 'true' and created_at >= date_trunc('month', now())`; budžet se menja na `/app/autopilot`, „Pauziraj sve” zaustavlja odmah.
 - **Nacrti vraćeni na doradu**: `select id, qa_report from posts where source = 'autopilot' and status = 'draft' and qa_report->>'passed' = 'false'`; najčešće zabranjena reč, brojka koje nema u profilu ili sličnost sa ranijom objavom.
 - **Asistirani targeti stoje danima**: `select t.id, t.post_id, a.name from post_targets t join social_accounts a on a.id = t.social_account_id where t.status = 'assisted_pending'`; podsetnik stiže sa fazom 11.
+- **LinkedIn veze ističu**: token traje 60 dana; bez programskog refresh-a vlasnici dobijaju obaveštenje 7 dana ranije, a posle isteka nalog je `needs_reauth`. Spisak: `select id, name, token_expires_at, refresh_token_enc is not null as ima_refresh from social_accounts where platform = 'linkedin' order by token_expires_at`. Ponovno povezivanje bez ekrana za saglasnost radi dok je korisnik prijavljen na LinkedIn i token još važi.
+- **TikTok odbija objave**: `unaudited_client_can_only_post_to_private_accounts` (aplikacija nije prošla audit: samo privatni nalozi i „Samo ja”), `url_ownership_unverified` (domen iz `PUBLIC_MEDIA_BASE_URL` nije verifikovan u URL properties), `spam_risk_too_many_posts` (dnevni limit naloga, publisher pomera za 24 h), `privacy_level_option_mismatch` (korisnik je promenio privatnost naloga; bira ponovo u objavi). `fail_reason` iz statusa je u `last_error_message`.
+- **TikTok objava bez linka**: dok moderacija traje `external_post_id` je `publish:{id}`; povlačenje metrika ga zameni pravim ID-jem. Ako ostane danima: `select id, external_post_id from post_targets where platform = 'tiktok' and external_post_id like 'publish:%'`.
+- **Javni URL medija vraća 404**: token je istekao (2 h), medij je obrisan ili je promenjen `TOKEN_ENCRYPTION_KEY` (ključ potpisa se izvodi iz njega). Publisher pravi nov URL pri svakom pokušaju.
 - **Mreža vraća 401 masovno**: isključi feature flag `platform.<mreža>`, banner korisnicima, proveri promenu API verzije (`META_GRAPH_VERSION` u env-u; promena bez deploya koda).
 - **Nalozi prelaze u `needs_reauth`**: `select platform, status, status_reason, last_error, refresh_token_expires_at from social_accounts where status <> 'active'`; Meta korisnički token traje 60 dana i `social-token-refresh` ga produžava dnevno; ako je korisnik promenio lozinku ili uklonio aplikaciju, ponovo povezuje iz `/app/accounts`.
 - **Meta webhook ne prolazi**: `signed_request` se proverava `META_APP_SECRET`-om iste aplikacije; pogrešna tajna daje 403. Data deletion mora da vrati čist JSON `{url, confirmation_code}` (ruta to radi mimo `ok/data` omotača).

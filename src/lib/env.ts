@@ -27,5 +27,7 @@ export const configured = {
   canva: Boolean(env.CANVA_CLIENT_ID && env.CANVA_CLIENT_SECRET),
   google: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
   meta: Boolean(env.META_APP_ID && env.META_APP_SECRET),
+  linkedin: Boolean(env.LINKEDIN_CLIENT_ID && env.LINKEDIN_CLIENT_SECRET),
+  tiktok: Boolean(env.TIKTOK_CLIENT_KEY && env.TIKTOK_CLIENT_SECRET),
   stripe: Boolean(env.STRIPE_SECRET_KEY && env.STRIPE_WEBHOOK_SECRET),
 } as const

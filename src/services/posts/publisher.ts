@@ -3,7 +3,7 @@ import 'server-only'
 import type { SocialPlatform } from '@/config/platforms'
 import type { NotificationType } from '@/config/notifications'
 import { providerFor } from '@/integrations/social/registry'
-import type { NormalizedPost, PollHandle } from '@/integrations/social/types'
+import { pollHandleId, type NormalizedPost, type PollHandle } from '@/integrations/social/types'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
@@ -34,7 +34,9 @@ import { mapDbError } from '@/lib/supabase/errors'
 import { signedUrl, type MediaAssetRow } from '@/services/media'
 import { notifyUsers, usersWithRoles } from '@/services/notifications'
 import { getPostView, loadPost, type PostRow, type PostView, type TargetRow } from '@/services/posts/posts'
-import { markAccountStatus, refFor, tokensFor, type SocialAccountRow } from '@/services/social/accounts'
+import { markAccountStatus, refFor, type SocialAccountRow } from '@/services/social/account-rows'
+import { accessTokenFor } from '@/services/social/tokens'
+import { publicMediaUrl } from '@/lib/media/public-url'
 import type { Database, Json } from '@/types/database'
 
 /**
@@ -205,6 +207,11 @@ async function normalize(b: Bundle): Promise<NormalizedPost> {
       width: m.asset.width,
       height: m.asset.height,
       alt: m.asset.alt_text,
+      assetId: m.asset.id,
+      // TikTok foto preuzima samo sa verifikovanog domena; JPEG do 1080p (D-077)
+      publicUrl: publicMediaUrl(m.asset.id, b.target.platform === 'tiktok' ? 'tiktok' : 'orig'),
+      sizeBytes: m.asset.size_bytes,
+      durationMs: m.asset.duration_ms,
     })
   }
   return {
@@ -218,6 +225,8 @@ async function normalize(b: Bundle): Promise<NormalizedPost> {
     firstComment: b.post.first_comment,
     isAiGenerated: b.media.some((m) => m.asset.is_ai_generated),
     clientKey: b.target.idempotency_key,
+    title: b.post.title,
+    options: (b.target.options as Record<string, Json> | null) ?? {},
   }
 }
 
@@ -615,8 +624,20 @@ async function attemptOnce(
   const startedAt = new Date()
   const provider = providerFor(b.target.platform)
   const ref = refFor(b.account)
-  const token = tokensFor(b.account).accessToken
   const ids = { socialAccountId: b.account.id, brandId: b.brand.id }
+  let token: string
+  try {
+    token = await accessTokenFor(b.account)
+  } catch (error) {
+    const failure = classifyPublishError(error)
+    if (failure.kind === 'reauth') {
+      await markAccountStatus(b.account.id, 'needs_reauth', failure.code, failure.detail)
+      await failTarget(b, attemptNo, startedAt, failure, runId, 'post_needs_reauth')
+    } else {
+      await failTarget(b, attemptNo, startedAt, failure, runId)
+    }
+    return { kind: 'failed', message: failure.message }
+  }
 
   let normalized: NormalizedPost
   try {
@@ -657,7 +678,7 @@ async function attemptOnce(
         startedAt,
         'success',
         null,
-        { pending: result.pending.containerId },
+        { pending: pollHandleId(result.pending) },
         runId,
       )
       return { kind: 'pending', handle: result.pending, ...ids }
@@ -757,9 +778,9 @@ async function pollOnce(
   if (!b || b.target.status !== 'publishing')
     return { kind: 'failed', message: 'target više nije u objavljivanju' }
   const provider = providerFor(b.target.platform)
-  const token = tokensFor(b.account).accessToken
   const startedAt = new Date()
   try {
+    const token = await accessTokenFor(b.account)
     const status = await provider.getPublishStatus(handle, token)
     if (status.state === 'pending') {
       if (pollNo >= ASYNC_POLL_MAX) {
@@ -767,7 +788,7 @@ async function pollOnce(
           kind: 'permanent',
           code: 'ASYNC_TIMEOUT',
           message: 'Mreža nije obradila medij na vreme. Pokušajte ponovo.',
-          detail: `kontejner ${handle.containerId} i dalje IN_PROGRESS posle ${pollNo} provera`,
+          detail: `obrada ${pollHandleId(handle)} i dalje traje posle ${pollNo} provera`,
           httpStatus: null,
         }
         await failTarget(b, attemptNo, startedAt, failure, runId)

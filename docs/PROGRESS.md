@@ -14,7 +14,8 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 | 6 Brand Brain                           | gotovo      | crawler + profil + RAG + nedeljna provera; živi smoke nad tangerineseo.rs prošao; bez ključa radi heuristički                                                                 |
 | 7 Vizuelni pipeline                     | gotovo      | Unsplash + vision rangiranje, 4 šablona (Satori), Canva Connect (PKCE, dizajn, export); čeka: UNSPLASH_ACCESS_KEY, Canva app                                                  |
 | 8a Facebook + Instagram                 | gotovo      | OAuth, izbor naloga, tokeni, uvoz istorije, osvežavanje, webhook-ovi, provider za objave; čeka: Meta app i App Review                                                         |
-| 8b–8d Ostale mreže                      | sledeće     | LinkedIn, TikTok, GBP, Pinterest, YouTube, X; treba: app-ovi i prijave iz INTEGRATIONS 14                                                                                     |
+| 8b LinkedIn i TikTok                    | gotovo      | LinkedIn profil i stranice, TikTok foto (video spreman u provideru), panel u editoru, osvežavanje tokena; čeka: app-ovi i odobrenja (INTEGRATIONS 14)                         |
+| 8c–8d Ostale mreže                      | sledeće     | Google Business Profile, Pinterest, YouTube Shorts (8c), X (8d); treba: app-ovi i prijave iz INTEGRATIONS 14                                                                  |
 | 9a Objave, odobravanje, kalendar        | gotovo      | state machine, composer backend, verzije, javni link, komentari, kalendar, red objava; UI /app/posts, /app/calendar, /approve                                                 |
 | 9b Publisher                            | gotovo      | Inngest publish-target (sleepUntil, cancelOn, 3 pokušaja 1/5/15 min, IG polling), watchdog, rollup statusa, asistirano objavljivanje, retry, obaveštenja sa podešavanjima, K3 |
 | 10a Strategija i kalendar iz strategije | gotovo      | AI strategija (20 tokena, Inngest), vremena iz istorije ili pretpostavke, verzije, stubovi i kampanje, kalendar nacrta bez tokena, UI /app/strategy                           |
@@ -94,6 +95,24 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Admin panel: isti `npm run demo:seed` pravi i `admin@sova.local` sa uključenim TOTP-om i ispisuje lozinku i TOTP tajnu. Posle prijave: Podešavanja → Bezbednost → kod iz aplikacije za kodove (ili `npm run demo:totp -- <tajna>`), pa http://localhost:3001/admin.
 - Provereno 24.10.2026 u Chromium-u: početna, Inbox, Objave, detalj objave, Kalendar, Strategija, Analitika, Autopilot, Obaveštenja, Mreže i Podešavanja rade bez grešaka u konzoli i API odgovorima. Usput ispravljeno: legenda kalendara je prikazivala interne nazive statusa, horizonti snimaka u analitici nisu bili poređani, editor nije prikazivao zašto je Autopilot vratio nacrt (sada prikazuje, a izveštaj se briše čim se tekst promeni).
 - Provereno 24.10.2026 u Chromium-u (faza 13): svih sedam admin strana, „Gledaj kao” za demo nalog (traka, izmena u read-only režimu dobija 403 sa objašnjenjem, „Izađi” vraća na detalj korisnika), `/admin/users` na 390 px bez horizontalnog skrola. Usput ispravljeno: stara provera u `requireMembership` je tokom read-only pregleda rušila svaku stranu aplikacije.
+
+## Faza 8b — šta je urađeno
+
+- **Opšti sloj mreža**: registry po ključu toka (`meta`, `linkedin`, `tiktok`) i mreži, uopšten servis naloga (povezivanje, izbor, sinhronizacija, prekid veze sa opozivom samo kad token ne deli drugi nalog), `providerUserId` u metapodacima naloga. `accessTokenFor` daje važeći token svim pozivima mreže (TikTok se osvežava pre isteka, LinkedIn posle isteka bez refresh-a traži ponovno povezivanje, D-078); cron `social-token-refresh` na 6 h. Novi moduli `account-rows.ts` i `tokens.ts` sklanjaju kružne uvoze.
+- **LinkedIn** (D-076): lični profil (self-serve proizvodi) i stranice firmi (Community Management API, `LINKEDIN_PAGES=true`), Posts API verzija 202610, tekst u `little` formatu, jedna slika ili više njih (Images API, WebP → JPEG), link kao članak sa naslovom i opisom sa stranice (SSRF-bezbedan pregled), brisanje, istorija i statistika stranice, metrike ličnih objava uz `LINKEDIN_MEMBER_ANALYTICS=true`, pratioci stranice. Obaveštenje `account_expiring` 7 dana pre isteka veze od 60 dana, posle isteka `needs_reauth`.
+- **TikTok** (D-077): OAuth za web, nalog sa pratiocima, `creator_info` pre svake objave, foto objava (`PULL_FROM_URL` sa našeg domena kroz `/api/media/public/{token}.jpg`, JPEG do 1080p), video kroz `FILE_UPLOAD` u delovima (radi kad mediji budu imali video), polling statusa u publisheru, ID posle moderacije (`publish:…` dok ga nema, razrešava se pri metrikama), istorija i metrike videa, nalog iz `user/info`, opoziv pri prekidu veze. int64 ID-jevi se parsiraju bez gubitka cifara.
+- **Editor**: TikTok panel po UX smernicama (nalog na koji ide objava, privatnost bez podrazumevane vrednosti, komentari/duet/stitch po pravilima naloga, otkrivanje komercijalnog sadržaja sa oznakama „Vaš brend” i „Brendirani sadržaj”, saglasnost sa pravilima o muzici i brendiranom sadržaju); podešavanja se čuvaju u `post_targets.options.tiktok` i proveravaju pri zakazivanju.
+- **Mreže (strana)**: dugme za svaku podešenu mrežu, poruke po mreži, „Poveži ponovo” po mreži naloga, datum isteka LinkedIn veze.
+- **Usput ispravljeno**: provera objave pre zakazivanja sada pita provider svake mreže (ranije samo Facebook i Instagram); sinhronizacija Meta naloga ponovo šifruje i refresh token aktuelnom verzijom ključa; brisanje korisnika sa strategijom je padalo na FK proveri usred kaskade (migracija 020, D-079); `deleteTestUser` je tiho ignorisao neuspelo brisanje, pa su se test podaci gomilali i ometali watchdog test.
+- **Šema**: migracija `20261024000020_deferred_cascade_fks.sql` (odložena provera CASCADE i SET NULL ključeva).
+- **Testovi**: 2 testa baze (brisanje korisnika sa strategijom i generacijom, odložena provera i dalje odbija nepostojećeg roditelja), 16 unit (little format, podela videa, UTF-16 skraćivanje, opcije, mapiranje grešaka, int64 ID-jevi, potpis javnog URL-a) i 13 integracionih sa MSW mock-om (LinkedIn povezivanje, profil sa dve slike, stranica sa člankom, metrike, istek i obaveštenje; TikTok povezivanje, `creator_info` i provera, foto objava sa javnim URL-om i rutom, moderacija, promenjena privatnost, osvežavanje i rotacija refresh tokena, video `FILE_UPLOAD`, istorija i opoziv).
+
+## Kako da testiraš (faza 8b)
+
+1. Bez ključeva: `/app/accounts` piše koje mreže nisu podešene; `npm run test:integration` pokriva ceo tok kroz mock.
+2. Sa ključevima (`LINKEDIN_CLIENT_ID/SECRET`, `TIKTOK_CLIENT_KEY/SECRET`) i flagovima `platform.linkedin` / `platform.tiktok` u Admin → Platforma: „Poveži LinkedIn” → profil (i stranice uz `LINKEDIN_PAGES=true`) → objava sa slikom.
+3. TikTok: nalog mora biti privatan dok aplikacija ne prođe audit; u editoru izaberite privatnost „Samo ja”, potvrdite saglasnost, dodajte fotografiju; `PUBLIC_MEDIA_BASE_URL` mora biti domen verifikovan u TikTok portalu.
+4. `npm run test` (154), `npm run test:integration` (124), `npm run test:db` (28), `npm run test:e2e` (5).
 
 ## Faza 13 — šta je urađeno
 
@@ -279,6 +298,8 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Meta app (Business), test Facebook stranica sa povezanim Instagram Business nalogom, `META_APP_ID/SECRET`; kasnije Business Verification i App Review (scope-ovi iz INTEGRATIONS 3 i 4, screencast). Do App Review-a objavljivanje radi samo za uloge na app-u (test korisnici), zato je `assisted_only` fallback uključen kroz flagove.
 - Adresa sedišta TangerineSEO LLC i merodavno pravo; email za privatnost na domenu sovaai.rs.
 - GitHub → Settings → Code security: uključiti secret scanning.
+- LinkedIn: aplikacija u Developer portalu sa proizvodima „Share on LinkedIn” i „Sign In with LinkedIn using OpenID Connect”, redirect `https://sovaai.rs/api/integrations/linkedin/callback` (i localhost:3001 za probu), `LINKEDIN_CLIENT_ID/SECRET`; za stranice prijava za Community Management API (firma, poslovni email, verifikovana stranica), za metrike ličnih objava formular za Member Post Analytics.
+- TikTok: aplikacija u TikTok for Developers sa Login Kit-om (web) i Content Posting API-jem (Direct Post), redirect `https://sovaai.rs/api/integrations/tiktok/callback`, `TIKTOK_CLIENT_KEY/SECRET`; verifikacija domena medija (URL properties) za `PUBLIC_MEDIA_BASE_URL`; pa prijava za audit (do tada samo privatni nalozi i „Samo ja”).
 - Za admin panel na produkciji: Supabase projekat sa HS256 JWT secretom dostupnim serveru (impersonacija, D-070) i `IMPERSONATION_SECRET` u Vercel env-u. Vaš email je u allowlist-i: posle registracije uključite TOTP u Podešavanja → Bezbednost.
 
 ## Poznati bagovi
@@ -300,4 +321,5 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Composer još nema izbor stuba i kampanje (Autopilot i kalendar iz strategije ih upisuju); dodaje se uz dizajn ekrana (14b).
 - Mesečni PDF izveštaj (`reports-monthly`) i grafikoni analitike stižu uz dizajn (D-062).
 - Vizual Autopilota je šablon bez fotografije (D-068); Unsplash i AI slika kao opcija Autopilota kad budu ključevi.
+- LinkedIn video i prvi komentar nisu ugrađeni; TikTok video čeka upload videa u medijima (provider i testovi su spremni).
 - Admin pregled i AI troškovi su tabele; grafikoni stižu uz dizajn (faza 14). Audit CSV ima najviše 1.000 redova po izvozu (za više se sužava period).

@@ -10,7 +10,8 @@ import { PLATFORMS } from '@/config/platforms'
 import type { ApiResponse } from '@/lib/api/response'
 
 /**
- * Mreže (faza 8a): povezani nalozi brenda, izbor naloga posle OAuth-a, sinhronizacija, prekid veze.
+ * Mreže (faze 8a–8b): povezani nalozi brenda, izbor naloga posle OAuth-a, sinhronizacija, prekid veze.
+ * Facebook i Instagram dele jedan tok (`meta`); LinkedIn i TikTok imaju svoje.
  * Dizajn dolazi u fazi 14; ovde su funkcionalnost i 4 stanja.
  */
 interface AccountView {
@@ -27,6 +28,7 @@ interface AccountView {
   followers: number | null
   pending: boolean
   pendingState: string | null
+  tokenExpiresAt: string | null
   lastSyncedAt: string | null
   lastError: string | null
   historyCount: number
@@ -35,7 +37,7 @@ interface AccountView {
 interface AccountsResponse {
   accounts: AccountView[]
   pending: AccountView[]
-  availability: Array<{ provider: string; configured: boolean; enabledPlatforms: string[] }>
+  availability: Array<{ provider: string; label: string; configured: boolean; enabledPlatforms: string[] }>
 }
 
 interface HistoryItem {
@@ -59,6 +61,17 @@ async function api<T>(path: string, init: RequestInit & { json?: unknown } = {})
   const data = (await res.json()) as ApiResponse<T>
   if (!data.ok) throw new Error(`${data.error.message} (${data.error.code})`)
   return data.data
+}
+
+/** Ključ OAuth toka za mrežu naloga (za „Poveži ponovo”). */
+function providerOf(platform: string): string {
+  return platform === 'facebook' || platform === 'instagram' ? 'meta' : platform
+}
+
+const EMPTY_NOTICE: Record<string, string> = {
+  meta: 'Facebook nije vratio nijednu stranicu. Proverite da ste administrator stranice i da je Instagram nalog poslovni i povezan sa stranicom.',
+  linkedin: 'LinkedIn nije vratio nijedan nalog.',
+  tiktok: 'TikTok nije vratio nalog.',
 }
 
 const STATUS_LABEL: Record<AccountView['status'], string> = {
@@ -87,6 +100,7 @@ export function AccountsClient({
   canEdit,
   pendingState,
   notice,
+  noticeProvider,
 }: {
   brandId: string
   brandName: string
@@ -94,6 +108,7 @@ export function AccountsClient({
   canEdit: boolean
   pendingState: string | null
   notice: string | null
+  noticeProvider: string | null
 }) {
   const qc = useQueryClient()
   const key = ['social-accounts', brandId, pendingState]
@@ -134,8 +149,18 @@ export function AccountsClient({
     enabled: Boolean(historyFor),
   })
 
-  const meta = accounts.data?.availability.find((a) => a.provider === 'meta')
-  const canConnect = canAdmin && meta?.configured && (meta.enabledPlatforms.length ?? 0) > 0
+  const availability = accounts.data?.availability ?? []
+  const connectable = canAdmin
+    ? availability.filter((a) => a.configured && a.enabledPlatforms.length > 0)
+    : []
+  const notConfigured = availability.filter((a) => !a.configured).map((a) => a.label)
+  const flaggedOff = availability
+    .filter((a) => a.configured && a.enabledPlatforms.length === 0)
+    .map((a) => a.label)
+  const providerReady = (platform: string) =>
+    availability.some((a) => a.provider === providerOf(platform) && a.configured)
+  const connectHref = (provider: string) =>
+    `/api/integrations/${provider}/connect?brandId=${brandId}&redirectTo=/app/accounts`
   const pending = accounts.data?.pending ?? []
   const platformLabel = (p: AccountView['platform']) => PLATFORMS[p]?.label ?? p
 
@@ -148,35 +173,35 @@ export function AccountsClient({
             Brend: {brandName}. Povezani nalozi na koje Sova objavljuje i sa kojih uvozi istoriju.
           </p>
         </div>
-        {canConnect ? (
-          <Button
-            nativeButton={false}
-            render={<a href={`/api/integrations/meta/connect?brandId=${brandId}&redirectTo=/app/accounts`} />}
-          >
-            Poveži Facebook i Instagram
-          </Button>
+        {connectable.length ? (
+          <div className="flex flex-wrap gap-2">
+            {connectable.map((a) => (
+              <Button key={a.provider} nativeButton={false} render={<a href={connectHref(a.provider)} />}>
+                Poveži {a.label}
+              </Button>
+            ))}
+          </div>
         ) : null}
       </div>
 
       {notice === 'denied' ? (
         <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          Povezivanje je otkazano na Facebook-u.
+          Povezivanje je otkazano na mreži.
         </p>
       ) : null}
       {notice === 'empty' ? (
         <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          Facebook nije vratio nijednu stranicu. Proverite da ste administrator stranice i da je Instagram
-          nalog poslovni i povezan sa stranicom.
+          {EMPTY_NOTICE[noticeProvider ?? 'meta'] ?? EMPTY_NOTICE.meta}
         </p>
       ) : null}
-      {meta && !meta.configured ? (
+      {notConfigured.length ? (
         <p className="text-sm text-muted-foreground">
-          Integracija sa Facebook-om i Instagram-om još nije podešena na serveru (ključevi Meta aplikacije).
+          Još nisu podešene na serveru (ključevi aplikacija): {notConfigured.join(', ')}.
         </p>
       ) : null}
-      {meta?.configured && meta.enabledPlatforms.length === 0 ? (
+      {flaggedOff.length ? (
         <p className="text-sm text-muted-foreground">
-          Povezivanje mreža je privremeno isključeno (feature flag).
+          Povezivanje je privremeno isključeno (feature flag): {flaggedOff.join(', ')}.
         </p>
       ) : null}
 
@@ -185,8 +210,7 @@ export function AccountsClient({
           <CardHeader>
             <CardTitle className="text-lg">Izaberite naloge</CardTitle>
             <CardDescription>
-              Facebook je vratio ove stranice i Instagram naloge. Štiklirajte one na koje Sova sme da
-              objavljuje.
+              Mreža je vratila ove naloge (stranice, profile). Štiklirajte one na koje Sova sme da objavljuje.
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
@@ -238,7 +262,7 @@ export function AccountsClient({
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
             Još nema povezanih mreža.{' '}
             {canAdmin
-              ? 'Kliknite „Poveži Facebook i Instagram” da počnete.'
+              ? 'Kliknite dugme za mrežu iznad da počnete.'
               : 'Vlasnik ili administrator povezuje mreže.'}
           </CardContent>
         </Card>
@@ -267,6 +291,12 @@ export function AccountsClient({
                       ? ` · sinhronizovano ${new Date(a.lastSyncedAt).toLocaleString('sr-Latn-RS')}`
                       : ''}
                   </div>
+                  {a.platform === 'linkedin' && a.tokenExpiresAt ? (
+                    <p className="mt-1 text-xs text-muted-foreground">
+                      Veza važi do {new Date(a.tokenExpiresAt).toLocaleDateString('sr-Latn-RS')}; LinkedIn
+                      traži ponovno povezivanje na 60 dana.
+                    </p>
+                  ) : null}
                   {a.statusReason ? <p className="mt-1 text-xs text-amber-800">{a.statusReason}</p> : null}
                   {a.lastError ? <p className="mt-1 text-xs text-destructive">{a.lastError}</p> : null}
                 </div>
@@ -289,16 +319,14 @@ export function AccountsClient({
                 >
                   {historyFor === a.id ? 'Sakrij istoriju' : 'Istorija objava'}
                 </Button>
-                {a.status !== 'active' && canAdmin && meta?.configured ? (
+                {(a.status !== 'active' || a.platform === 'linkedin') &&
+                canAdmin &&
+                providerReady(a.platform) ? (
                   <Button
                     size="sm"
                     variant="outline"
                     nativeButton={false}
-                    render={
-                      <a
-                        href={`/api/integrations/meta/connect?brandId=${brandId}&redirectTo=/app/accounts`}
-                      />
-                    }
+                    render={<a href={connectHref(providerOf(a.platform))} />}
                   >
                     Poveži ponovo
                   </Button>

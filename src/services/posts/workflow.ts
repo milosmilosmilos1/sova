@@ -17,11 +17,11 @@ import {
 import type { ScheduleInput } from '@/lib/schemas/posts'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError } from '@/lib/supabase/errors'
-import { providerFor } from '@/integrations/social/registry'
+import { connectKeyFor, providerFor } from '@/integrations/social/registry'
 import type { NormalizedPost } from '@/integrations/social/types'
 import { notifyUsers, usersWithRoles } from '@/services/notifications'
 import { getPostView, loadPost, type PostRow, type PostView } from '@/services/posts/posts'
-import { loadAccountRow, refFor } from '@/services/social/accounts'
+import { loadAccountRow, refFor } from '@/services/social/account-rows'
 
 /**
  * Radnje nad objavom (brif 9, SCHEMA „Dozvoljeni prelazi”): sve idu kroz RPC `transition_post`
@@ -107,7 +107,7 @@ export async function validatePostContent(
       list.push(`Nalog nije aktivan (${t.accountStatus}); povežite ga ponovo pre objave.`)
     try {
       const row = await loadAccountRow(t.socialAccountId)
-      if (row && (row.platform === 'facebook' || row.platform === 'instagram')) {
+      if (row && connectKeyFor(row.platform)) {
         const normalized: NormalizedPost = {
           text: t.text,
           link: view.linkUrl,
@@ -117,10 +117,13 @@ export async function validatePostContent(
             width: m.width,
             height: m.height,
             alt: m.altText,
+            assetId: m.mediaAssetId,
           })),
           firstComment: view.firstComment,
           isAiGenerated: false,
           clientKey: t.id,
+          title: view.title,
+          options: t.options,
         }
         list.push(
           ...providerFor(row.platform)

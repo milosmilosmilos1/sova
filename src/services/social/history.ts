@@ -4,7 +4,8 @@ import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { isProviderError } from '@/integrations/social/errors'
 import { providerFor } from '@/integrations/social/registry'
-import { loadAccountRow, markAccountStatus, refFor, tokensFor } from '@/services/social/accounts'
+import { loadAccountRow, markAccountStatus, refFor } from '@/services/social/account-rows'
+import { accessTokenFor } from '@/services/social/tokens'
 import type { Json } from '@/types/database'
 
 export interface HistoryImportResult {
@@ -21,7 +22,7 @@ export async function importAccountHistory(accountId: string, limit = 100): Prom
   const admin = createSupabaseAdminClient()
   try {
     const provider = providerFor(row.platform)
-    const posts = await provider.fetchHistory(refFor(row), tokensFor(row).accessToken, limit)
+    const posts = await provider.fetchHistory(refFor(row), await accessTokenFor(row), limit)
     if (posts.length) {
       const rows = posts.map((p) => ({
         brand_id: row.brand_id,

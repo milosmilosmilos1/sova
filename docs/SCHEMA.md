@@ -1278,6 +1278,14 @@ create index posts_autopilot_pending on posts (brand_id, scheduled_for)
 - Generacije Autopilota: `ai_generations.user_id = null`, `input.autopilot = true`, `input.runId`, `input.postId` (budžet, D-066).
 - Predlozi: `strategy_proposal` (source `analytics`, `payload.periodStart`), `post_idea` iz praznika (`payload = {date, name, kind}`), `repeat_format` iz analitike (`evidence.targetIds`).
 
+Faza 8b (24.10.2026), bez nove migracije:
+
+- `social_accounts.account_type`: `linkedin_person` (`external_id` = `sub` iz OpenID-a), `linkedin_organization` (`external_id` = ID organizacije, `external_parent_id` = član), `tiktok_account` (`external_id` = `open_id`). `metadata`: `providerUserId` i `providerUserName` za sve mreže (Meta zadržava i `metaUserId`), `scopes`, `linkedinUserId`, `organizationUrn`, `role`, `followers`, `tiktokUserId`, `username`, `expiryNotifiedAt` (obaveštenje o isteku LinkedIn veze poslato). `token_expires_at`: LinkedIn 60 dana, TikTok 24 h; `refresh_token_enc`: TikTok uvek, LinkedIn samo uz programski refresh.
+- `post_targets.options.tiktok = {privacyLevel, allowComment, allowDuet, allowStitch, commercial, brandOrganic, brandedContent, consent, consentAt}` (`src/config/tiktok.ts`); bez izabrane privatnosti i saglasnosti objava ne prolazi proveru.
+- `post_targets.external_post_id`: LinkedIn URN (`urn:li:share:…` ili `urn:li:ugcPost:…`); TikTok ID posle moderacije, a do tada `publish:{publish_id}`.
+- Nov tip obaveštenja `account_expiring` (kolona `type` je tekst, bez migracije).
+- Migracija `20261024000020_deferred_cascade_fks.sql`: svi strani ključevi sa `ON DELETE CASCADE` ili `SET NULL` su `DEFERRABLE INITIALLY DEFERRED` (D-079); jedini neodložen je `subscriptions.plan_id` (NO ACTION, namerno).
+
 Faza 13 (24.10.2026), tri nove migracije (primenjene sa `migration up`, bez `db:reset`):
 
 - `20261024000017_admin.sql`: RPC-ovi `admin_dashboard_stats`, `admin_activity_counts`, `admin_auth_users`, `admin_revoke_user_sessions`, `admin_ai_costs` (security definer, samo service role); indeksi `admin_audit_log` po vremenu, cilju i akciji i delimični indeks aktivnih `impersonation_sessions`; red `platform_settings.active_models = {}` (D-072).
