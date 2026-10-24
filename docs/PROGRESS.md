@@ -10,11 +10,11 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 | 2 Setup projekta                        | gotovo      | lokalno radi, health zelen, build prolazi, 25 unit testova, CI workflow                                                                                                                                  |
 | 3 Baza i bezbednost                     | gotovo      | 14 migracija, 53 tabele, RLS, RPC za tokene, trigeri, storage, seed; 24/24 testova baze                                                                                                                  |
 | 4 Auth i workspace                      | gotovo      | registracija, prijava, magic link, Google (uz ključeve), reset, MFA, workspace, tim, admin gate; 10 integracionih testova                                                                                |
-| 5 Token engine i AI jezgro              | gotovo      | tokeni, idempotentnost, Gemini sloj, Studio; pravi pozivi čekaju GEMINI_API_KEY                                                                                                                          |
+| 5 Token engine i AI jezgro              | gotovo      | tokeni, idempotentnost, Gemini sloj, Studio; Gemini ključ proveren 24.10.2026 (tekst, slika, embedding; D-088)                                                                                           |
 | 6 Brand Brain                           | gotovo      | crawler + profil + RAG + nedeljna provera; živi smoke nad tangerineseo.rs prošao; bez ključa radi heuristički                                                                                            |
 | 7 Vizuelni pipeline                     | gotovo      | Unsplash + vision rangiranje, 4 šablona (Satori), Canva Connect (PKCE, dizajn, export); čeka: UNSPLASH_ACCESS_KEY, Canva app                                                                             |
 | 8a Facebook + Instagram                 | gotovo      | OAuth, izbor naloga, tokeni, uvoz istorije, osvežavanje, webhook-ovi, provider za objave; čeka: Meta app i App Review                                                                                    |
-| 8b LinkedIn i TikTok                    | gotovo      | LinkedIn profil i stranice, TikTok foto (video spreman u provideru), panel u editoru, osvežavanje tokena; čeka: app-ovi i odobrenja (INTEGRATIONS 14)                                                    |
+| 8b LinkedIn i TikTok                    | gotovo      | LinkedIn profil i stranice, video i prvi komentar (D-087), TikTok foto (video spreman u provideru), panel u editoru, osvežavanje tokena; čeka: app-ovi i odobrenja (INTEGRATIONS 14)                     |
 | 8c–8d Ostale mreže                      | gotovo      | direktno otpremanje i video (D-082), zajednički tok (D-083), Google poslovni profil i YouTube Shorts (D-084), Pinterest (D-085), X (D-086); čeka: app-ovi, ključevi i odobrenja iz INTEGRATIONS 14       |
 | 9a Objave, odobravanje, kalendar        | gotovo      | state machine, composer backend, verzije, javni link, komentari, kalendar, red objava; UI /app/posts, /app/calendar, /approve                                                                            |
 | 9b Publisher                            | gotovo      | Inngest publish-target (sleepUntil, cancelOn, 3 pokušaja 1/5/15 min, IG polling), watchdog, rollup statusa, asistirano objavljivanje, retry, obaveštenja sa podešavanjima, K3                            |
@@ -97,6 +97,14 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Provereno 24.10.2026 u Chromium-u: početna, Inbox, Objave, detalj objave, Kalendar, Strategija, Analitika, Autopilot, Obaveštenja, Mreže i Podešavanja rade bez grešaka u konzoli i API odgovorima. Usput ispravljeno: legenda kalendara je prikazivala interne nazive statusa, horizonti snimaka u analitici nisu bili poređani, editor nije prikazivao zašto je Autopilot vratio nacrt (sada prikazuje, a izveštaj se briše čim se tekst promeni).
 - Provereno 24.10.2026 u Chromium-u (faza 11b): nacrt editora (čuvanje, traka posle osvežavanja, vraćanje, brisanje posle čuvanja), termin se vraća isti posle čuvanja, forma zone brenda sa ponudom zadržavanja lokalnog vremena; bez grešaka u konzoli.
 - Provereno 24.10.2026 u Chromium-u (faza 13): svih sedam admin strana, „Gledaj kao” za demo nalog (traka, izmena u read-only režimu dobija 403 sa objašnjenjem, „Izađi” vraća na detalj korisnika), `/admin/users` na 390 px bez horizontalnog skrola. Usput ispravljeno: stara provera u `requireMembership` je tokom read-only pregleda rušila svaku stranu aplikacije.
+
+## LinkedIn video, prvi komentar i Gemini ključ — šta je urađeno
+
+- **LinkedIn video** (D-087): otpremanje u delovima kroz Videos API, objava tek kad LinkedIn obradi video, poruka kad obrada ne uspe; provera ne pušta sliku i video zajedno.
+- **LinkedIn prvi komentar**: posle objave (kod videa posle obrade), samo za naloge sa dozvolom `*_feed` iz Community Management API-ja; greška komentara ne obara objavu. Editor sada piše da prvi komentar važi i za LinkedIn.
+- **Gemini ključ** (D-088): u `.env.local`, proveren živim pozivima (tekst 1,7 s, embedding 1536 dimenzija, slika 10 s). Glavni tekstualni model je `gemini-3.6-flash` jer je 3.8 trenutno spor; istek roka odmah ide na fallback model.
+- **Testovi bez pravih ključeva**: integracioni testovi uvek koriste lažne ključeve spoljnih servisa, a opcioni servisi su isključeni.
+- **Testovi**: 5 novih integracionih (LinkedIn video u delovima, neuspela obrada, slika i video zajedno, prvi komentar sa dozvolom i bez nje, 504 ide na fallback), 2 unit (klasifikacija grešaka).
 
 ## Faza 8d — šta je urađeno
 

@@ -86,7 +86,7 @@ describe('AI tekst (POST /api/ai/text)', () => {
     expect(r.status).toBe(200)
     expect(r.json.data?.tokensCharged).toBe(2)
     expect(r.json.data?.output.variants[0]?.platform).toBe('instagram')
-    expect(r.json.data?.model).toBe(process.env.GEMINI_TEXT_MODEL ?? 'gemini-3.8-flash')
+    expect(r.json.data?.model).toBe(process.env.GEMINI_TEXT_MODEL ?? 'gemini-3.6-flash')
     expect(await balance()).toBe(48)
 
     const { data: gen } = await admin
@@ -175,7 +175,32 @@ describe('AI tekst (POST /api/ai/text)', () => {
     expect(r.status).toBe(200)
     expect(r.json.data?.fallbackUsed).toBe(true)
     expect(calls.map((c) => c.model)).toEqual([
-      process.env.GEMINI_TEXT_MODEL ?? 'gemini-3.8-flash',
+      process.env.GEMINI_TEXT_MODEL ?? 'gemini-3.6-flash',
+      process.env.GEMINI_TEXT_FALLBACK_MODEL ?? 'gemini-3.5-flash-lite',
+    ])
+  })
+
+  it('istek roka (504 DEADLINE_EXCEEDED) → odmah fallback, bez ponavljanja sporog modela', async () => {
+    enqueueReply({
+      kind: 'status',
+      status: 504,
+      body: {
+        error: {
+          code: 504,
+          message: 'Deadline expired before operation could complete.',
+          status: 'DEADLINE_EXCEEDED',
+        },
+      },
+    })
+    const r = await call<{ model: string; fallbackUsed: boolean }>(textPost, '/api/ai/text', {
+      token: a.token,
+      body: textBody(),
+      headers: { 'idempotency-key': `k-${Date.now()}-deadline` },
+    })
+    expect(r.status).toBe(200)
+    expect(r.json.data?.fallbackUsed).toBe(true)
+    expect(calls.map((c) => c.model)).toEqual([
+      process.env.GEMINI_TEXT_MODEL ?? 'gemini-3.6-flash',
       process.env.GEMINI_TEXT_FALLBACK_MODEL ?? 'gemini-3.5-flash-lite',
     ])
   })

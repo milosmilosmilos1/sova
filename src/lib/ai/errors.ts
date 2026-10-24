@@ -52,8 +52,11 @@ export function classifyProviderError(error: unknown, model?: string): AiError {
   if (
     e.name === 'AbortError' ||
     e.name === 'TimeoutError' ||
+    status === 504 ||
     lower.includes('timeout') ||
-    lower.includes('timed out')
+    lower.includes('timed out') ||
+    // Gemini: 504 DEADLINE_EXCEEDED kad model ne završi u roku iz X-Server-Timeout
+    lower.includes('deadline')
   ) {
     return new AiError('TIMEOUT', 'Model nije odgovorio na vreme.', {
       retryable: true,

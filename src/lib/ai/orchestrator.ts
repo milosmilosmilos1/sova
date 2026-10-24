@@ -52,7 +52,9 @@ const NO_FALLBACK: ReadonlySet<string> = new Set(['SAFETY_BLOCKED', 'NOT_CONFIGU
 /**
  * Prolazi kroz lanac modela: za svaki pokuša do 3 puta (samo privremene greške),
  * beleži ishod u breaker; na trajnu grešku modela (404) ili iscrpljene pokušaje
- * prelazi na sledeći; SAFETY_BLOCKED i BAD_REQUEST prekidaju odmah.
+ * prelazi na sledeći; SAFETY_BLOCKED i BAD_REQUEST prekidaju odmah. Istek vremena
+ * se ne ponavlja na istom modelu dok u lancu ima sledećeg (spor model bi korisnika
+ * držao tri roka zaredom).
  */
 export async function callWithFallback<T>(
   models: string[],
@@ -65,6 +67,7 @@ export async function callWithFallback<T>(
 
   for (let i = 0; i < models.length; i++) {
     const model = models[i]!
+    const hasNext = i < models.length - 1
     if (!(await breaker.canCall(model))) {
       logger.warn('ai_breaker_open_skip', { label: options.label, model })
       lastError = new AiError('CIRCUIT_OPEN', `Model ${model} je privremeno isključen posle niza grešaka.`, {
@@ -95,7 +98,8 @@ export async function callWithFallback<T>(
         },
         {
           attempts: options.attempts ?? 3,
-          shouldRetry: (error) => isAiError(error) && error.retryable,
+          shouldRetry: (error) =>
+            isAiError(error) && error.retryable && !(hasNext && error.code === 'TIMEOUT'),
         },
       )
       return { result, model, fallbackUsed: i > 0, attempts: attemptsTotal }

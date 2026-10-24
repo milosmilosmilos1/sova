@@ -211,7 +211,7 @@ describe('Vizual iz šablona', () => {
     expect(j.output?.image?.photoId).toBe('c3') // index 2 iz rangiranja
     expect(j.output?.attribution).toBe('Photo by Fotograf c3 on Unsplash')
     expect(j.output?.template).toBe('photo-overlay')
-    expect(j.model).toBe('gemini-3.8-flash')
+    expect(j.model).toBe(process.env.GEMINI_TEXT_MODEL ?? 'gemini-3.6-flash')
     expect(calls).toHaveLength(1)
     expect(visualsState.unsplashDownloads).toEqual(['c3'])
     const { data: asset } = await admin

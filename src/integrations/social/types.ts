@@ -90,6 +90,14 @@ export type PollHandle =
   | { kind: 'youtube_processing'; videoId: string; accountExternalId: string }
   /** Pinterest video: posle obrade medija pravi se pin sa sačuvanim telom */
   | { kind: 'pinterest_media'; mediaId: string; pin: Record<string, Json>; accountExternalId: string }
+  /** LinkedIn video: objava ide tek kad je video AVAILABLE */
+  | {
+      kind: 'linkedin_video'
+      videoUrn: string
+      post: Record<string, Json>
+      firstComment: string | null
+      accountExternalId: string
+    }
   /** X video: posle obrade medija objavljuje se tekst sa medijem */
   | {
       kind: 'x_media'
@@ -108,6 +116,8 @@ export function pollHandleId(handle: PollHandle): string {
       return handle.publishId
     case 'youtube_processing':
       return handle.videoId
+    case 'linkedin_video':
+      return handle.videoUrn
     case 'pinterest_media':
     case 'x_media':
       return handle.mediaId

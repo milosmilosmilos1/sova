@@ -498,3 +498,22 @@ Odluka:
 - **Štednja plaćenih čitanja**: metrike objava samo na 24 h i 7 dana (`public_metrics` i `non_public_metrics`, parser prima i stara i nova imena polja: `retweet_count`/`repost_count`), bez dnevnih metrika naloga (pratioci pri sinhronizaciji), uvoz istorije najviše 20 objava, provera „da li je objava ipak prošla” čita samo poslednjih 5.
 - **Greške**: 402 (krediti Sove potrošeni) i `usage-capped` → QUOTA_EXCEEDED (termin +24 h, obaveštenje); 403 duplikat → DUPLICATE; odgovor ili citat bez pomena → PERMISSION_LOST sa objašnjenjem (self-serve pravila od 23.2.2026; Sova zato ne pravi odgovore ni citate).
   Razlog: na pay-per-use X-u svako čitanje košta platformu, a objava sa linkom košta 13 puta više od obične, pa korisnik mora da vidi cenu pre zakazivanja.
+
+## D-087 · 24.10.2026 · usvojeno · LinkedIn: video i prvi komentar
+
+Odluka:
+
+- **Video** kroz Videos API: `initializeUpload` sa veličinom fajla, delovi na adrese koje LinkedIn vrati (PUT bez tokena, `application/octet-stream`), ETag svakog dela redom i bez navodnika, pa `finalizeUpload`. Objava se pravi tek kad video ima status `AVAILABLE` (ručka `linkedin_video`, isti polling kao kod ostalih mreža); `PROCESSING_FAILED` obara target sa porukom. Ograničenja: MP4, 3 s do 30 min, do 500 MB, jedan video po objavi, bez slika uz video.
+- **Prvi komentar** `POST /rest/socialActions/{urn}/comments`, autor objave je `actor`. Dozvole `w_member_social_feed` i `w_organization_social_feed` dolaze samo sa Community Management API-jem, pa se traže uz `LINKEDIN_PAGES=true`, a komentar se šalje samo nalogu koji ih ima. Greška komentara se beleži i ne obara objavu, isto kao kod Mete. Kod videa komentar ide posle obrade, kad objava postoji.
+  Razlog: video je bio jedini format koji LinkedIn nalog u Sovi nije mogao da objavi, a prvi komentar već postoji za Instagram i Facebook.
+
+## D-088 · 24.10.2026 · usvojeno · Gemini ključ, model za tekst i istek roka
+
+Odluka:
+
+- Ključ (Google AI Studio, Gemini API na `generativelanguage.googleapis.com`) stoji samo u `.env.local`. Ograničen je na Gemini API (Vertex AI vraća 403), što je dobro. Za produkciju vlasnik unosi ključ u Vercel env, po mogućstvu poseban ključ za produkciju.
+- Glavni tekstualni model je `gemini-3.6-flash`, a ne `gemini-3.8-flash` (menja deo D-002). Merenje 24.10.2026 na kratkom odgovoru: 3.8 21 do 70 s (jednom 504 posle 30 s), 3.7 35 s, 3.6 1,7 do 2,5 s, 3.5 2,7 s. Cena 3.6 i 3.8 je ista do kraja 2026. Model 3.8 ostaje u dozvoljenoj listi i admin ga uključuje bez deploya kad se ubrza.
+- Gemini 504 `DEADLINE_EXCEEDED` je istek roka (`TIMEOUT`), ne greška servera. Istek roka se ne ponavlja na istom modelu dok u lancu ima sledećeg, nego odmah ide fallback.
+- Integracioni testovi uvek dobijaju lažne ključeve spoljnih servisa, i kad `.env.local` ima prave, a opcioni servisi (Stripe, Resend, Upstash, Sentry, Inngest, Turnstile, PostHog, Firecrawl) su u testovima isključeni (`tests/integration/setup.ts`).
+- `scripts/ai-smoke.ts` proverava pravi tekst, embedding i, uz `--image`, sliku.
+  Razlog: u Studiju korisnik čeka odgovor, a 3.8 bi uz rok od 30 s i tri pokušaja držao korisnika i do 90 s pre fallback-a.

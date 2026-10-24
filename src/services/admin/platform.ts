@@ -53,18 +53,16 @@ async function writeSetting(
   isPublic = false,
 ): Promise<void> {
   const admin = createSupabaseAdminClient()
-  const { error } = await admin
-    .from('platform_settings')
-    .upsert(
-      {
-        key,
-        value: value as unknown as NonNullable<Json>,
-        is_public: isPublic,
-        updated_by: ctx.adminId,
-        updated_at: new Date().toISOString(),
-      },
-      { onConflict: 'key' },
-    )
+  const { error } = await admin.from('platform_settings').upsert(
+    {
+      key,
+      value: value as unknown as NonNullable<Json>,
+      is_public: isPublic,
+      updated_by: ctx.adminId,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: 'key' },
+  )
   if (error) throw mapDbError(error)
 }
 

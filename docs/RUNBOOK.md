@@ -17,6 +17,8 @@ npm run inngest:dev                # Inngest dev server na :8288 (poseban termin
 
 Vrednosti za `.env.local` lokalnog Supabase-a: `npx supabase status -o env` (ANON_KEY → NEXT_PUBLIC_SUPABASE_ANON_KEY, SERVICE_ROLE_KEY → SUPABASE_SERVICE_ROLE_KEY, JWT_SECRET → SUPABASE_JWT_SECRET). Tajne: `openssl rand -base64 32` za TOKEN_ENCRYPTION_KEY (sa prefiksom `v1:`), `openssl rand -hex 32` za CRON_SECRET i IMPERSONATION_SECRET.
 
+Gemini (D-088): `GEMINI_API_KEY` iz Google AI Studio. Integracioni testovi ga nikad ne koriste (setup ga prepisuje lažnim), a dev server i `scripts/ai-smoke.ts` troše pravi ključ. Modeli su u env-u (`GEMINI_*_MODEL`) i u Admin → Platforma → AI modeli.
+
 Mreže iz faze 8b: `LINKEDIN_CLIENT_ID/SECRET`, `LINKEDIN_PAGES` i `LINKEDIN_MEMBER_ANALYTICS` (`true` tek kad LinkedIn odobri Community Management API odnosno Member Post Analytics), `TIKTOK_CLIENT_KEY/SECRET`, `PUBLIC_MEDIA_BASE_URL` (domen verifikovan u TikTok portalu; prazno = adresa aplikacije). Lokalno TikTok ne može da preuzme fajl sa localhost-a, pa foto objava traži javni tunel ili staging.
 
 Google poslovni profil i YouTube (faza 8c): isti `GOOGLE_CLIENT_ID/SECRET` kao Google prijava; u Google Cloud konzoli dodati redirect URI-je `{APP}/api/integrations/google_business/callback` i `{APP}/api/integrations/youtube/callback`. Flagovi `platform.google_business` i `platform.youtube` u admin panelu uključuju povezivanje. Dok je OAuth ekran u režimu „Testing”, Google refresh token ističe za 7 dana.
@@ -45,11 +47,12 @@ Zamke:
 
 ```
 npm run lint && npm run typecheck
-npm run test            # Vitest unit (192)
+npm run test            # Vitest unit (194)
 npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (30); pravi i briše test korisnike
-npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (170)
+npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (175)
 npm run test:e2e        # Playwright kroz Mailpit (6); traži pokrenut dev server; posle brisanja .next prvi run traje oko 2 min
 npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs 25   # živi crawler bez baze i AI-ja
+npx tsx --env-file=.env.local --conditions=react-server scripts/ai-smoke.ts [--image putanja.jpg]   # pravi Gemini: tekst, embedding, slika (par centi)
 npm run build           # produkcijski build
 ```
 
@@ -97,6 +100,7 @@ Faza 16. Vercel: `main` → Production, PR → Preview. Checklista u ARCHITECTUR
 - **Meta webhook ne prolazi**: `signed_request` se proverava `META_APP_SECRET`-om iste aplikacije; pogrešna tajna daje 403. Data deletion mora da vrati čist JSON `{url, confirmation_code}` (ruta to radi mimo `ok/data` omotača).
 - **Dupli tokeni ili ledger ne štima**: `select workspace_id, sum(delta) from token_ledger group by 1` naspram `sum(amount - remaining)` iz `token_grants`; razlika je bag u RPC-u, ne popravljati ručno bez zapisa.
 - **Webhook plaćanja ne stiže**: provajderov dashboard → ponovno slanje; `payment_events (provider, event_id)` UNIQUE sprečava dupliranje.
+- **Gemini spor**: u logu `ai_call_failed` sa `code: TIMEOUT` ili 504 za glavni model, `fallback_used` u `ai_generations`. Istek roka odmah ide na fallback; ako traje, izaberi brži model u Admin → Platforma → AI modeli. Brzina modela: `scripts/ai-smoke.ts` ispisuje trajanje.
 - **Gemini pad**: circuit breaker preskače model 5 min; ako traje, Admin → Platforma → AI modeli: izaberi drugi model sa dozvoljene liste (važi za najviše minut, bez deploya). Nov model se prvo dodaje u `platform_settings.allowed_models`.
 - **Analiza sajta visi**: `select id, status, phase, progress->>'message', started_at from website_crawls where status in ('queued','running')`; Inngest dashboard → run `brand-analyze` po `crawlId`. Otkazivanje iz UI-ja šalje `brand/analyze.canceled` i vraća tokene; ručno: `update website_crawls set status='canceled', finished_at=now()` pa `release_reservation` za `ai_generations.token_reservation_id`.
 - **Vlasnik sajta se žali na SovaBot**: User-Agent je `SovaBot/1.0 (+https://sovaai.rs/bot)`; bot čita samo sajtove koje je korisnik uneo, poštuje robots.txt i Crawl-delay, najviše 60 strana po analizi i nedeljnu proveru sitemap/RSS. Blokada: `User-agent: SovaBot` / `Disallow: /`. Proveri `website_crawls` po `url` da vidiš ko je pokrenuo.

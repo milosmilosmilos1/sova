@@ -57,7 +57,7 @@ export const PLATFORMS: Record<SocialPlatform, PlatformConstraints> = {
     imageMime: ['image/jpeg', 'image/png', 'image/gif'],
     imageAspect: { min: 0.5, max: 2.0 },
     imageMaxPerPost: 20,
-    video: { maxSeconds: 600, maxBytes: 5 * 1024 ** 3 },
+    video: { maxSeconds: 1800, maxBytes: 500 * 1024 ** 2 },
     aiLabel: false,
   },
   tiktok: {

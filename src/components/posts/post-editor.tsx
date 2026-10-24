@@ -585,7 +585,7 @@ function EditorForm({
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="p-first">Prvi komentar (Instagram i Facebook, opciono)</Label>
+                <Label htmlFor="p-first">Prvi komentar (Instagram, Facebook i LinkedIn, opciono)</Label>
                 <Input
                   id="p-first"
                   value={form.firstComment}

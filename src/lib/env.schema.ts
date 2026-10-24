@@ -46,7 +46,7 @@ export function buildServerEnvSchema(mode: EnvMode) {
 
     // Gemini
     GEMINI_API_KEY: prodOnly(z.string().min(10)),
-    GEMINI_TEXT_MODEL: z.string().default('gemini-3.8-flash'),
+    GEMINI_TEXT_MODEL: z.string().default('gemini-3.6-flash'),
     GEMINI_TEXT_FALLBACK_MODEL: z.string().default('gemini-3.5-flash-lite'),
     GEMINI_IMAGE_MODEL: z.string().default('gemini-3.1-flash-image'),
     GEMINI_IMAGE_PREMIUM_MODEL: z.string().default('gemini-3-pro-image'),

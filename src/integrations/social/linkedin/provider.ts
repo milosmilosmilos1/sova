@@ -4,6 +4,7 @@ import sharp from 'sharp'
 
 import { validateText } from '@/config/platforms'
 import { env } from '@/lib/env'
+import { logger } from '@/lib/logger'
 import { fetchLinkPreview, type LinkPreview } from '@/lib/link-preview'
 import { ProviderError } from '@/integrations/social/errors'
 import type {
@@ -35,16 +36,22 @@ import { toLittleText } from './little'
  * programskim refresh-om, ostali se povezuju ponovo pre isteka (D-076).
  */
 export const LINKEDIN_BASE_SCOPES = ['openid', 'profile', 'email', 'w_member_social'] as const
+/** Community Management API: stranice firmi i komentari (`*_feed` za prvi komentar, i za lični profil) */
 export const LINKEDIN_PAGE_SCOPES = [
   'rw_organization_admin',
   'w_organization_social',
   'r_organization_social',
+  'w_member_social_feed',
+  'w_organization_social_feed',
 ] as const
 export const LINKEDIN_ANALYTICS_SCOPE = 'r_member_postAnalytics'
 
 const POSTING_ROLES = new Set(['ADMINISTRATOR', 'CONTENT_ADMINISTRATOR', 'DIRECT_SPONSORED_CONTENT_POSTER'])
 const UPLOAD_MIME = new Set(['image/jpeg', 'image/png', 'image/gif'])
 const MAX_PIXELS = 36_152_320
+const VIDEO_MIN_MS = 3_000
+const VIDEO_MAX_MS = 30 * 60_000
+const VIDEO_MAX_BYTES = 500 * 1024 * 1024
 
 export interface LinkedInProviderOptions {
   fetchImpl?: typeof fetch
@@ -81,6 +88,11 @@ const scopesOf = (account: AccountRef): string[] =>
   Array.isArray(account.metadata.scopes) ? (account.metadata.scopes as string[]) : []
 
 const isOrg = (account: AccountRef) => account.accountType === 'linkedin_organization'
+
+/** Prvi komentar traži `w_member_social_feed` ili `w_organization_social_feed` (D-087). */
+function canComment(scopes: string[], org: boolean): boolean {
+  return scopes.includes(org ? 'w_organization_social_feed' : 'w_member_social_feed')
+}
 
 export function authorUrn(account: AccountRef): string {
   return isOrg(account) ? `urn:li:organization:${account.externalId}` : `urn:li:person:${account.externalId}`
@@ -238,7 +250,10 @@ export class LinkedInProvider implements SocialProvider {
       avatarUrl: me.picture ?? null,
       accountType: 'linkedin_person',
       token: tokens,
-      capabilities: this.caps(!granted.length || granted.includes('w_member_social')),
+      capabilities: this.caps(
+        !granted.length || granted.includes('w_member_social'),
+        canComment(granted, false),
+      ),
       metadata: { linkedinUserId: me.sub, personUrn: `urn:li:person:${me.sub}`, scopes: granted },
     }
     const accounts: ExternalAccount[] = [person]
@@ -286,7 +301,7 @@ export class LinkedInProvider implements SocialProvider {
         avatarUrl: null,
         accountType: 'linkedin_organization',
         token: tokens,
-        capabilities: this.caps(granted.includes('w_organization_social')),
+        capabilities: this.caps(granted.includes('w_organization_social'), canComment(granted, true)),
         metadata: {
           linkedinUserId: me.sub,
           organizationUrn: urn,
@@ -299,16 +314,16 @@ export class LinkedInProvider implements SocialProvider {
     return accounts
   }
 
-  private caps(publish: boolean): Capabilities {
+  private caps(publish: boolean, firstComment = false): Capabilities {
     return {
       image: true,
       carousel: true,
-      video: false,
+      video: true,
       reels: false,
       stories: false,
       link: true,
       text: true,
-      firstComment: false,
+      firstComment,
       aiLabel: false,
       publish,
     }
@@ -318,19 +333,27 @@ export class LinkedInProvider implements SocialProvider {
     const scopes = scopesOf(account)
     return this.caps(
       !scopes.length || scopes.includes(isOrg(account) ? 'w_organization_social' : 'w_member_social'),
+      canComment(scopes, isOrg(account)),
     )
   }
 
   validatePost(input: NormalizedPost): ValidationResult {
     const problems = [...validateText('linkedin', input.text).problems]
     const images = input.media.filter((m) => m.mimeType.startsWith('image/'))
-    if (input.media.some((m) => m.mimeType.startsWith('video/')))
-      problems.push('Video na LinkedIn Sova još ne objavljuje; uklonite video za ovaj nalog.')
+    const videos = input.media.filter((m) => m.mimeType.startsWith('video/'))
+    if (videos.length > 1) problems.push('LinkedIn objava može imati jedan video.')
+    if (videos.length && images.length) problems.push('LinkedIn ne meša slike i video u istoj objavi.')
+    const v = videos[0]
+    if (v?.durationMs && (v.durationMs < VIDEO_MIN_MS || v.durationMs > VIDEO_MAX_MS))
+      problems.push('Video na LinkedIn-u traje od 3 sekunde do 30 minuta.')
+    if (v?.sizeBytes && v.sizeBytes > VIDEO_MAX_BYTES)
+      problems.push('Video na LinkedIn-u može imati najviše 500 MB.')
     if (images.length > 20) problems.push('LinkedIn dozvoljava najviše 20 slika u jednoj objavi.')
     for (const m of images)
       if (m.width && m.height && m.width * m.height >= MAX_PIXELS)
         problems.push('Slika je prevelika za LinkedIn (najviše oko 36 megapiksela).')
-    if (!input.text.trim() && !images.length && !input.link) problems.push('Objava nema ni tekst ni medij.')
+    if (!input.text.trim() && !images.length && !videos.length && !input.link)
+      problems.push('Objava nema ni tekst ni medij.')
     return { ok: problems.length === 0, problems }
   }
 
@@ -394,9 +417,120 @@ export class LinkedInProvider implements SocialProvider {
     return image
   }
 
+  /**
+   * Videos API: registracija sa veličinom, delovi od 4 MiB na adrese iz odgovora (bez tokena), ETag
+   * svakog dela, pa finalize; objava ide tek kad je video AVAILABLE (ručka `linkedin_video`).
+   */
+  private async uploadVideo(client: LinkedInClient, owner: string, media: NormalizedMedia): Promise<string> {
+    const bytes = await this.download(media)
+    const init = await client.post<{
+      value?: {
+        video?: string
+        uploadToken?: string
+        uploadInstructions?: Array<{ uploadUrl: string; firstByte: number; lastByte: number }>
+      }
+    }>('/rest/videos?action=initializeUpload', {
+      initializeUploadRequest: {
+        owner,
+        fileSizeBytes: bytes.length,
+        uploadCaptions: false,
+        uploadThumbnail: false,
+      },
+    })
+    const video = init.body?.value?.video
+    const parts = init.body?.value?.uploadInstructions ?? []
+    if (!video || !parts.length)
+      throw new ProviderError('UNKNOWN', { message: 'LinkedIn nije vratio adrese za upload videa.' })
+    const etags: string[] = []
+    for (const part of parts) {
+      let res: Response
+      try {
+        res = await this.fetchImpl(part.uploadUrl, {
+          method: 'PUT',
+          headers: { 'content-type': 'application/octet-stream' },
+          body: new Uint8Array(bytes.subarray(part.firstByte, part.lastByte + 1)),
+          signal: AbortSignal.timeout(120_000),
+        })
+      } catch (error) {
+        throw new ProviderError('PROVIDER_DOWN', {
+          message: 'Upload videa na LinkedIn je prekinut.',
+          raw: error,
+          retryable: true,
+        })
+      }
+      if (!res.ok)
+        throw mapLinkedInError(res.status, (await res.json().catch(() => null)) as LinkedInErrorBody | null)
+      const etag = res.headers.get('etag')
+      if (!etag) throw new ProviderError('UNKNOWN', { message: 'LinkedIn nije vratio ETag dela videa.' })
+      etags.push(etag.replace(/"/g, ''))
+    }
+    await client.post('/rest/videos?action=finalizeUpload', {
+      finalizeUploadRequest: {
+        video,
+        uploadToken: init.body?.value?.uploadToken ?? '',
+        uploadedPartIds: etags,
+      },
+    })
+    return video
+  }
+
+  /** Prvi komentar posle objave (dozvolu proverava pozivalac); neuspeh ne obara objavu (isto kao Meta). */
+  private async firstComment(client: LinkedInClient, actor: string, postUrn: string, text: string | null) {
+    if (!text?.trim()) return
+    try {
+      await client.post(`/rest/socialActions/${encUrn(postUrn)}/comments`, {
+        actor,
+        object: postUrn,
+        message: { text: text.trim() },
+      })
+    } catch (error) {
+      logger.warn('linkedin_first_comment_failed', { postUrn, error })
+    }
+  }
+
+  private postBody(author: string, text: string, content?: Record<string, unknown>): Record<string, Json> {
+    return {
+      author,
+      commentary: toLittleText(text),
+      visibility: 'PUBLIC',
+      distribution: { feedDistribution: 'MAIN_FEED', targetEntities: [], thirdPartyDistributionChannels: [] },
+      lifecycleState: 'PUBLISHED',
+      isReshareDisabledByAuthor: false,
+      ...(content ? { content: content as Json } : {}),
+    } as Record<string, Json>
+  }
+
+  private async createPost(client: LinkedInClient, body: Record<string, Json>): Promise<string> {
+    const res = await client.post<null>('/rest/posts', body)
+    const urn = res.headers.get('x-restli-id') ?? res.headers.get('x-linkedin-id')
+    if (!urn) throw new ProviderError('UNKNOWN', { message: 'LinkedIn nije vratio ID objave.' })
+    return urn
+  }
+
   async publish(input: NormalizedPost, account: AccountRef, accessToken: string): Promise<PublishResult> {
     const client = this.client(accessToken)
     const author = authorUrn(account)
+    const video = input.media.find((m) => m.mimeType.startsWith('video/'))
+    if (video) {
+      const videoUrn = await this.uploadVideo(client, author, video)
+      const text =
+        input.link && !input.text.includes(input.link) ? `${input.text}\n\n${input.link}` : input.text
+      const media: Record<string, unknown> = {
+        id: videoUrn,
+        ...(input.title ? { title: input.title.slice(0, 200) } : {}),
+      }
+      return {
+        externalId: null,
+        permalink: null,
+        pending: {
+          kind: 'linkedin_video',
+          videoUrn,
+          post: this.postBody(author, text, { media }),
+          firstComment: canComment(scopesOf(account), isOrg(account)) ? input.firstComment : null,
+          accountExternalId: account.externalId,
+        },
+      }
+    }
     const images = input.media.filter((m) => m.mimeType.startsWith('image/'))
     // slike i članak ne idu zajedno: uz slike link ostaje u tekstu
     const text =
@@ -426,24 +560,30 @@ export class LinkedInProvider implements SocialProvider {
         },
       }
     }
-    const res = await client.post<null>('/rest/posts', {
-      author,
-      commentary: toLittleText(text),
-      visibility: 'PUBLIC',
-      distribution: { feedDistribution: 'MAIN_FEED', targetEntities: [], thirdPartyDistributionChannels: [] },
-      lifecycleState: 'PUBLISHED',
-      isReshareDisabledByAuthor: false,
-      ...(content ? { content } : {}),
-    })
-    const urn = res.headers.get('x-restli-id') ?? res.headers.get('x-linkedin-id')
-    if (!urn) throw new ProviderError('UNKNOWN', { message: 'LinkedIn nije vratio ID objave.' })
+    const urn = await this.createPost(client, this.postBody(author, text, content))
+    if (canComment(scopesOf(account), isOrg(account)))
+      await this.firstComment(client, author, urn, input.firstComment)
     return { externalId: urn, permalink: permalinkFor(urn), pending: null }
   }
 
-  async getPublishStatus(handle: PollHandle): Promise<PublishStatus> {
-    throw new ProviderError('NOT_SUPPORTED', {
-      message: `LinkedIn nema asinhrono objavljivanje (${handle.kind}).`,
-    })
+  /** Video: čeka se AVAILABLE, pa se pravi objava (i prvi komentar). */
+  async getPublishStatus(handle: PollHandle, accessToken: string): Promise<PublishStatus> {
+    if (handle.kind !== 'linkedin_video')
+      throw new ProviderError('NOT_SUPPORTED', { message: `LinkedIn ne obrađuje ručku ${handle.kind}.` })
+    const client = this.client(accessToken)
+    const v = await client.get<{ status?: string; processingFailureReason?: string }>(
+      `/rest/videos/${encUrn(handle.videoUrn)}`,
+    )
+    if (v.status === 'PROCESSING_FAILED')
+      return {
+        state: 'failed',
+        message: `LinkedIn nije obradio video${v.processingFailureReason ? ` (${v.processingFailureReason})` : ''}. Sačuvajte ga kao MP4 (H.264) pa pokušajte ponovo.`,
+        retryable: false,
+      }
+    if (v.status !== 'AVAILABLE') return { state: 'pending' }
+    const urn = await this.createPost(client, handle.post)
+    await this.firstComment(client, String(handle.post.author ?? ''), urn, handle.firstComment)
+    return { state: 'published', externalId: urn, permalink: permalinkFor(urn) }
   }
 
   /** Posle pada: objava stranice se traži među poslednjim objavama (lični profil to API-jem ne može). */

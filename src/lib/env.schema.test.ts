@@ -15,7 +15,7 @@ const base: Record<string, string> = {
 describe('env schema', () => {
   it('u dev režimu spoljni servisi su opcioni, modeli imaju podrazumevane vrednosti', () => {
     const env = parseServerEnv({ ...base, NODE_ENV: 'development' }, 'dev')
-    expect(env.GEMINI_TEXT_MODEL).toBe('gemini-3.8-flash')
+    expect(env.GEMINI_TEXT_MODEL).toBe('gemini-3.6-flash')
     expect(env.GEMINI_IMAGE_MODEL).toBe('gemini-3.1-flash-image')
     expect(env.GEMINI_EMBEDDING_MODEL).toBe('gemini-embedding-2')
     expect(env.UPSTASH_REDIS_REST_URL).toBeUndefined()

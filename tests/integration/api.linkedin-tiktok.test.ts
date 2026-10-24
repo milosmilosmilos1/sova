@@ -15,6 +15,8 @@ import sharp from 'sharp'
 
 import { GET as callbackGet } from '@/app/api/integrations/[provider]/callback/route'
 import { GET as connectGet } from '@/app/api/integrations/[provider]/connect/route'
+import { POST as completePost } from '@/app/api/media/complete/route'
+import { POST as uploadUrlPost } from '@/app/api/media/upload-url/route'
 import { POST as uploadPost } from '@/app/api/media/upload/route'
 import { GET as publicMediaGet } from '@/app/api/media/public/[token]/route'
 import { POST as actionPost } from '@/app/api/posts/[id]/[action]/route'
@@ -34,6 +36,7 @@ import { loadAccountRow, refFor, tokensFor } from '@/services/social/account-row
 import { importAccountHistory } from '@/services/social/history'
 import { refreshOtherTokens } from '@/services/social/refresh'
 
+import { buildMp4 } from '../fixtures/mp4'
 import { geminiServer } from './gemini-mock'
 import { admin, call, createTestUser, deleteTestUser, type TestUser } from './helpers'
 import { linkedInTikTokHandlers, liState, resetLinkedInTikTokState, ttState } from './linkedin-tiktok-mock'
@@ -144,6 +147,33 @@ async function uploadJpeg(
   }
   if (!json.ok) throw new Error('upload nije uspeo')
   return json.data!.id
+}
+
+/** direktno otpremanje (D-082): potpisan URL, PUT u skladište, pa complete */
+async function uploadVideo(bytes: Buffer): Promise<string> {
+  const t = await call<{ uploadId: string; signedUrl: string }>(uploadUrlPost, '/api/media/upload-url', {
+    token: owner.token,
+    body: { brandId, mimeType: 'video/mp4', sizeBytes: bytes.length },
+  })
+  const put = await fetch(t.json.data!.signedUrl, {
+    method: 'PUT',
+    headers: { 'content-type': 'video/mp4', 'x-upsert': 'false' },
+    body: new Uint8Array(bytes),
+  })
+  expect(put.status).toBe(200)
+  const done = await call<{ id: string }>(completePost, '/api/media/complete', {
+    token: owner.token,
+    body: { brandId, uploadId: t.json.data!.uploadId, originalName: 'video.mp4' },
+  })
+  if (done.status !== 200) throw new Error(JSON.stringify(done.json.error))
+  return done.json.data!.id
+}
+
+/** veličine delova kako ih zadaje mock (poslednji je ostatak) */
+function partSizes(total: number, part: number): number[] {
+  const sizes: number[] = []
+  for (let first = 0; first < total; first += part) sizes.push(Math.min(part, total - first))
+  return sizes
 }
 
 let slot = 3
@@ -337,6 +367,157 @@ describe('LinkedIn', () => {
       .eq('social_account_id', liOrgId)
       .single()
     expect(daily!.followers).toBe(321)
+  })
+
+  it('video stranice: Videos API u delovima (bez tokena, ETag bez navodnika), objava tek kad je video AVAILABLE', async () => {
+    resetLinkedInTikTokState()
+    liState.videoPartBytes = 40_000
+    liState.videoStatusQueue = ['PROCESSING', 'PROCESSING', 'AVAILABLE']
+    const video = await uploadVideo(
+      buildMp4({ width: 1080, height: 1920, durationMs: 20_000, mdatBytes: 90_000 }),
+    )
+    const { data: asset } = await admin.from('media_assets').select('size_bytes').eq('id', video).single()
+    const size = asset!.size_bytes!
+    const { job } = await scheduledPost({
+      masterText: 'Servis klime za 20 sekundi',
+      firstComment: 'Zakažite na primer.rs/zakazi',
+      targets: [{ socialAccountId: liOrgId }],
+      media: [{ mediaAssetId: video }],
+    })
+    expect((await runPublishTarget(job, ctx)).outcome).toBe('published')
+
+    expect(liState.videoInits).toEqual([
+      {
+        owner: 'urn:li:organization:2414183',
+        fileSizeBytes: size,
+        uploadCaptions: false,
+        uploadThumbnail: false,
+      },
+    ])
+    expect(liState.videoParts.map((p) => p.size)).toEqual(partSizes(size, 40_000))
+    expect(liState.videoParts.every((p) => p.auth === null)).toBe(true)
+    expect(liState.videoParts.every((p) => p.contentType === 'application/octet-stream')).toBe(true)
+    expect(liState.videoFinalizes).toEqual([
+      {
+        video: 'urn:li:video:D5610AQ1',
+        uploadToken: '',
+        uploadedPartIds: liState.videoParts.map((p) => `etag-part-${p.part}`),
+      },
+    ])
+    expect(liState.videoPolls).toBe(3)
+    expect(liState.posts).toHaveLength(1)
+    const body = liState.posts[0]!.body as { author: string; content: { media: { id: string } } }
+    expect(body.author).toBe('urn:li:organization:2414183')
+    expect(body.content.media.id).toBe('urn:li:video:D5610AQ1')
+    // stranica još nema w_organization_social_feed: prvi komentar se preskače
+    expect(liState.comments).toHaveLength(0)
+    const t = await target(job.targetId)
+    expect(t.status).toBe('published')
+    expect(t.external_post_id).toMatch(/^urn:li:share:/)
+  })
+
+  it('video koji LinkedIn ne obradi: target pada sa porukom, objava se ne pravi', async () => {
+    resetLinkedInTikTokState()
+    liState.videoStatusQueue = ['PROCESSING', 'PROCESSING_FAILED']
+    const video = await uploadVideo(
+      buildMp4({ width: 1080, height: 1080, durationMs: 8_000, mdatBytes: 30_000 }),
+    )
+    const { job } = await scheduledPost({
+      masterText: 'Video koji ne prolazi obradu',
+      targets: [{ socialAccountId: liOrgId }],
+      media: [{ mediaAssetId: video }],
+    })
+    expect((await runPublishTarget(job, ctx)).outcome).toBe('failed')
+    const t = await target(job.targetId)
+    expect(t.status).toBe('failed')
+    expect(t.last_error_message).toContain('LinkedIn nije obradio video')
+    expect(liState.posts).toHaveLength(0)
+  })
+
+  it('slika i video u istoj LinkedIn objavi ne prolaze proveru', async () => {
+    const img = await uploadJpeg({ r: 90, g: 20, b: 140 })
+    const video = await uploadVideo(
+      buildMp4({ width: 1080, height: 1080, durationMs: 8_000, mdatBytes: 20_000 }),
+    )
+    const created = await call<PostView>(postsPost, '/api/posts', {
+      token: owner.token,
+      body: {
+        brandId,
+        masterText: 'Slika i video zajedno',
+        targets: [{ socialAccountId: liOrgId }],
+        media: [{ mediaAssetId: img }, { mediaAssetId: video, sortOrder: 1 }],
+      },
+    })
+    const id = created.json.data!.id
+    const v = await call<{ ok: boolean; problems: Array<{ problems: string[] }> }>(
+      actionPost,
+      `/api/posts/${id}/validate`,
+      { token: owner.token, params: { id, action: 'validate' }, body: {} },
+    )
+    expect(v.json.data!.ok).toBe(false)
+    expect(v.json.data!.problems.flatMap((p) => p.problems).join(' | ')).toContain('ne meša slike i video')
+  })
+
+  it('prvi komentar uz w_organization_social_feed: posle objave i posle obrade videa; greška komentara ne obara objavu', async () => {
+    resetLinkedInTikTokState()
+    const row = (await loadAccountRow(liOrgId))!
+    const meta = row.metadata as Record<string, unknown>
+    await admin
+      .from('social_accounts')
+      .update({ metadata: { ...meta, scopes: [...(meta.scopes as string[]), 'w_organization_social_feed'] } })
+      .eq('id', liOrgId)
+    const org = 'urn:li:organization:2414183'
+
+    const text = await scheduledPost({
+      masterText: 'Objava sa prvim komentarom',
+      firstComment: 'Zakažite servis: primer.rs/zakazi',
+      targets: [{ socialAccountId: liOrgId }],
+    })
+    expect((await runPublishTarget(text.job, ctx)).outcome).toBe('published')
+    const urn = (await target(text.job.targetId)).external_post_id!
+    expect(liState.comments).toEqual([
+      {
+        postUrn: urn,
+        body: { actor: org, object: urn, message: { text: 'Zakažite servis: primer.rs/zakazi' } },
+      },
+    ])
+
+    liState.videoStatusQueue = ['PROCESSING', 'AVAILABLE']
+    const video = await uploadVideo(
+      buildMp4({ width: 1080, height: 1920, durationMs: 12_000, mdatBytes: 40_000 }),
+    )
+    const withVideo = await scheduledPost({
+      masterText: 'Video sa prvim komentarom',
+      firstComment: 'Pitanja pišite ispod',
+      targets: [{ socialAccountId: liOrgId }],
+      media: [{ mediaAssetId: video }],
+    })
+    expect((await runPublishTarget(withVideo.job, ctx)).outcome).toBe('published')
+    const videoUrn = (await target(withVideo.job.targetId)).external_post_id!
+    expect(liState.comments.at(-1)).toEqual({
+      postUrn: videoUrn,
+      body: { actor: org, object: videoUrn, message: { text: 'Pitanja pišite ispod' } },
+    })
+
+    liState.commentThrottled = true
+    const throttled = await scheduledPost({
+      masterText: 'Komentar odbijen, objava ostaje',
+      firstComment: 'Neće proći',
+      targets: [{ socialAccountId: liOrgId }],
+    })
+    expect((await runPublishTarget(throttled.job, ctx)).outcome).toBe('published')
+    expect((await target(throttled.job.targetId)).status).toBe('published')
+    expect(liState.comments).toHaveLength(2)
+
+    // lični profil nema w_member_social_feed: komentar se ne šalje
+    liState.commentThrottled = false
+    const person = await scheduledPost({
+      masterText: 'Profil bez dozvole za komentare',
+      firstComment: 'Ne šalje se',
+      targets: [{ socialAccountId: liPersonId }],
+    })
+    expect((await runPublishTarget(person.job, ctx)).outcome).toBe('published')
+    expect(liState.comments).toHaveLength(2)
   })
 
   it('istek bez refresh tokena: obaveštenje 7 dana ranije (jednom), posle isteka needs_reauth i u publisheru', async () => {

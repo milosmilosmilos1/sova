@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw'
 
 /**
- * MSW mock LinkedIn API-ja (OAuth, userinfo, organizationAcls, Images, Posts, statistika) i TikTok
+ * MSW mock LinkedIn API-ja (OAuth, userinfo, organizationAcls, Images, Videos, Posts, komentari, statistika) i TikTok
  * API-ja v2 (OAuth, user info, creator_info, foto i video objava, status, lista i upit videa) za
  * fazu 8b. Oblici odgovora prate dokumentaciju pročitanu 24.10.2026.
  */
@@ -16,6 +16,21 @@ export const liState = {
   refreshToken: null as string | null,
   postFailuresLeft: 0,
   postSeq: 0,
+  videoInits: [] as Array<Record<string, unknown>>,
+  videoParts: [] as Array<{
+    part: string | null
+    size: number
+    auth: string | null
+    contentType: string | null
+  }>,
+  videoFinalizes: [] as Array<Record<string, unknown>>,
+  /** veličina dela koju zadaje „LinkedIn” (pravi zadaje 4 MiB; manja da mali test video ide u više delova) */
+  videoPartBytes: 4 * 1024 * 1024,
+  /** statusi videa redom; poslednji se ponavlja */
+  videoStatusQueue: [] as string[],
+  videoPolls: 0,
+  comments: [] as Array<{ postUrn: string; body: Record<string, unknown> }>,
+  commentThrottled: false,
 }
 
 export const ttState = {
@@ -41,6 +56,14 @@ export function resetLinkedInTikTokState(): void {
   liState.deletes = []
   liState.refreshToken = null
   liState.postFailuresLeft = 0
+  liState.videoInits = []
+  liState.videoParts = []
+  liState.videoFinalizes = []
+  liState.videoPartBytes = 4 * 1024 * 1024
+  liState.videoStatusQueue = []
+  liState.videoPolls = 0
+  liState.comments = []
+  liState.commentThrottled = false
   ttState.tokenRequests = []
   ttState.revokes = []
   ttState.photoInits = []
@@ -143,6 +166,70 @@ export const linkedInTikTokHandlers = [
       auth: request.headers.get('authorization'),
     })
     return new HttpResponse(null, { status: 201 })
+  }),
+  http.post(`${LI}/rest/videos`, async ({ request }) => {
+    const action = new URL(request.url).searchParams.get('action')
+    const body = (await request.json()) as Record<string, Record<string, unknown>>
+    if (action === 'initializeUpload') {
+      const init = body.initializeUploadRequest ?? {}
+      liState.videoInits.push(init)
+      const id = `D5610AQ${liState.videoInits.length}`
+      const size = Number(init.fileSizeBytes)
+      const uploadInstructions: Array<{ uploadUrl: string; firstByte: number; lastByte: number }> = []
+      for (let first = 0; first < size; first += liState.videoPartBytes)
+        uploadInstructions.push({
+          uploadUrl: `https://www.linkedin.com/dms-uploads/${id}/uploadedVideo?part=${uploadInstructions.length}`,
+          firstByte: first,
+          lastByte: Math.min(first + liState.videoPartBytes, size) - 1,
+        })
+      return HttpResponse.json({
+        value: {
+          video: `urn:li:video:${id}`,
+          uploadInstructions,
+          uploadToken: '',
+          uploadUrlsExpireAt: Date.now() + 3_600_000,
+        },
+      })
+    }
+    if (action === 'finalizeUpload') {
+      liState.videoFinalizes.push(body.finalizeUploadRequest ?? {})
+      return new HttpResponse(null, { status: 200 })
+    }
+    return HttpResponse.json({ status: 400 }, { status: 400 })
+  }),
+  http.put('https://www.linkedin.com/dms-uploads/:id/uploadedVideo', async ({ request }) => {
+    const part = new URL(request.url).searchParams.get('part')
+    const buf = await request.arrayBuffer()
+    liState.videoParts.push({
+      part,
+      size: buf.byteLength,
+      auth: request.headers.get('authorization'),
+      contentType: request.headers.get('content-type'),
+    })
+    return new HttpResponse(null, { status: 200, headers: { etag: `"etag-part-${part}"` } })
+  }),
+  http.get(`${LI}/rest/videos/:urn`, ({ params }) => {
+    liState.videoPolls++
+    const status =
+      liState.videoStatusQueue.length > 1
+        ? liState.videoStatusQueue.shift()!
+        : (liState.videoStatusQueue[0] ?? 'AVAILABLE')
+    return HttpResponse.json({
+      id: decodeURIComponent(String(params.urn)),
+      status,
+      duration: 20_000,
+      ...(status === 'PROCESSING_FAILED' ? { processingFailureReason: 'Unsupported codec' } : {}),
+    })
+  }),
+  http.post(`${LI}/rest/socialActions/:urn/comments`, async ({ params, request }) => {
+    if (liState.commentThrottled)
+      return HttpResponse.json({ status: 429, message: 'Comment create throttled' }, { status: 429 })
+    const body = (await request.json()) as Record<string, unknown>
+    liState.comments.push({ postUrn: decodeURIComponent(String(params.urn)), body })
+    return HttpResponse.json(
+      { id: '7100000000000000001', object: body.object, message: body.message },
+      { status: 201, headers: { 'x-restli-id': '7100000000000000001' } },
+    )
   }),
   http.post(`${LI}/rest/posts`, async ({ request }) => {
     if (liState.postFailuresLeft > 0) {

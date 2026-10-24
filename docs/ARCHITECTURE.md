@@ -526,14 +526,14 @@ Svaka ruta dobija četiri testa: neulogovan, tuđ workspace, neispravan ulaz, sr
 
 ### 8.1 Modeli (provereno 23.10.2026 na ai.google.dev/gemini-api/docs/models i /pricing)
 
-| Env varijabla                 | Polazna vrednost                      | Status   | Cena (paid tier)                                              |
-| ----------------------------- | ------------------------------------- | -------- | ------------------------------------------------------------- |
-| `GEMINI_TEXT_MODEL`           | `gemini-3.8-flash`                    | stabilan | $0.75 / $3.75 po 1M tokena do 31.12.2026, zatim $1.50 / $7.50 |
-| `GEMINI_TEXT_FALLBACK_MODEL`  | `gemini-3.5-flash-lite`               | stabilan | $0.30 / $2.50                                                 |
-| `GEMINI_IMAGE_MODEL`          | `gemini-3.1-flash-image`              | stabilan | $0.067 po 1K slici                                            |
-| `GEMINI_IMAGE_PREMIUM_MODEL`  | `gemini-3-pro-image`                  | stabilan | $0.134 po 1K/2K, $0.24 po 4K                                  |
-| `GEMINI_IMAGE_FALLBACK_MODEL` | `gemini-3.1-flash-lite-image`         | stabilan | $0.0336 po 1K slici                                           |
-| `GEMINI_EMBEDDING_MODEL`      | `gemini-embedding-2` (1536 dimenzija) | stabilan | $0.20 po 1M tokena                                            |
+| Env varijabla                 | Polazna vrednost                      | Status   | Cena (paid tier)                                                         |
+| ----------------------------- | ------------------------------------- | -------- | ------------------------------------------------------------------------ |
+| `GEMINI_TEXT_MODEL`           | `gemini-3.6-flash` (D-088)            | stabilan | $0.75 / $3.75 po 1M tokena do 31.12.2026, isto kao 3.8 (24.10.2026 spor) |
+| `GEMINI_TEXT_FALLBACK_MODEL`  | `gemini-3.5-flash-lite`               | stabilan | $0.30 / $2.50                                                            |
+| `GEMINI_IMAGE_MODEL`          | `gemini-3.1-flash-image`              | stabilan | $0.067 po 1K slici                                                       |
+| `GEMINI_IMAGE_PREMIUM_MODEL`  | `gemini-3-pro-image`                  | stabilan | $0.134 po 1K/2K, $0.24 po 4K                                             |
+| `GEMINI_IMAGE_FALLBACK_MODEL` | `gemini-3.1-flash-lite-image`         | stabilan | $0.0336 po 1K slici                                                      |
+| `GEMINI_EMBEDDING_MODEL`      | `gemini-embedding-2` (1536 dimenzija) | stabilan | $0.20 po 1M tokena                                                       |
 
 Napomene: `gemini-3.5-flash` je deprecated i preusmerava na 3.6; `gemini-2.5-flash-image` je legacy sa ograničenim pristupom. Nov model `gemini-nano-banana-2.1` (stabilan) košta $0.0336 po 1K slici, upola manje od 3.1-flash-image, uz bolju tipografiju po Google-ovom opisu. Predlog: u fazi 5 uporediti oba na 20 istih promptova pa odlučiti koji je standardni. Embedding na 1536 dimenzija staje u `vector` tip sa HNSW indeksom (limit 2000); 3072 bi tražilo `halfvec`.
 
@@ -543,7 +543,7 @@ Pretpostavke: mesečni plan $39 za 500 tokena → prihod $0.078 po tokenu; godi�
 
 | Akcija                                                                 | Tokeni | Procenjen trošak | Prihod (mesečni / godišnji) |
 | ---------------------------------------------------------------------- | ------ | ---------------- | --------------------------- |
-| Tekst za objavu (≈4k ulaz, 1,5k izlaz, 3.8-flash)                      | 2      | ≈ $0.009         | $0.156 / $0.066             |
+| Tekst za objavu (≈4k ulaz, 1,5k izlaz, 3.6-flash)                      | 2      | ≈ $0.009         | $0.156 / $0.066             |
 | Prepis, hashtag                                                        | 1      | ≈ $0.004         | $0.078 / $0.033             |
 | Vizual iz šablona (Unsplash + vision rangiranje 8 slika)               | 2      | ≈ $0.01          | $0.156 / $0.066             |
 | Gemini slika standard (1K)                                             | 8      | $0.067           | $0.62 / $0.27               |
