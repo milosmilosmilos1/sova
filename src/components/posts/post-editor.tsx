@@ -13,7 +13,9 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { GoogleBusinessPanel } from '@/components/posts/google-business-panel'
 import { TikTokPanel } from '@/components/posts/tiktok-panel'
+import { YouTubePanel } from '@/components/posts/youtube-panel'
 import { readGbpOptions } from '@/config/google-business'
+import { readYouTubeOptions } from '@/config/youtube'
 import { PLATFORMS } from '@/config/platforms'
 import { readTikTokOptions } from '@/config/tiktok'
 import { targetStatusLabel } from '@/config/post-labels'
@@ -645,6 +647,21 @@ function EditorForm({
                         set('selected', {
                           ...form.selected,
                           [a.id]: { ...sel, options: { ...sel.options, tiktok } },
+                        })
+                      }
+                    />
+                  ) : null}
+                  {sel.on && a.platform === 'youtube' ? (
+                    <YouTubePanel
+                      accountId={a.id}
+                      value={readYouTubeOptions({ youtube: sel.options.youtube })}
+                      postTitle={form.title}
+                      text={sel.text.trim() || form.masterText}
+                      disabled={!editable}
+                      onChange={(youtube) =>
+                        set('selected', {
+                          ...form.selected,
+                          [a.id]: { ...sel, options: { ...sel.options, youtube } },
                         })
                       }
                     />

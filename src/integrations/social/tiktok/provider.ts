@@ -571,6 +571,7 @@ export class TikTokProvider implements SocialProvider {
       saves: null,
       clicks: null,
       engagement: likes + comments + shares,
+      videoViews: v.view_count ?? null,
       raw: v as unknown as Record<string, Json>,
     }
   }

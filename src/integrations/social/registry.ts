@@ -10,18 +10,20 @@ import { LinkedInProvider, type LinkedInProviderOptions } from '@/integrations/s
 import { MetaProvider, type MetaProviderOptions } from '@/integrations/social/meta/provider'
 import { TikTokProvider, type TikTokProviderOptions } from '@/integrations/social/tiktok/provider'
 import type { SocialProvider } from '@/integrations/social/types'
+import { YouTubeProvider, type YouTubeProviderOptions } from '@/integrations/social/youtube/provider'
 
 /**
  * Ključ OAuth toka; `meta` je zajednički za Facebook i Instagram (jedan tok za obe mreže). Google
  * poslovni profil i YouTube imaju odvojene tokove (isti Google klijent, različite dozvole).
  */
-export type ConnectProviderKey = 'meta' | 'linkedin' | 'tiktok' | 'google_business'
+export type ConnectProviderKey = 'meta' | 'linkedin' | 'tiktok' | 'google_business' | 'youtube'
 
 export const CONNECT_PROVIDERS: Record<ConnectProviderKey, { label: string; platforms: SocialPlatform[] }> = {
   meta: { label: 'Facebook i Instagram', platforms: ['facebook', 'instagram'] },
   linkedin: { label: 'LinkedIn', platforms: ['linkedin'] },
   tiktok: { label: 'TikTok', platforms: ['tiktok'] },
   google_business: { label: 'Google poslovni profil', platforms: ['google_business'] },
+  youtube: { label: 'YouTube', platforms: ['youtube'] },
 }
 
 let metaOverride: MetaProvider | null = null
@@ -29,6 +31,7 @@ let metaOverride: MetaProvider | null = null
 let linkedinOverride = null as LinkedInProvider | null
 let tiktokOverride: TikTokProvider | null = null
 let googleBusinessOverride: GoogleBusinessProvider | null = null
+let youtubeOverride: YouTubeProvider | null = null
 
 export function getMetaProvider(): MetaProvider {
   return metaOverride ?? new MetaProvider()
@@ -44,6 +47,10 @@ export function getTikTokProvider(): TikTokProvider {
 
 export function getGoogleBusinessProvider(): GoogleBusinessProvider {
   return googleBusinessOverride ?? new GoogleBusinessProvider()
+}
+
+export function getYouTubeProvider(): YouTubeProvider {
+  return youtubeOverride ?? new YouTubeProvider()
 }
 
 /** Testovi: provider bez pauza pri pollingu ili sa svojim fetch-om. */
@@ -63,6 +70,10 @@ export function setGoogleBusinessProviderForTests(options: GoogleBusinessProvide
   googleBusinessOverride = options ? new GoogleBusinessProvider(options) : null
 }
 
+export function setYouTubeProviderForTests(options: YouTubeProviderOptions | null): void {
+  youtubeOverride = options ? new YouTubeProvider(options) : null
+}
+
 export function providerForKey(key: ConnectProviderKey): SocialProvider {
   switch (key) {
     case 'linkedin':
@@ -71,6 +82,8 @@ export function providerForKey(key: ConnectProviderKey): SocialProvider {
       return getTikTokProvider()
     case 'google_business':
       return getGoogleBusinessProvider()
+    case 'youtube':
+      return getYouTubeProvider()
     case 'meta':
       return getMetaProvider()
   }
@@ -88,6 +101,7 @@ export function connectKeyFor(provider: string): ConnectProviderKey | null {
   if (provider === 'linkedin') return 'linkedin'
   if (provider === 'tiktok') return 'tiktok'
   if (provider === 'google_business') return 'google_business'
+  if (provider === 'youtube') return 'youtube'
   return null
 }
 
@@ -109,6 +123,8 @@ export function isProviderConfigured(key: ConnectProviderKey): boolean {
       return TikTokProvider.isConfigured()
     case 'google_business':
       return GoogleBusinessProvider.isConfigured()
+    case 'youtube':
+      return YouTubeProvider.isConfigured()
     case 'meta':
       return MetaProvider.isConfigured()
   }

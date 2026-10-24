@@ -144,6 +144,8 @@ export interface NormalizedMetrics {
   saves: number | null
   clicks: number | null
   engagement: number | null
+  /** pregledi videa (YouTube, TikTok) */
+  videoViews?: number | null
   raw: Record<string, Json>
 }
 

@@ -41,9 +41,9 @@ Zamke:
 
 ```
 npm run lint && npm run typecheck
-npm run test            # Vitest unit (178)
+npm run test            # Vitest unit (181)
 npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (30); pravi i briše test korisnike
-npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (148)
+npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (154)
 npm run test:e2e        # Playwright kroz Mailpit (6); traži pokrenut dev server; posle brisanja .next prvi run traje oko 2 min
 npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs 25   # živi crawler bez baze i AI-ja
 npm run build           # produkcijski build
@@ -83,6 +83,7 @@ Faza 16. Vercel: `main` → Production, PR → Preview. Checklista u ARCHITECTUR
 - **Nacrti vraćeni na doradu**: `select id, qa_report from posts where source = 'autopilot' and status = 'draft' and qa_report->>'passed' = 'false'`; najčešće zabranjena reč, brojka koje nema u profilu ili sličnost sa ranijom objavom.
 - **Asistirani targeti stoje danima**: `select t.id, t.post_id, a.name from post_targets t join social_accounts a on a.id = t.social_account_id where t.status = 'assisted_pending'`; podsetnik stiže sa fazom 11.
 - **LinkedIn veze ističu**: token traje 60 dana; bez programskog refresh-a vlasnici dobijaju obaveštenje 7 dana ranije, a posle isteka nalog je `needs_reauth`. Spisak: `select id, name, token_expires_at, refresh_token_enc is not null as ima_refresh from social_accounts where platform = 'linkedin' order by token_expires_at`. Ponovno povezivanje bez ekrana za saglasnost radi dok je korisnik prijavljen na LinkedIn i token još važi.
+- **YouTube**: `quotaExceeded` znači da je potrošena dnevna kvota celog Google projekta (100 uploada; reset u ponoć po pacifičkom vremenu): objave se same pomeraju za 24 h, a trajno rešenje je YouTube audit i zahtev za kvotu (support.google.com/youtube/contact/yt_api_form). `uploadLimitExceeded` je limit jednog kanala. Video zaključan kao privatan posle uploada znači da projekat još nije prošao audit.
 - **TikTok odbija objave**: `unaudited_client_can_only_post_to_private_accounts` (aplikacija nije prošla audit: samo privatni nalozi i „Samo ja”), `url_ownership_unverified` (domen iz `PUBLIC_MEDIA_BASE_URL` nije verifikovan u URL properties), `spam_risk_too_many_posts` (dnevni limit naloga, publisher pomera za 24 h), `privacy_level_option_mismatch` (korisnik je promenio privatnost naloga; bira ponovo u objavi). `fail_reason` iz statusa je u `last_error_message`.
 - **TikTok objava bez linka**: dok moderacija traje `external_post_id` je `publish:{id}`; povlačenje metrika ga zameni pravim ID-jem. Ako ostane danima: `select id, external_post_id from post_targets where platform = 'tiktok' and external_post_id like 'publish:%'`.
 - **Javni URL medija vraća 404**: token je istekao (2 h), medij je obrisan ili je promenjen `TOKEN_ENCRYPTION_KEY` (ključ potpisa se izvodi iz njega). Publisher pravi nov URL pri svakom pokušaju.

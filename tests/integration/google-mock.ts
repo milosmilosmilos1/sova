@@ -22,6 +22,33 @@ export const gState = {
   metricsQueries: [] as string[],
 }
 
+const YT_SCOPE =
+  'openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.readonly'
+
+export const ytState = {
+  inits: [] as Array<{ body: Record<string, unknown>; headers: Record<string, string> }>,
+  uploads: [] as Array<{ contentType: string | null; size: number }>,
+  /** uploadStatus redom za svaku proveru obrade; poslednji se ponavlja */
+  statusQueue: ['uploaded', 'processed'] as string[],
+  statusPolls: 0,
+  rejectionReason: null as string | null,
+  quotaExceeded: false,
+  signupRequired: false,
+  videoSeq: 0,
+  videos: [] as Array<{ id: string; title: string; publishedAt: string }>,
+}
+
+export function resetYouTubeState(): void {
+  ytState.inits = []
+  ytState.uploads = []
+  ytState.statusQueue = ['uploaded', 'processed']
+  ytState.statusPolls = 0
+  ytState.rejectionReason = null
+  ytState.quotaExceeded = false
+  ytState.signupRequired = false
+  ytState.videos = []
+}
+
 export function resetGoogleState(): void {
   gState.tokenRequests = []
   gState.revokes = []
@@ -73,7 +100,7 @@ export const googleHandlers = [
       access_token: 'g-token-1',
       expires_in: 3599,
       refresh_token: gState.refreshToken,
-      scope: gState.gbpScope,
+      scope: form.code === 'youtube-code' ? YT_SCOPE : gState.gbpScope,
       token_type: 'Bearer',
       id_token: 'eyJ.ignored.sig',
     })
@@ -224,4 +251,132 @@ export const googleHandlers = [
       })
     },
   ),
+  // ---------------------------------------------------------------- YouTube
+  http.get('https://www.googleapis.com/youtube/v3/channels', ({ request }) => {
+    if (!authed(request)) return unauthorized()
+    if (ytState.signupRequired)
+      return HttpResponse.json(
+        {
+          error: {
+            code: 401,
+            message: 'Unauthorized',
+            errors: [{ reason: 'youtubeSignupRequired', domain: 'youtube.header' }],
+          },
+        },
+        { status: 401 },
+      )
+    return HttpResponse.json({
+      items: [
+        {
+          id: 'UC-klima-servis',
+          snippet: {
+            title: 'Klima Servis TV',
+            customUrl: '@klimaservis',
+            thumbnails: { default: { url: 'https://yt3.ggpht.com/klima=s88' } },
+          },
+          statistics: {
+            subscriberCount: '1530',
+            hiddenSubscriberCount: false,
+            viewCount: '98000',
+            videoCount: '42',
+          },
+          contentDetails: { relatedPlaylists: { uploads: 'UU-klima-servis' } },
+        },
+      ],
+    })
+  }),
+  http.post('https://www.googleapis.com/upload/youtube/v3/videos', async ({ request }) => {
+    if (!authed(request)) return unauthorized()
+    if (ytState.quotaExceeded)
+      return HttpResponse.json(
+        {
+          error: {
+            code: 403,
+            message: 'The request cannot be completed because you have exceeded your quota.',
+            errors: [{ reason: 'quotaExceeded', domain: 'youtube.quota' }],
+          },
+        },
+        { status: 403 },
+      )
+    const u = new URL(request.url)
+    if (u.searchParams.get('uploadType') !== 'resumable') return HttpResponse.json({}, { status: 400 })
+    ytState.inits.push({
+      body: (await request.json()) as Record<string, unknown>,
+      headers: Object.fromEntries(request.headers.entries()),
+    })
+    return new HttpResponse(null, {
+      status: 200,
+      headers: {
+        location: `https://www.googleapis.com/upload/youtube/v3/videos?uploadType=resumable&upload_id=up-${ytState.inits.length}&part=snippet,status`,
+      },
+    })
+  }),
+  http.put('https://www.googleapis.com/upload/youtube/v3/videos', async ({ request }) => {
+    if (!authed(request)) return unauthorized()
+    const bytes = await request.arrayBuffer()
+    ytState.uploads.push({ contentType: request.headers.get('content-type'), size: bytes.byteLength })
+    const init = ytState.inits.at(-1)!.body as {
+      snippet: { title: string }
+      status: { privacyStatus: string }
+    }
+    ytState.videoSeq++
+    const id = `vid-${ytState.videoSeq}`
+    ytState.videos.unshift({ id, title: init.snippet.title, publishedAt: new Date().toISOString() })
+    return HttpResponse.json(
+      {
+        id,
+        snippet: init.snippet,
+        status: { uploadStatus: 'uploaded', privacyStatus: init.status.privacyStatus },
+      },
+      { status: 201 },
+    )
+  }),
+  http.get('https://www.googleapis.com/youtube/v3/videos', ({ request }) => {
+    if (!authed(request)) return unauthorized()
+    const u = new URL(request.url)
+    const ids = (u.searchParams.get('id') ?? '').split(',').filter(Boolean)
+    if ((u.searchParams.get('part') ?? '').includes('statistics'))
+      return HttpResponse.json({
+        items: ids
+          .filter((id) => id !== 'vid-gone')
+          .map((id) => ({
+            id,
+            statistics: { viewCount: '1200', likeCount: '80', commentCount: '7', favoriteCount: '0' },
+          })),
+      })
+    const status = ytState.statusQueue[Math.min(ytState.statusPolls, ytState.statusQueue.length - 1)]!
+    ytState.statusPolls++
+    return HttpResponse.json({
+      items: ids.map((id) => ({
+        id,
+        status: {
+          uploadStatus: status,
+          privacyStatus: 'public',
+          ...(status === 'rejected' ? { rejectionReason: ytState.rejectionReason ?? 'duplicate' } : {}),
+        },
+        processingDetails: { processingStatus: status === 'processed' ? 'succeeded' : 'processing' },
+      })),
+    })
+  }),
+  http.get('https://www.googleapis.com/youtube/v3/playlistItems', ({ request }) => {
+    if (!authed(request)) return unauthorized()
+    if (new URL(request.url).searchParams.get('playlistId') !== 'UU-klima-servis')
+      return HttpResponse.json(
+        { error: { code: 404, errors: [{ reason: 'playlistNotFound' }] } },
+        { status: 404 },
+      )
+    const old = [{ id: 'vid-old-1', title: 'Kako se čisti klima', publishedAt: '2026-09-01T10:00:00Z' }]
+    return HttpResponse.json({
+      items: [...ytState.videos, ...old].map((v) => ({
+        snippet: {
+          title: v.title,
+          description: 'Opis videa',
+          publishedAt: v.publishedAt,
+          thumbnails: { high: { url: `https://i.ytimg.com/vi/${v.id}/hqdefault.jpg` } },
+          resourceId: { kind: 'youtube#video', videoId: v.id },
+        },
+        contentDetails: { videoId: v.id, videoPublishedAt: v.publishedAt },
+      })),
+    })
+  }),
 ]

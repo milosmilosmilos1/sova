@@ -79,7 +79,7 @@ function toSnapshot(m: NormalizedMetrics) {
     shares: m.shares,
     saves: m.saves,
     link_clicks: m.clicks,
-    video_views: null as number | null,
+    video_views: m.videoViews ?? null,
     engagement_rate: m.reach && m.reach > 0 ? Math.round((engagement / m.reach) * 100000) / 100000 : null,
     raw: { ...m.raw, engagement } as unknown as NonNullable<Json>,
   }
