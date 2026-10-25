@@ -1,0 +1,15 @@
+# Netlify (D-100): Next.js kroz Netlify runtime, koji Netlify sam ažurira pri svakom build-u.
+# Tajne se ne pišu ovde (fajl je u repou i nije dostupan funkcijama); unose se u Netlify UI.
+[build]
+  command = "npm run build"
+  publish = ".next"
+
+[build.environment]
+  NODE_VERSION = "22"
+  NEXT_TELEMETRY_DISABLED = "1"
+  # husky (git hookovi) ne treba na serveru za build
+  HUSKY = "0"
+
+# Satori šabloni i mesečni PDF čitaju Inter fontove sa diska (D-094)
+[functions]
+  included_files = ["src/lib/visuals/fonts/**"]

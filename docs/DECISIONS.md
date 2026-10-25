@@ -662,3 +662,16 @@ Odluka:
 - **Next oznaka „N” u uglu** (indikator razvojnog servera) je isključena kroz `devIndicators: false`. Vidi se samo lokalno; greške se i dalje prikazuju.
 
 Razlog: odluka vlasnika o cenama i paketima; favicon i bez oznake razvojnog servera da lokalni pregled liči na pravi sajt.
+
+## D-100 · 25.10.2026 · usvojeno · Prvi deploy: Netlify (besplatno) i postojeći Supabase projekat
+
+Odluka:
+
+- **Netlify umesto Vercel-a** (odluka vlasnika): sajt `sovaai` na timu „Projekat 1” (besplatan plan), adresa https://sovaai.netlify.app. Next.js ide kroz Netlify runtime; `netlify.toml` zadaje build, Node 22 i fontove za Satori i PDF. Ograničenja besplatnog plana: funkcija radi najviše 60 s (duži koraci, na primer obrada videa, mogu da puknu), zahtev je najviše 6 MB (slike veće od oko 4,5 MB ne prolaze kroz server), sve promenljive zajedno najviše oko 4 KB, funkcije rade u SAD dok je baza u Frankfurtu. Prelazak na Vercel (D-097) ostaje otvoren.
+- **Baza**: postojeći prazan Supabase projekat vlasnika (Frankfurt, besplatan plan). Agent je uz dozvolu vlasnika pustio 25 migracija i seed kroz Supabase konektor, umesto workflow-a „Migracije” (D-097), jer GitHub Environment još nije podešen. Istorija migracija nosi verzije fajlova iz repoa, pa kasniji `db push` vidi da je sve primenjeno. Šema je proverena otiskom (kolone, ograničenja, indeksi, funkcije, politike, okidači, prava, bucket-i) i ista je kao lokalna; razlika u funkcijama je samo kraj reda (CRLF u lokalnoj bazi).
+- **Migracija 019 bez `drop function`**: konektor odbija brisanje funkcije, pa je stara `admin_adjust_tokens(uuid, integer, text, uuid)` ostala. Aplikacija zove samo novu (pet parametara), pa ne smeta; vlasnik je briše jednom linijom u SQL editoru (DEPLOY.md 10). Popuna `admin_email` je izostavljena jer je audit log bio prazan.
+- **Migracija 025**: Supabase savetnik je našao da neprijavljen korisnik može da pozove pomoćne SECURITY DEFINER funkcije. Revoke od `anon` u 009 nije bio dovoljan jer pravo dolazi preko uloge PUBLIC. Sada `revoke ... from public`; okidačke funkcije niko ne zove direktno. Test baze to proverava (31 test).
+- **Tajne**: javne vrednosti (adresa aplikacije, Supabase URL i publishable ključ) agent je upisao u Netlify. Tri tajne aplikacije su generisane lokalno u `.env.netlify.local` (u .gitignore) i nisu prošle kroz razgovor; vlasnik dopunjuje ključeve servisa i ceo fajl uvozi u Netlify.
+- **Otpremanje koda** ide iz čiste kopije repoa (`git worktree`), da `.env.local` ne ode na Netlify.
+
+Razlog: vlasnik želi aplikaciju na internetu odmah i bez troška hostinga; nalozi servisa su njegovi i ključeve unosi sam.

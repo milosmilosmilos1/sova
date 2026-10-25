@@ -119,3 +119,17 @@ Redom; svaka stavka zavisi od prethodnih:
 - `SUPABASE_SERVICE_ROLE_KEY` postoji samo na serveru (`src/lib/supabase/admin.ts`); nijedna `NEXT_PUBLIC_` promenljiva nije tajna.
 - Sigurnosna zaglavlja i CSP su u `next.config.ts` i `src/proxy.ts`; posle deploya proverite ih u alatkama pregledača (Network → Response headers).
 - Ključevi koji su ikada bili u razvoju ne idu na produkciju.
+
+## 10. Netlify (trenutni deploy, D-100)
+
+Sajt `sovaai` (https://sovaai.netlify.app) i baza u postojećem Supabase projektu (Frankfurt) su napravljeni; migracije i seed su pušteni. Za rad aplikacije ostaje:
+
+1. **Ključevi**: popunite `.env.netlify.local` u korenu projekta (tri tajne aplikacije su već generisane), pa ceo fajl uvezite: Netlify → Project configuration → Environment variables → Add a variable → Import from a .env file, uz oznaku „Contains secret values”. Promenljive važe tek posle novog build-a: Deploys → Trigger deploy.
+2. **Supabase → Authentication**: URL Configuration: Site URL `https://sovaai.netlify.app`, Redirect URLs `https://sovaai.netlify.app/**`. Emails → SMTP Settings: Resend (`smtp.resend.com`, port 465, korisnik `resend`, lozinka je Resend API ključ, pošiljalac `noreply@sovaai.rs` posle verifikacije domena u Resend-u); bez toga Supabase šalje potvrde samo članovima tima. Providers → Email: potvrda emaila uključena, lozinka najmanje 10 znakova.
+3. **Supabase → SQL Editor**: `drop function if exists public.admin_adjust_tokens(uuid, integer, text, uuid);`
+4. **Inngest**: Apps → Sync new app → `https://sovaai.netlify.app/api/inngest`.
+5. **Turnstile**: domen `sovaai.netlify.app` (kasnije i `sovaai.rs`).
+6. **Canva i mreže**: adrese iz odeljka 6 sa domenom `sovaai.netlify.app` dok sovaai.rs nije povezan.
+7. **Domen sovaai.rs** kasnije: Netlify → Domain management → Add a domain, DNS kod SuperHosting-a, zatim `NEXT_PUBLIC_APP_URL=https://sovaai.rs` i nov deploy. Do tada sajt nosi `noindex` i ne ulazi u pretragu.
+
+Novi deploy iz čiste kopije (bez `.env` fajlova): `git worktree add <privremeni folder> HEAD`, pa u tom folderu komanda koju daje Netlify konektor (`npx -y @netlify/mcp@latest --site-id … --proxy-path …`). Kad se GitHub repo poveže sa sajtom (Netlify → Build & deploy → Link repository), svaki push na `main` gradi sajt sam.

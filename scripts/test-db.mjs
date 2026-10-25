@@ -725,6 +725,17 @@ async function main() {
       throw new Error('očekivan prazan spisak za 2000. godinu')
   })
 
+  await test('pomoćne SECURITY DEFINER funkcije ne zove neprijavljen korisnik (migracija 025)', async () => {
+    const anon = createClient(URL, ANON, { auth: { persistSession: false } })
+    const nobody = '00000000-0000-0000-0000-000000000000'
+    expectError(await anon.rpc('brand_workspace', { b: nobody }), 'permission denied')
+    expectError(await anon.rpc('is_workspace_member', { ws: nobody }), 'permission denied')
+    expectError(await anon.rpc('is_platform_admin'), 'permission denied')
+    // prijavljen korisnik ih i dalje zove (RLS politike zavise od njih)
+    const member = await A.rpc('is_workspace_member', { ws: nobody })
+    assert(!member.error && member.data === false, `authenticated: ${member.error?.message}`)
+  })
+
   await test('seed: planovi, podešavanja i flagovi postoje; anon vidi cenovnik', async () => {
     const anon = createClient(URL, ANON, { auth: { persistSession: false } })
     const { data: plans, error } = await anon.from('plans').select('code').order('sort_order')

@@ -53,7 +53,7 @@ Zamke:
 ```
 npm run lint && npm run typecheck
 npm run test            # Vitest unit (226)
-npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (30); pravi i briše test korisnike
+npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (31); pravi i briše test korisnike
 npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (205)
 npm run test:e2e        # Playwright (13, od toga 3 axe provere pristupačnosti); traži dev server, Inngest dev (`npm run inngest:dev`, zakazivanje) i Mailpit; prvi run posle brisanja .next traje oko 2 min
 npm run test:live       # pravi Gemini i pravi sajt nad lokalnim Supabase-om (oko 0,2 USD); samo ručno, nikad u CI-ju

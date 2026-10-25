@@ -30,6 +30,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 | 16 Deploy                               | priprema gotova | vodič DEPLOY.md, workflow za migracije uz odobrenje, maxDuration, produkcijski build proveren (D-097); sam deploy čeka naloge i dozvolu vlasnika                                                                         |
 | Landing po Claude Design-u              | gotovo          | novi landing, zaglavlje i podnožje javnih strana, kalkulator tokena iz baze, strana Kontakt (D-098); fotografije su primeri sa Unsplash-a                                                                                |
 | Cene u evrima                           | gotovo          | mesečni 47 €, godišnji 277 €, dopune 12/30/85 €, paketi 5 brendova, 10 mreža i 2 člana; admin preračunava u USD po kursu; favicon (D-099)                                                                                |
+| Deploy na Netlify                       | u toku          | sajt sovaai.netlify.app i baza (Supabase, Frankfurt) napravljeni, 25 migracija i seed pušteni, migracija 025 zatvara pozive za neprijavljene; čekaju se ključevi vlasnika (DEPLOY.md 10, D-100)                          |
 
 ## Faza 4 — šta je urađeno
 
@@ -99,6 +100,13 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Provereno 24.10.2026 u Chromium-u: početna, Inbox, Objave, detalj objave, Kalendar, Strategija, Analitika, Autopilot, Obaveštenja, Mreže i Podešavanja rade bez grešaka u konzoli i API odgovorima. Usput ispravljeno: legenda kalendara je prikazivala interne nazive statusa, horizonti snimaka u analitici nisu bili poređani, editor nije prikazivao zašto je Autopilot vratio nacrt (sada prikazuje, a izveštaj se briše čim se tekst promeni).
 - Provereno 24.10.2026 u Chromium-u (faza 11b): nacrt editora (čuvanje, traka posle osvežavanja, vraćanje, brisanje posle čuvanja), termin se vraća isti posle čuvanja, forma zone brenda sa ponudom zadržavanja lokalnog vremena; bez grešaka u konzoli.
 - Provereno 24.10.2026 u Chromium-u (faza 13): svih sedam admin strana, „Gledaj kao” za demo nalog (traka, izmena u read-only režimu dobija 403 sa objašnjenjem, „Izađi” vraća na detalj korisnika), `/admin/users` na 390 px bez horizontalnog skrola. Usput ispravljeno: stara provera u `requireMembership` je tokom read-only pregleda rušila svaku stranu aplikacije.
+
+## Deploy na Netlify — šta je urađeno
+
+- **Baza**: postojeći prazan Supabase projekat (Frankfurt). 25 migracija i seed pušteni kroz Supabase konektor, istorija nosi verzije iz repoa, šema proverena otiskom i ista je kao lokalna (D-100).
+- **Migracija 025**: neprijavljen korisnik više ne može da pozove pomoćne SECURITY DEFINER funkcije; nov test baze (31).
+- **Netlify**: sajt `sovaai`, `netlify.toml`, javne promenljive upisane; tajne aplikacije u lokalnom `.env.netlify.local` za uvoz.
+- **Čeka vlasnika**: ključevi servisa, Supabase Auth podešavanja i jedna SQL linija (DEPLOY.md 10).
 
 ## Cene u evrima i favicon — šta je urađeno
 
@@ -471,6 +479,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 
 ## Šta čeka vlasnika
 
+- Netlify: popuniti `.env.netlify.local` i uvesti ga, podesiti Supabase Auth (adrese, SMTP preko Resend-a), obrisati staru funkciju jednom SQL linijom, sinhronizovati Inngest (DEPLOY.md 10).
 - Stripe: cene pretplata napraviti u evrima (47 € mesečno, 277 € godišnje); kurs za admin statistiku menjati u `platform_settings.fx_usd_rates` kad se znatno promeni (D-099).
 - Prave fotografije za landing (sada primeri sa Unsplash-a u `public/landing/`) i provera logotipa mreža prema brand kitovima pre lansiranja (D-098).
 - Google OAuth klijent (`GOOGLE_CLIENT_ID/SECRET`) da se pojavi Google dugme; Resend ključ da pozivnice i obaveštenja idu emailom; Turnstile ključevi za zaštitu registracije u produkciji.

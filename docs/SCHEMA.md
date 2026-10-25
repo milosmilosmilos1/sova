@@ -1312,3 +1312,5 @@ Faza 14 (25.10.2026): migracija `20261025000024_monthly_reports.sql`:
 - `brands.report_emails citext[]` (najviše 5): adrese klijenta kojima mesečni posao šalje PDF izveštaj u prilogu; menja ih vlasnik ili administrator (D-094).
 - Jedinstven indeks `reports_brand_period (brand_id, period_start, period_end)`: jedan izveštaj po brendu i mesecu, novo pravljenje zamenjuje fajl. `reports.sent_to` je oznaka da je mesečni posao izveštaj poslao (prazan niz kad nema adresa klijenta); dok je null, izveštaj je napravljen samo na zahtev.
 - Nov tip obaveštenja `report_ready`. Fajlovi su u bucketu `exports` pod `ws/{workspace}/reports/{brand}/`.
+
+Pre produkcije (25.10.2026): migracija `20261025000025_revoke_public_execute.sql` oduzima EXECUTE ulozi PUBLIC na pomoćnim SECURITY DEFINER funkcijama (`is_platform_admin`, `is_workspace_member`, `workspace_role`, `brand_workspace`, `has_brand_access`, `can_*`, `shares_workspace_with`) i na okidačkim funkcijama `handle_auth_user` i `workspace_members_guard`. Pravo za `anon` je dolazilo preko PUBLIC, pa revoke od `anon` u 009 nije bio dovoljan (D-100).

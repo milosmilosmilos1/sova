@@ -51,3 +51,6 @@ supabase/.branches
 # playwright
 /test-results/
 /playwright-report/
+
+# Netlify (lokalno povezivanje sajta)
+.netlify
