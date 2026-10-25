@@ -595,3 +595,14 @@ Odluka:
 
 Alternative: Satori i resvg pa slike u PDF-u (tekst se ne bi mogao označiti ni pretraživati); Chromium na serveru (pretežak za Vercel funkciju); link umesto priloga (klijent nema nalog, a potpisan link ističe).
 Razlog: brif traži mesečni izveštaj klijentu; agencija ga danas pravi ručno iz više alata.
+
+## D-095 · 25.10.2026 · usvojeno · SEO javnih strana i indeksiranje samo na pravom domenu
+
+Odluka:
+
+- **Početna**: naslov i opis iz prevoda (`landing.metaTitle`, `landing.metaDescription`), kanonski URL `/`, Open Graph i Twitter kartica. Slika za deljenje je `src/app/(public)/opengraph-image.tsx` (1200×630, tamna površina i plava sa landinga, Inter sa srpskim slovima), pravi se pri build-u i važi za sve javne strane.
+- **Strukturirani podaci** (schema.org) na početnoj: `Organization` (vlasnik) i `SoftwareApplication` sa cenama iz tabele `plans` (besplatno, mesečno, godišnje). `<` u JSON-u se piše kao escape, da tekst iz baze ne može da zatvori `<script>`. FAQ oznake nisu dodate: Google ih od 2023. prikazuje samo za državne i zdravstvene sajtove.
+- **robots.txt i sitemap.xml** (`src/app/robots.ts`, `sitemap.ts`, spiskovi u `src/lib/seo.ts`): javne strane da; `/app`, `/admin`, `/api/`, `/auth/`, linkovi za odobravanje i pozivnice ne; javni URL medija za mreže (`/api/media/public/`) ostaje dostupan. U mapi su početna, registracija, pravne strane i strana o botu.
+- **Samo pravi domen**: indeksira se samo kad je `NEXT_PUBLIC_APP_URL` na `sovaai.rs` (ili `www.`). Pregledi na Vercel-u, staging i localhost dobijaju `Disallow: /`, praznu mapu i `noindex` na svim stranama, da kopija ne uđe u pretragu pre pravog sajta ili umesto njega.
+
+Razlog: brif traži landing koji se nalazi u pretrazi i lepo izgleda kad se podeli; iskustvo sa ranijim sajtovima je da staging bez zabrane završi u indeksu.

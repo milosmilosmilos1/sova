@@ -17,13 +17,71 @@ import {
   UsersRound,
   type LucideIcon,
 } from 'lucide-react'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 
 import { buttonVariants } from '@/components/ui/button'
+import { company } from '@/config/company'
+import { siteUrl } from '@/lib/seo'
 import { getTokenPrices } from '@/lib/tokens/prices'
-import { listPlans } from '@/services/plans'
+import { listPlans, type PlanRow } from '@/services/plans'
 import { cn } from 'cn'
+
+/** Naslov, opis i kanonski URL početne (D-095); slika za deljenje je `opengraph-image.tsx`. */
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('landing')
+  const title = t('metaTitle')
+  const description = t('metaDescription')
+  return {
+    title: { absolute: title },
+    description,
+    alternates: { canonical: '/' },
+    openGraph: { type: 'website', url: '/', siteName: 'Sova', locale: 'sr_RS', title, description },
+    twitter: { card: 'summary_large_image', title, description },
+  }
+}
+
+/** Strukturirani podaci (schema.org): proizvod sa cenama iz tabele `plans` i vlasnik. */
+function structuredData(description: string, plans: PlanRow[]) {
+  const base = siteUrl()
+  return {
+    '@context': 'https://schema.org',
+    '@graph': [
+      {
+        '@type': 'Organization',
+        '@id': `${base}/#organization`,
+        name: company.productName,
+        legalName: company.legalName,
+        url: `${base}/`,
+      },
+      {
+        '@type': 'SoftwareApplication',
+        name: company.productName,
+        applicationCategory: 'BusinessApplication',
+        operatingSystem: 'Web',
+        url: `${base}/`,
+        inLanguage: 'sr-Latn',
+        description,
+        publisher: { '@id': `${base}/#organization` },
+        offers: [
+          { '@type': 'Offer', name: 'Besplatno', price: '0', priceCurrency: 'USD' },
+          ...plans
+            .filter((p) => p.kind === 'subscription' && p.price_cents > 0)
+            .map((p) => ({
+              '@type': 'Offer',
+              name: p.name,
+              price: (p.price_cents / 100).toFixed(2),
+              priceCurrency: p.currency.toUpperCase(),
+            })),
+        ],
+      },
+    ],
+  }
+}
+
+/** JSON u `<script>`: `<` se piše kao escape, da tekst iz baze ne može da zatvori tag. */
+const jsonForScript = (value: unknown) => JSON.stringify(value).replace(/</g, '\\' + 'u003c')
 
 const money = (cents: number, currency: string) =>
   new Intl.NumberFormat('sr-Latn-RS', { style: 'currency', currency, maximumFractionDigits: 0 }).format(
@@ -109,6 +167,10 @@ export default async function LandingPage() {
 
   return (
     <div>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonForScript(structuredData(t('metaDescription'), plans)) }}
+      />
       <section className="relative overflow-hidden">
         <div aria-hidden className="bg-grid bg-grid-fade absolute inset-0" />
         <div aria-hidden className="bg-glow absolute inset-0" />

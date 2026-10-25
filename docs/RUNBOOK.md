@@ -51,7 +51,7 @@ Zamke:
 
 ```
 npm run lint && npm run typecheck
-npm run test            # Vitest unit (216)
+npm run test            # Vitest unit (219)
 npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (30); pravi i briše test korisnike
 npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (204)
 npm run test:e2e        # Playwright kroz Mailpit (6); traži pokrenut dev server; posle brisanja .next prvi run traje oko 2 min
@@ -100,6 +100,7 @@ Faza 16. Vercel: `main` → Production, PR → Preview. Checklista u ARCHITECTUR
 - **YouTube**: `quotaExceeded` znači da je potrošena dnevna kvota celog Google projekta (100 uploada; reset u ponoć po pacifičkom vremenu): objave se same pomeraju za 24 h, a trajno rešenje je YouTube audit i zahtev za kvotu (support.google.com/youtube/contact/yt_api_form). `uploadLimitExceeded` je limit jednog kanala. Video zaključan kao privatan posle uploada znači da projekat još nije prošao audit.
 - **TikTok odbija objave**: `unaudited_client_can_only_post_to_private_accounts` (aplikacija nije prošla audit: samo privatni nalozi i „Samo ja”), `url_ownership_unverified` (domen iz `PUBLIC_MEDIA_BASE_URL` nije verifikovan u URL properties), `spam_risk_too_many_posts` (dnevni limit naloga, publisher pomera za 24 h), `privacy_level_option_mismatch` (korisnik je promenio privatnost naloga; bira ponovo u objavi). `fail_reason` iz statusa je u `last_error_message`.
 - **TikTok objava bez linka**: dok moderacija traje `external_post_id` je `publish:{id}`; povlačenje metrika ga zameni pravim ID-jem. Ako ostane danima: `select id, external_post_id from post_targets where platform = 'tiktok' and external_post_id like 'publish:%'`.
+- **SEO posle deploya** (D-095): `curl https://sovaai.rs/robots.txt` mora imati `Sitemap:` i zabrane za `/app` i `/api/`; `curl https://sovaai.rs/sitemap.xml` daje šest adresa; početna nema `noindex`. Ako robots kaže `Disallow: /`, `NEXT_PUBLIC_APP_URL` u Vercel-u nije `https://sovaai.rs` (staging i pregledi namerno nisu indeksabilni). Mapu prijaviti u Search Console.
 - **Mesečni izveštaj nije stigao klijentu** (D-094): `select period_start, status, sent_to, created_at from reports where brand_id = …`. Prazan `sent_to` znači da adrese nisu bile upisane; ponovno slanje: `update reports set sent_to = null where id = …` pa u Inngest-u događaj `report/monthly.requested` sa `{brandId, month: "YYYY-MM"}` (ili sledeći prolaz na sat, samo 1. i 2. u mesecu). Neuspeo email je u logu kao `monthly_report_email_failed` (bez adrese).
 - **Javni URL medija vraća 404**: token je istekao (2 h), medij je obrisan ili je promenjen `TOKEN_ENCRYPTION_KEY` (ključ potpisa se izvodi iz njega). Publisher pravi nov URL pri svakom pokušaju.
 - **Mreža vraća 401 masovno**: isključi feature flag `platform.<mreža>`, banner korisnicima, proveri promenu API verzije (`META_GRAPH_VERSION` u env-u; promena bez deploya koda).

@@ -23,6 +23,8 @@
     "faq": "FAQ"
   },
   "landing": {
+    "metaTitle": "Sova · AI that runs your social media",
+    "metaDescription": "Enter your website and Sova learns your brand, builds a strategy, writes posts and visuals, schedules them on eight networks and learns from the results.",
     "heroTitle": "Enter your website, Sova runs your social media.",
     "heroText": "Sova learns your brand from your website, builds a strategy, writes posts, creates visuals, schedules and publishes, then learns from the results.",
     "ctaPrimary": "Start for free",

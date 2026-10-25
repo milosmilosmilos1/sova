@@ -6,7 +6,7 @@ import { getLocale } from 'next-intl/server'
 
 import { MaintenanceBanner } from '@/components/maintenance-banner'
 import { Providers } from '@/components/providers'
-import { company } from '@/config/company'
+import { isIndexableHost, siteUrl } from '@/lib/seo'
 
 import './globals.css'
 
@@ -23,11 +23,15 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL ?? company.appUrl),
+  metadataBase: new URL(siteUrl()),
   title: { default: 'Sova', template: '%s · Sova' },
   description:
     'Unesite sajt, Sova vodi vaše društvene mreže: strategija, objave, vizuali, zakazivanje, analitika.',
   applicationName: 'Sova',
+  openGraph: { siteName: 'Sova', locale: 'sr_RS', type: 'website' },
+  twitter: { card: 'summary_large_image' },
+  // pregledi i staging se ne indeksiraju, samo pravi domen (D-095)
+  ...(isIndexableHost() ? {} : { robots: { index: false, follow: false } }),
 }
 
 export const viewport: Viewport = {
