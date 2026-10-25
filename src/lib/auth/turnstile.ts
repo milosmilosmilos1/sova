@@ -1,15 +1,16 @@
 import 'server-only'
 
-import { configured, env } from '@/lib/env'
+import { configured, env, isPreview } from '@/lib/env'
 import { logger } from '@/lib/logger'
 
 /**
- * Cloudflare Turnstile provera. Kad ključevi nisu podešeni (DEV, D-014),
- * provera prolazi uz upozorenje u logu. U produkciji su ključevi obavezni (env šema).
+ * Cloudflare Turnstile provera. Kad ključevi nisu podešeni (DEV, D-014, ili režim pregleda, D-101),
+ * provera prolazi uz upozorenje u logu. U pravoj produkciji su ključevi obavezni (env šema).
  */
 export async function verifyTurnstile(token: string | undefined, ip: string): Promise<boolean> {
   if (!configured.turnstile) {
-    if (env.NODE_ENV === 'production') return false
+    if (env.NODE_ENV === 'production' && !isPreview) return false
+    if (isPreview) logger.warn('turnstile_skipped_preview', { ip })
     return true
   }
   if (!token) return false

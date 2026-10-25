@@ -14,8 +14,10 @@ export const env: ServerEnv = parseServerEnv(process.env, mode)
 export const isProd = env.NODE_ENV === 'production'
 export const isDev = env.NODE_ENV === 'development'
 export const isTest = env.NODE_ENV === 'test'
+/** Produkcija u režimu pregleda (SOVA_PREVIEW=true): servisi bez ključa se preskaču kao u DEV-u (D-101). */
+export const isPreview = mode === 'preview'
 
-/** Koji spoljni servisi su podešeni. U DEV mogu da fale (D-014). */
+/** Koji spoljni servisi su podešeni. U DEV i u pregledu mogu da fale (D-014, D-101). */
 export const configured = {
   upstash: Boolean(env.UPSTASH_REDIS_REST_URL && env.UPSTASH_REDIS_REST_TOKEN),
   inngestCloud: Boolean(env.INNGEST_EVENT_KEY && env.INNGEST_SIGNING_KEY),

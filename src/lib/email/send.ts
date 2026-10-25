@@ -4,7 +4,7 @@ import { render } from '@react-email/render'
 import type { ReactElement } from 'react'
 import { Resend } from 'resend'
 
-import { configured, env, isProd } from '@/lib/env'
+import { configured, env, isPreview, isProd } from '@/lib/env'
 import { logger } from '@/lib/logger'
 
 export interface SendEmailInput {
@@ -26,13 +26,13 @@ function getResend(): Resend | null {
 }
 
 /**
- * Transakcioni email. Sa Resend ključem šalje; bez njega (DEV) loguje
+ * Transakcioni email. Sa Resend ključem šalje; bez njega (DEV ili režim pregleda, D-101) loguje
  * naslov i linkove iz poruke da se tok može ručno proveriti.
  */
 export async function sendEmail(input: SendEmailInput): Promise<{ id: string | null }> {
   const resend = getResend()
   if (!resend) {
-    if (isProd) throw new Error('RESEND_API_KEY nije podešen.')
+    if (isProd && !isPreview) throw new Error('RESEND_API_KEY nije podešen.')
     const html = await render(input.react)
     const links = [...html.matchAll(/href="([^"]+)"/g)].map((m) => m[1]).filter((l) => l?.startsWith('http'))
     logger.info('email_dev_log', {

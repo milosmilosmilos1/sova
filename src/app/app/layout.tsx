@@ -5,9 +5,22 @@ import { AppShell } from '@/components/app/app-shell'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { getCurrentWorkspace, listMemberships } from '@/lib/auth/workspace'
+import { configured, isPreview } from '@/lib/env'
 import { listBrands } from '@/services/brands'
 
 export const metadata: Metadata = { robots: { index: false, follow: false } }
+
+/** Režim pregleda (D-101): šta još čeka svoj ključ, da korisnik ne misli da je greška. */
+function previewPending(): string[] {
+  if (!isPreview) return []
+  const pending: string[] = []
+  if (!configured.gemini) pending.push('AI tekst i slike')
+  if (!configured.inngestCloud) pending.push('zakazano objavljivanje i pozadinski poslovi')
+  if (!configured.resend) pending.push('emailovi')
+  if (!configured.unsplash) pending.push('Unsplash fotografije')
+  if (!configured.canva) pending.push('Canva')
+  return pending
+}
 
 /**
  * Layout ne zna pouzdano putanju u RSC/prefetch zahtevima (proxy ih preskače),
@@ -31,6 +44,7 @@ export default async function AppLayout({ children }: LayoutProps<'/app'>) {
   const current = memberships.length ? await getCurrentWorkspace(viewer) : null
   const brands = current ? await listBrands(viewer, current.workspaceId) : []
   const currentBrand = current ? await getCurrentBrand(viewer, current.workspaceId) : null
+  const pending = previewPending()
 
   return (
     <AppShell
@@ -48,6 +62,11 @@ export default async function AppLayout({ children }: LayoutProps<'/app'>) {
       brands={brands}
       currentBrand={currentBrand}
     >
+      {pending.length ? (
+        <p role="status" className="mb-4 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
+          Pregled: još se uključuju {pending.join(', ')}. Ostatak aplikacije radi.
+        </p>
+      ) : null}
       {children}
     </AppShell>
   )

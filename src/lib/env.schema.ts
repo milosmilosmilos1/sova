@@ -4,11 +4,13 @@ import { z } from 'zod'
  * Šema env varijabli. Čista funkcija bez side-effecta da bi se testirala.
  *
  * Režimi:
- *  - 'prod'  : sve obavezno (Vercel Production i Preview).
- *  - 'dev'   : spoljni servisi su opcioni (vidi docs/DECISIONS.md D-014).
- *  - 'build' : `next build` ne validira ništa; validacija se radi pri startu servera.
+ *  - 'prod'    : sve obavezno (produkcija i pregledi na hostingu).
+ *  - 'preview' : produkcija sa SOVA_PREVIEW=true; spoljni servisi su opcioni kao u dev-u, pa sajt radi
+ *                dok ključevi ne stignu, a funkcije bez ključa čekaju (D-101).
+ *  - 'dev'     : spoljni servisi su opcioni (vidi docs/DECISIONS.md D-014).
+ *  - 'build'   : `next build` ne validira ništa; validacija se radi pri startu servera.
  */
-export type EnvMode = 'prod' | 'dev' | 'build'
+export type EnvMode = 'prod' | 'preview' | 'dev' | 'build'
 
 const secret32 = z.string().min(32, 'mora imati najmanje 32 karaktera')
 
@@ -128,12 +130,14 @@ export type RawEnv = Record<string, string | undefined>
 
 export function detectEnvMode(raw: RawEnv = process.env): EnvMode {
   if (raw.NEXT_PHASE === 'phase-production-build') return 'build'
-  if (raw.NODE_ENV === 'production') return 'prod'
+  if (raw.NODE_ENV === 'production') return raw.SOVA_PREVIEW === 'true' ? 'preview' : 'prod'
   return 'dev'
 }
 
 export function parseServerEnv(raw: RawEnv, mode: EnvMode): ServerEnv {
-  const result = buildServerEnvSchema(mode).safeParse(raw)
+  // prazna vrednost (npr. `KLJUC=` uvezen iz .env fajla) znači da promenljiva nije podešena
+  const set = Object.fromEntries(Object.entries(raw).filter(([, value]) => value !== ''))
+  const result = buildServerEnvSchema(mode).safeParse(set)
   if (result.success) return result.data
   const flat = z.flattenError(result.error)
   const lines = Object.entries(flat.fieldErrors).map(

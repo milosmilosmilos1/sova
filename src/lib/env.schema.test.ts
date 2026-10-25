@@ -42,6 +42,24 @@ describe('env schema', () => {
   it('detektuje režim', () => {
     expect(detectEnvMode({ NEXT_PHASE: 'phase-production-build', NODE_ENV: 'production' })).toBe('build')
     expect(detectEnvMode({ NODE_ENV: 'production' })).toBe('prod')
+    expect(detectEnvMode({ NODE_ENV: 'production', SOVA_PREVIEW: 'true' })).toBe('preview')
+    expect(detectEnvMode({ NODE_ENV: 'production', SOVA_PREVIEW: '1' })).toBe('prod')
+    expect(detectEnvMode({ NODE_ENV: 'development', SOVA_PREVIEW: 'true' })).toBe('dev')
     expect(detectEnvMode({ NODE_ENV: 'development' })).toBe('dev')
+  })
+
+  it('u režimu pregleda (D-101) servisi su opcioni, ali osnovne tajne nisu', () => {
+    const env = parseServerEnv({ ...base, NODE_ENV: 'production' }, 'preview')
+    expect(env.UPSTASH_REDIS_REST_URL).toBeUndefined()
+    expect(env.GEMINI_API_KEY).toBeUndefined()
+    expect(() => parseServerEnv({ ...base, SUPABASE_SERVICE_ROLE_KEY: undefined }, 'preview')).toThrow(
+      /SUPABASE_SERVICE_ROLE_KEY/,
+    )
+  })
+
+  it('prazna vrednost znači da promenljiva nije podešena', () => {
+    const env = parseServerEnv({ ...base, NODE_ENV: 'production', GEMINI_API_KEY: '' }, 'preview')
+    expect(env.GEMINI_API_KEY).toBeUndefined()
+    expect(() => parseServerEnv({ ...base, CRON_SECRET: '' }, 'dev')).toThrow(/CRON_SECRET/)
   })
 })

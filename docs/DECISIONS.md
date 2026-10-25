@@ -675,3 +675,14 @@ Odluka:
 - **Otpremanje koda** ide iz čiste kopije repoa (`git worktree`), da `.env.local` ne ode na Netlify.
 
 Razlog: vlasnik želi aplikaciju na internetu odmah i bez troška hostinga; nalozi servisa su njegovi i ključeve unosi sam.
+
+## D-101 · 25.10.2026 · usvojeno · Režim pregleda: produkcija radi dok ključevi servisa ne stignu
+
+Odluka:
+
+- **`SOVA_PREVIEW=true`** (samo uz `NODE_ENV=production`) daje env režim `preview`. Ključevi spoljnih servisa (Gemini, Unsplash, Canva, Inngest, Upstash, Resend, Turnstile) su tada opcioni kao u DEV-u (D-014). Osnovne tajne i Supabase ostaju obavezne: `NEXT_PUBLIC_APP_URL`, Supabase URL i ključevi, `TOKEN_ENCRYPTION_KEY`, `CRON_SECRET`, `IMPERSONATION_SECRET`.
+- **Ponašanje bez ključa u pregledu**: CAPTCHA se preskače uz upozorenje u logu, rate limit radi u memoriji instance, emailovi se umesto slanja beleže u log sa linkovima, AI i pozadinski poslovi vraćaju poruku da nisu podešeni. Prijavljen korisnik vidi napomenu šta se još uključuje.
+- **Prazna vrednost** (`KLJUC=` iz uvezenog .env fajla) znači da promenljiva nije podešena, u svim režimima.
+- **Prava produkcija** ostaje stroga: bez `SOVA_PREVIEW` server ne startuje dok ne dobije sve ključeve. Režim se gasi brisanjem te promenljive kad svi ključevi budu uneti.
+
+Razlog: vlasnik želi da sajt i aplikacija rade odmah na sovaai.netlify.app, a naloge servisa otvara postepeno. Pregled je izričito uključen jednom promenljivom, pa ne može slučajno da ostane na pravom domenu.

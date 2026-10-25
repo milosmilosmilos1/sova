@@ -3,7 +3,7 @@ import 'server-only'
 import { Ratelimit } from '@upstash/ratelimit'
 import { Redis } from '@upstash/redis'
 
-import { configured, env, isProd } from '@/lib/env'
+import { configured, env, isPreview, isProd } from '@/lib/env'
 import { logger } from '@/lib/logger'
 
 export interface RateLimitOptions {
@@ -21,15 +21,17 @@ export interface RateLimitResult {
 
 let redisSingleton: Redis | null | undefined
 
-/** Upstash Redis ili null kad nije podešen (dozvoljeno samo u DEV, D-014). */
+/** Upstash Redis ili null kad nije podešen (dozvoljeno u DEV i u režimu pregleda, D-014, D-101). */
 export function getRedis(): Redis | null {
   if (redisSingleton !== undefined) return redisSingleton
   if (configured.upstash) {
     redisSingleton = new Redis({ url: env.UPSTASH_REDIS_REST_URL!, token: env.UPSTASH_REDIS_REST_TOKEN! })
   } else {
-    if (isProd) throw new Error('UPSTASH_REDIS_REST_URL i UPSTASH_REDIS_REST_TOKEN su obavezni u produkciji.')
+    if (isProd && !isPreview) {
+      throw new Error('UPSTASH_REDIS_REST_URL i UPSTASH_REDIS_REST_TOKEN su obavezni u produkciji.')
+    }
     logger.warn('upstash_missing_using_memory', {
-      hint: 'rate limit i lockovi rade u memoriji procesa (samo DEV)',
+      hint: 'rate limit i lockovi rade u memoriji procesa (DEV ili pregled bez Upstash-a)',
     })
     redisSingleton = null
   }
