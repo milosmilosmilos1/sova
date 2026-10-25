@@ -87,7 +87,7 @@ Vaš email je u admin listi iz seed-a; posle registracije na produkciji imate ad
 
 Stripe webhook šalje ove događaje: `checkout.session.completed`, `checkout.session.async_payment_succeeded`, `customer.subscription.created`, `customer.subscription.updated`, `customer.subscription.deleted`, `customer.subscription.paused`, `customer.subscription.resumed`, `invoice.paid`, `invoice.payment_failed`, `charge.refunded`, `charge.dispute.created`, `charge.dispute.closed`. Tajna potpisa ide u `STRIPE_WEBHOOK_SECRET`.
 
-Cene u Stripe-u se prave u evrima: proizvod „Sova” sa cenom 47 € mesečno i 247 € godišnje, a njihovi ID-jevi idu u `STRIPE_PRICE_MONTHLY` i `STRIPE_PRICE_YEARLY`. Dopune se u Stripe-u ne prave; aplikacija ih šalje sa iznosom i valutom iz tabele `plans` (D-099).
+Cene u Stripe-u se prave u evrima: proizvod „Sova” sa cenom 47 € mesečno i 277 € godišnje, a njihovi ID-jevi idu u `STRIPE_PRICE_MONTHLY` i `STRIPE_PRICE_YEARLY`. Dopune se u Stripe-u ne prave; aplikacija ih šalje sa iznosom i valutom iz tabele `plans` (D-099).
 
 Za staging se iste putanje upisuju sa adresom staging-a, u test aplikacijama mreža.
 

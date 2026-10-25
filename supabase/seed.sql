@@ -10,7 +10,7 @@ on conflict (email) do nothing;
 update public.profiles p set platform_role = 'platform_admin'
 from public.platform_admin_allowlist a where p.email = a.email and p.platform_role <> 'platform_admin';
 
--- Cene u evrima (D-099): mesečni 47 €, godišnji 247 €, dopune 12/30/85 €. Mesečni i godišnji: 5 brendova
+-- Cene u evrima (D-099): mesečni 47 €, godišnji 277 €, dopune 12/30/85 €. Mesečni i godišnji: 5 brendova
 -- (često je isti brend na srpskom i engleskom), 10 mreža, 2 člana. Sve cene su u istoj valuti jer Stripe
 -- kupcu ne dozvoljava pretplatu u jednoj, a dopunu u drugoj valuti.
 insert into public.plans (code, kind, name, interval, price_cents, currency, tokens_per_period, token_period, limits, sort_order) values
@@ -18,7 +18,7 @@ insert into public.plans (code, kind, name, interval, price_cents, currency, tok
    '{"brands": 1, "social_accounts": 2, "members": 1, "crawl_pages": 30}', 0),
   ('monthly', 'subscription', 'Mesečni', 'month', 4700, 'EUR', 500, 'month',
    '{"brands": 5, "social_accounts": 10, "members": 2, "crawl_pages": 60}', 1),
-  ('yearly', 'subscription', 'Godišnji', 'year', 24700, 'EUR', 500, 'month',
+  ('yearly', 'subscription', 'Godišnji', 'year', 27700, 'EUR', 500, 'month',
    '{"brands": 5, "social_accounts": 10, "members": 2, "crawl_pages": 60}', 2),
   ('topup_100', 'topup', '100 tokena', null, 1200, 'EUR', 100, 'once', '{}', 10),
   ('topup_300', 'topup', '300 tokena', null, 3000, 'EUR', 300, 'once', '{}', 11),
