@@ -1203,7 +1203,12 @@ function EditorForm({
                 Napravi link
               </Button>
               {linkUrlCreated ? (
-                <Input readOnly value={linkUrlCreated} onFocus={(e) => e.currentTarget.select()} />
+                <Input
+                  readOnly
+                  value={linkUrlCreated}
+                  aria-label="Link za klijenta"
+                  onFocus={(e) => e.currentTarget.select()}
+                />
               ) : null}
               <ErrorBox error={makeLink.error} />
             </CardContent>

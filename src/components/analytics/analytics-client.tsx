@@ -197,7 +197,7 @@ function StatTile({
         <CardTitle className="text-3xl tabular-nums">{value}</CardTitle>
       </CardHeader>
       <CardContent className="text-xs text-muted-foreground">
-        <span className={delta === null ? '' : delta >= 0 ? 'text-emerald-700' : 'text-rose-700'}>
+        <span className={delta === null ? '' : delta >= 0 ? 'text-success' : 'text-destructive'}>
           {fmtDelta(delta)}
         </span>
         {hint ? <div>{hint}</div> : null}
@@ -438,7 +438,7 @@ export function AnalyticsClient({
                         <td className="py-1 pr-2 text-right tabular-nums">{fmtN(f.first)}</td>
                         <td className="py-1 pr-2 text-right tabular-nums">{fmtN(f.last)}</td>
                         <td
-                          className={`py-1 text-right tabular-nums ${f.delta !== null && f.delta < 0 ? 'text-rose-700' : f.delta ? 'text-emerald-700' : ''}`}
+                          className={`py-1 text-right tabular-nums ${f.delta !== null && f.delta < 0 ? 'text-destructive' : f.delta ? 'text-success' : ''}`}
                         >
                           {f.delta === null ? '—' : `${f.delta > 0 ? '+' : ''}${fmtN(f.delta)}`}
                         </td>

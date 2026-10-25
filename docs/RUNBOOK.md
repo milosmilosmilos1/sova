@@ -41,6 +41,7 @@ Zamke:
 
 - Stari Supabase kontejneri drugog projekta na istim portovima: `docker ps -a | grep supabase`, pa `docker rm -f` i `docker volume rm` pre `db:start`.
 - Dva `supabase start` istovremeno se sudaraju oko imena kontejnera; pokreni samo jedan.
+- Posle izmene `next.config.ts` dev server se sam restartuje, ali pregledači zatim dobijaju „HMR hash mismatch” i stranu učitavaju u krug. Rešenje je ceo restart: ugasiti proces koji sluša port 3001 (na Windows-u zaustavljanje `npm run dev` ne gasi Next proces) pa ponovo `npm run dev`.
 - Na Windows-u radni proces Vitest-a ponekad padne pri pokretanju fajla sa kodom 3221226505 (0xC0000409, pad nativnog modula), bez ijedne pale provere: izveštaj tada kaže npr. "20 passed (21)" i "Errors 1". Ponoviti samo taj fajl (`npx vitest run -c vitest.integration.config.mts tests/integration/<fajl>`). CI na Linux-u nije pogođen.
 - Windows Application Control (od 24.10.2026) blokira `node_modules/@supabase/cli-windows-x64/bin/supabase.exe`: `npx supabase …` pada sa `spawn UNKNOWN`, a `npm run db:types` pritom isprazni `src/types/database.ts` (vratiti sa `git checkout`). Privremeno: migraciju primeniti kroz `docker exec -i supabase_db_sova psql -U postgres -d postgres -v ON_ERROR_STOP=1` i upisati red u `supabase_migrations.schema_migrations`, a tipove dopuniti u formatu CLI-ja. Trajno: dozvoliti fajl u Windows bezbednosti (App Control / Smart App Control). CI na Linux-u nije pogođen.
 - Port 3000 drži drugi projekat; Sova je na 3001 (D-011).
@@ -54,7 +55,7 @@ npm run lint && npm run typecheck
 npm run test            # Vitest unit (219)
 npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (30); pravi i briše test korisnike
 npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (204)
-npm run test:e2e        # Playwright kroz Mailpit (6); traži pokrenut dev server; posle brisanja .next prvi run traje oko 2 min
+npm run test:e2e        # Playwright (13, od toga 3 axe provere pristupačnosti); traži dev server, Inngest dev (`npm run inngest:dev`, zakazivanje) i Mailpit; prvi run posle brisanja .next traje oko 2 min
 npm run test:live       # pravi Gemini i pravi sajt nad lokalnim Supabase-om (oko 0,2 USD); samo ručno, nikad u CI-ju
 npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs 25   # živi crawler bez baze i AI-ja
 npx tsx --env-file=.env.local --conditions=react-server scripts/ai-smoke.ts [--image putanja.jpg]   # pravi Gemini: tekst, embedding, slika (par centi)

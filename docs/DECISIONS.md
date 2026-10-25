@@ -606,3 +606,14 @@ Odluka:
 - **Samo pravi domen**: indeksira se samo kad je `NEXT_PUBLIC_APP_URL` na `sovaai.rs` (ili `www.`). Pregledi na Vercel-u, staging i localhost dobijaju `Disallow: /`, praznu mapu i `noindex` na svim stranama, da kopija ne uđe u pretragu pre pravog sajta ili umesto njega.
 
 Razlog: brif traži landing koji se nalazi u pretrazi i lepo izgleda kad se podeli; iskustvo sa ranijim sajtovima je da staging bez zabrane završi u indeksu.
+
+## D-096 · 25.10.2026 · usvojeno · Testiranje: E2E glavnih tokova, pristupačnost kroz axe, E2E u CI-ju
+
+Odluka:
+
+- **E2E glavnih tokova** (`tests/e2e`): korisnik i radni prostor se prave kroz service role (`fixtures.ts`, odbija Supabase van localhost-a), sa lažnim Facebook i Instagram nalozima za asistirano objavljivanje. Pokriveno: nacrt → zakazivanje → kalendar; javni link → klijent bez naloga odobrava; slika 9:16 → upozorenje → isečak 4:5; mesečni PDF iz Analitike. Registracija sa potvrdom emaila ostaje u svom spec-u (Mailpit).
+- **Pristupačnost**: `@axe-core/playwright` 4.13.0 (zakucan, stariji od dve nedelje), pravila WCAG 2.1 A i AA. Test pada na ozbiljne i kritične nalaze na javnim stranama, na 15 strana aplikacije u svetloj i tamnoj temi i na strani za odobravanje. Prvi prolaz je našao i ispravljeno je: crveni tekst na svetlocrvenoj pozadini (`--destructive` tamnija, 5,1:1), zeleni tekst (`--success` tamnija, `text-success` umesto `text-emerald-700`), boje statusa u kalendaru, dani van meseca (prozirnost), polja bez labele na strani za odobravanje, dugmad meseca bez imena. Jednokratni prolaz nad demo nalogom sa podacima: nula nalaza u obe teme.
+- **E2E u CI-ju**: posao `e2e` diže lokalni Supabase (sa Mailpit-om), dev server i Inngest dev server (`inngest-cli` zakucan na 1.46.0; zakazivanje ide kroz Inngest), pa pušta ceo Playwright skup. Dev server, ne produkcijski build: build bi tražio produkcijske tajne (Resend, Upstash). Na grešci se čuvaju `test-results`, `dev.log` i `inngest.log`.
+- **npm audit** (9 postojećih nalaza, nijedan od novih paketa): `zod` 3.x unutar `inngest` 4.26.0 (najnovija verzija, popravke nema; `/api/inngest` u produkciji prima samo potpisane zahteve), `fflate` kroz `satori` (fontovi su naši ili sa Google Fonts), `file-type` kroz `jimp`/`node-vibrant` (ulaz je uvek PNG koji je sharp ponovo kodirao iz proverenog tipa slike). Prihvaćen rizik; ažurirati kad paketi izdaju popravke.
+
+Razlog: brif traži testove glavnih tokova pre deploya; pristupačnost je deo kvaliteta, a bez automatske provere kontrast i labele se kvare neprimetno.

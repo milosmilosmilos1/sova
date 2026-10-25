@@ -72,7 +72,8 @@
   --muted-foreground: oklch(0.5 0.025 260);
   --accent: oklch(0.95 0.025 258);
   --accent-foreground: oklch(0.38 0.14 262);
-  --destructive: oklch(0.577 0.245 27.325);
+  /* tamnije od podrazumevane: crveni tekst na 10 % crvene pozadini mora imati bar 4,5:1 (axe, faza 15) */
+  --destructive: oklch(0.52 0.21 27);
   --border: oklch(0.915 0.01 255);
   --input: oklch(0.9 0.012 255);
   --ring: oklch(0.6 0.18 258);
@@ -94,7 +95,7 @@
   --brand-2: oklch(0.74 0.14 232);
   --glow: oklch(0.6 0.2 262 / 0.18);
   --grid-line: oklch(0.55 0.15 262 / 0.08);
-  --success: oklch(0.55 0.14 155);
+  --success: oklch(0.5 0.13 155); /* 5,4:1 na pozadini strane (axe, faza 15) */
   --warning: oklch(0.7 0.15 75);
 }
 

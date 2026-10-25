@@ -106,7 +106,12 @@ export function PublicApprovalClient({ token }: { token: string }) {
           {new Date(v.expiresAt).toLocaleString('sr-Latn-RS')}. Vaše odluke stižu timu odmah.
         </p>
         <div className="mt-3 max-w-xs">
-          <Input value={name} onChange={(e) => setName(e.target.value)} placeholder="Vaše ime (opciono)" />
+          <Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="Vaše ime (opciono)"
+            aria-label="Vaše ime (opciono)"
+          />
         </div>
       </div>
       {v.posts.map((p) => (
@@ -171,6 +176,7 @@ export function PublicApprovalClient({ token }: { token: string }) {
               onChange={(e) => setComments((c) => ({ ...c, [p.id]: e.target.value }))}
               rows={2}
               placeholder="Komentar (obavezan za odbijanje ili izmene)"
+              aria-label="Komentar za tim"
             />
             <div className="flex flex-wrap gap-2">
               {p.status === 'in_review' ? (

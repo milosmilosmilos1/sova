@@ -79,7 +79,7 @@ export function TransferOwnershipForm({
       {message ? (
         <p
           role={message.ok ? 'status' : 'alert'}
-          className={message.ok ? 'text-emerald-700' : 'text-destructive'}
+          className={message.ok ? 'text-success' : 'text-destructive'}
         >
           {message.text}
         </p>

@@ -130,7 +130,7 @@ export default async function AdminUserPage({ params }: PageProps<'/admin/users/
                       </td>
                       <td className="py-1 pr-2">{l.reason}</td>
                       <td
-                        className={`py-1 pr-2 text-right tabular-nums ${l.delta < 0 ? 'text-destructive' : 'text-emerald-700'}`}
+                        className={`py-1 pr-2 text-right tabular-nums ${l.delta < 0 ? 'text-destructive' : 'text-success'}`}
                       >
                         {l.delta > 0 ? '+' : ''}
                         {l.delta}

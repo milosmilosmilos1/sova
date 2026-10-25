@@ -26,7 +26,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 | 12 Plaćanje                             | gotovo      | Stripe Checkout, Portal, webhook i tokeni kroz mock (D-090); čeka: Stripe nalog, cene, webhook endpoint, Portal i poreski model                                                                                          |
 | 13a–13b Admin                           | gotovo      | pregled, korisnici i radnje, monitor objava, AI troškovi i marža, platforma (flagovi, cene, modeli, održavanje), audit sa CSV-om, impersonacija (D-070, D-075)                                                           |
 | 14a–14c Dizajn                          | gotovo      | plava tema i tamne javne strane, nov landing, okvir aplikacije i početna (D-091), grafikoni (D-092), stub i kampanja u editoru, sečenje i zamena medija (D-093), mesečni PDF izveštaj (D-094), SEO javnih strana (D-095) |
-| 15 Testiranje                           | nije počelo | Playwright + Chromium instalirani; `npm run test:e2e` (6 testova) prolazi                                                                                                                                                |
+| 15 Testiranje                           | gotovo      | E2E glavnih tokova (13), pristupačnost kroz axe u svetloj i tamnoj temi, E2E posao u CI-ju sa Supabase-om, Mailpit-om i Inngest dev serverom (D-096)                                                                     |
 | 16 Deploy                               | nije počelo | treba: Vercel, Supabase staging/prod, domen sovaai.rs, Upstash, Inngest, Sentry                                                                                                                                          |
 
 ## Faza 4 — šta je urađeno
@@ -97,6 +97,14 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Provereno 24.10.2026 u Chromium-u: početna, Inbox, Objave, detalj objave, Kalendar, Strategija, Analitika, Autopilot, Obaveštenja, Mreže i Podešavanja rade bez grešaka u konzoli i API odgovorima. Usput ispravljeno: legenda kalendara je prikazivala interne nazive statusa, horizonti snimaka u analitici nisu bili poređani, editor nije prikazivao zašto je Autopilot vratio nacrt (sada prikazuje, a izveštaj se briše čim se tekst promeni).
 - Provereno 24.10.2026 u Chromium-u (faza 11b): nacrt editora (čuvanje, traka posle osvežavanja, vraćanje, brisanje posle čuvanja), termin se vraća isti posle čuvanja, forma zone brenda sa ponudom zadržavanja lokalnog vremena; bez grešaka u konzoli.
 - Provereno 24.10.2026 u Chromium-u (faza 13): svih sedam admin strana, „Gledaj kao” za demo nalog (traka, izmena u read-only režimu dobija 403 sa objašnjenjem, „Izađi” vraća na detalj korisnika), `/admin/users` na 390 px bez horizontalnog skrola. Usput ispravljeno: stara provera u `requireMembership` je tokom read-only pregleda rušila svaku stranu aplikacije.
+
+## Faza 15 — šta je urađeno
+
+- **E2E glavnih tokova** (D-096): nacrt → zakazivanje → kalendar, javni link → klijent odobrava bez naloga, sečenje slike 9:16 → 4:5, mesečni PDF iz Analitike. Korisnik i radni prostor se prave kroz service role, samo nad lokalnim Supabase-om.
+- **Pristupačnost**: axe (WCAG 2.1 A i AA) na javnim stranama, 15 strana aplikacije u obe teme i strani za odobravanje; test pada na ozbiljne i kritične nalaze. Ispravljeno sve što je prvi prolaz našao (kontrast crvene, zelene i statusa u kalendaru, dani van meseca, labele, imena dugmadi). Demo nalog sa podacima: nula nalaza.
+- **CI**: nov posao `e2e` (lokalni Supabase sa Mailpit-om, dev server, Inngest dev 1.46.0); na grešci čuva rezultate i logove.
+- **npm audit**: 9 postojećih nalaza procenjeno, nijedan nije dostupan nepoverenim ulazom (D-096).
+- **Testovi**: E2E 13 (bilo 6), od toga 3 provere pristupačnosti.
 
 ## Faza 14, deo 4 — šta je urađeno
 

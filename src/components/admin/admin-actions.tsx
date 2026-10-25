@@ -47,10 +47,7 @@ function useAction() {
 function Msg({ m }: { m: { ok: boolean; text: string } | null }) {
   if (!m) return null
   return (
-    <p
-      role={m.ok ? 'status' : 'alert'}
-      className={`text-sm ${m.ok ? 'text-emerald-700' : 'text-destructive'}`}
-    >
+    <p role={m.ok ? 'status' : 'alert'} className={`text-sm ${m.ok ? 'text-success' : 'text-destructive'}`}>
       {m.text}
     </p>
   )

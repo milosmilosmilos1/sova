@@ -237,7 +237,7 @@ export function BrandTimezoneForm({
       {message ? (
         <span
           role={message.ok ? 'status' : 'alert'}
-          className={message.ok ? 'text-emerald-700' : 'text-destructive'}
+          className={message.ok ? 'text-success' : 'text-destructive'}
         >
           {message.text}
         </span>

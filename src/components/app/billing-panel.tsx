@@ -283,7 +283,7 @@ export function BillingPanel({
                     <tr key={e.id} className="border-t">
                       <td className="py-1">{date(e.createdAt)}</td>
                       <td className="py-1">{ledgerLabel(e)}</td>
-                      <td className={`py-1 text-right ${e.delta > 0 ? 'text-emerald-700' : ''}`}>
+                      <td className={`py-1 text-right ${e.delta > 0 ? 'text-success' : ''}`}>
                         {e.delta > 0 ? `+${e.delta}` : e.delta}
                       </td>
                       <td className="py-1 text-right">{e.balanceAfter}</td>

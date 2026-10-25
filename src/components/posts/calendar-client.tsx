@@ -44,16 +44,17 @@ function dayKey(iso: string, timeZone: string): string {
   }).format(new Date(iso))
 }
 
+// tekst na svakoj boji ima bar 4,5:1 (axe, faza 15)
 const STATUS_COLOR: Record<string, string> = {
   draft: 'bg-muted text-foreground',
   in_review: 'bg-amber-100 text-amber-900',
   approved: 'bg-sky-100 text-sky-900',
   scheduled: 'bg-emerald-100 text-emerald-900',
   paused: 'bg-zinc-200 text-zinc-800',
-  published: 'bg-emerald-600 text-white',
-  partially_published: 'bg-amber-500 text-white',
+  published: 'bg-emerald-700 text-white',
+  partially_published: 'bg-orange-200 text-orange-950',
   failed: 'bg-red-100 text-red-900',
-  canceled: 'bg-zinc-100 text-zinc-500 line-through',
+  canceled: 'bg-zinc-100 text-zinc-600 line-through',
 }
 
 export function CalendarClient({
@@ -101,6 +102,7 @@ export function CalendarClient({
           <Button
             size="sm"
             variant="outline"
+            aria-label="Prethodni mesec"
             onClick={() =>
               setCursor((c) =>
                 c.month === 0 ? { year: c.year - 1, month: 11 } : { year: c.year, month: c.month - 1 },
@@ -113,6 +115,7 @@ export function CalendarClient({
           <Button
             size="sm"
             variant="outline"
+            aria-label="Sledeći mesec"
             onClick={() =>
               setCursor((c) =>
                 c.month === 11 ? { year: c.year + 1, month: 0 } : { year: c.year, month: c.month + 1 },
@@ -151,7 +154,7 @@ export function CalendarClient({
           return (
             <div
               key={key}
-              className={`min-h-24 bg-background p-1 ${inMonth ? '' : 'opacity-50'} ${key === todayKey ? 'ring-2 ring-primary ring-inset' : ''}`}
+              className={`min-h-24 p-1 ${inMonth ? 'bg-background' : 'bg-muted/40'} ${key === todayKey ? 'ring-2 ring-primary ring-inset' : ''}`}
             >
               <div className="mb-1 text-right text-muted-foreground">{d.getUTCDate()}</div>
               <div className="space-y-1">

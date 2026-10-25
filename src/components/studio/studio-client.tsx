@@ -344,7 +344,7 @@ function TextPanel({ brandId, onDone }: { brandId: string; onDone: () => void })
                     <div className="flex items-center justify-between">
                       <strong>{PLATFORMS[v.platform as keyof typeof PLATFORMS]?.label ?? v.platform}</strong>
                       {val ? (
-                        <span className={val.ok ? 'text-xs text-emerald-700' : 'text-xs text-destructive'}>
+                        <span className={val.ok ? 'text-xs text-success' : 'text-xs text-destructive'}>
                           {val.length}/{val.max}
                         </span>
                       ) : null}
