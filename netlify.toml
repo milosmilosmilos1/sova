@@ -13,3 +13,8 @@
 # Satori šabloni i mesečni PDF čitaju Inter fontove sa diska (D-094)
 [functions]
   included_files = ["src/lib/visuals/fonts/**"]
+
+# Next.js runtime (SSR, rute, proxy). Za sajt napravljen kroz API Netlify ga nije dodao sam,
+# pa je bez ove linije objavljen sirov .next folder (sve rute 404). Verzija se ne zakucava.
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
