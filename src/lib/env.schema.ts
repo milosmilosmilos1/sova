@@ -140,6 +140,6 @@ export function parseServerEnv(raw: RawEnv, mode: EnvMode): ServerEnv {
     ([name, errors]) => `  - ${name}: ${(errors ?? []).join(', ')}`,
   )
   throw new Error(
-    `Env varijable nisu ispravne (režim: ${mode}). Proveri .env.local ili Vercel podešavanja:\n${lines.join('\n')}`,
+    `Env varijable nisu ispravne (režim: ${mode}). Proveri .env.local ili promenljive na hostingu (Netlify, Vercel):\n${lines.join('\n')}`,
   )
 }
