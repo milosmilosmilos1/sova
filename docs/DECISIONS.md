@@ -644,6 +644,6 @@ Odluka:
 - **Registracija prati flag `registration_open`**: kad je zatvorena, landing ima tekst iz dizajna („U izradi · Registracija stiže uskoro”) i dugmad vode na demo i cene; kad je otvorena, vode na `/register`.
 - **Demo u hero sekciji**: šest koraka, sam prelazi na 4,5 s, staje na hover i fokus. Adresa iz forme se samo očisti i prikaže u demou; ne šalje se serveru.
 - **Pristupačnost**: interaktivni delovi su dugmad sa `aria-pressed`, `role="switch"` ili `aria-expanded`; zatvoreni odgovori u pitanjima ostaju u HTML-u (`hidden`); linkovi u tekstu su podvučeni. Axe test javnih strana radi sa `reducedMotion: 'reduce'`, inače meri panel demoa usred prelaza.
-- **Zaglavlje i podnožje** važe za sve javne strane (prijava, registracija, pravne strane). Srednja navigacija se krije ispod 768 px. Nova strana `/kontakt` (podrška i privatnost) je u mapi sajta, a link Kontakt više nije `mailto:`.
+- **Zaglavlje i podnožje** važe za sve javne strane (prijava, registracija, pravne strane). Ispod 768 px srednju navigaciju menja meni u zaglavlju (sekcije, a na najužim ekranima i Prijava). Nova strana `/kontakt` (podrška i privatnost) je u mapi sajta, a link Kontakt više nije `mailto:`.
 
 Razlog: vlasnik je dobio lepši dizajn landinga iz Claude Design-a i traži da se primeni. Brojevi iz baze i ispravljene tvrdnje drže tekst tačnim kad se cene ili pravila promene.

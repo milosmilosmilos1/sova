@@ -3,6 +3,7 @@ import { JetBrains_Mono, Onest } from 'next/font/google'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
 
+import { MobileNav } from '@/components/landing/mobile-nav'
 import { OwlMark } from '@/components/landing/owl-mark'
 import { company } from '@/config/company'
 import { isFeatureEnabled } from '@/lib/flags'
@@ -70,9 +71,10 @@ export default async function PublicLayout({ children }: LayoutProps<'/'>) {
             ))}
           </nav>
           <div className="flex items-center gap-1.5">
+            {/* na telefonu je Prijava u meniju, da zaglavlje ostane u jednom redu */}
             <Link
               href="/login"
-              className="rounded-[9px] px-3.5 py-2 text-sm text-l-text-2 transition-[color,background-color] duration-200 hover:bg-l-line/8 hover:text-white"
+              className="hidden rounded-[9px] px-3.5 py-2 text-sm text-l-text-2 transition-[color,background-color] duration-200 hover:bg-l-line/8 hover:text-white sm:block"
             >
               {t('login')}
             </Link>
@@ -82,6 +84,7 @@ export default async function PublicLayout({ children }: LayoutProps<'/'>) {
             >
               {t('register')}
             </Link>
+            <MobileNav links={sections} login={t('login')} />
           </div>
         </div>
       </header>

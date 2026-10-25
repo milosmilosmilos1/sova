@@ -103,7 +103,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 
 - **Sekcije kao u dizajnu** (`src/components/landing/`): hero sa demoom u šest koraka, Mreže (pregled iste objave za osam mreža sa dužinom teksta), Funkcije (šest kartica sa malim interaktivnim primerima), Kako radi, Cene sa kalkulatorom tokena, Česta pitanja, završni poziv. Forma sa adresom sajta (gore i dole) menja domen u demou.
 - **Podaci iz baze**: planovi, dopune i troškovi tokena; preporuka plana i najjeftinija dopuna u `pricing-math.ts` (5 unit testova). Tekst o tokenima pominje izuzetak za objave na X.
-- **Javni layout**: Onest i JetBrains Mono, lepljivo zaglavlje sa sovom čije oči prate miš, podnožje sa pravnim linkovima i stranom `/kontakt`. Isti okvir imaju prijava, registracija i pravne strane; linkovi u pravnim tekstovima su sada podvučeni.
+- **Javni layout**: Onest i JetBrains Mono, lepljivo zaglavlje sa sovom čije oči prate miš i menijem za telefon, podnožje sa pravnim linkovima i stranom `/kontakt`. Isti okvir imaju prijava, registracija i pravne strane; linkovi u pravnim tekstovima su sada podvučeni.
 - **Registracija**: dugmad i pilula iznad naslova prate flag `registration_open` (lokalno uključen, pa se vidi „Otvoreno”).
 - **Provereno**: snimci na 1440 i 390 px bez horizontalnog skrola, sve interakcije (forma, kalkulator, pitanja, navigacija), axe bez nalaza i posle klikova, LCP je naslov (ne slika), produkcijski build prolazi. Usput ispravljeno: obaveštenje u demou je na telefonu prekrivalo poslednji red panela, kartica Brand Brain se na telefonu sekla pri dnu.
 - **Testovi**: unit 226 (bilo 219), E2E 13; provera pristupačnosti sada obuhvata i `/data-deletion` i `/kontakt`.
