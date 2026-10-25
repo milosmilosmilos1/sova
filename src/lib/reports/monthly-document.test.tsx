@@ -69,26 +69,38 @@ const SAMPLE: MonthlyReportData = {
   empty: false,
 }
 
-describe('mesečni PDF izveštaj (D-094)', () => {
-  it('pravi PDF sa srpskim slovima, grafikonom i tabelama', async () => {
-    const buf = await renderMonthlyReport(SAMPLE)
-    expect(buf.subarray(0, 5).toString()).toBe('%PDF-')
-    expect(buf.length).toBeGreaterThan(10_000)
-    // za pregled: REPORT_PDF_OUT=putanja npx vitest run src/lib/reports
-    if (process.env.REPORT_PDF_OUT) writeFileSync(process.env.REPORT_PDF_OUT, buf)
-  })
+// Prvo renderovanje učitava fontove i traje nekoliko sekundi; pod punim paralelnim pokretanjem
+// prelazilo je podrazumevanih 5 s.
+const RENDER_TIMEOUT = 20_000
 
-  it('prazan mesec bez objava ne pada', async () => {
-    const buf = await renderMonthlyReport({
-      ...SAMPLE,
-      daily: SAMPLE.daily.map((d) => ({ ...d, value: 0 })),
-      platforms: [],
-      pillars: [],
-      topPosts: [],
-      insights: [],
-      notes: [],
-      empty: true,
-    })
-    expect(buf.subarray(0, 5).toString()).toBe('%PDF-')
-  })
+describe('mesečni PDF izveštaj (D-094)', () => {
+  it(
+    'pravi PDF sa srpskim slovima, grafikonom i tabelama',
+    async () => {
+      const buf = await renderMonthlyReport(SAMPLE)
+      expect(buf.subarray(0, 5).toString()).toBe('%PDF-')
+      expect(buf.length).toBeGreaterThan(10_000)
+      // za pregled: REPORT_PDF_OUT=putanja npx vitest run src/lib/reports
+      if (process.env.REPORT_PDF_OUT) writeFileSync(process.env.REPORT_PDF_OUT, buf)
+    },
+    RENDER_TIMEOUT,
+  )
+
+  it(
+    'prazan mesec bez objava ne pada',
+    async () => {
+      const buf = await renderMonthlyReport({
+        ...SAMPLE,
+        daily: SAMPLE.daily.map((d) => ({ ...d, value: 0 })),
+        platforms: [],
+        pillars: [],
+        topPosts: [],
+        insights: [],
+        notes: [],
+        empty: true,
+      })
+      expect(buf.subarray(0, 5).toString()).toBe('%PDF-')
+    },
+    RENDER_TIMEOUT,
+  )
 })
