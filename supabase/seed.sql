@@ -1,5 +1,6 @@
 -- Seed: planovi, podešavanja, feature flagovi, praznici, admin allowlist.
--- Pokreće se pri `supabase db reset` i pri prvom deploy-u. Idempotentno (on conflict).
+-- Pokreće se pri `supabase db reset` i pri prvom deploy-u (workflow Migracije, include_seed). Idempotentno:
+-- postojeće vrednosti koje admin menja (podešavanja, flagovi) se ne diraju, katalog planova se usklađuje.
 
 insert into public.platform_admin_allowlist (email, note) values
   ('milos.milosevic.seo@gmail.com', 'vlasnik platforme')
@@ -58,7 +59,9 @@ insert into public.platform_settings (key, value, description, is_public) values
   ('maintenance', '{"enabled": false, "message": ""}', 'Banner za održavanje', true),
   ('autopilot', '{"budget_warning_percent": 80, "weekly_cron_hour_local": 6, "monthly_proposal_day": 25}',
    'Podešavanja Autopilota', false)
-on conflict (key) do update set value = excluded.value, description = excluded.description, is_public = excluded.is_public;
+-- do nothing: admin menja ove vrednosti u aplikaciji; ponovljen seed (nov hash fajla pri db push --include-seed)
+-- ne sme da ih vrati na početne (D-097)
+on conflict (key) do nothing;
 
 insert into public.feature_flags (key, enabled, description) values
   ('platform.facebook', false, 'Objavljivanje na Facebook stranice'),

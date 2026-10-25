@@ -70,7 +70,7 @@ npm run build           # produkcijski build
 - Novi strani ključ sa `ON DELETE CASCADE` ili `SET NULL` piše se kao `DEFERRABLE INITIALLY DEFERRED` (D-079), inače brisanje naloga može da padne usred kaskade.
 - Append-only tabele (`admin_audit_log`, `token_ledger`, `publish_attempts`, `post_versions`, `approvals`) se ne menjaju ni u migraciji; jedini izuzetak je popuna nove kolone uz privremeno isključen okidač (primer: migracija 019).
 - Security definer funkcije: `revoke all ... from public, anon, authenticated` pa `grant execute ... to service_role` (Supabase podrazumevano daje EXECUTE svim ulogama).
-- Staging i prod: kroz GitHub Actions posle odobrenja vlasnika (dodaje se u fazi 16), nikad `db push` sa lokalne mašine na prod.
+- Staging i prod: samo kroz GitHub Actions workflow „Migracije” (ručno, odobrenje kroz Environment, prvo `dry_run`), nikad `db push` sa lokalne mašine na prod (D-097).
 
 ## 4. Rotacija ključeva
 
@@ -82,7 +82,7 @@ npm run build           # produkcijski build
 
 ## 5. Deploy
 
-Faza 16. Vercel: `main` → Production, PR → Preview. Checklista u ARCHITECTURE 9 i brifu 19.2.
+Postupak je u [DEPLOY.md](DEPLOY.md). Vercel: `main` → Production, PR → Preview; region `fra1`. Migracije idu kroz workflow „Migracije” pre deploya koda koji ih traži (expand → migrate → contract). Posle deploya: provera iz DEPLOY 7; vraćanje kroz Vercel Instant Rollback (DEPLOY 8).
 
 ## 6. Incidenti
 

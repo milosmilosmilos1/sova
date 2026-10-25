@@ -1,0 +1,63 @@
+name: Migracije (staging i produkcija)
+
+# Samo ručno, uz odobrenje vlasnika: GitHub Environment `staging` ili `production` mora imati
+# obaveznog recenzenta (Settings → Environments). Nikad automatski i nikad `db push` sa lokalne
+# mašine (RUNBOOK 3, D-097). Podrazumevano je suvi prolaz: samo ispis migracija koje bi se primenile.
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: Okruženje
+        required: true
+        type: choice
+        options:
+          - staging
+          - production
+      dry_run:
+        description: Samo prikaži šta bi se primenilo
+        required: true
+        type: boolean
+        default: true
+      include_seed:
+        description: Pokreni i seed (planovi, podešavanja, praznici); samo pri prvom deploy-u
+        required: true
+        type: boolean
+        default: false
+
+concurrency:
+  group: migrate-${{ inputs.target }}
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: supabase db push → ${{ inputs.target }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.target }}
+    timeout-minutes: 15
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      SUPABASE_DB_PASSWORD: ${{ secrets.SUPABASE_DB_PASSWORD }}
+      SUPABASE_PROJECT_REF: ${{ vars.SUPABASE_PROJECT_REF }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: supabase/setup-cli@v1
+        with:
+          # ista verzija kao devDependency `supabase` u package.json
+          version: 2.122.0
+      - name: Provera podešavanja okruženja
+        run: |
+          missing=""
+          [ -n "$SUPABASE_ACCESS_TOKEN" ] || missing="$missing SUPABASE_ACCESS_TOKEN"
+          [ -n "$SUPABASE_DB_PASSWORD" ] || missing="$missing SUPABASE_DB_PASSWORD"
+          [ -n "$SUPABASE_PROJECT_REF" ] || missing="$missing SUPABASE_PROJECT_REF"
+          if [ -n "$missing" ]; then echo "Nedostaje u okruženju ${{ inputs.target }}:$missing"; exit 1; fi
+      - name: Povezivanje projekta
+        run: supabase link --project-ref "$SUPABASE_PROJECT_REF" --password "$SUPABASE_DB_PASSWORD"
+      - name: Migracije koje bi se primenile
+        run: supabase db push --dry-run --password "$SUPABASE_DB_PASSWORD" ${{ inputs.include_seed && '--include-seed' || '' }}
+      - name: Primena
+        if: ${{ !inputs.dry_run }}
+        run: supabase db push --password "$SUPABASE_DB_PASSWORD" ${{ inputs.include_seed && '--include-seed' || '' }}

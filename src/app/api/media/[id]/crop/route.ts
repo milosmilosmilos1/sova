@@ -3,6 +3,9 @@ import { cropMediaSchema } from '@/lib/schemas/posts'
 import { uuidParamSchema } from '@/lib/schemas/workspace'
 import { cropImage, signedUrl } from '@/services/media'
 
+/** Sečenje i ponovno kodiranje slike. */
+export const maxDuration = 60
+
 /** Sečenje slike na odnos stranica mreže (EDGE_CASES N9): odgovor je nova slika iz biblioteke. */
 export const POST = createHandler(
   {

@@ -2,6 +2,9 @@ import { assertViewer, createHandler } from '@/lib/api/handler'
 import { createReportSchema, reportsQuerySchema } from '@/lib/schemas/analytics'
 import { createReport, listReports } from '@/services/reports/monthly'
 
+/** Pravljenje PDF izveštaja. */
+export const maxDuration = 60
+
 /** Mesečni PDF izveštaji brenda (D-094) sa potpisanim linkovima za preuzimanje (1 h). */
 export const GET = createHandler({ auth: 'verified', query: reportsQuerySchema }, async ({ viewer, query }) =>
   listReports(assertViewer(viewer), query.brandId),

@@ -6,6 +6,9 @@ import { createHandler } from '@/lib/api/handler'
 import { verifyMediaToken } from '@/lib/media/public-url'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
+/** Pretvaranje slike u JPEG za mrežu koja sama preuzima fajl (TikTok). */
+export const maxDuration = 60
+
 /**
  * Javni medij za mreže koje fajl preuzimaju same (TikTok PULL_FROM_URL, D-077): potpisan token sa
  * istekom, bajtovi direktno (TikTok ne prati preusmeravanja). Varijanta `tiktok` je JPEG do 1080 px

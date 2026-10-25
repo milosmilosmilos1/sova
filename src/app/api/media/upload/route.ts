@@ -4,6 +4,9 @@ import { ApiError } from '@/lib/api/errors'
 import { assertViewer, createHandler } from '@/lib/api/handler'
 import { MAX_IMAGE_BYTES, signedUrl, uploadImage } from '@/services/media'
 
+/** Obrada slike kroz sharp. */
+export const maxDuration = 60
+
 const fieldsSchema = z.object({
   workspaceId: z.uuid(),
   brandId: z.uuid().optional(),

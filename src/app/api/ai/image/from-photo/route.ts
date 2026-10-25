@@ -5,6 +5,9 @@ import { imageFromPhotoSchema } from '@/lib/schemas/ai'
 import { requestImageFromPhoto } from '@/services/ai/image'
 import { getBrand } from '@/services/brands'
 
+/** Prijem i obrada fotografije pre posla u pozadini. */
+export const maxDuration = 60
+
 /** Slika iz fotografije korisnika: 202 + ID posla. */
 export const POST = createHandler(
   {

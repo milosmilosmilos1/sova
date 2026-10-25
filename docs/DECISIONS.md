@@ -617,3 +617,16 @@ Odluka:
 - **npm audit** (9 postojećih nalaza, nijedan od novih paketa): `zod` 3.x unutar `inngest` 4.26.0 (najnovija verzija, popravke nema; `/api/inngest` u produkciji prima samo potpisane zahteve), `fflate` kroz `satori` (fontovi su naši ili sa Google Fonts), `file-type` kroz `jimp`/`node-vibrant` (ulaz je uvek PNG koji je sharp ponovo kodirao iz proverenog tipa slike). Prihvaćen rizik; ažurirati kad paketi izdaju popravke.
 
 Razlog: brif traži testove glavnih tokova pre deploya; pristupačnost je deo kvaliteta, a bez automatske provere kontrast i labele se kvare neprimetno.
+
+## D-097 · 25.10.2026 · usvojeno · Priprema za produkciju: Frankfurt, migracije samo kroz odobren workflow
+
+Odluka:
+
+- **Region**: Vercel funkcije `fra1`, Supabase `eu-central-1`, Upstash Frankfurt. Najbliže korisnicima u Srbiji i regionu, podaci ostaju u EU.
+- **Vercel Pro**: Hobby je samo za nekomercijalnu upotrebu. Teške rute imaju izričit `maxDuration` (Inngest 300 s, obrada videa 120 s, PDF, AI tekst, sečenje i javni URL medija 60 s), da ne zavise od podrazumevane granice platforme.
+- **Migracije**: samo kroz ručni GitHub workflow „Migracije” uz odobrenje vlasnika (GitHub Environment sa obaveznim recenzentom). Podrazumevano je suvi prolaz; seed samo pri prvom deploy-u. CLI zakucan na verziju iz `package.json` (2.122.0). Nikad `db push` sa lokalne mašine.
+- **Seed bez gaženja**: `platform_settings` (cene tokena, rate limit, održavanje, Autopilot) sada ide sa `on conflict do nothing`. Ranije bi ponovljen seed vratio vrednosti koje admin menja u aplikaciji; katalog planova se i dalje usklađuje sa seed-om.
+- **Produkcijski build proveren lokalno**: prolazi; `robots.txt`, `sitemap.xml` i slika za deljenje se prave pri build-u, a Inter fontovi i `@react-pdf/renderer` su u trace-u ruta koje ih koriste.
+- **Bez deploya**: nijedan nalog, baza ni domen nisu napravljeni. Koraci za vlasnika su u [DEPLOY.md](DEPLOY.md).
+
+Razlog: brif traži pripremu za produkciju; promene na živom okruženju idu tek uz izričitu dozvolu vlasnika.

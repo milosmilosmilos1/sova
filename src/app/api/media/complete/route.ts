@@ -2,6 +2,9 @@ import { assertViewer, createHandler } from '@/lib/api/handler'
 import { completeUploadSchema } from '@/lib/schemas/posts'
 import { completeUpload, signedUrl } from '@/services/media'
 
+/** Video do MEDIA_MAX_VIDEO_MB: preuzimanje iz skladišta, čitanje zaglavlja, ponovni upis. */
+export const maxDuration = 120
+
 /** Posle otpremanja: provera tipa po sadržaju, obrada slike ili čitanje video zaglavlja, red u biblioteci. */
 export const POST = createHandler(
   { auth: 'verified', body: completeUploadSchema },

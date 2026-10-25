@@ -5,6 +5,9 @@ import { textRequestSchema } from '@/lib/schemas/ai'
 import { generatePostText } from '@/services/ai/text'
 import { getBrand } from '@/services/brands'
 
+/** Sinhron poziv Gemini-ja sa rezervnim modelom. */
+export const maxDuration = 60
+
 /**
  * Tekst za objavu: sinhrono, 2 tokena. Redosled iz brifa 14.1:
  * auth → pristup → Zod → rate limit → Idempotency-Key → rezervacija → AI → upis → potvrda.
