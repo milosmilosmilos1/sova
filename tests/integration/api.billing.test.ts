@@ -467,7 +467,7 @@ describe('Naplata: dopuna, povraćaj, spor', () => {
       mode: 'payment',
       customer: customerId,
       'line_items[0][price_data][unit_amount]': '3000',
-      'line_items[0][price_data][currency]': 'usd',
+      'line_items[0][price_data][currency]': 'eur',
       'invoice_creation[enabled]': 'true',
       'metadata[plan_code]': 'topup_300',
     })

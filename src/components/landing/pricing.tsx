@@ -5,18 +5,19 @@ import type { Route } from 'next'
 import Link from 'next/link'
 import { useMemo, useState, type ReactNode } from 'react'
 
+import { pluralSr } from '@/lib/plural'
 import { cn } from 'cn'
 
 import { Switch } from './feature-demos'
 import { Fa } from './icons'
-import { plural, recommendPlan, tokensNeeded, type PricingData, type Recommendation } from './pricing-math'
+import { recommendPlan, tokensNeeded, type PricingData, type Recommendation } from './pricing-math'
 
 /** Planovi, kalkulator tokena i dopune (D-098); preporuka iz kalkulatora boji kartice planova. */
 const num = new Intl.NumberFormat('sr-Latn-RS')
-const tokenWord = (n: number) => plural(n, 'token', 'tokena', 'tokena')
-const brands = (n: number) => `${n} ${plural(n, 'brend', 'brenda', 'brendova')}`
-const networks = (n: number) => `${n} ${plural(n, 'mreža', 'mreže', 'mreža')}`
-const members = (n: number) => `${n} ${plural(n, 'član', 'člana', 'članova')}`
+const tokenWord = (n: number) => pluralSr(n, 'token', 'tokena', 'tokena')
+const brands = (n: number) => `${n} ${pluralSr(n, 'brend', 'brenda', 'brendova')}`
+const networks = (n: number) => `${n} ${pluralSr(n, 'mreža', 'mreže', 'mreža')}`
+const members = (n: number) => `${n} ${pluralSr(n, 'član', 'člana', 'članova')}`
 
 /** Celi iznosi bez decimala („39 US$”), ostali sa dve. */
 function moneyFormatter(currency: string) {

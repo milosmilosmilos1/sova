@@ -29,6 +29,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 | 15 Testiranje                           | gotovo          | E2E glavnih tokova (13), pristupačnost kroz axe u svetloj i tamnoj temi, E2E posao u CI-ju sa Supabase-om, Mailpit-om i Inngest dev serverom (D-096)                                                                     |
 | 16 Deploy                               | priprema gotova | vodič DEPLOY.md, workflow za migracije uz odobrenje, maxDuration, produkcijski build proveren (D-097); sam deploy čeka naloge i dozvolu vlasnika                                                                         |
 | Landing po Claude Design-u              | gotovo          | novi landing, zaglavlje i podnožje javnih strana, kalkulator tokena iz baze, strana Kontakt (D-098); fotografije su primeri sa Unsplash-a                                                                                |
+| Cene u evrima                           | gotovo          | mesečni 47 €, godišnji 247 €, dopune 12/30/85 €, paketi 5 brendova, 10 mreža i 2 člana; admin preračunava u USD po kursu; favicon (D-099)                                                                                |
 
 ## Faza 4 — šta je urađeno
 
@@ -98,6 +99,14 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Provereno 24.10.2026 u Chromium-u: početna, Inbox, Objave, detalj objave, Kalendar, Strategija, Analitika, Autopilot, Obaveštenja, Mreže i Podešavanja rade bez grešaka u konzoli i API odgovorima. Usput ispravljeno: legenda kalendara je prikazivala interne nazive statusa, horizonti snimaka u analitici nisu bili poređani, editor nije prikazivao zašto je Autopilot vratio nacrt (sada prikazuje, a izveštaj se briše čim se tekst promeni).
 - Provereno 24.10.2026 u Chromium-u (faza 11b): nacrt editora (čuvanje, traka posle osvežavanja, vraćanje, brisanje posle čuvanja), termin se vraća isti posle čuvanja, forma zone brenda sa ponudom zadržavanja lokalnog vremena; bez grešaka u konzoli.
 - Provereno 24.10.2026 u Chromium-u (faza 13): svih sedam admin strana, „Gledaj kao” za demo nalog (traka, izmena u read-only režimu dobija 403 sa objašnjenjem, „Izađi” vraća na detalj korisnika), `/admin/users` na 390 px bez horizontalnog skrola. Usput ispravljeno: stara provera u `requireMembership` je tokom read-only pregleda rušila svaku stranu aplikacije.
+
+## Cene u evrima i favicon — šta je urađeno
+
+- **Katalog** (`supabase/seed.sql`, D-099): mesečni 47 €, godišnji 247 €, dopune 12, 30 i 85 €, besplatni plan u EUR; mesečni i godišnji 5 brendova, 10 mreža, 2 člana. Lokalna baza ažurirana.
+- **Landing** sve čita iz baze: „Oko 21 € mesečno”, „56 % manje nego mesečni plan”; cenovnik se ne prikazuje ako valute nisu iste.
+- **Admin**: MRR, vrednost tokena i marža u USD po kursu iz `platform_settings.fx_usd_rates` (1 EUR = 1,1193 USD, ECB 23.10.2026); kurs piše uz MRR i na strani AI troškovi.
+- **Favicon** (`src/app/icon.svg`, `favicon.ico`, `apple-icon.png`, skripta `scripts/make-icons.mjs`); Next oznaka „N” u uglu isključena.
+- **Testovi**: unit 226 (dupli test množine izbačen, landing koristi `pluralSr`); integracioni test dopune sada očekuje EUR.
 
 ## Landing po dizajnu iz Claude Design-a — šta je urađeno
 
@@ -462,6 +471,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 
 ## Šta čeka vlasnika
 
+- Stripe: cene pretplata napraviti u evrima (47 € mesečno, 247 € godišnje); kurs za admin statistiku menjati u `platform_settings.fx_usd_rates` kad se znatno promeni (D-099).
 - Prave fotografije za landing (sada primeri sa Unsplash-a u `public/landing/`) i provera logotipa mreža prema brand kitovima pre lansiranja (D-098).
 - Google OAuth klijent (`GOOGLE_CLIENT_ID/SECRET`) da se pojavi Google dugme; Resend ključ da pozivnice i obaveštenja idu emailom; Turnstile ključevi za zaštitu registracije u produkciji.
 - `GEMINI_API_KEY` u `.env.local` (jedino što fali da AI Studio i AI profil brenda rade sa pravim modelom; prvi pravi poziv Brand Brain-a nad tangerineseo.rs proveriti zajedno, posebno `responseJsonSchema` sa većom šemom).

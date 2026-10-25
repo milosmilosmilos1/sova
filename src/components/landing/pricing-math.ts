@@ -42,28 +42,25 @@ export interface PlanInput {
   limits: unknown
 }
 
-/** Srpska množina: 1 brend, 2 brenda, 5 brendova (11 do 14 idu u treći oblik). */
-export function plural(n: number, one: string, few: string, many: string): string {
-  const d = n % 10
-  const h = n % 100
-  if (d === 1 && h !== 11) return one
-  if (d >= 2 && d <= 4 && (h < 12 || h > 14)) return few
-  return many
-}
-
 function limit(limits: unknown, key: string): number {
   const v = limits && typeof limits === 'object' ? (limits as Record<string, unknown>)[key] : undefined
   return typeof v === 'number' ? v : 0
 }
 
-/** Podaci za cenovnik, ili null ako u bazi nema besplatnog, mesečnog ili godišnjeg plana. */
+/**
+ * Podaci za cenovnik, ili null ako u bazi nema besplatnog, mesečnog ili godišnjeg plana, ili ako plaćeni
+ * planovi i dopune nisu u istoj valuti (kalkulator sabira plan i dopune, D-099).
+ */
 export function pricingFromPlans(plans: PlanInput[], costs: PricingCosts): PricingData | null {
   const free = plans.find((p) => p.code === 'free')
   const monthly = plans.find((p) => p.code === 'monthly')
   const yearly = plans.find((p) => p.code === 'yearly')
   if (!free || !monthly || !yearly) return null
+  const currency = monthly.currency.toUpperCase()
+  const paid = plans.filter((p) => p.price_cents > 0)
+  if (paid.some((p) => p.currency.toUpperCase() !== currency)) return null
   return {
-    currency: monthly.currency.toUpperCase(),
+    currency,
     costs,
     free: {
       name: free.name,

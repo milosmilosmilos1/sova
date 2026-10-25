@@ -11,6 +11,7 @@ import {
 } from '@/lib/admin/metrics'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError } from '@/lib/supabase/errors'
+import { getUsdRates } from '@/lib/tokens/prices'
 
 /**
  * Statistike admin panela (brif 16 „Statistike”, D-073): agregati iz baze (`admin_dashboard_stats`,
@@ -37,6 +38,8 @@ export interface DashboardData {
     activeTotal: number
     mrrUsd: number
     arrUsd: number
+    /** kurs po kom su cene planova preračunate u USD (D-099) */
+    fxNote: string | null
     churn30d: number | null
     conversion: number | null
     paidWorkspaces: number
@@ -62,25 +65,56 @@ export interface DashboardData {
 type Raw = Record<string, unknown>
 const num = (v: unknown) => (typeof v === 'number' ? v : Number(v ?? 0) || 0)
 
-export async function loadPlans(): Promise<PlanLite[]> {
+export interface PlanCatalog {
+  /** aktivni planovi sa cenom u USD centima */
+  plans: PlanLite[]
+  /** kurs (USD za jedinicu valute plana) po kodu plana, i za neaktivne planove koji još imaju pretplate */
+  usdRateByCode: Map<string, number>
+  /** napomena za panel, npr. „1 EUR = 1,1193 USD”; null kad su sve cene u USD */
+  fxNote: string | null
+}
+
+/**
+ * Planovi u USD: cene su u evrima, a admin izveštava u dolarima jer je trošak AI-ja u dolarima (D-099).
+ * Plan u valuti bez kursa ne ulazi u zbirove dok se kurs ne doda u `platform_settings.fx_usd_rates`.
+ */
+export async function loadPlans(): Promise<PlanCatalog> {
   const admin = createSupabaseAdminClient()
-  const { data } = await admin
-    .from('plans')
-    .select('code, kind, interval, price_cents, tokens_per_period, token_period')
-    .eq('is_active', true)
-  return (data ?? []).map((p) => ({
-    code: p.code,
-    kind: p.kind,
-    interval: (p.interval as PlanLite['interval']) ?? null,
-    priceCents: p.price_cents,
-    tokensPerPeriod: p.tokens_per_period,
-    tokenPeriod: p.token_period as PlanLite['tokenPeriod'],
-  }))
+  const [{ data }, rates] = await Promise.all([
+    admin
+      .from('plans')
+      .select('code, kind, interval, price_cents, currency, tokens_per_period, token_period, is_active'),
+    getUsdRates(),
+  ])
+  const plans: PlanLite[] = []
+  const usdRateByCode = new Map<string, number>()
+  const converted = new Set<string>()
+  for (const p of data ?? []) {
+    const currency = p.currency.toUpperCase()
+    const rate = rates[currency]
+    if (!rate) continue
+    usdRateByCode.set(p.code, rate)
+    if (currency !== 'USD' && p.price_cents > 0) converted.add(currency)
+    if (!p.is_active) continue
+    plans.push({
+      code: p.code,
+      kind: p.kind,
+      interval: (p.interval as PlanLite['interval']) ?? null,
+      priceCents: Math.round(p.price_cents * rate),
+      tokensPerPeriod: p.tokens_per_period,
+      tokenPeriod: p.token_period as PlanLite['tokenPeriod'],
+    })
+  }
+  const fxNote =
+    [...converted]
+      .map((c) => `1 ${c} = ${rates[c]!.toLocaleString('sr-Latn-RS', { maximumFractionDigits: 4 })} USD`)
+      .join(', ') || null
+  return { plans, usdRateByCode, fxNote }
 }
 
 export async function getDashboard(days = 30): Promise<DashboardData> {
   const admin = createSupabaseAdminClient()
-  const [stats, activity, plans] = await Promise.all([
+  const [stats, activity, catalog] = await Promise.all([
     admin.rpc('admin_dashboard_stats', { p_days: days }),
     admin.rpc('admin_activity_counts'),
     loadPlans(),
@@ -89,12 +123,14 @@ export async function getDashboard(days = 30): Promise<DashboardData> {
   if (activity.error) throw mapDbError(activity.error)
   const s = (stats.data ?? {}) as Raw
   const a = (activity.data ?? {}) as Raw
+  const plans = catalog.plans
   const subs = (Array.isArray(s.subscriptions) ? s.subscriptions : []) as Raw[]
+  // cena iz pretplate je u valuti plana; MRR je u USD kao i ostatak panela
   const activeByPlan = subs.map((g) => ({
     plan: String(g.plan),
     name: String(g.name),
     interval: (g.interval as ActiveSubscriptionGroup['interval']) ?? null,
-    priceCents: num(g.price_cents),
+    priceCents: Math.round(num(g.price_cents) * (catalog.usdRateByCode.get(String(g.plan)) ?? 0)),
     active: num(g.active),
   }))
   const activeTotal = activeByPlan.reduce((n, g) => n + g.active, 0)
@@ -135,6 +171,7 @@ export async function getDashboard(days = 30): Promise<DashboardData> {
       activeByPlan,
       activeTotal,
       mrrUsd: Math.round(mrr * 100) / 100,
+      fxNote: catalog.fxNote,
       arrUsd: Math.round(mrr * 12 * 100) / 100,
       churn30d: churnRate(num(s.subscriptions_canceled_30d), activeTotal),
       conversion: conversionRate(num(s.paid_workspaces), num(s.workspaces_total)),
@@ -171,6 +208,7 @@ export async function getDashboard(days = 30): Promise<DashboardData> {
 export interface AiCostsData {
   days: number
   tokenValueUsd: number | null
+  fxNote: string | null
   byModel: Array<{ model: string; generations: number; failed: number; costUsd: number; tokens: number }>
   byDay: Array<{ day: string; costUsd: number; tokens: number; generations: number }>
   byWorkspace: Array<{
@@ -191,10 +229,10 @@ export interface AiCostsData {
 /** AI troškovi po modelu, danu i radnom prostoru, sa maržom (brif 16, D-074). */
 export async function getAiCosts(days = 30): Promise<AiCostsData> {
   const admin = createSupabaseAdminClient()
-  const [res, plans] = await Promise.all([admin.rpc('admin_ai_costs', { p_days: days }), loadPlans()])
+  const [res, catalog] = await Promise.all([admin.rpc('admin_ai_costs', { p_days: days }), loadPlans()])
   if (res.error) throw mapDbError(res.error)
   const d = (res.data ?? {}) as Raw
-  const value = tokenValueUsd(plans)
+  const value = tokenValueUsd(catalog.plans)
   const byWorkspace = ((Array.isArray(d.by_workspace) ? d.by_workspace : []) as Raw[]).map((w) => {
     const costUsd = num(w.cost_usd)
     const tokens = num(w.tokens)
@@ -216,6 +254,7 @@ export async function getAiCosts(days = 30): Promise<AiCostsData> {
   return {
     days,
     tokenValueUsd: value,
+    fxNote: catalog.fxNote,
     byModel: ((Array.isArray(d.by_model) ? d.by_model : []) as Raw[]).map((m) => ({
       model: String(m.model),
       generations: num(m.generations),

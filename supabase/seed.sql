@@ -10,19 +10,23 @@ on conflict (email) do nothing;
 update public.profiles p set platform_role = 'platform_admin'
 from public.platform_admin_allowlist a where p.email = a.email and p.platform_role <> 'platform_admin';
 
+-- Cene u evrima (D-099): mesečni 47 €, godišnji 247 €, dopune 12/30/85 €. Mesečni i godišnji: 5 brendova
+-- (često je isti brend na srpskom i engleskom), 10 mreža, 2 člana. Sve cene su u istoj valuti jer Stripe
+-- kupcu ne dozvoljava pretplatu u jednoj, a dopunu u drugoj valuti.
 insert into public.plans (code, kind, name, interval, price_cents, currency, tokens_per_period, token_period, limits, sort_order) values
-  ('free', 'subscription', 'Besplatno', null, 0, 'USD', 50, 'once',
+  ('free', 'subscription', 'Besplatno', null, 0, 'EUR', 50, 'once',
    '{"brands": 1, "social_accounts": 2, "members": 1, "crawl_pages": 30}', 0),
-  ('monthly', 'subscription', 'Mesečni', 'month', 3900, 'USD', 500, 'month',
-   '{"brands": 3, "social_accounts": 10, "members": 3, "crawl_pages": 60}', 1),
-  ('yearly', 'subscription', 'Godišnji', 'year', 19900, 'USD', 500, 'month',
-   '{"brands": 3, "social_accounts": 10, "members": 3, "crawl_pages": 60}', 2),
-  ('topup_100', 'topup', '100 tokena', null, 1200, 'USD', 100, 'once', '{}', 10),
-  ('topup_300', 'topup', '300 tokena', null, 3000, 'USD', 300, 'once', '{}', 11),
-  ('topup_1000', 'topup', '1.000 tokena', null, 8500, 'USD', 1000, 'once', '{}', 12)
+  ('monthly', 'subscription', 'Mesečni', 'month', 4700, 'EUR', 500, 'month',
+   '{"brands": 5, "social_accounts": 10, "members": 2, "crawl_pages": 60}', 1),
+  ('yearly', 'subscription', 'Godišnji', 'year', 24700, 'EUR', 500, 'month',
+   '{"brands": 5, "social_accounts": 10, "members": 2, "crawl_pages": 60}', 2),
+  ('topup_100', 'topup', '100 tokena', null, 1200, 'EUR', 100, 'once', '{}', 10),
+  ('topup_300', 'topup', '300 tokena', null, 3000, 'EUR', 300, 'once', '{}', 11),
+  ('topup_1000', 'topup', '1.000 tokena', null, 8500, 'EUR', 1000, 'once', '{}', 12)
 on conflict (code) do update set
-  name = excluded.name, price_cents = excluded.price_cents, tokens_per_period = excluded.tokens_per_period,
-  token_period = excluded.token_period, limits = excluded.limits, sort_order = excluded.sort_order;
+  name = excluded.name, price_cents = excluded.price_cents, currency = excluded.currency,
+  tokens_per_period = excluded.tokens_per_period, token_period = excluded.token_period,
+  limits = excluded.limits, sort_order = excluded.sort_order;
 
 insert into public.platform_settings (key, value, description, is_public) values
   ('token_prices', '{
@@ -58,7 +62,9 @@ insert into public.platform_settings (key, value, description, is_public) values
   }', 'Rate limit vrednosti (brif 17.3)', false),
   ('maintenance', '{"enabled": false, "message": ""}', 'Banner za održavanje', true),
   ('autopilot', '{"budget_warning_percent": 80, "weekly_cron_hour_local": 6, "monthly_proposal_day": 25}',
-   'Podešavanja Autopilota', false)
+   'Podešavanja Autopilota', false),
+  ('fx_usd_rates', '{"EUR": 1.1193}',
+   'Kurs za preračun cena planova u USD u admin statistici, jer je trošak AI-ja u USD (ECB referentni kurs 23.10.2026, D-099)', false)
 -- do nothing: admin menja ove vrednosti u aplikaciji; ponovljen seed (nov hash fajla pri db push --include-seed)
 -- ne sme da ih vrati na početne (D-097)
 on conflict (key) do nothing;

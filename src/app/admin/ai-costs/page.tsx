@@ -24,8 +24,8 @@ export default async function AdminAiCostsPage({ searchParams }: PageProps<'/adm
           <h1 className="text-2xl font-semibold tracking-tight">AI troškovi</h1>
           <p className="text-sm text-muted-foreground">
             Ukupno {fmtUsd(total, 4)} za {days} dana. Vrednost tokena za maržu:{' '}
-            {d.tokenValueUsd ? fmtUsd(d.tokenValueUsd, 4) : '—'} (najniža cena po tokenu; besplatni tokeni
-            nemaju prihod).
+            {d.tokenValueUsd ? fmtUsd(d.tokenValueUsd, 4) : '—'} (najniža cena po tokenu
+            {d.fxNote ? `, kurs ${d.fxNote}` : ''}; besplatni tokeni nemaju prihod).
           </p>
         </div>
         <div className="flex gap-2 text-sm">

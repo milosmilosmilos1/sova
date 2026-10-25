@@ -4,13 +4,14 @@ import { faPlus } from '@fortawesome/free-solid-svg-icons'
 import Link from 'next/link'
 import { useId, useState, type ReactNode } from 'react'
 
+import { pluralSr } from '@/lib/plural'
 import { cn } from 'cn'
 
 import { Fa } from './icons'
-import { plural, type PricingCosts } from './pricing-math'
+import type { PricingCosts } from './pricing-math'
 
 /** Česta pitanja (D-098): jedno otvoreno u isto vreme, prvo otvoreno na početku. */
-const tokenWord = (n: number) => plural(n, 'token', 'tokena', 'tokena')
+const tokenWord = (n: number) => pluralSr(n, 'token', 'tokena', 'tokena')
 const link =
   'text-l-accent-soft underline decoration-l-accent-soft/40 underline-offset-2 hover:decoration-current'
 

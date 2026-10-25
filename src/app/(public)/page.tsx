@@ -54,7 +54,12 @@ function structuredData(description: string, plans: PlanRow[]) {
         description,
         publisher: { '@id': `${base}/#organization` },
         offers: [
-          { '@type': 'Offer', name: 'Besplatno', price: '0', priceCurrency: 'USD' },
+          {
+            '@type': 'Offer',
+            name: 'Besplatno',
+            price: '0',
+            priceCurrency: (plans.find((p) => p.code === 'free')?.currency ?? 'EUR').toUpperCase(),
+          },
           ...plans
             .filter((p) => p.kind === 'subscription' && p.price_cents > 0)
             .map((p) => ({

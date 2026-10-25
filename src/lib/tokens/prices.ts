@@ -136,6 +136,17 @@ export async function getModelPrices(): Promise<Record<string, ModelPrice>> {
   return { ...DEFAULT_MODEL_PRICES, ...partial }
 }
 
+/**
+ * Koliko USD vredi jedinica valute; admin statistika preračunava cene planova (EUR) u USD jer je trošak
+ * AI-ja u USD (D-099). ECB referentni kurs 23.10.2026; admin ga menja u `platform_settings.fx_usd_rates`.
+ */
+export const DEFAULT_USD_RATES: Record<string, number> = { USD: 1, EUR: 1.1193 }
+
+export async function getUsdRates(): Promise<Record<string, number>> {
+  const partial = await readSetting('fx_usd_rates', z.record(z.string(), z.number().positive()), {})
+  return { ...DEFAULT_USD_RATES, ...partial, USD: 1 }
+}
+
 export async function getRateLimitSettings(): Promise<{
   generate_per_minute: number
   generate_per_day_free: number

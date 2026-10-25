@@ -25,6 +25,8 @@ const nextConfig: NextConfig = {
   cacheComponents: false,
   poweredByHeader: false,
   reactStrictMode: true,
+  // bez Next oznake „N” u uglu tokom razvoja; greške pri kompilaciji i u radu se i dalje prikazuju
+  devIndicators: false,
   typedRoutes: true,
   // Native dodaci (.node) ne mogu u Turbopack bundle; učitavaju se iz node_modules u runtime-u (faza 7, resvg).
   serverExternalPackages: ['@resvg/resvg-js', 'sharp'],

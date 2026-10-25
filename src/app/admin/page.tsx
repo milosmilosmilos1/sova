@@ -76,7 +76,11 @@ export default async function AdminHomePage() {
           </p>
         ) : null}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Tile label="MRR" value={fmtUsd(d.billing.mrrUsd)} hint={`ARR ${fmtUsd(d.billing.arrUsd)}`} />
+          <Tile
+            label="MRR"
+            value={fmtUsd(d.billing.mrrUsd)}
+            hint={`ARR ${fmtUsd(d.billing.arrUsd)}${d.billing.fxNote ? ` · kurs ${d.billing.fxNote}` : ''}`}
+          />
           <Tile
             label="Aktivne pretplate"
             value={fmtN(d.billing.activeTotal)}

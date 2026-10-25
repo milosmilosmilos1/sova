@@ -7,6 +7,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import type { ApiResponse } from '@/lib/api/response'
+import { pluralSr } from '@/lib/plural'
 
 interface PlanView {
   code: string
@@ -65,6 +66,14 @@ const money = (cents: number, currency: string) =>
   )
 
 const date = (iso: string) => new Date(iso).toLocaleDateString('sr-Latn-RS')
+
+/** „Do 5 brendova, 10 mreža i 2 člana.”: posle „do” ide genitiv, pa i 1 i 2–4 imaju isti oblik. */
+function limitsLine(l: Overview['plan']['limits']): string {
+  const b = l.brands
+  const n = l.social_accounts
+  const m = l.members
+  return `Do ${b} ${pluralSr(b, 'brenda', 'brenda', 'brendova')}, ${n} ${pluralSr(n, 'mreže', 'mreže', 'mreža')} i ${m} ${pluralSr(m, 'člana', 'člana', 'članova')}.`
+}
 
 const STATUS: Record<string, string> = {
   active: 'aktivna',
@@ -172,11 +181,7 @@ export function BillingPanel({
           <CardTitle className="flex items-center gap-2">
             Plan <Badge variant="secondary">{o?.plan.name ?? '…'}</Badge>
           </CardTitle>
-          <CardDescription>
-            {o
-              ? `Do ${o.plan.limits.brands} brenda, ${o.plan.limits.social_accounts} mreža i ${o.plan.limits.members} člana.`
-              : 'Učitavam…'}
-          </CardDescription>
+          <CardDescription>{o ? limitsLine(o.plan.limits) : 'Učitavam…'}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           {o ? (

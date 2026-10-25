@@ -647,3 +647,18 @@ Odluka:
 - **Zaglavlje i podnožje** važe za sve javne strane (prijava, registracija, pravne strane). Ispod 768 px srednju navigaciju menja meni u zaglavlju (sekcije, a na najužim ekranima i Prijava). Nova strana `/kontakt` (podrška i privatnost) je u mapi sajta, a link Kontakt više nije `mailto:`.
 
 Razlog: vlasnik je dobio lepši dizajn landinga iz Claude Design-a i traži da se primeni. Brojevi iz baze i ispravljene tvrdnje drže tekst tačnim kad se cene ili pravila promene.
+
+## D-099 · 25.10.2026 · usvojeno · Cene u evrima, paketi sa 5 brendova i 2 člana, favicon
+
+Odluka:
+
+- **Cene** (odluka vlasnika): mesečni 47 € (bilo 39 US$), godišnji 247 € (bilo 199 US$). Dopune ostaju 12, 30 i 85, ali u evrima, kao i besplatni plan. Sve cene su u istoj valuti: Stripe kupcu ne dozvoljava pretplatu u jednoj, a dopunu u drugoj valuti, a cenovnik ne sme da meša valute.
+- **Limiti mesečnog i godišnjeg plana**: 5 brendova, 10 mreža, 2 člana (bilo 3, 10 i 3). Dva brenda su obično isti brend na srpskom i engleskom, pa 3 nisu bila dovoljna.
+- **Katalog** je u `supabase/seed.sql`; ponovljen seed sada usklađuje i valutu. Lokalna baza je ažurirana istim SQL-om kroz `docker exec`.
+- **Stripe**: cene pretplata se prave u evrima (47 € mesečno, 247 € godišnje), ID-jevi idu u `STRIPE_PRICE_MONTHLY` i `STRIPE_PRICE_YEARLY`. Dopune šalje aplikacija kroz `price_data` sa iznosom i valutom iz tabele `plans`, pa su same u evrima.
+- **Landing**: iznosi, ušteda godišnjeg plana (56 %) i iznos po mesecu (oko 21 €) računaju se iz baze. Cenovnik se ne prikazuje ako plaćeni planovi i dopune nisu u istoj valuti.
+- **Admin statistika ostaje u USD**, jer je trošak AI-ja u USD: cene planova se za MRR, vrednost tokena i maržu preračunavaju po kursu iz `platform_settings.fx_usd_rates` (podrazumevano ECB referentni kurs od 23.10.2026: 1 EUR = 1,1193 USD), a kurs piše uz MRR i vrednost tokena. Plan u valuti bez kursa ne ulazi u zbirove.
+- **Favicon**: znak Sove kao na landingu (plavi zaobljen kvadrat sa očima): `src/app/icon.svg`, `favicon.ico` (16, 32 i 48 px; 16 px ima posebnu verziju poravnatu na piksele, inače se oči spoje) i `apple-icon.png` (180 px, pun kvadrat). Sve pravi `scripts/make-icons.mjs`; pokrenuti ga ponovo kad stigne pravi logo.
+- **Next oznaka „N” u uglu** (indikator razvojnog servera) je isključena kroz `devIndicators: false`. Vidi se samo lokalno; greške se i dalje prikazuju.
+
+Razlog: odluka vlasnika o cenama i paketima; favicon i bez oznake razvojnog servera da lokalni pregled liči na pravi sajt.
