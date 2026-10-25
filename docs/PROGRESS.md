@@ -28,6 +28,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 | 14a–14c Dizajn                          | gotovo          | plava tema i tamne javne strane, nov landing, okvir aplikacije i početna (D-091), grafikoni (D-092), stub i kampanja u editoru, sečenje i zamena medija (D-093), mesečni PDF izveštaj (D-094), SEO javnih strana (D-095) |
 | 15 Testiranje                           | gotovo          | E2E glavnih tokova (13), pristupačnost kroz axe u svetloj i tamnoj temi, E2E posao u CI-ju sa Supabase-om, Mailpit-om i Inngest dev serverom (D-096)                                                                     |
 | 16 Deploy                               | priprema gotova | vodič DEPLOY.md, workflow za migracije uz odobrenje, maxDuration, produkcijski build proveren (D-097); sam deploy čeka naloge i dozvolu vlasnika                                                                         |
+| Landing po Claude Design-u              | gotovo          | novi landing, zaglavlje i podnožje javnih strana, kalkulator tokena iz baze, strana Kontakt (D-098); fotografije su primeri sa Unsplash-a                                                                                |
 
 ## Faza 4 — šta je urađeno
 
@@ -97,6 +98,20 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - Provereno 24.10.2026 u Chromium-u: početna, Inbox, Objave, detalj objave, Kalendar, Strategija, Analitika, Autopilot, Obaveštenja, Mreže i Podešavanja rade bez grešaka u konzoli i API odgovorima. Usput ispravljeno: legenda kalendara je prikazivala interne nazive statusa, horizonti snimaka u analitici nisu bili poređani, editor nije prikazivao zašto je Autopilot vratio nacrt (sada prikazuje, a izveštaj se briše čim se tekst promeni).
 - Provereno 24.10.2026 u Chromium-u (faza 11b): nacrt editora (čuvanje, traka posle osvežavanja, vraćanje, brisanje posle čuvanja), termin se vraća isti posle čuvanja, forma zone brenda sa ponudom zadržavanja lokalnog vremena; bez grešaka u konzoli.
 - Provereno 24.10.2026 u Chromium-u (faza 13): svih sedam admin strana, „Gledaj kao” za demo nalog (traka, izmena u read-only režimu dobija 403 sa objašnjenjem, „Izađi” vraća na detalj korisnika), `/admin/users` na 390 px bez horizontalnog skrola. Usput ispravljeno: stara provera u `requireMembership` je tokom read-only pregleda rušila svaku stranu aplikacije.
+
+## Landing po dizajnu iz Claude Design-a — šta je urađeno
+
+- **Sekcije kao u dizajnu** (`src/components/landing/`): hero sa demoom u šest koraka, Mreže (pregled iste objave za osam mreža sa dužinom teksta), Funkcije (šest kartica sa malim interaktivnim primerima), Kako radi, Cene sa kalkulatorom tokena, Česta pitanja, završni poziv. Forma sa adresom sajta (gore i dole) menja domen u demou.
+- **Podaci iz baze**: planovi, dopune i troškovi tokena; preporuka plana i najjeftinija dopuna u `pricing-math.ts` (5 unit testova). Tekst o tokenima pominje izuzetak za objave na X.
+- **Javni layout**: Onest i JetBrains Mono, lepljivo zaglavlje sa sovom čije oči prate miš, podnožje sa pravnim linkovima i stranom `/kontakt`. Isti okvir imaju prijava, registracija i pravne strane; linkovi u pravnim tekstovima su sada podvučeni.
+- **Registracija**: dugmad i pilula iznad naslova prate flag `registration_open` (lokalno uključen, pa se vidi „Otvoreno”).
+- **Provereno**: snimci na 1440 i 390 px bez horizontalnog skrola, sve interakcije (forma, kalkulator, pitanja, navigacija), axe bez nalaza i posle klikova, LCP je naslov (ne slika), produkcijski build prolazi. Usput ispravljeno: obaveštenje u demou je na telefonu prekrivalo poslednji red panela, kartica Brand Brain se na telefonu sekla pri dnu.
+- **Testovi**: unit 226 (bilo 219), E2E 13; provera pristupačnosti sada obuhvata i `/data-deletion` i `/kontakt`.
+
+## Kako da testiraš (landing)
+
+- `npm run dev`, pa http://localhost:3001. Unesite adresu sajta u formu gore: demo kreće od prvog koraka sa vašim domenom. Pomerite klizače u Cenama: preporuka i istaknuti planovi se menjaju (60 i 60 objava daje 740 tokena i predlog dopune od 300 tokena).
+- Admin → Platforma → flag `registration_open` isključen: pilula postaje „U izradi”, a dugmad vode na demo i cene.
 
 ## Faza 16 — šta je urađeno (priprema, bez deploya)
 
@@ -447,6 +462,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 
 ## Šta čeka vlasnika
 
+- Prave fotografije za landing (sada primeri sa Unsplash-a u `public/landing/`) i provera logotipa mreža prema brand kitovima pre lansiranja (D-098).
 - Google OAuth klijent (`GOOGLE_CLIENT_ID/SECRET`) da se pojavi Google dugme; Resend ključ da pozivnice i obaveštenja idu emailom; Turnstile ključevi za zaštitu registracije u produkciji.
 - `GEMINI_API_KEY` u `.env.local` (jedino što fali da AI Studio i AI profil brenda rade sa pravim modelom; prvi pravi poziv Brand Brain-a nad tangerineseo.rs proveriti zajedno, posebno `responseJsonSchema` sa većom šemom).
 - Ćirilični i SPA sajt za ivične slučajeve B4 i B10 (predlog: jedan sajt na ćirilici koji poznaješ).

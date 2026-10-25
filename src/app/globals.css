@@ -165,14 +165,154 @@
   .bg-glow {
     background-image: radial-gradient(55% 45% at 50% 30%, var(--glow), transparent 70%);
   }
-  .text-brand-gradient {
-    background-image: linear-gradient(90deg, var(--brand), var(--brand-2));
-    background-clip: text;
-    color: transparent;
+}
+
+/*
+ * Javni sajt po dizajnu iz Claude Design-a (25.10.2026, D-098): fiksne boje, fontovi i animacije,
+ * nezavisni od teme aplikacije. Klase: bg-l-card, text-l-muted, border-l-line/12, font-l-mono ...
+ */
+@theme {
+  --color-l-bg: #060a13;
+  --color-l-bg-alt: #080d18;
+  --color-l-cta: #0a1020;
+  --color-l-card: #0b111e;
+  --color-l-visual: #0e1525;
+  --color-l-inner: #0f1727;
+  --color-l-raised: #131c30;
+  --color-l-chip: #16203a;
+  --color-l-rail: #0a0f1b;
+  --color-l-topbar: #090e19;
+  --color-l-featured: #0d1526;
+  --color-l-img: #1a2438;
+  --color-l-track: #2a3550;
+  --color-l-text: #e8eef8;
+  --color-l-text-2: #c9d3e3;
+  --color-l-muted: #9aa8bf;
+  --color-l-dim: #7a88a1;
+  /* dizajn ima #56647D; posvetljeno do kontrasta 4,5:1 na tamnoj traci koraka */
+  --color-l-faint: #73819a;
+  --color-l-line: #94aad2;
+  --color-l-accent: #3da9fc;
+  --color-l-accent-hover: #6bbeff;
+  --color-l-on-accent: #04121f;
+  --color-l-accent-soft: #7cc4ff;
+  --color-l-accent-pale: #b5ddff;
+  --color-l-success: #45d19a;
+  --color-l-warning: #f2b552;
+  --color-l-violet: #9b8cff;
+  --color-l-social-ink: #0f1419;
+  --color-l-social-meta: #536471;
+
+  --animate-l-fill: l-fill 4.5s linear forwards;
+  --animate-l-in: l-in 0.45s ease both;
+  --animate-l-in-fast: l-in 0.3s ease both;
+  --animate-l-scan: l-scan 2.6s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+  --animate-l-pulse: l-pulse 1.6s ease-in-out infinite;
+  --animate-l-pulse-fast: l-pulse 1.2s ease-in-out infinite;
+  --animate-l-blink: l-blink 1s step-end infinite;
+
+  @keyframes l-fill {
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
   }
-  .ring-brand-glow {
-    box-shadow:
-      0 0 0 1px color-mix(in oklch, var(--brand) 55%, transparent),
-      0 0 28px -6px var(--glow);
+  @keyframes l-in {
+    from {
+      opacity: 0;
+      transform: translateY(8px);
+    }
+    to {
+      opacity: 1;
+      transform: none;
+    }
+  }
+  @keyframes l-scan {
+    0% {
+      transform: translateY(-100%);
+    }
+    100% {
+      transform: translateY(420%);
+    }
+  }
+  @keyframes l-pulse {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.3;
+    }
+  }
+  @keyframes l-blink {
+    0%,
+    49% {
+      opacity: 1;
+    }
+    50%,
+    100% {
+      opacity: 0;
+    }
+  }
+}
+
+@theme inline {
+  --font-l-sans: var(--font-onest), system-ui, sans-serif;
+  --font-l-mono: var(--font-jbmono), ui-monospace, monospace;
+}
+
+@layer components {
+  .l-hero-glow {
+    background: radial-gradient(820px 460px at 74% 22%, rgb(61 169 252 / 0.13), transparent 62%);
+  }
+  .l-grid-56,
+  .l-grid-44 {
+    background-image:
+      linear-gradient(rgb(148 170 210 / 0.05) 1px, transparent 1px),
+      linear-gradient(90deg, rgb(148 170 210 / 0.05) 1px, transparent 1px);
+  }
+  .l-grid-56 {
+    background-size: 56px 56px;
+    mask-image: radial-gradient(ellipse 65% 60% at 62% 30%, #000 25%, transparent 75%);
+  }
+  .l-grid-44 {
+    background-size: 44px 44px;
+    mask-image: radial-gradient(ellipse 60% 70% at 50% 30%, #000 20%, transparent 75%);
+  }
+  .l-cta-glow {
+    background: radial-gradient(600px 300px at 50% 0%, rgb(61 169 252 / 0.16), transparent 70%);
+  }
+  .l-dots {
+    background-image: radial-gradient(rgb(148 170 210 / 0.09) 1px, transparent 1px);
+    background-size: 18px 18px;
+  }
+  .l-ig {
+    background: radial-gradient(
+      circle at 30% 107%,
+      #fdf497 0%,
+      #fdf497 5%,
+      #fd5949 45%,
+      #d6249f 60%,
+      #285aeb 90%
+    );
+  }
+  .l-root ::selection {
+    background: rgb(61 169 252 / 0.35);
+  }
+  .l-root input::placeholder {
+    color: #5e6b82;
+  }
+}
+
+/* anchor linkovi landinga klize i ne završavaju ispod lepljivog zaglavlja */
+:root:has(.l-root) {
+  scroll-behavior: smooth;
+  scroll-padding-top: 84px;
+}
+@media (prefers-reduced-motion: reduce) {
+  :root:has(.l-root) {
+    scroll-behavior: auto;
   }
 }

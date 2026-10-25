@@ -630,3 +630,20 @@ Odluka:
 - **Bez deploya**: nijedan nalog, baza ni domen nisu napravljeni. Koraci za vlasnika su u [DEPLOY.md](DEPLOY.md).
 
 Razlog: brif traži pripremu za produkciju; promene na živom okruženju idu tek uz izričitu dozvolu vlasnika.
+
+## D-098 · 25.10.2026 · usvojeno · Landing po dizajnu iz Claude Design-a
+
+Odluka:
+
+- **Izvor**: dizajn „Sova Landing” (Claude Design handoff) prenet je u komponente u `src/components/landing/`; prototip i njegov `support.js` se ne koriste. Zamenjuje izgled landinga iz D-091; svetla tema aplikacije ostaje, a klase `text-brand-gradient` i `ring-brand-glow` su uklonjene jer ih je koristio samo stari landing.
+- **Tokeni i fontovi**: boje kao `--color-l-*` u `@theme` (pozadina #060A13, kartice #0B111E, akcenat #3DA9FC), animacije `--animate-l-*` uvek pod `motion-safe:`, pa uključeno smanjeno kretanje zaustavlja i demo. Onest i JetBrains Mono kroz `next/font/google` samo u `(public)/layout.tsx`; unapred se učitavaju latinica i latin-ext, ćirilica stiže kad je strana zatraži. Jedno odstupanje: najtamnija siva iz dizajna (#56647D) je #73819A, jer prva ne prolazi kontrast 4,5:1.
+- **Ikone i logotipi mreža**: Font Awesome Free 6.7.2 (samo paketi ikona, CC BY 4.0), crtani kao inline SVG kroz komponentu `Fa`, bez fonta i spoljnog CSS-a; Google G je nacrtan u boji. Pre lansiranja logotipe proveriti prema brand kitovima mreža.
+- **Fotografije**: 16 fotografija sa Unsplash-a lokalno u `public/landing/` (1,76 MB posle optimizacije) umesto hotlinka sa images.unsplash.com i Wikimedia-e: CSP, privatnost posetilaca, brzina. To su primeri dok ne postoje pravi.
+- **Podaci umesto teksta iz dizajna**: cene, tokeni, limiti planova i dopune dolaze iz tabele `plans`, troškovi iz `token_prices`. Kalkulator i preporuka plana računaju se iz istih vrednosti (`pricing-math.ts`, najjeftinija kombinacija dopuna). Ako planova nema u bazi, sekcija cena kaže da cenovnik nije dostupan umesto da pokaže zastarele brojeve.
+- **Ispravljene tvrdnje iz dizajna**: „objavljivanje ne troši tokene” sada ima izuzetak za X (1 token, sa linkom 6; D-013); podnaslov cena je „Tokeni se troše kad AI nešto napravi. Kalendar i analitika ne koštaju ništa.”; odgovor o podacima navodi obrađivače iz Politike privatnosti umesto „ne dele se sa trećim stranama”; pretplata se otkazuje sa stranice Naplata; limit za Pinterest je 800 znakova iz `config/platforms.ts`, ne 500.
+- **Registracija prati flag `registration_open`**: kad je zatvorena, landing ima tekst iz dizajna („U izradi · Registracija stiže uskoro”) i dugmad vode na demo i cene; kad je otvorena, vode na `/register`.
+- **Demo u hero sekciji**: šest koraka, sam prelazi na 4,5 s, staje na hover i fokus. Adresa iz forme se samo očisti i prikaže u demou; ne šalje se serveru.
+- **Pristupačnost**: interaktivni delovi su dugmad sa `aria-pressed`, `role="switch"` ili `aria-expanded`; zatvoreni odgovori u pitanjima ostaju u HTML-u (`hidden`); linkovi u tekstu su podvučeni. Axe test javnih strana radi sa `reducedMotion: 'reduce'`, inače meri panel demoa usred prelaza.
+- **Zaglavlje i podnožje** važe za sve javne strane (prijava, registracija, pravne strane). Srednja navigacija se krije ispod 768 px. Nova strana `/kontakt` (podrška i privatnost) je u mapi sajta, a link Kontakt više nije `mailto:`.
+
+Razlog: vlasnik je dobio lepši dizajn landinga iz Claude Design-a i traži da se primeni. Brojevi iz baze i ispravljene tvrdnje drže tekst tačnim kad se cene ili pravila promene.

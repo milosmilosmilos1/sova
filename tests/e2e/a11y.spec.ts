@@ -7,7 +7,7 @@ import { cleanup, login, seedWorkspace, type Seeded } from './fixtures'
  * Pristupačnost (faza 15): axe nad javnim stranama i stranama aplikacije u svetloj i tamnoj temi.
  * Strana za odobravanje se proverava u posts.spec.ts (traži link iz objave).
  */
-const PUBLIC_PAGES = ['/', '/login', '/register', '/privacy', '/terms', '/bot']
+const PUBLIC_PAGES = ['/', '/login', '/register', '/privacy', '/terms', '/data-deletion', '/kontakt', '/bot']
 const APP_PAGES = [
   '/app',
   '/app/posts',
@@ -47,6 +47,9 @@ test.afterAll(async () => {
 })
 
 test('javne strane nemaju ozbiljne prepreke pristupačnosti', async ({ page }) => {
+  // demo na landingu se sam menja na 4,5 s i panel se pojavljuje kroz providnost; bez animacija
+  // axe meri konačan izgled, a ne trenutak usred prelaza (D-098)
+  await page.emulateMedia({ reducedMotion: 'reduce' })
   expect(await auditAll(page, PUBLIC_PAGES)).toEqual([])
 })
 

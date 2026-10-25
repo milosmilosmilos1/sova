@@ -5,17 +5,21 @@ import { company } from '@/config/company'
 export function LegalPage({
   title,
   titleEn,
+  updated = true,
   children,
 }: {
   title: string
   titleEn: string
+  /** datum poslednje izmene pravnih dokumenata; Kontakt ga ne prikazuje */
+  updated?: boolean
   children: ReactNode
 }) {
   return (
-    <article className="prose prose-neutral dark:prose-invert mx-auto w-full max-w-3xl px-4 py-12">
+    <article className="prose prose-neutral dark:prose-invert mx-auto w-full max-w-3xl px-4 py-12 [&_a]:text-l-accent-soft [&_a]:underline [&_a]:decoration-l-accent-soft/40 [&_a]:underline-offset-2 [&_a:hover]:decoration-current">
       <h1 className="text-3xl font-semibold tracking-tight">{title}</h1>
       <p className="text-sm text-muted-foreground">
-        {titleEn} · {company.legalName} · poslednja izmena / last updated: {company.legalUpdatedAt}
+        {titleEn} · {company.legalName}
+        {updated ? ` · poslednja izmena / last updated: ${company.legalUpdatedAt}` : null}
       </p>
       <div className="mt-8 space-y-10 text-[15px] leading-7">{children}</div>
     </article>

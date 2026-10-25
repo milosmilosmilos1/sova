@@ -103,7 +103,7 @@ sova/
 ├── src/
 │   ├── app/
 │   │   ├── (public)/            landing, login, register, forgot, reset, verify,
-│   │   │                        privacy, terms, data-deletion, approve/[token]
+│   │   │                        privacy, terms, data-deletion, kontakt, approve/[token]
 │   │   ├── (app)/               sve stranice za ulogovane (layout sa sidebar-om)
 │   │   │   ├── onboarding/
 │   │   │   ├── dashboard/

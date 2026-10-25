@@ -26,6 +26,7 @@ export const SITEMAP_PATHS: Array<{ path: string; priority: number; legal?: bool
   { path: '/privacy', priority: 0.3, legal: true },
   { path: '/terms', priority: 0.3, legal: true },
   { path: '/data-deletion', priority: 0.2, legal: true },
+  { path: '/kontakt', priority: 0.3 },
   { path: '/bot', priority: 0.2 },
 ]
 
