@@ -215,13 +215,17 @@ export interface UnsplashAttribution {
   photoUrl: string
 }
 
+/** Ime fotografa dolazi sa Unsplash-a: u HTML-u se escape-uje, da sačuvana atribucija ne nosi oznake. */
+const escapeHtml = (s: string) =>
+  s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;')
+
 export function attributionFor(photo: Pick<UnsplashPhoto, 'user' | 'htmlLink'>): UnsplashAttribution {
   const utm = `utm_source=${encodeURIComponent(env.UNSPLASH_APP_NAME)}&utm_medium=referral`
   const photographerUrl = `${photo.user.profileUrl}?${utm}`
   const unsplashUrl = `https://unsplash.com/?${utm}`
   return {
     text: `Photo by ${photo.user.name} on Unsplash`,
-    html: `Photo by <a href="${photographerUrl}">${photo.user.name}</a> on <a href="${unsplashUrl}">Unsplash</a>`,
+    html: `Photo by <a href="${escapeHtml(photographerUrl)}">${escapeHtml(photo.user.name)}</a> on <a href="${unsplashUrl}">Unsplash</a>`,
     photographerName: photo.user.name,
     photographerUrl,
     unsplashUrl,

@@ -23,7 +23,7 @@ import { resetBreakerForTests } from '@/lib/ai/orchestrator'
 import { setFeatureFlagForTests } from '@/lib/flags'
 import { resetMemoryRateLimit } from '@/lib/ratelimit'
 import { configureFontLoader } from '@/lib/visuals/fonts'
-import { resetUnsplashCacheForTests } from '@/integrations/unsplash/client'
+import { attributionFor, resetUnsplashCacheForTests } from '@/integrations/unsplash/client'
 import { runVisualTemplate } from '@/services/visuals/template'
 
 import { calls, enqueueReply, geminiServer, resetGeminiMock } from './gemini-mock'
@@ -482,5 +482,18 @@ describe('Canva Connect', () => {
       { token: user.token, query: { workspaceId: wsId } },
     )
     expect(after.json.data!.status).toBeNull()
+  })
+})
+
+describe('Unsplash atribucija', () => {
+  it('ime fotografa u HTML-u je escape-ovano, linkovi nose UTM', () => {
+    const a = attributionFor({
+      user: { name: 'Ana <img src=x onerror=alert(1)>', profileUrl: 'https://unsplash.com/@ana' },
+      htmlLink: 'https://unsplash.com/photos/abc',
+    } as Parameters<typeof attributionFor>[0])
+    expect(a.html).not.toContain('<img')
+    expect(a.html).toContain('Ana &lt;img src=x onerror=alert(1)&gt;')
+    expect(a.photographerUrl).toBe('https://unsplash.com/@ana?utm_source=sova&utm_medium=referral')
+    expect(a.unsplashUrl).toContain('utm_medium=referral')
   })
 })

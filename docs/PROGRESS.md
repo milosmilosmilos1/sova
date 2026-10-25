@@ -105,6 +105,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - **Seed**: podešavanja koja admin menja više se ne vraćaju na početne pri ponovljenom seed-u.
 - **maxDuration** na osam teških ruta (Inngest 300 s, video 120 s, ostale 60 s).
 - **Produkcijski build** prolazi lokalno; fontovi i react-pdf su u trace-u, robots, mapa i slika za deljenje se prave pri build-u.
+- **Unsplash**: ime fotografa i Unsplash su vidljivi ispod svake fotografije u pretrazi, sa linkovima i UTM-om (uslov za produkcijski ključ); ime se u HTML-u escape-uje.
 - **Šta čeka vlasnika**: nalozi i ključevi iz DEPLOY.md 1, Environments u GitHub-u, prijave mreža (INTEGRATIONS 14), dozvola za prvi deploy.
 
 ## Faza 15 — šta je urađeno

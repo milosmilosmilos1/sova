@@ -63,7 +63,13 @@ interface UnsplashSearch {
     thumb: string
     alt: string | null
     photographer: string
-    attribution: { text: string; html: string }
+    attribution: {
+      text: string
+      html: string
+      photographerName: string
+      photographerUrl: string
+      unsplashUrl: string
+    }
   }>
 }
 
@@ -575,21 +581,42 @@ function UnsplashPicker({
       {search.data?.results.length ? (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
           {search.data.results.map((p) => (
-            <button
-              key={p.id}
-              type="button"
-              onClick={() => onChange({ id: p.id, attribution: p.attribution.text })}
-              className={`overflow-hidden rounded-md border ${value?.id === p.id ? 'ring-2 ring-primary' : ''}`}
-              title={`${p.alt ?? ''} · ${p.attribution.text}`}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={p.thumb}
-                alt={p.alt ?? 'Unsplash fotografija'}
-                className="aspect-square w-full object-cover"
-                loading="lazy"
-              />
-            </button>
+            <figure key={p.id} className="min-w-0 space-y-1">
+              <button
+                type="button"
+                onClick={() => onChange({ id: p.id, attribution: p.attribution.text })}
+                className={`block w-full overflow-hidden rounded-md border ${value?.id === p.id ? 'ring-2 ring-primary' : ''}`}
+                title={`${p.alt ?? ''} · ${p.attribution.text}`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p.thumb}
+                  alt={p.alt ?? 'Unsplash fotografija'}
+                  className="aspect-square w-full object-cover"
+                  loading="lazy"
+                />
+              </button>
+              {/* Unsplash smernice: vidljivo ime fotografa i Unsplash, oba sa linkom (UTM) */}
+              <figcaption className="truncate text-[11px] text-muted-foreground">
+                <a
+                  href={p.attribution.photographerUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-2"
+                >
+                  {p.attribution.photographerName}
+                </a>{' '}
+                ·{' '}
+                <a
+                  href={p.attribution.unsplashUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="underline underline-offset-2"
+                >
+                  Unsplash
+                </a>
+              </figcaption>
+            </figure>
           ))}
         </div>
       ) : null}
