@@ -55,7 +55,7 @@ async function checkInngest(): Promise<Omit<Check, 'latencyMs'>> {
       ? { status: 'dev_fallback', detail: 'dev server' }
       : { status: 'fail', detail: `HTTP ${res.status}` }
   } catch {
-    return { status: 'not_configured', detail: 'pokreni: npx inngest-cli@latest dev' }
+    return { status: 'not_configured', detail: 'pokreni: npm run inngest:dev' }
   }
 }
 

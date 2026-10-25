@@ -465,7 +465,7 @@ Svi događaji su tipizovani u `src/inngest/events.ts`. Svaka funkcija ima `id`, 
 | `account-export`, `account-delete`          | `account/*.requested`                                                          | ZIP u `exports`, brisanje sa kaskadom i opozivom tokena na mrežama                                                                      |
 | `cleanup`                                   | cron dnevno                                                                    | istekli `oauth_states`, `idempotency_keys`, `approval_links`, privremeni fajlovi                                                        |
 
-Lokalno: `npx inngest-cli@latest dev` pokazuje sve funkcije i događaje na http://localhost:8288.
+Lokalno: `npm run inngest:dev` (inngest-cli 1.46.0) pokazuje sve funkcije i događaje na http://localhost:8288.
 
 ---
 
