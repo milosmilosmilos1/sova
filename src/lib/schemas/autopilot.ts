@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { POST_FORMATS } from '@/config/post-formats'
+
 const uuid = z.uuid({ error: 'Neispravan identifikator.' })
 
 export const brandParamsSchema = z.object({ brandId: uuid })
@@ -11,6 +13,10 @@ export const updateAutopilotSchema = z
     tokenBudget: z.number().int().min(0).max(100000).nullable().optional(),
     approvalDeadlineHours: z.number().int().min(1).max(720).optional(),
     unapprovedAction: z.enum(['skip', 'publish']).optional(),
+    /** D-107: jezik objava (null = jezik brenda), dozvoljene vrste i mešanje */
+    language: z.enum(['sr-Latn', 'sr-Cyrl', 'en']).nullable().optional(),
+    formats: z.array(z.enum(POST_FORMATS)).min(1, { error: 'Izaberite bar jednu vrstu objave.' }).optional(),
+    mix: z.boolean().optional(),
     level3AccountIds: z.array(uuid).max(16).optional(),
     /** za nivo 3: tačan naziv brenda */
     confirm: z.string().trim().max(120).optional(),

@@ -787,6 +787,34 @@ function EditorForm({
                       }
                     />
                   ) : null}
+                  {sel.on && (a.platform === 'instagram' || a.platform === 'facebook') ? (
+                    // priča (D-107): jedna slika ili video, bez opisa; vrsta ide u options.format
+                    <label className="mt-2 flex items-start gap-2 text-sm">
+                      <input
+                        type="checkbox"
+                        className="mt-0.5"
+                        checked={sel.options.format === 'story'}
+                        disabled={!editable}
+                        onChange={(e) => {
+                          const { format: _old, ...rest } = sel.options
+                          void _old
+                          set('selected', {
+                            ...form.selected,
+                            [a.id]: {
+                              ...sel,
+                              options: e.target.checked ? { ...rest, format: 'story' } : rest,
+                            },
+                          })
+                        }}
+                      />
+                      <span>
+                        Objavi kao priču (Story)
+                        <span className="block text-xs text-muted-foreground">
+                          Jedna uspravna slika ili video do 60 sekundi. Priča traje 24 sata i nema opis.
+                        </span>
+                      </span>
+                    </label>
+                  ) : null}
                   {sel.on && a.platform === 'tiktok' ? (
                     <TikTokPanel
                       accountId={a.id}

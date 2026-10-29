@@ -359,3 +359,116 @@ describe('Metrike posle gašenja starih Meta metrika', () => {
     expect(daily!.find((d) => d.social_account_id === igId)).toMatchObject({ followers: 860, reach: 100 })
   })
 })
+
+describe('Priče (D-107)', () => {
+  const story = { format: 'story' }
+
+  it('Instagram priča sa slikom: kontejner STORIES bez opisa, objava, bez prvog komentara', async () => {
+    const img = await jpeg(200, 40, 90)
+    const { job } = await scheduled({
+      masterText: 'Natpis koji se ne objavljuje',
+      firstComment: 'Ne ide uz priču',
+      targets: [{ socialAccountId: igId, options: story }],
+      media: [{ mediaAssetId: img }],
+    })
+    expect((await runPublishTarget(job, ctx)).outcome).toBe('published')
+    const container = metaState.publishes.find((p) => p.path === 'ig-1/media')!
+    expect(container.body.media_type).toBe('STORIES')
+    expect(container.body.image_url).toMatch(/^http/)
+    expect(container.body).not.toHaveProperty('caption')
+    expect(metaState.publishes.filter((p) => p.path === 'ig-1/media_publish')).toHaveLength(1)
+    expect(metaState.publishes.some((p) => p.path.endsWith('/comments'))).toBe(false)
+    const t = await target(job.targetId)
+    expect(t.status).toBe('published')
+    expect(t.external_post_id).toMatch(/^ig-post-/)
+  })
+
+  it('Instagram priča sa videom: kontejner STORIES sa video_url, objava posle obrade', async () => {
+    metaState.videoProcessingPolls = 1
+    const v = await video(1080, 1920, 12_000)
+    const { job } = await scheduled({
+      masterText: 'Video priča',
+      targets: [{ socialAccountId: igId, options: story }],
+      media: [{ mediaAssetId: v }],
+    })
+    expect((await runPublishTarget(job, ctx)).outcome).toBe('published')
+    const container = metaState.publishes.find((p) => p.path === 'ig-1/media')!
+    expect(container.body).toMatchObject({ media_type: 'STORIES' })
+    expect(container.body.video_url).toMatch(/^http/)
+    expect((await target(job.targetId)).status).toBe('published')
+  })
+
+  it('Facebook priča sa slikom: neobjavljena fotografija pa photo_stories', async () => {
+    const img = await jpeg(30, 160, 90)
+    const { job } = await scheduled({
+      masterText: 'Priča na stranici',
+      targets: [{ socialAccountId: fbId, options: story }],
+      media: [{ mediaAssetId: img }],
+    })
+    expect((await runPublishTarget(job, ctx)).outcome).toBe('published')
+    const photo = metaState.publishes.find((p) => p.path === 'page-1/photos')!
+    expect(photo.body).toMatchObject({ published: 'false' })
+    expect(photo.body).not.toHaveProperty('caption')
+    const sent = metaState.publishes.find((p) => p.path === 'page-1/photo_stories')!
+    expect(sent.body.photo_id).toMatch(/^photo-/)
+    expect(metaState.publishes.some((p) => p.path === 'page-1/feed')).toBe(false)
+    const t = await target(job.targetId)
+    expect(t.status).toBe('published')
+    expect(t.external_post_id).toMatch(/^story-/)
+  })
+
+  it('Facebook priča sa videom: video_stories start, bajtovi na rupload, finish', async () => {
+    const v = await video(1080, 1920, 15_000)
+    const { data: asset } = await admin.from('media_assets').select('size_bytes').eq('id', v).single()
+    const { job } = await scheduled({
+      masterText: 'Video priča na stranici',
+      targets: [{ socialAccountId: fbId, options: story }],
+      media: [{ mediaAssetId: v }],
+    })
+    expect((await runPublishTarget(job, ctx)).outcome).toBe('published')
+    const phases = metaState.publishes.filter((p) => p.path === 'page-1/video_stories').map((p) => p.body)
+    expect(phases[0]).toMatchObject({ upload_phase: 'start' })
+    expect(phases[1]).toMatchObject({ upload_phase: 'finish', video_id: phases[1]!.video_id })
+    expect(metaState.ruploads).toEqual([
+      {
+        videoId: phases[1]!.video_id,
+        auth: 'OAuth page-token-1',
+        offset: '0',
+        fileSize: String(asset!.size_bytes),
+        size: asset!.size_bytes,
+      },
+    ])
+    expect(metaState.publishes.some((p) => p.path === 'page-1/video_reels')).toBe(false)
+    const t = await target(job.targetId)
+    expect(t.status).toBe('published')
+    expect(t.external_post_id).toMatch(/^story-/)
+  })
+
+  it('provera: priča ima tačno jedan medij, a video u priči traje od 3 do 60 sekundi', async () => {
+    const a = await jpeg(10, 10, 10)
+    const b = await jpeg(20, 20, 20)
+    expect(
+      await problemsOf({
+        masterText: 'Dve slike',
+        targets: [{ socialAccountId: igId, options: story }],
+        media: [{ mediaAssetId: a }, { mediaAssetId: b, sortOrder: 1 }],
+      }),
+    ).toContain('Priča mora imati tačno jednu sliku ili jedan video.')
+    const long = await video(1080, 1920, 90_000)
+    expect(
+      await problemsOf({
+        masterText: 'Predug video',
+        targets: [{ socialAccountId: fbId, options: story }],
+        media: [{ mediaAssetId: long }],
+      }),
+    ).toContain('Video u priči traje od 3 do 60 sekundi.')
+    // tekst preko limita mreže ne smeta priči, opis se ne objavljuje
+    expect(
+      await problemsOf({
+        masterText: 'x'.repeat(2300),
+        targets: [{ socialAccountId: igId, options: story }],
+        media: [{ mediaAssetId: a }],
+      }),
+    ).toBe('')
+  })
+})

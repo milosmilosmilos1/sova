@@ -38,6 +38,7 @@ create type target_status as enum ('pending','scheduled','publishing','published
                                    'needs_reauth','canceled','deleted_externally','assisted_pending','assisted_done');
 create type post_source as enum ('manual','ai','autopilot','suggestion','evergreen','import');
 create type media_source as enum ('upload','canva','unsplash','template','gemini');
+-- migracija 028 (D-107): alter type media_source add value 'pexels';
 create type media_kind as enum ('image','video');
 create type ai_generation_type as enum ('text','rewrite','translate','hashtags','repurpose','variants',
   'image_from_photo','image_from_prompt','visual_template','vision_describe','unsplash_rank',

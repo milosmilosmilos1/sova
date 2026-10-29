@@ -1,6 +1,7 @@
 import 'server-only'
 
 import type { SocialPlatform } from '@/config/platforms'
+import { formatFor, mediaNeed, mixedFormat, PLATFORM_FORMATS, type PostFormat } from '@/config/post-formats'
 import type { PostGoal } from '@/lib/ai/prompts/post-text'
 import {
   MAX_WEEKLY_DRAFTS,
@@ -26,13 +27,8 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getTokenPrice } from '@/lib/tokens/prices'
 import { startGeneration } from '@/services/ai/generations'
 import { computeOverview } from '@/services/analytics/overview'
-import {
-  brandContextFor,
-  generateDraftText,
-  generateTemplateVisual,
-  headlineFrom,
-} from '@/services/autopilot/content'
-import { autopilotSettings, autopilotUsage } from '@/services/autopilot/settings'
+import { brandContextFor, draftMedia, generateDraftText, headlineFrom } from '@/services/autopilot/content'
+import { autopilotContentPrefs, autopilotSettings, autopilotUsage } from '@/services/autopilot/settings'
 import { notifyUsers, usersWithRoles } from '@/services/notifications'
 import { wallClock, zonedToUtc } from '@/lib/zoned-time'
 import { systemSchedule, systemSubmitForReview } from '@/services/posts/system'
@@ -460,6 +456,13 @@ async function recentTexts(brandId: string, excludePostId: string): Promise<stri
   ].filter((t) => t && !t.startsWith('Tema nedelje'))
 }
 
+/** Mesto objave u rasporedu vrsta: iz ID-ja, pa ista objava pri ponovljenom prolazu dobija istu vrstu. */
+function formatSlot(postId: string): number {
+  let h = 0
+  for (const ch of postId) h = (h * 31 + ch.charCodeAt(0)) >>> 0
+  return h
+}
+
 async function draftOne(runId: string, postId: string): Promise<DraftResult> {
   const admin = createSupabaseAdminClient()
   const { data: run } = await admin
@@ -480,7 +483,12 @@ async function draftOne(runId: string, postId: string): Promise<DraftResult> {
     .eq('post_id', postId)
   const platform = targets?.[0]?.platform
   if (!platform) return { postId, outcome: 'skipped', tokens: 0, message: 'objava nema mrežu' }
-  const needsMedia = MEDIA_REQUIRED.includes(platform)
+  // vrsta objave (D-107): dozvoljene u podešavanjima koje mreža prima, AI meša ili uvek prva
+  const prefs = autopilotContentPrefs(brand)
+  const allowed = PLATFORM_FORMATS[platform].filter((f) => prefs.formats.includes(f))
+  const format: PostFormat =
+    (prefs.mix ? mixedFormat(allowed, formatSlot(postId)) : allowed[0]) ?? formatFor('image', platform)
+  const needsMedia = MEDIA_REQUIRED.includes(platform) || mediaNeed(format).kind !== 'none'
   const textPrice = await getTokenPrice('text')
   const visualPrice = needsMedia ? await getTokenPrice('visual_template') : 0
   const usage = await autopilotUsage(brand.id, brand.autopilot_token_budget)
@@ -512,7 +520,7 @@ async function draftOne(runId: string, postId: string): Promise<DraftResult> {
       .filter(Boolean)
       .join('\n')
     const goal: PostGoal = campaign ? 'sales' : 'engagement'
-    const context = await brandContextFor(brand, topic)
+    const context = await brandContextFor(brand, topic, prefs.language)
     const text = await generateDraftText(brand, context, {
       platform,
       topic,
@@ -521,25 +529,31 @@ async function draftOne(runId: string, postId: string): Promise<DraftResult> {
       postId,
       runId,
       publishDate: post.scheduled_for ? wallClock(post.scheduled_for, brand.timezone).date : undefined,
+      format,
     })
     tokens += text.tokens
-    let hasMedia = false
-    if (needsMedia) {
-      const visual = await generateTemplateVisual(brand, {
-        headline: headlineFrom(text.body, post.title ?? brand.name),
-        subtext: null,
-        cta: campaign?.cta ?? null,
-        postId,
-        runId,
-      })
-      if (visual) {
-        tokens += visual.tokens
-        hasMedia = true
-        await admin
-          .from('post_media')
-          .insert({ post_id: postId, media_asset_id: visual.assetId, sort_order: 0 })
-      }
-    }
+    const media = await draftMedia(brand, {
+      format,
+      required: MEDIA_REQUIRED.includes(platform),
+      query: (text.visualQuery ?? topic).slice(0, 100),
+      headline: headlineFrom(text.body, post.title ?? brand.name),
+      cta: campaign?.cta ?? null,
+      postId,
+      runId,
+    })
+    tokens += media.tokens
+    const hasMedia = media.assetIds.length > 0
+    if (hasMedia)
+      await admin
+        .from('post_media')
+        .insert(media.assetIds.map((id, i) => ({ post_id: postId, media_asset_id: id, sort_order: i })))
+    if (media.format === 'story')
+      await admin
+        .from('post_targets')
+        .update({ options: { format: 'story' } })
+        .eq('post_id', postId)
+    if (media.format === 'link' && brand.website_url)
+      await admin.from('posts').update({ link_url: brand.website_url }).eq('id', postId)
     const corpus = [
       ...(context.facts ?? []),
       ...(context.services ?? []),

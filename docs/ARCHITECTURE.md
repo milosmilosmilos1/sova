@@ -56,6 +56,7 @@ flowchart LR
         GEM[Gemini API]
         CAN[Canva Connect]
         UNS[Unsplash]
+        PEX[Pexels]
         SOC[Meta · LinkedIn · TikTok · X<br/>YouTube · Pinterest · GBP]
         PAY[PaymentProvider<br/>Paddle ili Stripe]
     end
@@ -75,9 +76,11 @@ flowchart LR
     ING --> SOC
     ING --> CAN
     ING --> UNS
+    ING --> PEX
     ING --> RES
     API --> GEM
     API --> UNS
+    API --> PEX
     API --> CAN
     PAY -->|webhook| API
     API --> PAY
@@ -147,6 +150,7 @@ sova/
 │   │   ├── facebook/ instagram/ linkedin/ tiktok/ x/ youtube/ pinterest/ google-business/
 │   │   │   └── provider.ts, auth.ts, publish.ts, metrics.ts, mappers.ts, errors.ts
 │   │   ├── canva/
+│   │   ├── pexels/
 │   │   ├── unsplash/
 │   │   └── assisted/            „objavi ručno” fallback provider
 │   ├── inngest/
@@ -426,7 +430,7 @@ Admin zadržava svoju sesiju. Start (`POST /api/admin/impersonation`) traži raz
 
 ### 5.5 Headeri i ostalo
 
-CSP (nonce za skripte, `img-src` dozvoljava Supabase Storage, images.unsplash.com, Canva CDN, avatare mreža), HSTS, `frame-ancestors 'none'` osim javnog linka za odobravanje, Referrer-Policy `strict-origin-when-cross-origin`, Permissions-Policy minimalan. Mutacione rute proveravaju `Origin`. Cloudflare Turnstile na registraciji. Gitleaks pre-commit + GitHub secret scanning.
+CSP (nonce za skripte, `img-src` dozvoljava Supabase Storage, images.unsplash.com, images.pexels.com, Canva CDN, avatare mreža; `media-src` Supabase Storage i videos.pexels.com), HSTS, `frame-ancestors 'none'` osim javnog linka za odobravanje, Referrer-Policy `strict-origin-when-cross-origin`, Permissions-Policy minimalan. Mutacione rute proveravaju `Origin`. Cloudflare Turnstile na registraciji. Gitleaks pre-commit + GitHub secret scanning.
 
 ---
 
@@ -490,12 +494,14 @@ Legenda uloga: O owner, A admin, E editor, P approver, V viewer, PA platform_adm
 | AI                | `POST /api/ai/text`                                                                                 | O,A,E                                                                                                        | 10/min, 100/dan free | 2 tokena, sinhrono, Idempotency-Key obavezan                                                                                        |
 |                   | `POST /api/ai/image/from-photo`, `POST /api/ai/image/from-prompt`                                   | O,A,E                                                                                                        | 10/min               | 8 ili 15 tokena, 202                                                                                                                |
 |                   | `POST /api/ai/visual/template`                                                                      | O,A,E                                                                                                        | 10/min               | 2 tokena, 202                                                                                                                       |
+|                   | `POST /api/ai/compose`                                                                              | O,A,E                                                                                                        | 10/min               | „Nova objava” (D-107): tekst 2 tokena, šablon 2; nacrt objave                                                                       |
 |                   | `POST /api/ai/rewrite`, `/hashtags`, `/repurpose`                                                   | O,A,E                                                                                                        | 10/min               | 1, 1, 2 tokena                                                                                                                      |
 |                   | `GET /api/ai/jobs/[id]`                                                                             | član                                                                                                         | —                    | status + rezultat                                                                                                                   |
 | Mediji            | `POST /api/media/upload-url`, `POST /api/media/complete`                                            | O,A,E                                                                                                        | 30/min               | pravo u skladište (Vercel 4,5 MB), tip po sadržaju i obrada pri `complete`; slika 20 MB, video MP4/MOV `MEDIA_MAX_VIDEO_MB` (D-082) |
 |                   | `GET /api/media`, `DELETE /api/media/[id]`                                                          | član / O,A,E                                                                                                 | —                    | brisanje blokirano ako je u zakazanoj objavi                                                                                        |
 |                   | `POST /api/media/[id]/crop`                                                                         | O,A,E                                                                                                        | 30/min               | isečak na odnos mreže je nova slika, original ostaje (D-093)                                                                        |
 |                   | `GET /api/unsplash/search`, `POST /api/unsplash/select`                                             | član / O,A,E                                                                                                 | 30/min               | keš 1 h; select zove download_location                                                                                              |
+|                   | `GET /api/pexels/search`, `POST /api/pexels/select`                                                 | član / O,A,E                                                                                                 | 30/min               | keš 1 h; kopija sa imenom autora (D-107)                                                                                            |
 | Canva             | `GET /api/integrations/canva/connect`, `GET .../callback`, `GET /api/canva/return`                  | O,A,E                                                                                                        | —                    |                                                                                                                                     |
 |                   | `GET/POST /api/canva/designs`, `POST /api/canva/autofill`, `POST /api/canva/export`                 | O,A,E                                                                                                        | 20/min               | 2 tokena po dizajnu ili exportu                                                                                                     |
 | Mreže             | `GET /api/integrations/[provider]/connect`, `GET .../callback`                                      | O,A                                                                                                          | —                    | state + PKCE                                                                                                                        |

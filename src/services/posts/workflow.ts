@@ -150,13 +150,16 @@ export async function validatePostContent(
     const list: string[] = []
     const media = view.media.filter((m) => !m.socialAccountId || m.socialAccountId === t.socialAccountId)
     if (!t.text.trim() && !media.length) list.push('Objava nema ni tekst ni medij.')
-    const text = validateText(t.platform, t.text)
+    // priča nema opis (D-107): tekst se ne objavljuje, pa se ni ne proverava ni ne poredi
+    const story = t.options?.format === 'story'
+    const text = story ? { problems: [] as string[] } : validateText(t.platform, t.text)
     list.push(...text.problems)
     if (t.accountStatus && t.accountStatus !== 'active')
       list.push(`Nalog nije aktivan (${t.accountStatus}); povežite ga ponovo pre objave.`)
-    const duplicate = DUPLICATE_REJECTING.has(t.platform)
-      ? await findDuplicateOnAccount(t.socialAccountId, t.text, postId)
-      : null
+    const duplicate =
+      !story && DUPLICATE_REJECTING.has(t.platform)
+        ? await findDuplicateOnAccount(t.socialAccountId, t.text, postId)
+        : null
     if (duplicate) {
       const label = PLATFORMS[t.platform as SocialPlatform]?.label ?? t.platform
       const when = duplicate.at ? new Date(duplicate.at).toLocaleDateString('sr-Latn-RS') : ''

@@ -9,7 +9,15 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
-import { PLATFORM_KEYS, PLATFORMS } from '@/config/platforms'
+import { PLATFORM_KEYS, PLATFORMS, type SocialPlatform } from '@/config/platforms'
+import {
+  FORMAT_HINT,
+  FORMAT_LABEL,
+  formatsForPlatforms,
+  mediaNeed,
+  type PostFormat,
+  type PostFormatChoice,
+} from '@/config/post-formats'
 import type { ApiResponse } from '@/lib/api/response'
 import { uploadMediaFile } from '@/lib/media/client-upload'
 
@@ -121,11 +129,17 @@ export function StudioClient({
   workspaceId,
   brandId,
   brandName,
+  brandLocale,
+  sources,
   aiImages,
 }: {
   workspaceId: string
   brandId: string
   brandName: string
+  /** jezik sadržaja brenda, podrazumevan u „Novoj objavi” */
+  brandLocale: string
+  /** koji izvori vizuala imaju ključ (D-107) */
+  sources: { unsplash: boolean; pexels: boolean }
   /** AI slike kroz Gemini; podrazumevano isključene (D-104) */
   aiImages: boolean
 }) {
@@ -158,8 +172,11 @@ export function StudioClient({
         </div>
       </div>
 
-      <Tabs defaultValue="text">
+      <Tabs defaultValue="compose">
         <TabsList className="max-w-full flex-wrap justify-start group-data-horizontal/tabs:h-auto">
+          <TabsTrigger value="compose" className="flex-none">
+            Nova objava
+          </TabsTrigger>
           <TabsTrigger value="text" className="flex-none">
             Tekst za objavu ({balance.data?.prices.text ?? 2})
           </TabsTrigger>
@@ -168,6 +185,9 @@ export function StudioClient({
           </TabsTrigger>
           <TabsTrigger value="unsplash" className="flex-none">
             Unsplash fotografije
+          </TabsTrigger>
+          <TabsTrigger value="pexels" className="flex-none">
+            Pexels video i fotografije
           </TabsTrigger>
           <TabsTrigger value="canva" className="flex-none">
             Iz Canve ({balance.data?.prices.canva_export ?? 2})
@@ -183,6 +203,15 @@ export function StudioClient({
             </>
           ) : null}
         </TabsList>
+        <TabsContent value="compose">
+          <ComposePanel
+            brandId={brandId}
+            brandLocale={brandLocale}
+            sources={sources}
+            prices={balance.data?.prices}
+            onDone={refreshBalance}
+          />
+        </TabsContent>
         <TabsContent value="template">
           <VisualPanel workspaceId={workspaceId} brandId={brandId} onDone={refreshBalance} />
         </TabsContent>
@@ -191,6 +220,9 @@ export function StudioClient({
         </TabsContent>
         <TabsContent value="unsplash">
           <UnsplashPanel brandId={brandId} />
+        </TabsContent>
+        <TabsContent value="pexels">
+          <PexelsPanel brandId={brandId} />
         </TabsContent>
         <TabsContent value="canva">
           <CanvaImportPanel
@@ -1253,6 +1285,497 @@ function CanvaImportPanel({
               </div>
             ) : null}
           </>
+        ) : null}
+      </CardContent>
+    </Card>
+  )
+}
+
+interface PexelsResult {
+  id: number
+  kind: 'video' | 'photo'
+  width: number
+  height: number
+  thumb: string
+  durationSec: number | null
+  attribution: { text: string; authorName: string; authorUrl: string; pageUrl: string }
+}
+
+interface PexelsSelected {
+  id: string
+  kind: 'image' | 'video'
+  url: string
+  attribution: { text: string } | null
+  reused: boolean
+}
+
+/** Pexels (D-107): video snimci i fotografije bez AI-ja i bez tokena; kopija ide u biblioteku brenda. */
+function PexelsPanel({ brandId }: { brandId: string }) {
+  const [kind, setKind] = useState<'video' | 'photo'>('video')
+  const [query, setQuery] = useState('')
+  const [submitted, setSubmitted] = useState('')
+  const [picked, setPicked] = useState<PexelsResult | null>(null)
+  const search = useQuery({
+    queryKey: ['pexels', kind, submitted],
+    queryFn: () =>
+      api<{ configured: boolean; results: PexelsResult[] }>(
+        `/api/pexels/search?${new URLSearchParams({ query: submitted, kind })}`,
+      ),
+    enabled: submitted.length >= 2,
+  })
+  const select = useMutation({
+    mutationFn: (p: PexelsResult) =>
+      api<PexelsSelected>('/api/pexels/select', {
+        method: 'POST',
+        json: { brandId, id: p.id, kind: p.kind },
+      }),
+  })
+  const choose = (p: PexelsResult | null) => {
+    setPicked(p)
+    select.reset()
+  }
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Video i fotografije sa Pexels-a</CardTitle>
+        <CardDescription>
+          Besplatni snimci i fotografije, bez AI-ja i bez tokena. Izabrano ide u biblioteku brenda sa imenom
+          autora, a u objavi ga birate iz biblioteke. Za Reels i priče birajte uspravne snimke.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-wrap gap-3 text-sm" role="radiogroup" aria-label="Vrsta">
+          {(
+            [
+              ['video', 'Video'],
+              ['photo', 'Fotografije'],
+            ] as const
+          ).map(([v, label]) => (
+            <label key={v} className="flex items-center gap-1.5">
+              <input
+                type="radio"
+                name="pexels-kind"
+                checked={kind === v}
+                onChange={() => {
+                  setKind(v)
+                  choose(null)
+                }}
+              />
+              {label}
+            </label>
+          ))}
+        </div>
+        <div className="flex gap-2">
+          <Input
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Npr. nightlife, coffee, klima, city night"
+            aria-label="Pretraga Pexels-a"
+            onKeyDown={(e) => e.key === 'Enter' && setSubmitted(query.trim())}
+          />
+          <Button
+            type="button"
+            variant="outline"
+            onClick={() => setSubmitted(query.trim())}
+            disabled={query.trim().length < 2}
+          >
+            Traži
+          </Button>
+        </div>
+        {/* Pexels traži vidljiv link ka Pexels-u uz svaku pretragu, pored imena autora */}
+        <p className="text-xs text-muted-foreground">
+          Snimci i fotografije stižu sa{' '}
+          <a
+            href="https://www.pexels.com"
+            target="_blank"
+            rel="noreferrer"
+            className="underline underline-offset-2"
+          >
+            Pexels-a
+          </a>
+          . Pretraga najbolje radi sa pojmovima na engleskom.
+        </p>
+        {search.isPending && submitted ? (
+          <p className="text-sm text-muted-foreground">Tražim na Pexels-u…</p>
+        ) : null}
+        <ErrorBox error={search.error} />
+        {search.data && !search.data.configured ? (
+          <p className="text-sm text-muted-foreground">Pexels još nije uključen. Čeka se ključ.</p>
+        ) : null}
+        {search.data?.configured && search.data.results.length === 0 ? (
+          <p className="text-sm text-muted-foreground">Nema rezultata za „{submitted}”.</p>
+        ) : null}
+        {search.data?.results.length ? (
+          <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+            {search.data.results.map((p) => (
+              <figure key={`${p.kind}-${p.id}`} className="min-w-0 space-y-1">
+                <button
+                  type="button"
+                  onClick={() => choose(p)}
+                  aria-pressed={picked?.id === p.id}
+                  className={`relative block w-full overflow-hidden rounded-md border ${picked?.id === p.id ? 'ring-2 ring-primary' : ''}`}
+                  title={p.attribution.text}
+                >
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={p.thumb}
+                    alt={p.kind === 'video' ? 'Snimak sa Pexels-a' : 'Fotografija sa Pexels-a'}
+                    className="aspect-square w-full object-cover"
+                    loading="lazy"
+                  />
+                  {p.durationSec !== null ? (
+                    <span className="absolute right-1 bottom-1 rounded bg-black/70 px-1.5 text-[11px] text-white">
+                      {p.durationSec} s{p.height > p.width ? ' · uspravno' : ''}
+                    </span>
+                  ) : null}
+                </button>
+                <figcaption className="truncate text-[11px] text-muted-foreground">
+                  <a
+                    href={p.attribution.authorUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline underline-offset-2"
+                  >
+                    {p.attribution.authorName}
+                  </a>{' '}
+                  ·{' '}
+                  <a
+                    href={p.attribution.pageUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline underline-offset-2"
+                  >
+                    Pexels
+                  </a>
+                </figcaption>
+              </figure>
+            ))}
+          </div>
+        ) : null}
+        <Button disabled={!picked || select.isPending} onClick={() => picked && select.mutate(picked)}>
+          {select.isPending
+            ? picked?.kind === 'video'
+              ? 'Preuzimam snimak…'
+              : 'Čuvam…'
+            : 'DODAJ U BIBLIOTEKU'}
+        </Button>
+        <ErrorBox error={select.error} />
+        {select.data ? (
+          <figure className="space-y-2">
+            {select.data.kind === 'video' ? (
+              <video
+                src={select.data.url}
+                controls
+                playsInline
+                preload="metadata"
+                className="max-h-[420px] rounded-lg border bg-black"
+                aria-label="Snimak sa Pexels-a"
+              />
+            ) : (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={select.data.url}
+                alt="Fotografija sa Pexels-a"
+                className="max-h-80 rounded-lg border"
+              />
+            )}
+            <figcaption className="text-xs text-muted-foreground">
+              {select.data.reused ? 'Već je u biblioteci.' : 'Dodato u biblioteku brenda.'}
+              {select.data.attribution ? ` ${select.data.attribution.text}` : ''}
+            </figcaption>
+          </figure>
+        ) : null}
+      </CardContent>
+    </Card>
+  )
+}
+
+const COMPOSE_LOCALES = [
+  ['sr-Latn', 'Srpski, latinica'],
+  ['sr-Cyrl', 'Srpski, ćirilica'],
+  ['en', 'Engleski'],
+] as const
+
+interface ComposeView {
+  postId: string
+  format: PostFormat
+  locale: string
+  variants: Array<{ platform: string; text: string; firstComment: string | null }>
+  media: Array<{ id: string; kind: string; url: string; attribution: string | null }>
+  targets: number
+  notes: string[]
+  tokensCharged: number
+}
+
+/**
+ * „Nova objava” (D-107): mreže, jezik, vrsta objave i izvor vizuala u jednom zahtevu. Gemini piše
+ * tekst sa heštegovima, fotografije dolaze sa Unsplash-a ili Pexels-a, video sa Pexels-a, a
+ * rezultat je nacrt objave koji se pregleda i zakazuje.
+ */
+function ComposePanel({
+  brandId,
+  brandLocale,
+  sources,
+  prices,
+  onDone,
+}: {
+  brandId: string
+  brandLocale: string
+  sources: { unsplash: boolean; pexels: boolean }
+  prices: Record<string, number> | undefined
+  onDone: () => void
+}) {
+  const [platforms, setPlatforms] = useState<SocialPlatform[]>(['instagram', 'facebook'])
+  const [locale, setLocale] = useState(brandLocale)
+  const [format, setFormat] = useState<PostFormatChoice>('auto')
+  const [source, setSource] = useState<'auto' | 'unsplash' | 'pexels' | 'template'>('auto')
+  const [topic, setTopic] = useState('')
+  const [goal, setGoal] = useState('engagement')
+  const [cta, setCta] = useState('')
+  const [hashtags, setHashtags] = useState(true)
+  const [linkUrl, setLinkUrl] = useState('')
+
+  const allowed = formatsForPlatforms(platforms)
+  // vrsta koja ne ide na novo izabrane mreže vraća se na „AI bira”
+  const chosen: PostFormatChoice = format !== 'auto' && !allowed.includes(format) ? 'auto' : format
+  const needsVisual = chosen === 'auto' || mediaNeed(chosen).kind !== 'none'
+  const textPrice = prices?.text ?? 2
+  const cost = textPrice + (needsVisual && source === 'template' ? (prices?.visual_template ?? 2) : 0)
+  const wantsVideo = chosen === 'video' || (chosen === 'auto' && allowed.includes('video'))
+
+  const run = useMutation({
+    mutationFn: () =>
+      api<ComposeView>('/api/ai/compose', {
+        method: 'POST',
+        idempotent: true,
+        json: {
+          brandId,
+          platforms,
+          topic,
+          goal,
+          cta: cta.trim() || undefined,
+          includeHashtags: hashtags,
+          locale,
+          format: chosen,
+          source,
+          linkUrl: chosen === 'link' && linkUrl.trim() ? linkUrl.trim() : undefined,
+        },
+      }),
+    onSettled: onDone,
+  })
+
+  const selectClass = 'h-9 w-full rounded-md border border-input bg-background px-2 text-sm'
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Nova objava</CardTitle>
+        <CardDescription>
+          Izaberite mreže, jezik i vrstu objave, ili prepustite AI-ju da bira. Sova napiše tekst sa
+          heštegovima, nađe fotografiju ili video i napravi nacrt koji pregledate i zakažete.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <fieldset className="flex flex-wrap gap-3">
+          <legend className="mb-1 text-sm font-medium">Mreže</legend>
+          {PLATFORM_KEYS.map((p) => (
+            <label key={p} className="flex items-center gap-1.5 text-sm">
+              <input
+                type="checkbox"
+                className="size-4"
+                checked={platforms.includes(p)}
+                onChange={(e) =>
+                  setPlatforms((cur) => (e.target.checked ? [...cur, p] : cur.filter((x) => x !== p)))
+                }
+              />
+              {PLATFORMS[p].label}
+            </label>
+          ))}
+        </fieldset>
+
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="compose-locale">Jezik</Label>
+            <select
+              id="compose-locale"
+              value={locale}
+              onChange={(e) => setLocale(e.target.value)}
+              className={selectClass}
+            >
+              {COMPOSE_LOCALES.map(([v, label]) => (
+                <option key={v} value={v}>
+                  {label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="compose-format">Vrsta objave</Label>
+            <select
+              id="compose-format"
+              value={chosen}
+              onChange={(e) => setFormat(e.target.value as PostFormatChoice)}
+              className={selectClass}
+            >
+              <option value="auto">AI bira (meša vrste)</option>
+              {allowed.map((f) => (
+                <option key={f} value={f}>
+                  {FORMAT_LABEL[f]}
+                </option>
+              ))}
+            </select>
+          </div>
+          {needsVisual ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="compose-source">Fotografija ili video</Label>
+              <select
+                id="compose-source"
+                value={source}
+                onChange={(e) => setSource(e.target.value as typeof source)}
+                className={selectClass}
+              >
+                <option value="auto">AI bira (Unsplash za fotografije, Pexels za video)</option>
+                <option value="unsplash">Unsplash</option>
+                <option value="pexels">Pexels</option>
+                <option value="template">Vizual iz šablona ({prices?.visual_template ?? 2} tokena)</option>
+              </select>
+            </div>
+          ) : null}
+          <div className="space-y-1.5">
+            <Label htmlFor="compose-goal">Cilj</Label>
+            <select
+              id="compose-goal"
+              value={goal}
+              onChange={(e) => setGoal(e.target.value)}
+              className={selectClass}
+            >
+              <option value="engagement">Angažovanje</option>
+              <option value="awareness">Svest o brendu</option>
+              <option value="sales">Prodaja ili upit</option>
+              <option value="education">Edukacija</option>
+            </select>
+          </div>
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          {chosen === 'auto'
+            ? allowed.length
+              ? `AI bira vrstu koja najbolje nosi temu, među: ${allowed.map((f) => FORMAT_LABEL[f]).join(', ')}.`
+              : 'Izabrane mreže nemaju zajedničku vrstu objave. Napravite posebne objave.'
+            : FORMAT_HINT[chosen]}
+          {wantsVideo && !sources.pexels && source !== 'template' && source !== 'unsplash'
+            ? ' Pexels još nije uključen, pa video dodajte iz Canve ili biblioteke.'
+            : ''}
+          {needsVisual && source === 'unsplash' && !sources.unsplash ? ' Unsplash još nije uključen.' : ''}
+        </p>
+
+        <div className="space-y-1.5">
+          <Label htmlFor="compose-topic">O čemu je objava?</Label>
+          <Textarea
+            id="compose-topic"
+            value={topic}
+            onChange={(e) => setTopic(e.target.value)}
+            rows={4}
+            maxLength={2000}
+            placeholder="Npr. petak u klubu: gostujući DJ, ulaz do ponoći besplatan"
+          />
+        </div>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="space-y-1.5">
+            <Label htmlFor="compose-cta">Poziv na akciju (opciono)</Label>
+            <Input
+              id="compose-cta"
+              value={cta}
+              onChange={(e) => setCta(e.target.value)}
+              maxLength={200}
+              placeholder="Rezervišite sto porukom"
+            />
+          </div>
+          {chosen === 'link' ? (
+            <div className="space-y-1.5">
+              <Label htmlFor="compose-link">Link (prazno = sajt brenda)</Label>
+              <Input
+                id="compose-link"
+                type="url"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="https://"
+              />
+            </div>
+          ) : null}
+        </div>
+        <label className="flex items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={hashtags}
+            onChange={(e) => setHashtags(e.target.checked)}
+          />
+          Heštegovi
+        </label>
+
+        <Button
+          disabled={run.isPending || topic.trim().length < 3 || !platforms.length || !allowed.length}
+          onClick={() => run.mutate()}
+        >
+          {run.isPending ? 'Pravim objavu…' : `NAPRAVI OBJAVU (${cost} tokena)`}
+        </Button>
+        <ErrorBox error={run.error} />
+
+        {run.data ? (
+          <div className="space-y-4 rounded-md border p-4">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="text-sm">
+                Napravljeno: <strong>{FORMAT_LABEL[run.data.format]}</strong> · naplaćeno{' '}
+                {run.data.tokensCharged} tokena{run.data.targets ? ` · nalozi: ${run.data.targets}` : ''}
+              </p>
+              <Button nativeButton={false} render={<a href={`/app/posts/${run.data.postId}`} />}>
+                Otvori nacrt i zakaži
+              </Button>
+            </div>
+            {run.data.media.length ? (
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                {run.data.media.map((m) => (
+                  <figure key={m.id} className="space-y-1">
+                    {m.kind === 'video' ? (
+                      <video
+                        src={m.url}
+                        controls
+                        playsInline
+                        preload="metadata"
+                        className="w-full rounded-md border bg-black"
+                        aria-label="Video uz objavu"
+                      />
+                    ) : (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={m.url}
+                        alt="Vizual uz objavu"
+                        className="w-full rounded-md border object-cover"
+                      />
+                    )}
+                    {m.attribution ? (
+                      <figcaption className="text-[11px] text-muted-foreground">{m.attribution}</figcaption>
+                    ) : null}
+                  </figure>
+                ))}
+              </div>
+            ) : null}
+            {run.data.variants.map((v) => (
+              <div key={v.platform} className="space-y-1">
+                <p className="text-xs font-medium text-muted-foreground">
+                  {PLATFORMS[v.platform as SocialPlatform]?.label ?? v.platform}
+                </p>
+                <p className="text-sm whitespace-pre-wrap">{v.text}</p>
+              </div>
+            ))}
+            {run.data.notes.length ? (
+              <ul className="list-disc space-y-1 pl-5 text-xs text-muted-foreground">
+                {run.data.notes.map((n) => (
+                  <li key={n}>{n}</li>
+                ))}
+              </ul>
+            ) : null}
+          </div>
         ) : null}
       </CardContent>
     </Card>

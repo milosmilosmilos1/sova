@@ -56,6 +56,10 @@ const FB_VIDEO_MAX_MS = 20 * 60_000
 const FB_VIDEO_MAX_BYTES = 1024 ** 3
 
 const isVideo = (m: NormalizedMedia) => m.mimeType.startsWith('video/')
+// priča (D-107): jedna slika ili video od 3 do 60 s, bez opisa; vrsta dolazi iz `post_targets.options.format`
+const STORY_VIDEO_MIN_MS = 3_000
+const STORY_VIDEO_MAX_MS = 60_000
+const isStory = (input: NormalizedPost) => input.options?.format === 'story'
 
 /** Facebook Reel: uspravan video (9:16, bar 540×960) od 3 do 90 s; ostalo ide kao običan video (D-089). */
 export function isFacebookReel(m: NormalizedMedia): boolean {
@@ -271,7 +275,7 @@ export class MetaProvider implements SocialProvider {
       carousel: true,
       video: true,
       reels: true,
-      stories: false,
+      stories: true,
       link: true,
       text: true,
       firstComment: true,
@@ -286,7 +290,7 @@ export class MetaProvider implements SocialProvider {
       carousel: true,
       video: true,
       reels: true,
-      stories: false,
+      stories: true,
       link: false,
       text: false,
       firstComment: true,
@@ -307,6 +311,7 @@ export class MetaProvider implements SocialProvider {
   validatePost(input: NormalizedPost, account: AccountRef): ValidationResult {
     const platform = account.platform
     const c = PLATFORMS[platform]
+    if (isStory(input)) return this.storyProblems(input)
     const text = validateText(platform, input.text)
     const problems = [...text.problems]
     if (input.media.length > c.imageMaxPerPost)
@@ -331,6 +336,21 @@ export class MetaProvider implements SocialProvider {
       problems.push('Instagram objava mora imati bar jednu sliku ili video.')
     if (platform === 'instagram' && input.link)
       problems.push('Instagram ne podržava klikabilan link u objavi; link ide u bio ili prvi komentar.')
+    return { ok: problems.length === 0, problems }
+  }
+
+  /** Priča nema opis ni link, pa se proverava samo medij; uspravan odnos Meta sama uklapa. */
+  private storyProblems(input: NormalizedPost): ValidationResult {
+    const problems: string[] = []
+    if (input.media.length !== 1) problems.push('Priča mora imati tačno jednu sliku ili jedan video.')
+    const m = input.media[0]
+    if (m && isVideo(m)) {
+      if (!VIDEO_MIME.has(m.mimeType)) problems.push('Meta prihvata video u formatu MP4 ili MOV.')
+      if (m.durationMs && (m.durationMs < STORY_VIDEO_MIN_MS || m.durationMs > STORY_VIDEO_MAX_MS))
+        problems.push('Video u priči traje od 3 do 60 sekundi.')
+    } else if (m && !['image/jpeg', 'image/png'].includes(m.mimeType)) {
+      problems.push('Slika u priči mora biti JPG ili PNG.')
+    }
     return { ok: problems.length === 0, problems }
   }
 
@@ -368,6 +388,7 @@ export class MetaProvider implements SocialProvider {
 
   async publish(input: NormalizedPost, account: AccountRef, accessToken: string): Promise<PublishResult> {
     const g = this.client(accessToken)
+    if (isStory(input)) return this.publishStory(g, input, account, accessToken)
     if (account.platform === 'facebook') {
       const video = input.media.find(isVideo)
       if (video) return this.publishFacebookVideo(input, account, accessToken, video)
@@ -414,6 +435,51 @@ export class MetaProvider implements SocialProvider {
       postId = r.id
     }
     if (input.firstComment) await this.comment(g, postId, input.firstComment)
+    return { externalId: postId, permalink: `https://www.facebook.com/${postId}`, pending: null }
+  }
+
+  /**
+   * Priča (D-107). Instagram: kontejner `media_type: STORIES` pa `media_publish`, video kroz proveru
+   * statusa. Facebook stranica: slika se otpremi neobjavljena pa ide u `photo_stories`, a video kroz
+   * `video_stories` (start, bajtovi na rupload, finish). Priča nema opis ni prvi komentar.
+   */
+  private async publishStory(
+    g: GraphClient,
+    input: NormalizedPost,
+    account: AccountRef,
+    accessToken: string,
+  ): Promise<PublishResult> {
+    const m = input.media[0]
+    if (!m) throw new ProviderError('CONTENT_REJECTED', { userMessage: 'Priča mora imati sliku ili video.' })
+    const id = account.externalId
+    if (account.platform === 'instagram') {
+      const r = await g.post<{ id: string }>(
+        `${id}/media`,
+        isVideo(m)
+          ? { media_type: 'STORIES', video_url: m.url }
+          : { media_type: 'STORIES', image_url: m.url },
+      )
+      if (isVideo(m))
+        return {
+          externalId: null,
+          permalink: null,
+          pending: { kind: 'ig_container', containerId: r.id, accountExternalId: id, firstComment: null },
+        }
+      return this.finishContainer(g, id, r.id, null)
+    }
+    if (isVideo(m)) {
+      const start = await g.post<{ video_id: string }>(`${id}/video_stories`, { upload_phase: 'start' })
+      await this.rupload(start.video_id, await this.download(m), accessToken)
+      const done = await g.post<{ post_id?: string }>(`${id}/video_stories`, {
+        upload_phase: 'finish',
+        video_id: start.video_id,
+      })
+      const postId = done.post_id ?? start.video_id
+      return { externalId: postId, permalink: `https://www.facebook.com/${postId}`, pending: null }
+    }
+    const photo = await g.post<{ id: string }>(`${id}/photos`, { url: m.url, published: false })
+    const story = await g.post<{ post_id?: string }>(`${id}/photo_stories`, { photo_id: photo.id })
+    const postId = story.post_id ?? photo.id
     return { externalId: postId, permalink: `https://www.facebook.com/${postId}`, pending: null }
   }
 

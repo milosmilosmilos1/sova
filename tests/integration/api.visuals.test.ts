@@ -20,6 +20,8 @@ import { GET as canvaStatusGet } from '@/app/api/canva/status/route'
 import { GET as canvaCallbackGet } from '@/app/api/integrations/canva/callback/route'
 import { GET as canvaConnectGet } from '@/app/api/integrations/canva/connect/route'
 import { POST as uploadPost } from '@/app/api/media/upload/route'
+import { GET as pexelsSearchGet } from '@/app/api/pexels/search/route'
+import { POST as pexelsSelectPost } from '@/app/api/pexels/select/route'
 import { GET as balanceGet } from '@/app/api/tokens/balance/route'
 import { GET as unsplashSearchGet } from '@/app/api/unsplash/search/route'
 import { POST as unsplashSelectPost } from '@/app/api/unsplash/select/route'
@@ -29,13 +31,21 @@ import { setFeatureFlagForTests } from '@/lib/flags'
 import { enqueueCanvaVideoExport } from '@/lib/jobs/enqueue'
 import { resetMemoryRateLimit } from '@/lib/ratelimit'
 import { configureFontLoader } from '@/lib/visuals/fonts'
+import { resetPexelsCacheForTests } from '@/integrations/pexels/client'
 import { attributionFor, resetUnsplashCacheForTests } from '@/integrations/unsplash/client'
 import { collectCanvaVideoExport, failCanvaVideoExport, startCanvaVideoExport } from '@/services/canva/video'
 import { runVisualTemplate } from '@/services/visuals/template'
 
 import { calls, enqueueReply, geminiServer, resetGeminiMock } from './gemini-mock'
 import { admin, call, createTestUser, deleteTestUser, type TestUser } from './helpers'
-import { canvaHandlers, rankReply, resetVisualsState, unsplashHandlers, visualsState } from './visuals-mock'
+import {
+  canvaHandlers,
+  pexelsHandlers,
+  rankReply,
+  resetVisualsState,
+  unsplashHandlers,
+  visualsState,
+} from './visuals-mock'
 
 let user: TestUser
 let wsId = ''
@@ -95,7 +105,7 @@ async function uploadPng(): Promise<string> {
 
 beforeAll(async () => {
   geminiServer.listen({ onUnhandledFrame: 'bypass' })
-  geminiServer.use(...unsplashHandlers, ...canvaHandlers)
+  geminiServer.use(...unsplashHandlers, ...canvaHandlers, ...pexelsHandlers)
   configureFontLoader({ remote: false })
   setFeatureFlagForTests('canva', true)
   user = await createTestUser('vis')
@@ -113,6 +123,7 @@ afterEach(() => {
   resetMemoryRateLimit()
   resetVisualsState()
   resetUnsplashCacheForTests()
+  resetPexelsCacheForTests()
 })
 
 afterAll(async () => {
@@ -634,5 +645,90 @@ describe('Unsplash atribucija', () => {
     expect(a.html).toContain('Ana &lt;img src=x onerror=alert(1)&gt;')
     expect(a.photographerUrl).toBe('https://unsplash.com/@ana?utm_source=sova&utm_medium=referral')
     expect(a.unsplashUrl).toContain('utm_medium=referral')
+  })
+})
+
+describe('Pexels (D-107)', () => {
+  type SearchView = {
+    configured: boolean
+    results: Array<{
+      id: number
+      kind: string
+      durationSec: number | null
+      attribution: { text: string; pageUrl: string }
+    }>
+  }
+  type SelectView = {
+    id: string
+    kind: string
+    width: number | null
+    height: number | null
+    durationMs: number | null
+    attribution: { text: string }
+    reused: boolean
+  }
+
+  it('pretraga snimaka i fotografija: pregledi sa autorom, drugi put iz keša, kratak upit 400', async () => {
+    const q = { query: 'kafić noću', kind: 'video', orientation: 'portrait' }
+    const r = await call<SearchView>(pexelsSearchGet, '/api/pexels/search', { token: user.token, query: q })
+    expect(r.status).toBe(200)
+    expect(r.json.data!.configured).toBe(true)
+    expect(r.json.data!.results.map((x) => x.id)).toEqual([101, 202])
+    expect(r.json.data!.results[0]).toMatchObject({
+      kind: 'video',
+      durationSec: 12,
+      attribution: { text: 'Video by Autor 101 on Pexels', pageUrl: 'https://www.pexels.com/video/101/' },
+    })
+    await call(pexelsSearchGet, '/api/pexels/search', { token: user.token, query: q })
+    expect(visualsState.pexelsSearches).toEqual(['video:kafić noću:portrait'])
+    const photos = await call<SearchView>(pexelsSearchGet, '/api/pexels/search', {
+      token: user.token,
+      query: { query: 'kafić noću', kind: 'photo' },
+    })
+    expect(photos.json.data!.results.map((x) => x.kind)).toEqual(['photo', 'photo', 'photo'])
+    expect(photos.json.data!.results[0]!.attribution.text).toBe('Photo by Fotograf 301 on Pexels')
+    const short = await call(pexelsSearchGet, '/api/pexels/search', {
+      token: user.token,
+      query: { query: 'k' },
+    })
+    expect(short.status).toBe(400)
+  })
+
+  it('izbor snimka čuva MP4 sa autorom, ponovni izbor koristi isti; fotografija se čuva cela', async () => {
+    const r = await call<SelectView>(pexelsSelectPost, '/api/pexels/select', {
+      token: user.token,
+      body: { brandId, id: 101, kind: 'video' },
+    })
+    expect(r.status).toBe(200)
+    expect(r.json.data).toMatchObject({
+      kind: 'video',
+      reused: false,
+      durationMs: 12_000,
+      attribution: { text: 'Video by Autor 101 on Pexels' },
+    })
+    const { data: asset } = await admin
+      .from('media_assets')
+      .select('source, kind, mime_type, source_data')
+      .eq('id', r.json.data!.id)
+      .single()
+    expect(asset).toMatchObject({ source: 'pexels', kind: 'video', mime_type: 'video/mp4' })
+    // najbolji fajl do 1080 px po kraćoj strani: hd, ne uhd
+    expect(asset!.source_data).toMatchObject({ pexelsId: 101, kind: 'video', quality: 'hd' })
+    const again = await call<SelectView>(pexelsSelectPost, '/api/pexels/select', {
+      token: user.token,
+      body: { brandId, id: 101, kind: 'video' },
+    })
+    expect(again.json.data).toMatchObject({ id: r.json.data!.id, reused: true })
+    const photo = await call<SelectView>(pexelsSelectPost, '/api/pexels/select', {
+      token: user.token,
+      body: { brandId, id: 301, kind: 'photo' },
+    })
+    expect(photo.status).toBe(200)
+    expect(photo.json.data).toMatchObject({
+      kind: 'image',
+      reused: false,
+      attribution: { text: 'Photo by Fotograf 301 on Pexels' },
+    })
+    expect(photo.json.data!.width!).toBeGreaterThan(photo.json.data!.height!)
   })
 })

@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { validateText, type SocialPlatform } from '@/config/platforms'
+import { formatsForPlatforms } from '@/config/post-formats'
 import { toApiError } from '@/lib/ai/errors'
 import { generateText, type ImageInput } from '@/lib/ai/gemini'
 import { textModelChain } from '@/lib/ai/models'
@@ -141,6 +142,8 @@ export async function generatePostText(
     variantsPerPlatform: input.variantsPerPlatform,
     hasImage: Boolean(images),
     publishDate: wallClock(new Date().toISOString(), brand.timezone).date,
+    format: input.format ?? null,
+    allowedFormats: formatsForPlatforms(input.platforms),
   })
 
   try {

@@ -18,6 +18,7 @@ function previewPending(): string[] {
   if (!configured.inngestCloud) pending.push('zakazano objavljivanje i pozadinski poslovi')
   if (!configured.resend) pending.push('emailovi')
   if (!configured.unsplash) pending.push('Unsplash fotografije')
+  if (!configured.pexels) pending.push('Pexels video')
   if (!configured.canva) pending.push('Canva')
   return pending
 }

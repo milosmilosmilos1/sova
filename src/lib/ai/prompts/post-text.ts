@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
+import { FORMAT_LABEL, POST_FORMATS, type PostFormat } from '@/config/post-formats'
 
 /**
  * Prompt i šema za „Tekst za objavu” (brif 6.1). Brand kontekst je opcion do faze 6
@@ -43,6 +44,9 @@ export interface PostTextInput {
   hasImage: boolean
   /** dan objave (YYYY-MM-DD) u zoni brenda: bez njega model pogađa godišnje doba */
   publishDate?: string
+  /** vrsta objave (D-107); `auto` = model bira među `allowedFormats`; bez nje nema uputstva o vrsti */
+  format?: PostFormat | 'auto' | null
+  allowedFormats?: readonly PostFormat[]
 }
 
 export const postVariantSchema = z.object({
@@ -58,9 +62,53 @@ export const postVariantSchema = z.object({
 export const postTextOutputSchema = z.object({
   image_description: z.string().nullable(),
   variants: z.array(postVariantSchema),
+  /** vrsta objave koju je model izabrao kad je tražena (D-107) */
+  format: z.enum(POST_FORMATS).nullable().optional(),
+  /** 2–5 reči na engleskom za pretragu fotografija i snimaka (Unsplash, Pexels) */
+  visual_query: z.string().nullable().optional(),
 })
 
 export type PostTextOutput = z.infer<typeof postTextOutputSchema>
+
+/** Konačan tekst varijante: hook, body i cta u pasusima, heštegovi u poslednjem redu. */
+export function variantToText(v: z.infer<typeof postVariantSchema>): {
+  text: string
+  body: string
+  hashtags: string[]
+} {
+  const body = [v.hook, v.body, v.cta]
+    .map((x) => x.trim())
+    .filter(Boolean)
+    .join('\n\n')
+  const hashtags = v.hashtags.map((h) => (h.startsWith('#') ? h : `#${h}`)).slice(0, 30)
+  return { text: hashtags.length ? `${body}\n\n${hashtags.join(' ')}` : body, body, hashtags }
+}
+
+const FORMAT_WRITING: Record<PostFormat, string> = {
+  text: 'Objava bez slike: tekst sam nosi poruku.',
+  image: 'Objava sa jednom fotografijom.',
+  carousel: 'Karusel od tri fotografije: tekst najavljuje šta se vidi kad se prevlači.',
+  video: 'Kratak uspravan video (Reels): hook u prvom redu, kratak opis.',
+  story:
+    'Priča: opis se ne objavljuje, pa hook neka bude kratak natpis do 60 znakova, a body i cta po jedna kratka rečenica.',
+  link: 'Objava sa linkom: tekst poziva da se otvori link, a sam link ne piši u tekst.',
+}
+
+/** Uputstvo o vrsti objave i pojmovima za pretragu vizuala; prazno kad vrsta nije tražena. */
+function formatLines(input: PostTextInput): string[] {
+  if (!input.format) return []
+  const allowed = input.allowedFormats?.length ? input.allowedFormats : POST_FORMATS
+  const choice =
+    input.format === 'auto'
+      ? `Vrstu objave izaberi sam, onu koja najbolje nosi temu, jednu od: ${allowed
+          .map((f) => `${FORMAT_LABEL[f]} (${f})`)
+          .join(', ')}. Upiši je u polje format.`
+      : `Vrsta objave: ${FORMAT_LABEL[input.format]}. ${FORMAT_WRITING[input.format]} U polje format upiši ${input.format}.`
+  return [
+    choice,
+    'visual_query: 2 do 5 reči na engleskom za pretragu fotografija i snimaka koji prate objavu (npr. „night club crowd neon”), bez imena brenda.',
+  ]
+}
 
 const GOAL_LABEL: Record<PostGoal, string> = {
   awareness: 'svest o brendu',
@@ -174,6 +222,7 @@ export function buildPostTextPrompt(input: PostTextInput): string {
       : 'Poziv na akciju: predloži prirodan, u skladu sa ciljem.',
     `Napravi ${input.variantsPerPlatform} ${input.variantsPerPlatform === 1 ? 'varijantu' : 'varijante'} za svaku od mreža:`,
     ...platformLines,
+    ...formatLines(input),
     '',
     input.hasImage
       ? 'Priložena je fotografija. Prvo je opiši u polju image_description (šta se vidi, atmosfera, boje), pa tekst gradi na tome. alt_text opisuje fotografiju za čitače ekrana.'

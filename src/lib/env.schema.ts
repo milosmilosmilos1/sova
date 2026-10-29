@@ -58,6 +58,8 @@ export function buildServerEnvSchema(mode: EnvMode) {
     // Vizuali
     UNSPLASH_ACCESS_KEY: prodOnly(z.string().min(10)),
     UNSPLASH_APP_NAME: z.string().default('sova'),
+    // video i fotografije za objave (D-107); bez ključa Autopilot ne pravi video, a Studio krije Pexels
+    PEXELS_API_KEY: z.string().min(10).optional(),
     CANVA_CLIENT_ID: prodOnly(z.string().min(5)),
     CANVA_CLIENT_SECRET: prodOnly(z.string().min(10)),
     FIRECRAWL_API_KEY: z.string().optional(),

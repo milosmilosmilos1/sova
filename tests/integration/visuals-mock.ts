@@ -22,6 +22,10 @@ export const visualsState = {
   canvaVideoPolls: 0,
   /** 1080p video prijavljuje veličinu preko limita skladišta */
   canvaVideoTooLarge: false,
+  /** upiti Pexels pretrage (D-107) */
+  pexelsSearches: [] as string[],
+  /** Pexels pretraga vraća prazan spisak */
+  pexelsEmpty: false,
 }
 
 export function resetVisualsState(): void {
@@ -36,6 +40,8 @@ export function resetVisualsState(): void {
   visualsState.canvaDesignLists = []
   visualsState.canvaVideoPolls = 0
   visualsState.canvaVideoTooLarge = false
+  visualsState.pexelsSearches = []
+  visualsState.pexelsEmpty = false
 }
 
 /** Dizajn kao u `GET /designs`; sličica nosi odnos stranica prve strane. */
@@ -56,15 +62,15 @@ function canvaDesign(id: string, title: string, width: number, height: number) {
 }
 
 const photoCache = new Map<string, Buffer>()
-async function photoBytes(id: string, w: number): Promise<Buffer> {
-  const key = `${id}:${w}`
+async function photoBytes(id: string, w: number, h = Math.round(w * 0.66)): Promise<Buffer> {
+  const key = `${id}:${w}:${h}`
   let buf = photoCache.get(key)
   if (!buf) {
     const seed = id.charCodeAt(id.length - 1)
     buf = await sharp({
       create: {
         width: w,
-        height: Math.round(w * 0.66),
+        height: h,
         channels: 3,
         background: { r: (seed * 37) % 255, g: (seed * 91) % 255, b: (seed * 53) % 255 },
       },
@@ -139,8 +145,10 @@ export const unsplashHandlers = [
   http.get('https://images.unsplash.com/*', async ({ request }) => {
     const url = new URL(request.url)
     const id = url.pathname.replace('/photo-', '')
-    const w = Number(url.searchParams.get('w') ?? 1080)
-    const buf = await photoBytes(id, Math.min(w, 2000))
+    const w = Math.min(Number(url.searchParams.get('w') ?? 1080), 2000)
+    // kao imgix: fit=crop sa visinom seče tačno na w × h (uspravno za priče, kvadrat za objave)
+    const h = url.searchParams.get('fit') === 'crop' ? Number(url.searchParams.get('h') ?? 0) : 0
+    const buf = await photoBytes(id, w, h ? Math.min(h, 2000) : undefined)
     return new HttpResponse(new Uint8Array(buf), { headers: { 'content-type': 'image/jpeg' } })
   }),
 ]
@@ -269,6 +277,119 @@ export const canvaHandlers = [
       .png()
       .toBuffer()
     return new HttpResponse(new Uint8Array(png), { headers: { 'content-type': 'image/png' } })
+  }),
+]
+
+/** Pexels snimak kao u API-ju; prvi je uspravan i kratak (Reels, priča), drugi vodoravan i dug. */
+export function pexelsVideo(id: number, overrides: Record<string, unknown> = {}) {
+  const portrait = id % 2 === 1
+  return {
+    id,
+    width: portrait ? 1080 : 1920,
+    height: portrait ? 1920 : 1080,
+    duration: portrait ? 12 : 95,
+    url: `https://www.pexels.com/video/${id}/`,
+    image: `https://images.pexels.com/videos/${id}/thumb.jpeg`,
+    user: { id: 7, name: `Autor ${id}`, url: `https://www.pexels.com/@autor${id}` },
+    video_files: [
+      {
+        id: id * 10 + 1,
+        quality: 'uhd',
+        file_type: 'video/mp4',
+        width: 2160,
+        height: 3840,
+        fps: 30,
+        link: `https://videos.pexels.com/video-files/${id}/uhd.mp4`,
+      },
+      {
+        id: id * 10 + 2,
+        quality: 'hd',
+        file_type: 'video/mp4',
+        width: portrait ? 1080 : 1920,
+        height: portrait ? 1920 : 1080,
+        fps: 30,
+        link: `https://videos.pexels.com/video-files/${id}/hd.mp4`,
+      },
+      {
+        id: id * 10 + 3,
+        quality: 'sd',
+        file_type: 'video/mp4',
+        width: 540,
+        height: 960,
+        fps: 30,
+        link: `https://videos.pexels.com/video-files/${id}/sd.mp4`,
+      },
+    ],
+    ...overrides,
+  }
+}
+
+export function pexelsPhoto(id: number) {
+  return {
+    id,
+    width: 4000,
+    height: 3000,
+    alt: `fotografija ${id}`,
+    url: `https://www.pexels.com/photo/${id}/`,
+    photographer: `Fotograf ${id}`,
+    photographer_url: `https://www.pexels.com/@fotograf${id}`,
+    src: {
+      original: `https://images.pexels.com/photos/${id}/original.jpeg`,
+      large2x: `https://images.pexels.com/photos/${id}/large2x.jpeg`,
+      large: `https://images.pexels.com/photos/${id}/large.jpeg`,
+      medium: `https://images.pexels.com/photos/${id}/medium.jpeg`,
+      portrait: `https://images.pexels.com/photos/${id}/portrait.jpeg`,
+      tiny: `https://images.pexels.com/photos/${id}/tiny.jpeg`,
+    },
+  }
+}
+
+export const pexelsHandlers = [
+  http.get('https://api.pexels.com/videos/search', ({ request }) => {
+    if (request.headers.get('authorization') !== 'test-pexels-key-0123456789')
+      return HttpResponse.json({ error: 'unauthorized' }, { status: 401 })
+    const url = new URL(request.url)
+    visualsState.pexelsSearches.push(
+      `video:${url.searchParams.get('query')}:${url.searchParams.get('orientation') ?? ''}`,
+    )
+    if (visualsState.pexelsEmpty) return HttpResponse.json({ videos: [] })
+    return HttpResponse.json({ videos: [pexelsVideo(101), pexelsVideo(202)] })
+  }),
+  http.get('https://api.pexels.com/videos/videos/:id', ({ params }) =>
+    HttpResponse.json(pexelsVideo(Number(params.id))),
+  ),
+  http.get('https://api.pexels.com/v1/search', ({ request }) => {
+    const url = new URL(request.url)
+    visualsState.pexelsSearches.push(
+      `photo:${url.searchParams.get('query')}:${url.searchParams.get('orientation') ?? ''}`,
+    )
+    if (visualsState.pexelsEmpty) return HttpResponse.json({ photos: [] })
+    return HttpResponse.json({ photos: [pexelsPhoto(301), pexelsPhoto(302), pexelsPhoto(303)] })
+  }),
+  http.get('https://api.pexels.com/v1/photos/:id', ({ params }) =>
+    HttpResponse.json(pexelsPhoto(Number(params.id))),
+  ),
+  http.get('https://videos.pexels.com/*', ({ request }) => {
+    // svaki snimak ima svoje bajtove, kao pravi fajlovi (isti hash bi se spojio sa drugim medijem)
+    const id = Number(new URL(request.url).pathname.split('/')[2] ?? 0)
+    const mp4 = buildMp4({ durationMs: 12_000, width: 1080, height: 1920, mdatBytes: 20_000 + id })
+    return new HttpResponse(new Uint8Array(mp4), { headers: { 'content-type': 'video/mp4' } })
+  }),
+  http.get('https://images.pexels.com/*', async ({ request }) => {
+    const url = new URL(request.url)
+    const w = Number(url.searchParams.get('w') ?? 1200)
+    const h = Number(url.searchParams.get('h') ?? Math.round(w * 0.75))
+    const jpg = await sharp({
+      create: {
+        width: Math.min(w, 2000),
+        height: Math.min(h, 2000),
+        channels: 3,
+        background: { r: 40, g: 90, b: 160 },
+      },
+    })
+      .jpeg({ quality: 70 })
+      .toBuffer()
+    return new HttpResponse(new Uint8Array(jpg), { headers: { 'content-type': 'image/jpeg' } })
   }),
 ]
 

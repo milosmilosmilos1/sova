@@ -31,8 +31,9 @@ import { runAutopilotDeadlines } from '@/services/autopilot/deadlines'
 import { runMonthlyForBrand, runWeeklyForBrand, type StepRunner } from '@/services/autopilot/runner'
 import { checkOutlier, expireSuggestions, holidaySuggestions } from '@/services/autopilot/triggers'
 
-import { enqueueReply, geminiServer, resetGeminiMock } from './gemini-mock'
+import { calls, enqueueReply, geminiServer, resetGeminiMock } from './gemini-mock'
 import { admin, call, createTestUser, deleteTestUser, type TestUser } from './helpers'
+import { pexelsHandlers, unsplashHandlers } from './visuals-mock'
 
 let owner: TestUser
 let editor: TestUser
@@ -146,6 +147,8 @@ const strategyFixture = {
 
 beforeAll(async () => {
   geminiServer.listen({ onUnhandledFrame: 'bypass' })
+  // fotografije i video za nacrte (D-107) dolaze iz mock-a, nikad sa pravog API-ja
+  geminiServer.use(...unsplashHandlers, ...pexelsHandlers)
   configureFontLoader({ remote: false })
   owner = await createTestUser('ap-owner')
   editor = await createTestUser('ap-editor')
@@ -402,7 +405,8 @@ describe('Autopilot: mesečni prolaz', () => {
 
 describe('Autopilot: nedeljni prolaz', () => {
   beforeAll(async () => {
-    await patch({ level: 1 })
+    // Facebook samo tekst, Instagram slika: isti raspored kao pre vrsta objava (D-107)
+    await patch({ level: 1, formats: ['text', 'image'], mix: false })
     const themes = Array.from({ length: 6 }, (_, i) => ({
       week: i + 1,
       theme: `Tema ${['jedan', 'dva', 'tri', 'četiri', 'pet', 'šest'][i]}`,
@@ -452,7 +456,8 @@ describe('Autopilot: nedeljni prolaz', () => {
       returned: 0,
       budgetStopped: false,
     })
-    expect(r.tokens).toBe(2 + 2 + 4)
+    // Instagram dobija fotografiju sa Unsplash-a, bez tokena za vizual (D-107)
+    expect(r.tokens).toBe(2 + 2 + 2)
     const { data: posts } = await admin
       .from('posts')
       .select(
@@ -475,7 +480,7 @@ describe('Autopilot: nedeljni prolaz', () => {
         posts!.map((p) => p.id),
       )
     expect(approvals).toBe(3)
-    expect((await view()).usage.used).toBe(before + 8)
+    expect((await view()).usage.used).toBe(before + 6)
     const { data: report } = await admin
       .from('notifications')
       .select('id')
@@ -729,5 +734,71 @@ describe('Okidači i održavanje Inbox-a', () => {
       source: 'analytics',
       evidence: expect.objectContaining({ targetIds: [ids[0]] }),
     })
+  })
+})
+
+describe('Autopilot: jezik i vrste objava (D-107)', () => {
+  async function weekPosts(weekStart: string) {
+    const { data } = await admin
+      .from('posts')
+      .select(
+        'id, status, master_text, post_targets(platform, options), post_media(sort_order, media_assets(kind, source, width, height))',
+      )
+      .eq('strategy_id', strategyId)
+      .gte('scheduled_for', `${weekStart}T00:00:00Z`)
+      .lt('scheduled_for', `${addDays(weekStart, 8)}T00:00:00Z`)
+    return data ?? []
+  }
+
+  it('podešavanja: jezik, vrste i mešanje; bez ijedne vrste 400', async () => {
+    expect((await patch({ formats: [] })).status).toBe(400)
+    expect((await patch({ language: 'en', formats: ['story', 'video'], mix: false })).status).toBe(200)
+    expect(await view()).toMatchObject({ language: 'en', formats: ['story', 'video'], mix: false })
+  })
+
+  it('priče: uspravna fotografija sa Unsplash-a, options.format = story, tekst na engleskom, bez tokena za vizual', async () => {
+    await patch({ level: 1, language: 'en', formats: ['story'], mix: false, tokenBudget: null })
+    enqueueReply(uniqueReply(), uniqueReply(), uniqueReply())
+    const weekStart = addDays(week0, 28)
+    const callsBefore = calls.length
+    const r = await runWeeklyForBrand({ brandId, weekStart }, inline)
+    expect(r).toMatchObject({ status: 'succeeded', planned: 3, returned: 0 })
+    expect(r.tokens).toBe(2 * 3)
+    const prompts = calls.slice(callsBefore).map((c) => JSON.stringify(c.body))
+    expect(prompts.every((p) => p.includes('Write in English.'))).toBe(true)
+    expect(prompts.every((p) => p.includes('Vrsta objave: Priča (Story)'))).toBe(true)
+    const posts = await weekPosts(weekStart)
+    expect(posts).toHaveLength(3)
+    for (const p of posts) {
+      const targets = p.post_targets as Array<{ platform: string; options: Record<string, unknown> }>
+      expect(targets[0]!.options).toMatchObject({ format: 'story' })
+      const media = p.post_media as unknown as Array<{
+        media_assets: { kind: string; source: string; width: number; height: number }
+      }>
+      expect(media).toHaveLength(1)
+      expect(media[0]!.media_assets).toMatchObject({ kind: 'image', source: 'unsplash' })
+      expect(media[0]!.media_assets.height).toBeGreaterThan(media[0]!.media_assets.width)
+    }
+  })
+
+  it('video: snimak sa Pexels-a za Facebook i Instagram (Reels), bez tokena za vizual', async () => {
+    await patch({ formats: ['video'], mix: false, language: null })
+    enqueueReply(uniqueReply(), uniqueReply(), uniqueReply())
+    const weekStart = addDays(week0, 35)
+    const r = await runWeeklyForBrand({ brandId, weekStart }, inline)
+    expect(r).toMatchObject({ status: 'succeeded', planned: 3, returned: 0 })
+    expect(r.tokens).toBe(2 * 3)
+    const posts = await weekPosts(weekStart)
+    expect(posts).toHaveLength(3)
+    for (const p of posts) {
+      const media = p.post_media as unknown as Array<{ media_assets: { kind: string; source: string } }>
+      expect(media).toHaveLength(1)
+      expect(media[0]!.media_assets).toMatchObject({ kind: 'video', source: 'pexels' })
+      expect((p.post_targets as Array<{ options: Record<string, unknown> }>)[0]!.options).not.toHaveProperty(
+        'format',
+      )
+    }
+    // ponovo isto podešavanje kao pre ovog bloka
+    await patch({ formats: ['text', 'image'], mix: false })
   })
 })

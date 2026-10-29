@@ -12,6 +12,7 @@ export interface CspInput {
 
 const IMG_HOSTS = [
   'https://images.unsplash.com',
+  'https://images.pexels.com',
   'https://*.canva.com',
   'https://*.fbcdn.net',
   'https://*.cdninstagram.com',
@@ -73,7 +74,9 @@ export function buildCsp(input: CspInput): string {
     `style-src 'self' 'unsafe-inline' https://fonts.googleapis.com`,
     `font-src 'self' data: https://fonts.gstatic.com`,
     `img-src ${img.join(' ')}`,
-    `media-src 'self' blob: ${sb ? sb.http : ''} https://*.supabase.co`.replace(/\s+/g, ' ').trim(),
+    `media-src 'self' blob: ${sb ? sb.http : ''} https://*.supabase.co https://videos.pexels.com`
+      .replace(/\s+/g, ' ')
+      .trim(),
     `connect-src ${connect.join(' ')}`,
     `frame-src 'self' https://challenges.cloudflare.com https://js.stripe.com https://checkout.stripe.com https://www.canva.com`,
     `worker-src 'self' blob:`,

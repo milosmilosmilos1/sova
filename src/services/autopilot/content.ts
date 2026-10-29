@@ -1,6 +1,7 @@
 import 'server-only'
 
 import type { SocialPlatform } from '@/config/platforms'
+import { mediaNeed, type PostFormat } from '@/config/post-formats'
 import { AiError, toApiError } from '@/lib/ai/errors'
 import { generateText } from '@/lib/ai/gemini'
 import { textModelChain } from '@/lib/ai/models'
@@ -13,12 +14,15 @@ import {
   type BrandContext,
   type PostGoal,
 } from '@/lib/ai/prompts/post-text'
+import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getTokenPrice } from '@/lib/tokens/prices'
 import { confirmReservation } from '@/lib/tokens/reservation'
 import { failGeneration, startGeneration } from '@/services/ai/generations'
 import { buildBrandContext } from '@/services/ai/text'
+import { pickPexelsPhotos, pickPexelsVideo } from '@/services/visuals/pexels'
 import { runVisualTemplate } from '@/services/visuals/template'
+import { pickUnsplashPhotos } from '@/services/visuals/unsplash'
 import type { Database, Json } from '@/types/database'
 
 /**
@@ -36,10 +40,17 @@ export interface DraftText {
   altText: string
   generationId: string
   tokens: number
+  /** pojmovi na engleskom za pretragu fotografija i snimaka (D-107) */
+  visualQuery: string | null
 }
 
-export async function brandContextFor(brand: BrandRow, topic: string): Promise<BrandContext> {
-  return buildBrandContext(brand, topic, undefined)
+/** Kontekst brenda; `locale` je jezik iz podešavanja Autopilota (D-107), inače jezik brenda. */
+export async function brandContextFor(
+  brand: BrandRow,
+  topic: string,
+  locale?: string,
+): Promise<BrandContext> {
+  return buildBrandContext(brand, topic, locale)
 }
 
 export async function generateDraftText(
@@ -54,6 +65,8 @@ export async function generateDraftText(
     runId: string
     /** planirani dan objave u zoni brenda */
     publishDate?: string
+    /** vrsta objave koju je Autopilot izabrao (D-107) */
+    format?: PostFormat
   },
 ): Promise<DraftText> {
   const price = await getTokenPrice('text')
@@ -89,6 +102,8 @@ export async function generateDraftText(
             variantsPerPlatform: 1,
             hasImage: false,
             publishDate: input.publishDate,
+            format: input.format ?? null,
+            allowedFormats: input.format ? [input.format] : undefined,
           }),
           jsonSchema: postTextJsonSchema(),
           maxOutputTokens: 2048,
@@ -141,6 +156,7 @@ export async function generateDraftText(
       altText: v.alt_text,
       generationId,
       tokens: price,
+      visualQuery: parsed.data.visual_query?.trim() || null,
     }
   } catch (error) {
     const api = toApiError(error)
@@ -149,20 +165,33 @@ export async function generateDraftText(
   }
 }
 
-/** Vizual iz šablona (boje, fontovi i logo brenda, bez fotografije) kao JPEG 1:1; vraća media asset. */
+/**
+ * Vizual iz šablona (boje, fontovi i logo brenda) kao JPEG; vraća media asset. Bez fotografije za
+ * Autopilot (D-068), sa već izabranom Unsplash fotografijom za „Novu objavu” (bez rangiranja, D-107).
+ */
 export async function generateTemplateVisual(
   brand: BrandRow,
-  input: { headline: string; subtext: string | null; cta: string | null; postId: string; runId: string },
+  input: {
+    headline: string
+    subtext: string | null
+    cta: string | null
+    postId: string | null
+    runId: string | null
+    /** korisnik iz Studija; Autopilot radi bez korisnika */
+    userId?: string | null
+    aspectRatio?: '1:1' | '9:16'
+    photoId?: string | null
+  },
 ): Promise<{ assetId: string; tokens: number } | null> {
   const price = await getTokenPrice('visual_template')
   const { generationId } = await startGeneration({
     workspaceId: brand.workspace_id,
     brandId: brand.id,
-    userId: null,
+    userId: input.userId ?? null,
     type: 'visual_template',
     tokens: price,
     input: {
-      autopilot: true,
+      autopilot: !input.userId,
       runId: input.runId,
       postId: input.postId,
       brandId: brand.id,
@@ -170,9 +199,9 @@ export async function generateTemplateVisual(
       headline: input.headline.slice(0, 120),
       subtext: input.subtext ? input.subtext.slice(0, 200) : undefined,
       cta: input.cta ? input.cta.slice(0, 40) : undefined,
-      aspectRatio: '1:1',
+      aspectRatio: input.aspectRatio ?? '1:1',
       template: 'auto',
-      image: { kind: 'none' },
+      image: input.photoId ? { kind: 'unsplash', photoId: input.photoId } : { kind: 'none' },
       format: 'jpeg',
     } as unknown as NonNullable<Json>,
     status: 'queued',
@@ -186,6 +215,80 @@ export async function generateTemplateVisual(
     .eq('id', generationId)
     .maybeSingle()
   return data?.output_asset_id ? { assetId: data.output_asset_id, tokens: price } : null
+}
+
+export interface DraftMedia {
+  assetIds: string[]
+  tokens: number
+  /** vrsta posle rezerve: bez snimka video postaje slika, karusel sa jednom fotografijom slika */
+  format: PostFormat
+  note: string | null
+}
+
+/**
+ * Vizual nacrta po vrsti (D-107): video sa Pexels-a, fotografije sa Unsplash-a pa Pexels-a, bez
+ * Gemini-ja i bez tokena. Kad izvori nemaju rezultat ili nisu podešeni, rezerva je vizual iz šablona
+ * (2 tokena), kao ranije (D-068); `required` znači da mreža bez vizuala ne prima objavu.
+ */
+export async function draftMedia(
+  brand: BrandRow,
+  input: {
+    format: PostFormat
+    required: boolean
+    query: string
+    headline: string
+    cta: string | null
+    postId: string
+    runId: string
+  },
+): Promise<DraftMedia> {
+  const need = mediaNeed(input.format)
+  if (need.kind === 'none' && !input.required)
+    return { assetIds: [], tokens: 0, format: input.format, note: null }
+  const ctx = { workspaceId: brand.workspace_id, brandId: brand.id, uploadedBy: null }
+  let format = input.format
+  let note: string | null = null
+  try {
+    if (need.kind === 'video') {
+      const video = await pickPexelsVideo({ ...ctx, query: input.query, orientation: 'portrait' })
+      if (video) return { assetIds: [video.asset.id], tokens: 0, format, note: null }
+      format = 'image'
+      note = 'Video nije nađen, pa je objava sa fotografijom.'
+    }
+    const crop = format === 'story' ? 'portrait' : 'square'
+    const count = format === 'carousel' ? 3 : 1
+    let photos = (await pickUnsplashPhotos({ ...ctx, query: input.query, count, crop })).map(
+      (p) => p.asset.id,
+    )
+    if (!photos.length)
+      photos = (await pickPexelsPhotos({ ...ctx, query: input.query, count, crop })).map((p) => p.asset.id)
+    if (photos.length) {
+      if (format === 'carousel' && photos.length < 2) format = 'image'
+      return {
+        assetIds: photos,
+        tokens: 0,
+        format: format === 'text' || format === 'link' ? 'image' : format,
+        note,
+      }
+    }
+  } catch (error) {
+    logger.warn('autopilot_stock_media_failed', { postId: input.postId, error })
+  }
+  const visual = await generateTemplateVisual(brand, {
+    headline: input.headline,
+    subtext: null,
+    cta: input.cta,
+    postId: input.postId,
+    runId: input.runId,
+    aspectRatio: format === 'story' ? '9:16' : '1:1',
+  })
+  if (!visual) return { assetIds: [], tokens: 0, format, note }
+  return {
+    assetIds: [visual.assetId],
+    tokens: visual.tokens,
+    format: format === 'story' ? 'story' : 'image',
+    note: note ?? (input.format === 'image' || input.format === 'story' ? null : 'Vizual je iz šablona.'),
+  }
 }
 
 /** Naslov za vizual iz teme: prva rečenica hook-a, najviše 80 znakova. */

@@ -165,6 +165,74 @@ export async function selectUnsplashPhoto(
   return { asset, attribution, reused: false }
 }
 
+/**
+ * Automatski izbor za „Novu objavu” i Autopilot (D-107): prvi rezultati pretrage, bez rangiranja
+ * kroz Gemini, isečeni za vrstu objave (kvadrat staje na svaku mrežu, 9:16 je za priču).
+ */
+export async function pickUnsplashPhotos(input: {
+  workspaceId: string
+  brandId: string
+  query: string
+  count: number
+  crop: 'square' | 'portrait'
+  uploadedBy: string | null
+}): Promise<SelectedPhoto[]> {
+  if (!isUnsplashConfigured()) return []
+  const r = await searchPhotos({
+    query: input.query,
+    perPage: Math.max(input.count, 6),
+    orientation: input.crop === 'portrait' ? 'portrait' : 'squarish',
+    contentFilter: 'high',
+  })
+  const admin = createSupabaseAdminClient()
+  const out: SelectedPhoto[] = []
+  for (const photo of r.results.slice(0, input.count)) {
+    const attribution = attributionFor(photo)
+    const { data: existing } = await admin
+      .from('media_assets')
+      .select('*')
+      .eq('brand_id', input.brandId)
+      .eq('source', 'unsplash')
+      .is('deleted_at', null)
+      .contains('source_data', { photoId: photo.id, crop: input.crop })
+      .limit(1)
+      .maybeSingle()
+    if (existing) {
+      out.push({ asset: existing, attribution, reused: true })
+      continue
+    }
+    await trackDownload(photo.downloadLocation)
+    const size = input.crop === 'portrait' ? { w: 1080, h: 1920 } : { w: 1600, h: 1600 }
+    const res = await safeFetch(resizedUrl(photo.urls.raw, { ...size, fit: 'crop', q: 85 }), {
+      timeoutMs: 20_000,
+      maxBytes: 15 * 1024 * 1024,
+      headers: { accept: 'image/*' },
+    })
+    if (!res.ok) throw new ApiError('PROVIDER_ERROR', 'Fotografija nije mogla da se preuzme sa Unsplash-a.')
+    const asset = await storeServerImage({
+      workspaceId: input.workspaceId,
+      brandId: input.brandId,
+      bytes: res.body,
+      mimeType: 'image/jpeg',
+      source: 'unsplash',
+      folder: 'unsplash',
+      altText: photo.alt ?? photo.description ?? null,
+      tags: ['unsplash'],
+      attribution: { provider: 'unsplash', ...attribution } as unknown as Record<string, string>,
+      sourceData: {
+        photoId: photo.id,
+        crop: input.crop,
+        urls: photo.urls,
+        downloadLocation: photo.downloadLocation,
+        photographer: photo.user,
+      } as unknown as Record<string, string>,
+      uploadedBy: input.uploadedBy,
+    })
+    out.push({ asset, attribution, reused: false })
+  }
+  return out
+}
+
 export interface RankedCandidate {
   photo: UnsplashPhoto
   score: number

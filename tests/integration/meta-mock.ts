@@ -5,6 +5,7 @@ import { http, HttpResponse } from 'msw'
  * Instagram nalozima, istorija objava, objavljivanje (feed, photos, IG kontejner), insights, permissions.
  * Video (D-089): IG Reels i video u karuselu, Facebook Reels (video_reels + rupload) i video (/videos),
  * status obrade, video_insights; ugašene metrike vraćaju grešku kao pravi Graph API.
+ * Priče (D-107): photo_stories i video_stories na stranici, IG kontejner STORIES.
  */
 export const metaState = {
   tokenExchanges: [] as Record<string, string>[],
@@ -225,6 +226,24 @@ export const metaHandlers = [
       })
     }
     return HttpResponse.json({ success: true })
+  }),
+  // Facebook priča (D-107): slika neobjavljena pa photo_stories; video start → rupload → finish
+  http.post(`${G}/:page/photo_stories`, async ({ request, params }) => {
+    const body = Object.fromEntries(new URLSearchParams(await request.text()))
+    metaState.publishes.push({ path: `${String(params.page)}/photo_stories`, body })
+    return HttpResponse.json({ success: true, post_id: `story-${metaState.publishes.length}` })
+  }),
+  http.post(`${G}/:page/video_stories`, async ({ request, params }) => {
+    const body = Object.fromEntries(new URLSearchParams(await request.text()))
+    metaState.publishes.push({ path: `${String(params.page)}/video_stories`, body })
+    if (body.upload_phase === 'start') {
+      const id = `vstory-${metaState.publishes.length}`
+      return HttpResponse.json({
+        video_id: id,
+        upload_url: `https://rupload.facebook.com/video-upload/v26.0/${id}`,
+      })
+    }
+    return HttpResponse.json({ success: true, post_id: `story-${metaState.publishes.length}` })
   }),
   http.post('https://rupload.facebook.com/video-upload/:version/:videoId', async ({ request, params }) => {
     const buf = await request.arrayBuffer()

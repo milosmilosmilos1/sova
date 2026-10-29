@@ -10,6 +10,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PLATFORMS } from '@/config/platforms'
+import { FORMAT_HINT, FORMAT_LABEL, POST_FORMATS, type PostFormat } from '@/config/post-formats'
 import type { ApiResponse } from '@/lib/api/response'
 
 /**
@@ -30,6 +31,9 @@ interface View {
   level3Available: boolean
   level3ConfirmedAt: string | null
   level3AccountIds: string[]
+  language: 'sr-Latn' | 'sr-Cyrl' | 'en'
+  formats: PostFormat[]
+  mix: boolean
   paused: boolean
   pausedAt: string | null
   usage: {
@@ -171,6 +175,7 @@ export function AutopilotClient({
 
       <div className="grid gap-4 lg:grid-cols-[1fr_320px]">
         <SettingsCard v={v} canAdmin={canAdmin} onSaved={refresh} />
+        <ContentCard v={v} canAdmin={canAdmin} onSaved={refresh} />
         <div className="space-y-4">
           <Card>
             <CardHeader>
@@ -446,6 +451,110 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
         ) : (
           <p className="text-xs text-muted-foreground">Podešavanja menjaju vlasnik i administrator.</p>
         )}
+      </CardContent>
+    </Card>
+  )
+}
+
+const AUTOPILOT_LOCALES = [
+  ['sr-Latn', 'Srpski, latinica'],
+  ['sr-Cyrl', 'Srpski, ćirilica'],
+  ['en', 'Engleski'],
+] as const
+
+/**
+ * Sadržaj Autopilota (D-107): jezik objava, dozvoljene vrste i da li AI meša vrste kroz nedelju.
+ * Svaka mreža dobija samo vrste koje prima (Instagram nema objave bez slike, YouTube samo video).
+ */
+function ContentCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; onSaved: () => void }) {
+  const [language, setLanguage] = useState(v.language)
+  const [formats, setFormats] = useState<PostFormat[]>(v.formats)
+  const [mix, setMix] = useState(v.mix)
+  const [saved, setSaved] = useState(false)
+  const save = useMutation({
+    mutationFn: () =>
+      api<View>(`/api/autopilot/${v.brandId}`, { method: 'PATCH', json: { language, formats, mix } }),
+    onSuccess: () => {
+      setSaved(true)
+      setTimeout(() => setSaved(false), 2500)
+      onSaved()
+    },
+  })
+  const disabled = !canAdmin
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-base">Sadržaj</CardTitle>
+        <CardDescription>
+          Jezik i vrste objava koje Autopilot pravi. Tekst sa heštegovima piše Gemini, fotografije dolaze sa
+          Unsplash-a, a video sa Pexels-a.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-1.5">
+          <Label htmlFor="ap-language">Jezik objava</Label>
+          <select
+            id="ap-language"
+            value={language}
+            disabled={disabled}
+            onChange={(e) => setLanguage(e.target.value as View['language'])}
+            className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+          >
+            {AUTOPILOT_LOCALES.map(([value, label]) => (
+              <option key={value} value={value}>
+                {label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <fieldset className="space-y-2">
+          <legend className="text-sm font-medium">Vrste objava</legend>
+          <div className="grid gap-2 sm:grid-cols-2">
+            {POST_FORMATS.map((f) => (
+              <label key={f} className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4"
+                  checked={formats.includes(f)}
+                  disabled={disabled}
+                  onChange={(e) =>
+                    setFormats((cur) => (e.target.checked ? [...cur, f] : cur.filter((x) => x !== f)))
+                  }
+                />
+                <span>
+                  {FORMAT_LABEL[f]}
+                  <span className="block text-xs text-muted-foreground">{FORMAT_HINT[f]}</span>
+                </span>
+              </label>
+            ))}
+          </div>
+        </fieldset>
+        <label className="flex items-start gap-2 text-sm">
+          <input
+            type="checkbox"
+            className="mt-0.5 size-4"
+            checked={mix}
+            disabled={disabled}
+            onChange={(e) => setMix(e.target.checked)}
+          />
+          <span>
+            AI meša vrste
+            <span className="block text-xs text-muted-foreground">
+              Kroz nedelju se smenjuju izabrane vrste, a slika i karusel dolaze češće. Isključeno: uvek prva
+              izabrana vrsta koju mreža prima.
+            </span>
+          </span>
+        </label>
+        <div className="flex items-center gap-3">
+          <Button disabled={disabled || save.isPending || !formats.length} onClick={() => save.mutate()}>
+            {save.isPending ? 'Čuvam…' : 'Sačuvaj'}
+          </Button>
+          {saved ? <span className="text-sm text-muted-foreground">Sačuvano.</span> : null}
+          {!formats.length ? (
+            <span className="text-sm text-muted-foreground">Izaberite bar jednu vrstu.</span>
+          ) : null}
+        </div>
+        <ErrorBox error={save.error} />
       </CardContent>
     </Card>
   )

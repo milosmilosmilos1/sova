@@ -18,6 +18,7 @@ export function loadEnvLocal(): void {
 export const TEST_SECRETS: Record<string, string> = {
   GEMINI_API_KEY: 'test-gemini-key',
   UNSPLASH_ACCESS_KEY: 'test-unsplash-key',
+  PEXELS_API_KEY: 'test-pexels-key-0123456789',
   CANVA_CLIENT_ID: 'test-canva-client',
   CANVA_CLIENT_SECRET: 'test-canva-secret-0123456789',
   META_APP_ID: '1234567890123',

@@ -1,6 +1,7 @@
 import 'server-only'
 
 import type { SocialPlatform } from '@/config/platforms'
+import { POST_FORMATS, type PostFormat } from '@/config/post-formats'
 import {
   AUTOPILOT_LEVELS,
   budgetState,
@@ -31,6 +32,12 @@ import type { Database, Json } from '@/types/database'
 type BrandRow = Database['public']['Tables']['brands']['Row']
 
 export interface AutopilotSettingsJson {
+  /** jezik objava Autopilota (D-107); prazno = jezik brenda */
+  language?: 'sr-Latn' | 'sr-Cyrl' | 'en' | null
+  /** dozvoljene vrste objava (D-107); prazno = sve */
+  formats?: PostFormat[]
+  /** AI meša dozvoljene vrste kroz nedelju; isključeno = uvek prva dozvoljena */
+  mix?: boolean
   level3AccountIds?: string[]
   level3ConfirmedBy?: string | null
   pausedPostIds?: string[]
@@ -41,6 +48,21 @@ export function autopilotSettings(brand: Pick<BrandRow, 'settings'>): AutopilotS
   const s = (brand.settings ?? {}) as Record<string, unknown>
   const a = s.autopilot
   return a && typeof a === 'object' && !Array.isArray(a) ? (a as AutopilotSettingsJson) : {}
+}
+
+/** Jezik, vrste objava i mešanje (D-107) sa podrazumevanim vrednostima: jezik brenda, sve vrste, AI meša. */
+export function autopilotContentPrefs(brand: Pick<BrandRow, 'settings' | 'content_locale'>): {
+  language: 'sr-Latn' | 'sr-Cyrl' | 'en'
+  formats: PostFormat[]
+  mix: boolean
+} {
+  const s = autopilotSettings(brand)
+  const formats = (s.formats ?? []).filter((f) => (POST_FORMATS as readonly string[]).includes(f))
+  return {
+    language: s.language ?? (brand.content_locale as 'sr-Latn' | 'sr-Cyrl' | 'en'),
+    formats: formats.length ? formats : [...POST_FORMATS],
+    mix: s.mix ?? true,
+  }
 }
 
 export interface BudgetUsage {
@@ -95,6 +117,10 @@ export interface AutopilotView {
   level3Available: boolean
   level3ConfirmedAt: string | null
   level3AccountIds: string[]
+  /** D-107 */
+  language: 'sr-Latn' | 'sr-Cyrl' | 'en'
+  formats: PostFormat[]
+  mix: boolean
   paused: boolean
   pausedAt: string | null
   usage: BudgetUsage
@@ -154,6 +180,7 @@ export async function getAutopilot(
     level3Available,
     level3ConfirmedAt: brand.autopilot_level3_confirmed_at,
     level3AccountIds: settings.level3AccountIds ?? [],
+    ...autopilotContentPrefs(brand),
     paused: brand.status === 'paused',
     pausedAt: brand.paused_at,
     usage,
@@ -196,6 +223,9 @@ export async function updateAutopilot(
     update.autopilot_approval_deadline_hours = input.approvalDeadlineHours
   if (input.unapprovedAction !== undefined) update.autopilot_unapproved_action = input.unapprovedAction
   const nextSettings: AutopilotSettingsJson = { ...settings }
+  if (input.language !== undefined) nextSettings.language = input.language
+  if (input.formats !== undefined) nextSettings.formats = input.formats
+  if (input.mix !== undefined) nextSettings.mix = input.mix
 
   const level = input.level ?? (brand.autopilot_level as AutopilotLevel)
   if (level === 3) {

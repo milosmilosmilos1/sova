@@ -25,6 +25,21 @@ export const unsplashSearchSchema = z.object({
 })
 export type UnsplashSearchInput = z.infer<typeof unsplashSearchSchema>
 
+/** Pexels (D-107): video snimci i fotografije; rezultati se prikazuju hotlinkom, kopija tek pri izboru. */
+export const pexelsSearchSchema = z.object({
+  query: z.string().trim().min(2, { error: 'Upišite bar dva slova.' }).max(100),
+  kind: z.enum(['video', 'photo']).default('video'),
+  orientation: z.enum(['landscape', 'portrait', 'square']).optional(),
+})
+export type PexelsSearchInput = z.infer<typeof pexelsSearchSchema>
+
+export const pexelsSelectSchema = z.object({
+  brandId: z.uuid(),
+  id: z.number().int().positive(),
+  kind: z.enum(['video', 'photo']),
+})
+export type PexelsSelectInput = z.infer<typeof pexelsSelectSchema>
+
 export const unsplashSelectSchema = z.object({
   brandId: z.uuid(),
   photoId: z.string().trim().min(2).max(60),

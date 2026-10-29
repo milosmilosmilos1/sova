@@ -27,6 +27,7 @@ const services = {
   resend: ['RESEND_API_KEY'],
   turnstile: ['TURNSTILE_SECRET_KEY', 'NEXT_PUBLIC_TURNSTILE_SITE_KEY'],
   unsplash: ['UNSPLASH_ACCESS_KEY'],
+  pexels: ['PEXELS_API_KEY'],
   canva: ['CANVA_CLIENT_ID', 'CANVA_CLIENT_SECRET'],
 }
 const ready = Object.keys(services).filter((name) => services[name].every((key) => process.env[key]))
