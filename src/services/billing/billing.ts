@@ -20,6 +20,8 @@ export interface BillingPlanView {
   kind: 'subscription' | 'topup'
   interval: string | null
   priceCents: number
+  /** redovna cena posle uvodnog perioda (D-106), samo kad je veća od uvodne */
+  regularPriceCents: number | null
   currency: string
   tokens: number
   tokenPeriod: string
@@ -87,6 +89,8 @@ export async function getBillingOverview(viewer: Viewer, workspaceId: string): P
         kind: p.kind,
         interval: p.interval,
         priceCents: p.price_cents,
+        regularPriceCents:
+          p.regular_price_cents && p.regular_price_cents > p.price_cents ? p.regular_price_cents : null,
         currency: p.currency,
         tokens: p.tokens_per_period,
         tokenPeriod: p.token_period,

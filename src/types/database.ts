@@ -853,14 +853,14 @@ isOneToOne: false
                   ]
                 },"plans": {
                   Row: {
-                    "code": string,"currency": string,"id": string,"interval": string | null,"is_active": boolean,"kind": Database["public"]['Enums']["plan_kind"],"limits": NonNullable<Json>,"name": string,"price_cents": number,"provider_price_ids": NonNullable<Json>,"sort_order": number,"token_period": string,"tokens_per_period": number
+                    "code": string,"currency": string,"id": string,"interval": string | null,"is_active": boolean,"kind": Database["public"]['Enums']["plan_kind"],"limits": NonNullable<Json>,"name": string,"price_cents": number,"provider_price_ids": NonNullable<Json>,"regular_price_cents": number | null,"sort_order": number,"token_period": string,"tokens_per_period": number
                   }
                   ComputedFields: never
                   Insert: {
-                    "code": string,"currency"?: string,"id"?: string,"interval"?: string | null,"is_active"?: boolean,"kind": Database["public"]['Enums']["plan_kind"],"limits"?: NonNullable<Json>,"name": string,"price_cents"?: number,"provider_price_ids"?: NonNullable<Json>,"sort_order"?: number,"token_period"?: string,"tokens_per_period": number
+                    "code": string,"currency"?: string,"id"?: string,"interval"?: string | null,"is_active"?: boolean,"kind": Database["public"]['Enums']["plan_kind"],"limits"?: NonNullable<Json>,"name": string,"price_cents"?: number,"provider_price_ids"?: NonNullable<Json>,"regular_price_cents"?: number | null,"sort_order"?: number,"token_period"?: string,"tokens_per_period": number
                   }
                   Update: {
-                    "code"?: string,"currency"?: string,"id"?: string,"interval"?: string | null,"is_active"?: boolean,"kind"?: Database["public"]['Enums']["plan_kind"],"limits"?: NonNullable<Json>,"name"?: string,"price_cents"?: number,"provider_price_ids"?: NonNullable<Json>,"sort_order"?: number,"token_period"?: string,"tokens_per_period"?: number
+                    "code"?: string,"currency"?: string,"id"?: string,"interval"?: string | null,"is_active"?: boolean,"kind"?: Database["public"]['Enums']["plan_kind"],"limits"?: NonNullable<Json>,"name"?: string,"price_cents"?: number,"provider_price_ids"?: NonNullable<Json>,"regular_price_cents"?: number | null,"sort_order"?: number,"token_period"?: string,"tokens_per_period"?: number
                   }
                   Relationships: [
                     

@@ -15,6 +15,7 @@ interface PlanView {
   kind: 'subscription' | 'topup'
   interval: string | null
   priceCents: number
+  regularPriceCents: number | null
   currency: string
   tokens: number
   tokenPeriod: string
@@ -220,6 +221,15 @@ export function BillingPanel({
               <CardHeader>
                 <CardTitle>{p.name}</CardTitle>
                 <CardDescription>
+                  {p.regularPriceCents ? (
+                    <>
+                      <s>
+                        <span className="sr-only">Redovna cena </span>
+                        {money(p.regularPriceCents, p.currency)}
+                      </s>{' '}
+                      <span className="sr-only">Uvodna cena </span>
+                    </>
+                  ) : null}
                   {money(p.priceCents, p.currency)} {p.interval === 'year' ? 'godišnje' : 'mesečno'}
                   {p.interval === 'year'
                     ? ` (oko ${money(Math.round(p.priceCents / 12), p.currency)} mesečno)`

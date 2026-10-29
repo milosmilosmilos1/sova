@@ -10,7 +10,13 @@ import { cn } from 'cn'
 
 import { Switch } from './feature-demos'
 import { Fa } from './icons'
-import { recommendPlan, tokensNeeded, type PricingData, type Recommendation } from './pricing-math'
+import {
+  discountPercent,
+  recommendPlan,
+  tokensNeeded,
+  type PricingData,
+  type Recommendation,
+} from './pricing-math'
 
 /** Planovi, kalkulator tokena i dopune (D-098); preporuka iz kalkulatora boji kartice planova. */
 const num = new Intl.NumberFormat('sr-Latn-RS')
@@ -42,6 +48,8 @@ function Check({ children, accent }: { children: ReactNode; accent?: boolean }) 
 function PlanCard({
   name,
   price,
+  regularPrice,
+  discount,
   period,
   description,
   children,
@@ -51,6 +59,9 @@ function PlanCard({
 }: {
   name: string
   price: string
+  /** redovna cena, precrtana pored uvodne (D-106) */
+  regularPrice?: string | null
+  discount?: number | null
   period?: string
   description: string
   children: ReactNode
@@ -83,10 +94,22 @@ function PlanCard({
           </span>
         ) : null}
       </div>
-      <div className="mt-[18px] flex items-baseline gap-2">
-        <span className="text-[46px] leading-none font-semibold tracking-[-0.04em]">{price}</span>
+      <div className="mt-[18px] flex flex-wrap items-baseline gap-x-2 gap-y-1">
+        {regularPrice ? (
+          <s className="text-[22px] leading-none font-medium text-l-dim decoration-2">
+            <span className="sr-only">Redovna cena </span>
+            {regularPrice}
+          </s>
+        ) : null}
+        <span className="text-[46px] leading-none font-semibold tracking-[-0.04em]">
+          {regularPrice ? <span className="sr-only">Uvodna cena </span> : null}
+          {price}
+        </span>
         {period ? <span className="text-sm text-l-dim">{period}</span> : null}
       </div>
+      {regularPrice && discount ? (
+        <p className="mt-2 text-[12.5px] font-medium text-l-accent-soft">Uvodna cena, {discount} % popusta</p>
+      ) : null}
       <p className="mt-3.5 text-[14.5px] leading-[1.55] text-l-muted">{description}</p>
       <div className="mt-[22px] mb-[26px] flex flex-col gap-2.5 text-sm text-l-text-2">{children}</div>
       <Link
@@ -186,6 +209,8 @@ export function Pricing({ data, registrationOpen }: { data: PricingData; registr
       <PlanCard
         name={monthly.name}
         price={money(monthly.priceCents)}
+        regularPrice={monthly.regularPriceCents ? money(monthly.regularPriceCents) : null}
+        discount={discountPercent(monthly.priceCents, monthly.regularPriceCents)}
         period="mesečno"
         description={`${monthly.tokens} tokena svakog meseca, do ${brands(monthly.brands)}, ${networks(monthly.networks)} i ${members(monthly.members)}.`}
         recommended={rec.kind !== 'free'}
@@ -201,6 +226,8 @@ export function Pricing({ data, registrationOpen }: { data: PricingData; registr
       <PlanCard
         name={yearly.name}
         price={money(yearly.priceCents)}
+        regularPrice={yearly.regularPriceCents ? money(yearly.regularPriceCents) : null}
+        discount={discountPercent(yearly.priceCents, yearly.regularPriceCents)}
         period="godišnje"
         description={`${yearly.tokensPerMonth} tokena svakog meseca, plaćeno za godinu unapred.`}
         recommended={rec.kind !== 'free'}

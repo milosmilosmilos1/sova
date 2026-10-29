@@ -22,12 +22,14 @@ export interface PricingData {
   monthly: {
     name: string
     priceCents: number
+    /** redovna cena posle uvodnog perioda (D-106), null kad je nema */
+    regularPriceCents: number | null
     tokens: number
     brands: number
     networks: number
     members: number
   }
-  yearly: { name: string; priceCents: number; tokensPerMonth: number }
+  yearly: { name: string; priceCents: number; regularPriceCents: number | null; tokensPerMonth: number }
   topups: PricingTopup[]
 }
 
@@ -37,6 +39,7 @@ export interface PlanInput {
   kind: string
   name: string
   price_cents: number
+  regular_price_cents?: number | null
   currency: string
   tokens_per_period: number
   limits: unknown
@@ -45,6 +48,17 @@ export interface PlanInput {
 function limit(limits: unknown, key: string): number {
   const v = limits && typeof limits === 'object' ? (limits as Record<string, unknown>)[key] : undefined
   return typeof v === 'number' ? v : 0
+}
+
+/** Redovna cena se prikazuje samo kad je veća od uvodne (D-106). */
+export function regularPrice(plan: Pick<PlanInput, 'price_cents' | 'regular_price_cents'>): number | null {
+  const regular = plan.regular_price_cents
+  return regular && regular > plan.price_cents ? regular : null
+}
+
+/** Popust uvodne cene u odnosu na redovnu, zaokružen na ceo procenat. */
+export function discountPercent(priceCents: number, regularPriceCents: number | null): number | null {
+  return regularPriceCents ? Math.round((1 - priceCents / regularPriceCents) * 100) : null
 }
 
 /**
@@ -71,12 +85,18 @@ export function pricingFromPlans(plans: PlanInput[], costs: PricingCosts): Prici
     monthly: {
       name: monthly.name,
       priceCents: monthly.price_cents,
+      regularPriceCents: regularPrice(monthly),
       tokens: monthly.tokens_per_period,
       brands: limit(monthly.limits, 'brands'),
       networks: limit(monthly.limits, 'social_accounts'),
       members: limit(monthly.limits, 'members'),
     },
-    yearly: { name: yearly.name, priceCents: yearly.price_cents, tokensPerMonth: yearly.tokens_per_period },
+    yearly: {
+      name: yearly.name,
+      priceCents: yearly.price_cents,
+      regularPriceCents: regularPrice(yearly),
+      tokensPerMonth: yearly.tokens_per_period,
+    },
     topups: plans
       .filter((p) => p.kind === 'topup' && p.tokens_per_period > 0)
       .map((p) => ({ tokens: p.tokens_per_period, priceCents: p.price_cents }))

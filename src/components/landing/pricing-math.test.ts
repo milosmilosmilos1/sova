@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest'
 
-import { cheapestTopup, pricingFromPlans, recommendPlan, tokensNeeded, type PlanInput } from './pricing-math'
+import {
+  cheapestTopup,
+  discountPercent,
+  pricingFromPlans,
+  recommendPlan,
+  tokensNeeded,
+  type PlanInput,
+} from './pricing-math'
 
 const COSTS = { text: 2, image: 8, strategy: 20, xPost: 1, xPostWithLink: 6 }
 const TOPUPS = [
@@ -23,6 +30,7 @@ const PLANS: PlanInput[] = [
     kind: 'subscription',
     name: 'Mesečni',
     price_cents: 4700,
+    regular_price_cents: 9000,
     currency: 'EUR',
     tokens_per_period: 500,
     limits: { brands: 5, social_accounts: 10, members: 2 },
@@ -32,6 +40,7 @@ const PLANS: PlanInput[] = [
     kind: 'subscription',
     name: 'Godišnji',
     price_cents: 29700,
+    regular_price_cents: 50000,
     currency: 'EUR',
     tokens_per_period: 500,
     limits: { brands: 5, social_accounts: 10, members: 2 },
@@ -77,6 +86,19 @@ describe('cenovnik na landingu', () => {
         COSTS,
       ),
     ).toBeNull()
+  })
+
+  it('redovna cena se prikazuje samo kad je veća od uvodne (D-106)', () => {
+    const data = pricingFromPlans(PLANS, COSTS)!
+    expect(data.monthly.regularPriceCents).toBe(9000)
+    expect(data.yearly.regularPriceCents).toBe(50000)
+    expect(discountPercent(4700, 9000)).toBe(48)
+    expect(discountPercent(29700, 50000)).toBe(41)
+    expect(discountPercent(4700, null)).toBeNull()
+    const same = PLANS.map((p) => (p.code === 'monthly' ? { ...p, regular_price_cents: 4700 } : p))
+    expect(pricingFromPlans(same, COSTS)!.monthly.regularPriceCents).toBeNull()
+    const none = PLANS.map((p) => (p.code === 'yearly' ? { ...p, regular_price_cents: null } : p))
+    expect(pricingFromPlans(none, COSTS)!.yearly.regularPriceCents).toBeNull()
   })
 
   it('plaćeni planovi i dopune moraju biti u istoj valuti; besplatni plan se ne broji', () => {

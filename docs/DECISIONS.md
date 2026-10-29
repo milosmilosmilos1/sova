@@ -731,3 +731,14 @@ Odluka (vlasnik): godišnji plan ide sa 277 € na 297 €. Mesečni ostaje 47 �
 - Stripe još nije podešen. Kad bude, godišnja cena se pravi kao 297 € (`STRIPE_PRICE_YEARLY`). Cena u Stripe-u se posle ne menja, nego se pravi nova sa novim ID-jem.
 
 Razlog: odluka vlasnika.
+
+## D-106 · 29.10.2026 · usvojeno · Uvodne cene: redovna 90 € i 500 €, precrtana pored 47 € i 297 €
+
+Odluka (vlasnik):
+
+- Plan ima redovnu cenu u novoj koloni `plans.regular_price_cents` (migracija 027). Mesečni plan ima redovnu cenu 90 €, a godišnji 500 €. Naplaćuje se i dalje `price_cents`, odnosno 47 € i 297 €.
+- Landing pored cene plana prikazuje precrtanu redovnu cenu i natpis „Uvodna cena, 48 % popusta” (godišnji 41 %). Naplata u aplikaciji takođe prikazuje precrtanu redovnu cenu. Redovna cena se prikazuje samo kad je veća od cene koja se naplaćuje, a prazna kolona znači da plan nema uvodnu cenu.
+- Natpis glasi „Uvodna cena”, a ne „sniženje”. Kod sniženja pravila EU traže da precrtana cena bude najniža cena iz prethodnih 30 dana, a ovi planovi se po 90 € i 500 € nikad nisu prodavali. Uvodna cena je u redu ako redovna cena posle uvodnog perioda zaista važi. Inače je to obmanjujuće isticanje cene, koje zabranjuje i Zakon o zaštiti potrošača.
+- Strukturisani podaci za pretragu (`offers`) i Stripe nose samo cenu koja se naplaćuje.
+
+Razlog: odluka vlasnika da cene izgledaju kao popust.
