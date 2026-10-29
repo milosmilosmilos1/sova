@@ -52,8 +52,8 @@ Zamke:
 
 ```
 npm run lint && npm run typecheck
-npm run test            # Vitest unit (226)
-npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (31); pravi i briše test korisnike
+npm run test            # Vitest unit (228)
+npm run test:db         # RLS, RPC, trigeri nad lokalnim Supabase-om (32); pravi i briše test korisnike
 npm run test:integration # API rute u procesu nad lokalnim Supabase-om; Gemini, lažni sajt, Unsplash, Canva, Meta Graph, LinkedIn i TikTok kroz MSW (205)
 npm run test:e2e        # Playwright (13, od toga 3 axe provere pristupačnosti); traži dev server, Inngest dev (`npm run inngest:dev`, zakazivanje) i Mailpit; prvi run posle brisanja .next traje oko 2 min
 npm run test:live       # pravi Gemini i pravi sajt nad lokalnim Supabase-om (oko 0,2 USD); samo ručno, nikad u CI-ju
@@ -132,4 +132,12 @@ Još nema.
 - **Impersonacija ne radi** (traka se ne pojavljuje, admin vidi svoje podatke): proveri `SUPABASE_JWT_SECRET` (HS256 secret projekta), `IMPERSONATION_SECRET` (najmanje 32 znaka) i da je TOTP potvrđen u sesiji. Log `impersonation_audit_failed` znači da upis u audit ne prolazi; tada impersonacija namerno ne radi (fail closed).
 - **Hitno gašenje svih impersonacija**: `update impersonation_sessions set ended_at = now(), end_reason = 'revoked' where ended_at is null` (service role); rotacija `IMPERSONATION_SECRET` poništava sve cookie-je odjednom.
 - **Audit**: Admin → Audit log → filteri → „Izvezi CSV” (najviše 1.000 redova; za više suzi period). Zapisi se ne menjaju i ne brišu, ni kad se nalog admina ili korisnika obriše (D-075).
+- **Interni plan „Vlasnik”** (D-102), za radni prostor vlasnika platforme: 100 brendova, 100 mreža, 10 članova i 1.000.000 tokena bez roka. Vlasnik se prvo prijavi i napravi radni prostor, pa u SQL editoru (service role), uz zapis u sekciji 7:
+  ```sql
+  -- radni prostor: select w.id, w.name from workspaces w join profiles p on p.id = w.owner_id where p.email = '…';
+  insert into subscriptions (workspace_id, provider, provider_customer_id, provider_subscription_id, plan_id, status, current_period_start)
+  values ('<workspace_id>', 'internal', 'internal', 'internal-<workspace_id>', (select id from plans where code = 'vlasnik'), 'active', now());
+  select admin_adjust_tokens('<workspace_id>', 1000000, 'Interni plan Vlasnik (D-102)', '<id admina>', '{}'::jsonb);
+  ```
+  Ukidanje: `update subscriptions set status = 'canceled', canceled_at = now() where provider_subscription_id = 'internal-<workspace_id>'`; radni prostor se vraća na besplatne limite, a preostale tokene skida `admin_adjust_tokens` sa negativnim iznosom.
 - **Blokada i brisanje**: blokada zaključava profil i Auth nalog i briše sesije, pa izdati tokeni odmah prestaju da važe. Brisanje naloga traži kucanje emaila; vlasnik tima sa drugim članovima prvo prenosi vlasništvo (409).

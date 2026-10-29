@@ -28,6 +28,14 @@ on conflict (code) do update set
   tokens_per_period = excluded.tokens_per_period, token_period = excluded.token_period,
   limits = excluded.limits, sort_order = excluded.sort_order;
 
+-- Interni plan vlasnika platforme (D-102): nije u cenovniku (is_active = false, RLS ga ne pokazuje),
+-- ne može da se kupi i dodeljuje se ručno pretplatom sa provider = 'internal' (RUNBOOK).
+insert into public.plans (code, kind, name, interval, price_cents, currency, tokens_per_period, token_period, limits, is_active, sort_order) values
+  ('vlasnik', 'subscription', 'Vlasnik', null, 0, 'EUR', 0, 'once',
+   '{"brands": 100, "social_accounts": 100, "members": 10, "crawl_pages": 60}', false, 99)
+on conflict (code) do update set
+  name = excluded.name, limits = excluded.limits, is_active = false, sort_order = excluded.sort_order;
+
 insert into public.platform_settings (key, value, description, is_public) values
   ('token_prices', '{
     "text": 2, "rewrite": 1, "translate": 1, "hashtags": 1, "repurpose": 2, "variants": 1,

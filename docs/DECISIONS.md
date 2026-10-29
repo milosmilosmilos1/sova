@@ -686,3 +686,15 @@ Odluka:
 - **Prava produkcija** ostaje stroga: bez `SOVA_PREVIEW` server ne startuje dok ne dobije sve ključeve. Režim se gasi brisanjem te promenljive kad svi ključevi budu uneti.
 
 Razlog: vlasnik želi da sajt i aplikacija rade odmah na sovaai.netlify.app, a naloge servisa otvara postepeno. Pregled je izričito uključen jednom promenljivom, pa ne može slučajno da ostane na pravom domenu.
+
+## D-102 · 29.10.2026 · usvojeno · Interni plan „Vlasnik” za radni prostor vlasnika platforme
+
+Odluka:
+
+- **Plan `vlasnik`** u katalogu (`supabase/seed.sql`): 100 brendova, 100 mreža, 10 članova, 60 strana za Brand Brain, cena 0, bez tokena po periodu. `is_active = false`: nije u cenovniku, RLS ga ne pokazuje, a checkout ga odbija.
+- **Dodela** (RUNBOOK 8): pretplata sa `provider = 'internal'`, bez Stripe kupca i bez kraja perioda, plus jednokratnih 1.000.000 tokena kroz `admin_adjust_tokens`. Tokeni koje dodeli admin nemaju rok trajanja, a dodela ostaje u audit logu.
+- **Statistika**: interna pretplata nije prihod. Migracija 026 je ne broji u plaćenim radnim prostorima, u pretplatama po planu (MRR) ni u oznaci „plaća” kod AI troškova. Dodeljeni tokeni ostaju u napomeni „dodeljeno” na pločici tokena, jer su stvarno dodeljeni.
+- Radni prostor sa ovim planom ne kupuje drugu pretplatu (jedna aktivna po radnom prostoru, jedinstven indeks); dopune tokena rade normalno.
+- **`/api/health`** u produkciji javno vraća samo `status` i vreme; detalje po servisu vidi admin platforme sa potvrđenim TOTP-om (kako i piše u ARCHITECTURE), a lokalno ih vide svi. Na hostingu se ne proba lokalni Inngest dev server.
+
+Razlog: vlasnik objavljuje za svoje biznise iz iste aplikacije koju prodaje. Plan u bazi umesto posebnog koda znači da limiti, prikaz u Naplati i trošenje tokena idu istim putem kao kod kupaca.

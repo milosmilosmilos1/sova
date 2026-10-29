@@ -736,6 +736,42 @@ async function main() {
     assert(!member.error && member.data === false, `authenticated: ${member.error?.message}`)
   })
 
+  await test('interni plan Vlasnik nije javan, a admin statistika ga ne broji kao plaćen (migracija 026)', async () => {
+    const anon = createClient(URL, ANON, { auth: { persistSession: false } })
+    const { data: visible } = await anon.from('plans').select('code')
+    assert(!visible.some((p) => p.code === 'vlasnik'), 'vlasnik je u javnom cenovniku')
+    const { data: plan, error } = await admin
+      .from('plans')
+      .select('id, is_active, limits')
+      .eq('code', 'vlasnik')
+      .single()
+    assert(!error && plan.is_active === false && plan.limits.brands === 100, `plan: ${error?.message}`)
+
+    const before = await admin.rpc('admin_dashboard_stats', { p_days: 30 })
+    assert(!before.error, before.error?.message)
+    const subId = `internal-${wsB}`
+    const ins = await admin.from('subscriptions').insert({
+      workspace_id: wsB,
+      provider: 'internal',
+      provider_customer_id: 'internal',
+      provider_subscription_id: subId,
+      plan_id: plan.id,
+      status: 'active',
+    })
+    assert(!ins.error, ins.error?.message)
+    try {
+      const after = await admin.rpc('admin_dashboard_stats', { p_days: 30 })
+      assert(!after.error, after.error?.message)
+      assert(after.data.paid_workspaces === before.data.paid_workspaces, 'interni plan je brojan kao plaćen')
+      assert(
+        !after.data.subscriptions.some((g) => g.plan === 'vlasnik'),
+        'interni plan je u pretplatama po planu (MRR)',
+      )
+    } finally {
+      await admin.from('subscriptions').delete().eq('provider_subscription_id', subId)
+    }
+  })
+
   await test('seed: planovi, podešavanja i flagovi postoje; anon vidi cenovnik', async () => {
     const anon = createClient(URL, ANON, { auth: { persistSession: false } })
     const { data: plans, error } = await anon.from('plans').select('code').order('sort_order')

@@ -95,7 +95,7 @@ Za staging se iste putanje upisuju sa adresom staging-a, u test aplikacijama mre
 
 Redom; svaka stavka zavisi od prethodnih:
 
-1. `https://sovaai.rs/api/health`: baza, Redis i ostali delovi imaju status `ok`.
+1. `https://sovaai.rs/api/health` vraća `status: ok`. Detalje po servisu (baza, Redis, Inngest, Gemini) vidi admin platforme prijavljen sa TOTP-om (D-102).
 2. `robots.txt`, `sitemap.xml` i slika za deljenje (RUNBOOK 6, „SEO posle deploya”); mapu prijavite u Search Console.
 3. Registracija sa pravim emailom: stiže potvrda preko Resend-a, onboarding pravi radni prostor sa 50 tokena.
 4. Admin panel `/admin` sa drugim faktorom.
@@ -122,7 +122,7 @@ Redom; svaka stavka zavisi od prethodnih:
 
 ## 10. Netlify (trenutni deploy, D-100)
 
-Sajt `sovaai` (https://sovaai.netlify.app) i baza u postojećem Supabase projektu (Frankfurt) su napravljeni; migracije i seed su pušteni. Sajt radi u režimu pregleda (`SOVA_PREVIEW=true`, D-101): za početak su dovoljni korak 1a i adrese iz koraka 2 (Site URL i Redirect URLs), a ostali ključevi se dodaju kasnije.
+Sajt `sovaai` (https://sovaai.netlify.app) i baza u postojećem Supabase projektu (Frankfurt) su napravljeni; migracije (do 026) i seed su pušteni. Od 29.10.2026 sajt radi u pregledu sa Supabase ključem i tri tajne aplikacije. Sajt radi u režimu pregleda (`SOVA_PREVIEW=true`, D-101): za početak su dovoljni korak 1a i adrese iz koraka 2 (Site URL i Redirect URLs), a ostali ključevi se dodaju kasnije.
 
 1a. **Pregled**: u `.env.netlify-pregled.local` upišite Supabase secret key (Project Settings → API Keys → Secret keys), pa fajl uvezite u Netlify isto kao u koraku 1. Tri tajne aplikacije su već unutra.
 

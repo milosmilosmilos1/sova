@@ -1,5 +1,6 @@
 import { createHandler } from '@/lib/api/handler'
-import { configured, env } from '@/lib/env'
+import { getViewerFromRequest } from '@/lib/auth/viewer'
+import { configured, env, isPreview, isProd } from '@/lib/env'
 import { getRedis } from '@/lib/ratelimit'
 
 type CheckStatus = 'ok' | 'fail' | 'not_configured' | 'dev_fallback'
@@ -49,6 +50,8 @@ async function checkRedis(): Promise<Omit<Check, 'latencyMs'>> {
 
 async function checkInngest(): Promise<Omit<Check, 'latencyMs'>> {
   if (configured.inngestCloud) return { status: 'ok', detail: 'cloud keys present' }
+  // na hostingu nema lokalnog dev servera (npr. režim pregleda, D-101)
+  if (isProd) return { status: 'not_configured', detail: 'nema INNGEST_EVENT_KEY i INNGEST_SIGNING_KEY' }
   try {
     const res = await fetch('http://127.0.0.1:8288/health', { signal: withTimeout(1500), cache: 'no-store' })
     return res.ok
@@ -72,7 +75,7 @@ async function checkGemini(): Promise<Omit<Check, 'latencyMs'>> {
 
 export const GET = createHandler(
   { auth: 'none', rateLimit: { name: 'health', limit: 60, windowSec: 60, by: 'ip' } },
-  async () => {
+  async ({ req }) => {
     const [database, redis, inngest, gemini] = await Promise.all([
       timed(checkDatabase),
       timed(checkRedis),
@@ -82,6 +85,12 @@ export const GET = createHandler(
     const checks = { database, redis, inngest, gemini }
     const failed = Object.values(checks).some((c) => c.status === 'fail')
     const status = failed ? 'degraded' : 'ok'
-    return { status, env: env.NODE_ENV, time: new Date().toISOString(), checks }
+    const time = new Date().toISOString()
+    // u produkciji detalje (koji servisi rade) vidi samo admin platforme sa MFA
+    if (isProd) {
+      const viewer = await getViewerFromRequest(req, { real: true })
+      if (viewer?.profile.platformRole !== 'platform_admin' || !viewer.mfaVerified) return { status, time }
+    }
+    return { status, env: env.NODE_ENV, preview: isPreview, time, checks }
   },
 )

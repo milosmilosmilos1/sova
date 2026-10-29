@@ -30,7 +30,7 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 | 16 Deploy                               | priprema gotova | vodič DEPLOY.md, workflow za migracije uz odobrenje, maxDuration, produkcijski build proveren (D-097); sam deploy čeka naloge i dozvolu vlasnika                                                                         |
 | Landing po Claude Design-u              | gotovo          | novi landing, zaglavlje i podnožje javnih strana, kalkulator tokena iz baze, strana Kontakt (D-098); fotografije su primeri sa Unsplash-a                                                                                |
 | Cene u evrima                           | gotovo          | mesečni 47 €, godišnji 277 €, dopune 12/30/85 €, paketi 5 brendova, 10 mreža i 2 člana; admin preračunava u USD po kursu; favicon (D-099)                                                                                |
-| Deploy na Netlify                       | u toku          | sajt sovaai.netlify.app i baza (Supabase, Frankfurt), 25 migracija i seed; režim pregleda (D-101) pokreće sajt čim se unese Supabase secret key i tri tajne aplikacije; ostali ključevi kasnije (DEPLOY.md 10, D-100)    |
+| Deploy na Netlify                       | u toku          | sovaai.netlify.app radi od 29.10.2026 u režimu pregleda (D-101): baza (Supabase, Frankfurt), 26 migracija i seed; nalog vlasnika i interni plan „Vlasnik” (D-102); ključevi servisa kasnije (DEPLOY.md 10, D-100)        |
 
 ## Faza 4 — šta je urađeno
 
@@ -107,7 +107,10 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - **Migracija 025**: neprijavljen korisnik više ne može da pozove pomoćne SECURITY DEFINER funkcije; nov test baze (31).
 - **Netlify**: sajt `sovaai`, `netlify.toml`, javne promenljive upisane; tajne aplikacije u lokalnom `.env.netlify.local` za uvoz.
 - **Režim pregleda** (D-101): `SOVA_PREVIEW=true` pušta produkciju bez ključeva servisa; CAPTCHA, emailovi, AI i pozadinski poslovi čekaju svoje ključeve, a prijavljen korisnik vidi napomenu.
-- **Čeka vlasnika**: Supabase secret key u `.env.netlify-pregled.local` i uvoz u Netlify, Supabase Auth adrese; zatim ostali ključevi i jedna SQL linija (DEPLOY.md 10).
+- **Sajt radi** (29.10.2026): Supabase ključ i tri tajne su u Netlify-ju, `/` i `/login` vraćaju 200, baza odgovara. Nalog vlasnika (`platform_admin`) napravljen je u Supabase-u sa lozinkom.
+- **Interni plan „Vlasnik”** (D-102): plan u seed-u i produkcijskoj bazi, migracija 026 (admin statistika ga ne broji kao prihod), nov test baze (32). Dodela radnom prostoru je u RUNBOOK 8.
+- **`/api/health`** javno vraća samo status; detalje vidi admin sa TOTP-om (D-102).
+- **Čeka vlasnika**: zamena Supabase secret key-a (bio je u razgovoru), ostali ključevi servisa i jedna SQL linija (DEPLOY.md 10).
 
 ## Cene u evrima i favicon — šta je urađeno
 
