@@ -698,3 +698,14 @@ Odluka:
 - **`/api/health`** u produkciji javno vraća samo `status` i vreme; detalje po servisu vidi admin platforme sa potvrđenim TOTP-om (kako i piše u ARCHITECTURE), a lokalno ih vide svi. Na hostingu se ne proba lokalni Inngest dev server.
 
 Razlog: vlasnik objavljuje za svoje biznise iz iste aplikacije koju prodaje. Plan u bazi umesto posebnog koda znači da limiti, prikaz u Naplati i trošenje tokena idu istim putem kao kod kupaca.
+
+## D-103 · 29.10.2026 · usvojeno · Provera env-a pre build-a na Netlify-ju
+
+Odluka:
+
+- Netlify build pokreće `npm run check:env && npm run build`. `scripts/check-env.mjs` uvozi `src/lib/env.schema.ts` (Node type stripping, radi i na Node 22) i validira promenljive kao server pri startu: režim `preview` uz `SOVA_PREVIEW=true`, inače `prod`.
+- Kad fali obavezna promenljiva, build pada i živi sajt ostaje na prethodnom deploy-u. Bez provere bi deploy prošao, a server bi pao na svakoj strani.
+- Ispis sadrži samo imena: koja promenljiva fali i koji servisi su podešeni. Deploy preview i branch deploy se preskaču jer nemaju produkcijske tajne.
+- Šema u `build` režimu i dalje ne traži ništa, pa CI i lokalni `next build` rade bez tajni.
+
+Razlog: tajne unosi vlasnik u Netlify UI, a agent ne lista promenljive (konektor vraća vrednosti koje nisu označene kao tajne). Provera u build-u je jedini pouzdan znak da je uvoz prošao, a da se vrednosti ne pokažu.

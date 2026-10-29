@@ -5,6 +5,7 @@
   "scripts": {
     "dev": "next dev -p 3001",
     "build": "next build",
+    "check:env": "node --experimental-strip-types --disable-warning=ExperimentalWarning --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/check-env.mjs",
     "start": "next start -p 3001",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",

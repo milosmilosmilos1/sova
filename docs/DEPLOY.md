@@ -137,4 +137,6 @@ Za punu produkciju:
 7. **Kraj pregleda**: kad su svi ključevi uneti, obrišite `SOVA_PREVIEW` u Netlify-ju i pustite nov deploy; server tada opet traži sve ključeve.
 8. **Domen sovaai.rs** kasnije: Netlify → Domain management → Add a domain, DNS kod SuperHosting-a, zatim `NEXT_PUBLIC_APP_URL=https://sovaai.rs` i nov deploy. Do tada sajt nosi `noindex` i ne ulazi u pretragu.
 
+Build počinje proverom env-a (`npm run check:env`, D-103). Ako fali obavezna promenljiva, build pada sa njenim imenom u logu, a živi sajt ostaje na prethodnom deploy-u. Kad prođe, log pokazuje koji servisi su podešeni.
+
 Novi deploy iz čiste kopije (bez `.env` fajlova): `git archive HEAD | tar -x -C /c/Temp/sova-deploy` (git worktree na dugoj putanji pada), pa u tom folderu komanda koju daje Netlify konektor (`npx -y @netlify/mcp@latest --site-id … --proxy-path …`). Kad se GitHub repo poveže sa sajtom (Netlify → Build & deploy → Link repository), svaki push na `main` gradi sajt sam.

@@ -1,7 +1,8 @@
 # Netlify (D-100): Next.js kroz Netlify runtime, koji Netlify sam ažurira pri svakom build-u.
 # Tajne se ne pišu ovde (fajl je u repou i nije dostupan funkcijama); unose se u Netlify UI.
 [build]
-  command = "npm run build"
+  # check:env pre build-a: bez obavezne tajne pada build, a živi sajt ostaje na prethodnom deploy-u
+  command = "npm run check:env && npm run build"
   publish = ".next"
 
 [build.environment]
