@@ -22,6 +22,7 @@ export default async function AccountsPage({ searchParams }: PageProps<'/app/acc
       brandName={brand.name}
       canAdmin={ADMIN_ROLES.includes(current.role)}
       canEdit={EDIT_ROLES.includes(current.role)}
+      isPlatformAdmin={viewer.profile.platformRole === 'platform_admin'}
       pendingState={typeof sp.pending === 'string' ? sp.pending : null}
       notice={typeof sp.connect === 'string' ? sp.connect : null}
       noticeProvider={typeof sp.provider === 'string' ? sp.provider : null}

@@ -3,11 +3,14 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 
+import { PlatformTile } from '@/components/landing/platform-tile'
+import { byKey } from '@/components/landing/platforms'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PLATFORMS } from '@/config/platforms'
 import type { ApiResponse } from '@/lib/api/response'
+import { cn } from '@/lib/utils'
 
 /**
  * Mreže (faze 8a–8b): povezani nalozi brenda, izbor naloga posle OAuth-a, sinhronizacija, prekid veze.
@@ -79,6 +82,18 @@ const EMPTY_NOTICE: Record<string, string> = {
   x: 'X nije vratio nalog.',
 }
 
+/** Mreže na ekranu za povezivanje, redom; Facebook i Instagram dele Meta tok (jedna prijava za obe). */
+const CONNECT_TILES: Array<{ platform: AccountView['platform']; provider: string; hint?: string }> = [
+  { platform: 'facebook', provider: 'meta' },
+  { platform: 'instagram', provider: 'meta', hint: 'prijava preko Facebook-a' },
+  { platform: 'linkedin', provider: 'linkedin' },
+  { platform: 'tiktok', provider: 'tiktok' },
+  { platform: 'youtube', provider: 'youtube' },
+  { platform: 'pinterest', provider: 'pinterest' },
+  { platform: 'x', provider: 'x' },
+  { platform: 'google_business', provider: 'google_business' },
+]
+
 const STATUS_LABEL: Record<AccountView['status'], string> = {
   active: 'aktivno',
   needs_reauth: 'treba ponovo povezati',
@@ -103,6 +118,7 @@ export function AccountsClient({
   brandName,
   canAdmin,
   canEdit,
+  isPlatformAdmin,
   pendingState,
   notice,
   noticeProvider,
@@ -111,6 +127,8 @@ export function AccountsClient({
   brandName: string
   canAdmin: boolean
   canEdit: boolean
+  /** admin platforme vidi zašto mreža piše „Uskoro” (nema ključeva aplikacije) */
+  isPlatformAdmin: boolean
   pendingState: string | null
   notice: string | null
   noticeProvider: string | null
@@ -155,9 +173,14 @@ export function AccountsClient({
   })
 
   const availability = accounts.data?.availability ?? []
-  const connectable = canAdmin
-    ? availability.filter((a) => a.configured && a.enabledPlatforms.length > 0)
-    : []
+  const tileState = (t: (typeof CONNECT_TILES)[number]): 'ready' | 'admin' | 'off' | 'soon' => {
+    const a = availability.find((x) => x.provider === t.provider)
+    if (!a?.configured) return 'soon'
+    if (!a.enabledPlatforms.includes(t.platform)) return 'off'
+    return canAdmin ? 'ready' : 'admin'
+  }
+  const connectedCount = (platform: string) =>
+    (accounts.data?.accounts ?? []).filter((x) => x.platform === platform).length
   const notConfigured = availability.filter((a) => !a.configured).map((a) => a.label)
   const flaggedOff = availability
     .filter((a) => a.configured && a.enabledPlatforms.length === 0)
@@ -178,16 +201,82 @@ export function AccountsClient({
             Brend: {brandName}. Povezani nalozi na koje Sova objavljuje i sa kojih uvozi istoriju.
           </p>
         </div>
-        {connectable.length ? (
-          <div className="flex flex-wrap gap-2">
-            {connectable.map((a) => (
-              <Button key={a.provider} nativeButton={false} render={<a href={connectHref(a.provider)} />}>
-                Poveži {a.label}
-              </Button>
-            ))}
-          </div>
-        ) : null}
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-lg">Povežite mrežu</CardTitle>
+          <CardDescription>
+            {canAdmin
+              ? 'Kliknite mrežu, prijavite se na njoj i dozvolite Sovi pristup. Lozinku unosite samo na stranici mreže, Sova je ne vidi.'
+              : 'Mreže povezuje vlasnik ili administrator radnog prostora.'}
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            {CONNECT_TILES.map((t) => {
+              const state = tileState(t)
+              const count = connectedCount(t.platform)
+              const label = platformLabel(t.platform)
+              const status =
+                state === 'ready'
+                  ? count
+                    ? `Povezano: ${count}, dodaj još`
+                    : 'Poveži'
+                  : state === 'admin'
+                    ? count
+                      ? `Povezano: ${count}`
+                      : 'Povezuje administrator'
+                    : state === 'off'
+                      ? 'Privremeno isključeno'
+                      : 'Uskoro'
+              const body = (
+                <>
+                  <PlatformTile p={byKey(t.platform)} size={48} radius={14} glyph={21} />
+                  <span className="min-w-0">
+                    <span className="block leading-tight font-medium">{label}</span>
+                    <span
+                      className={cn(
+                        'block text-xs',
+                        state === 'ready' ? 'font-medium text-primary' : 'text-muted-foreground',
+                      )}
+                    >
+                      {status}
+                    </span>
+                    {t.hint ? <span className="block text-xs text-muted-foreground">{t.hint}</span> : null}
+                  </span>
+                </>
+              )
+              return (
+                <li key={t.platform}>
+                  {state === 'ready' ? (
+                    <a
+                      href={connectHref(t.provider)}
+                      className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:border-primary hover:bg-primary/5"
+                    >
+                      {body}
+                    </a>
+                  ) : (
+                    <div
+                      aria-disabled="true"
+                      className="flex items-center gap-3 rounded-lg border border-dashed p-3 opacity-60"
+                    >
+                      {body}
+                    </div>
+                  )}
+                </li>
+              )
+            })}
+          </ul>
+          {isPlatformAdmin && (notConfigured.length || flaggedOff.length) ? (
+            <p className="text-xs text-muted-foreground">
+              Za administratora platforme: „Uskoro” znači da na serveru nema ključeva aplikacije
+              {notConfigured.length ? ` (${notConfigured.join(', ')})` : ''}.
+              {flaggedOff.length ? ` Isključeno feature flagom: ${flaggedOff.join(', ')}.` : ''}
+            </p>
+          ) : null}
+        </CardContent>
+      </Card>
 
       {notice === 'denied' ? (
         <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
@@ -197,16 +286,6 @@ export function AccountsClient({
       {notice === 'empty' ? (
         <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
           {EMPTY_NOTICE[noticeProvider ?? 'meta'] ?? EMPTY_NOTICE.meta}
-        </p>
-      ) : null}
-      {notConfigured.length ? (
-        <p className="text-sm text-muted-foreground">
-          Još nisu podešene na serveru (ključevi aplikacija): {notConfigured.join(', ')}.
-        </p>
-      ) : null}
-      {flaggedOff.length ? (
-        <p className="text-sm text-muted-foreground">
-          Povezivanje je privremeno isključeno (feature flag): {flaggedOff.join(', ')}.
         </p>
       ) : null}
 
@@ -266,9 +345,7 @@ export function AccountsClient({
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
             Još nema povezanih mreža.{' '}
-            {canAdmin
-              ? 'Kliknite dugme za mrežu iznad da počnete.'
-              : 'Vlasnik ili administrator povezuje mreže.'}
+            {canAdmin ? 'Kliknite mrežu iznad da počnete.' : 'Vlasnik ili administrator povezuje mreže.'}
           </CardContent>
         </Card>
       ) : null}
