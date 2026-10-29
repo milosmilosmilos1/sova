@@ -73,6 +73,22 @@ export async function enqueueVisualTemplateJob(generationId: string, workspaceId
   }
 }
 
+/** Video iz Canve (D-104): Canva ga pravi i po nekoliko minuta, duže od jednog poziva funkcije. */
+export async function enqueueCanvaVideoExport(generationId: string, workspaceId: string): Promise<void> {
+  try {
+    await inngest.send(events.canvaVideoExportRequested.create({ generationId, workspaceId }))
+  } catch (error) {
+    logger.error('enqueue_canva_video_failed', { generationId, error })
+    throw new AiError(
+      'PROVIDER_ERROR',
+      process.env.NODE_ENV === 'development'
+        ? 'Pozadinski servis nije dostupan. Pokrenite `npm run inngest:dev` pa pokušajte ponovo.'
+        : 'Pozadinski servis trenutno nije dostupan. Pokušajte ponovo za minut.',
+      { retryable: true, cause: error },
+    )
+  }
+}
+
 /** Uvoz istorije objava posle povezivanja ili sinhronizacije naloga (faza 8a). */
 export async function enqueueHistoryImport(socialAccountId: string, brandId: string): Promise<void> {
   try {

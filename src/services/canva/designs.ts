@@ -4,12 +4,19 @@ import { toApiError } from '@/lib/ai/errors'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
-import type { CanvaDesignInput, CanvaExportInput } from '@/lib/schemas/visuals'
+import type { CanvaDesignInput, CanvaDesignListInput, CanvaExportInput } from '@/lib/schemas/visuals'
 import { safeFetch } from '@/lib/ssrf'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getTokenPrice } from '@/lib/tokens/prices'
 import { confirmReservation } from '@/lib/tokens/reservation'
-import { createDesign, exportDesign, uploadAsset, type CanvaDesign } from '@/integrations/canva/client'
+import {
+  createDesign,
+  exportDesign,
+  listDesigns,
+  uploadAsset,
+  type CanvaDesign,
+  type CanvaDesignSummary,
+} from '@/integrations/canva/client'
 import { failGeneration, startGeneration } from '@/services/ai/generations'
 import { getBrand } from '@/services/brands'
 import { getCanvaAccessToken } from '@/services/canva/connection'
@@ -20,7 +27,17 @@ import type { Json } from '@/types/database'
 /**
  * Canva tok bez Autofill-a (docs/INTEGRATIONS.md 11): slika iz biblioteke → Canva asset → dizajn
  * sa edit_url (korisnik dorađuje u Canvi) → export → kopija u biblioteci. Po 2 tokena.
+ * Uvoz gotovih dizajna (D-104) koristi isti export; video ide kroz `services/canva/video`.
  */
+export async function listCanvaDesigns(
+  viewer: Viewer,
+  input: CanvaDesignListInput,
+): Promise<{ items: CanvaDesignSummary[]; continuation: string | null }> {
+  await requireMembership(viewer, input.workspaceId, EDIT_ROLES)
+  const accessToken = await getCanvaAccessToken(input.workspaceId, viewer.user.id)
+  return listDesigns(accessToken, { query: input.query, continuation: input.continuation })
+}
+
 export interface CanvaDesignResult {
   generationId: string
   design: CanvaDesign
@@ -114,6 +131,8 @@ export async function exportCanvaDesign(
   input: CanvaExportInput,
   meta: { requestId: string; idempotencyKey?: string | null },
 ): Promise<CanvaExportResult> {
+  const format = input.format
+  if (format === 'mp4') throw new ApiError('VALIDATION', 'Video se uvozi kao pozadinski posao.')
   const brand = await getBrand(viewer, input.brandId)
   await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
   if (!viewer.profile.emailVerifiedAt) throw new ApiError('EMAIL_NOT_VERIFIED')
@@ -132,11 +151,7 @@ export async function exportCanvaDesign(
   })
   const started = Date.now()
   try {
-    const urls = await exportDesign(accessToken, {
-      designId: input.designId,
-      format: input.format,
-      width: 2048,
-    })
+    const urls = await exportDesign(accessToken, { designId: input.designId, format })
     const res = await safeFetch(urls[0]!, {
       timeoutMs: 30_000,
       maxBytes: 40 * 1024 * 1024,

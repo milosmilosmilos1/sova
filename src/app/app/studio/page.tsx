@@ -5,6 +5,7 @@ import { StudioClient } from '@/components/studio/studio-client'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { getCurrentWorkspace } from '@/lib/auth/workspace'
+import { AI_IMAGES_FLAG, isFeatureEnabled } from '@/lib/flags'
 
 export const metadata: Metadata = { title: 'AI Studio' }
 
@@ -15,5 +16,12 @@ export default async function StudioPage() {
   if (!current) redirect('/app/onboarding')
   const brand = await getCurrentBrand(viewer, current.workspaceId)
   if (!brand) redirect('/app/settings')
-  return <StudioClient workspaceId={current.workspaceId} brandId={brand.id} brandName={brand.name} />
+  return (
+    <StudioClient
+      workspaceId={current.workspaceId}
+      brandId={brand.id}
+      brandName={brand.name}
+      aiImages={await isFeatureEnabled(AI_IMAGES_FLAG)}
+    />
+  )
 }

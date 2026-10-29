@@ -11,6 +11,7 @@ import { POST as uploadPost } from '@/app/api/media/upload/route'
 import { GET as balanceGet } from '@/app/api/tokens/balance/route'
 import { POST as workspacesPost } from '@/app/api/workspaces/route'
 import { resetBreakerForTests } from '@/lib/ai/orchestrator'
+import { AI_IMAGES_FLAG, setFeatureFlagForTests } from '@/lib/flags'
 import { resetMemoryRateLimit } from '@/lib/ratelimit'
 import { runImageGeneration } from '@/services/ai/image'
 
@@ -43,6 +44,8 @@ function textBody(extra: Record<string, unknown> = {}) {
 
 beforeAll(async () => {
   geminiServer.listen({ onUnhandledFrame: 'bypass' })
+  // AI slike su podrazumevano isključene (D-104); ovde se testiraju uključene
+  setFeatureFlagForTests(AI_IMAGES_FLAG, true)
   a = await createTestUser('ai')
   const ws = await call<{ workspaceId: string; brandId: string }>(workspacesPost, '/api/workspaces', {
     token: a.token,
@@ -60,6 +63,7 @@ afterEach(() => {
 })
 
 afterAll(async () => {
+  setFeatureFlagForTests(AI_IMAGES_FLAG, null)
   geminiServer.close()
   await deleteTestUser(a)
 })
@@ -261,6 +265,25 @@ describe('Mediji i slike', () => {
     expect(json.data.width).toBe(64)
     expect(json.data.url).toContain('/storage/v1/object/sign/uploads/')
     assetId = json.data.id
+  })
+
+  it('AI slike isključene (D-104): 403 bez rezervacije tokena i bez poziva modela', async () => {
+    setFeatureFlagForTests(AI_IMAGES_FLAG, false)
+    try {
+      const before = await balance()
+      const r = await call(fromPromptPost, '/api/ai/image/from-prompt', {
+        token: a.token,
+        body: { brandId: brandA, prompt: 'Čista klima u svetlom dnevnom boravku', aspectRatio: '1:1' },
+        headers: { 'idempotency-key': `img-off-${Date.now()}` },
+      })
+      expect(r.status).toBe(403)
+      expect(r.json.error?.code).toBe('FORBIDDEN')
+      expect(r.json.error?.message).toContain('Unsplash')
+      expect(await balance()).toBe(before)
+      expect(calls).toHaveLength(0)
+    } finally {
+      setFeatureFlagForTests(AI_IMAGES_FLAG, true)
+    }
   })
 
   it('slika iz prompta: 202, posao završava, 8 tokena, media_assets red, potpisan URL', async () => {

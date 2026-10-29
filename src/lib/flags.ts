@@ -2,6 +2,9 @@ import 'server-only'
 
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
+/** AI slike kroz Gemini (D-104): podrazumevano isključene, admin ih uključuje bez deploya. */
+export const AI_IMAGES_FLAG = 'ai_images'
+
 /** Feature flagovi iz tabele `feature_flags` (admin ih menja bez deploya), keš 60 s. */
 const TTL = 60_000
 const cache = new Map<string, { value: boolean; expires: number }>()

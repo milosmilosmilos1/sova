@@ -130,8 +130,14 @@ async function api<T>(
   if (res.status === 429)
     throw new ApiError('RATE_LIMITED', 'Canva limit zahteva. Sačekajte minut.', { retryAfterSec: 60 })
   if (res.status === 403) return { status: 403, body }
+  if (res.status === 404)
+    throw new ApiError(
+      'NOT_FOUND',
+      'Canva nije pronašla dizajn. Možda je obrisan ili vam više nije podeljen.',
+    )
   if (!res.ok) {
-    logger.warn('canva_api_error', { status: res.status, path, code: body.code })
+    // bez query stringa: u njemu je pretraga korisnika
+    logger.warn('canva_api_error', { status: res.status, path: path.split('?')[0], code: body.code })
     throw new ApiError('PROVIDER_ERROR', `Canva je vratila grešku (${body.code ?? res.status}).`)
   }
   return { status: res.status, body }
@@ -156,6 +162,14 @@ export async function probeAutofill(accessToken: string): Promise<boolean> {
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
 
+/** Poruka za neuspeo Canva posao ili odbijen export (`license_required` znači Pro elemente u dizajnu). */
+export function canvaJobFailureMessage(code: string | null | undefined): string {
+  if (code === 'license_required')
+    return 'Dizajn ima plaćene (Pro) elemente. Uklonite ih u Canvi ili ih kupite, pa uvezite ponovo.'
+  if (code === 'approval_required') return 'Dizajn čeka odobrenje u Canvi. Kad ga odobre, uvezite ponovo.'
+  return `Canva posao nije uspeo (${code ?? 'failed'}).`
+}
+
 async function pollJob<
   T extends { status: 'in_progress' | 'success' | 'failed'; error?: { code: string; message: string } },
 >(accessToken: string, path: string, options: { intervalMs?: number; maxWaitMs?: number } = {}): Promise<T> {
@@ -165,14 +179,10 @@ async function pollJob<
     const { body } = await api<{ job: T }>(accessToken, path)
     if (body.job.status === 'success') return body.job
     if (body.job.status === 'failed') {
-      const code = body.job.error?.code ?? 'failed'
-      const text =
-        code === 'license_required' || code === 'approval_required'
-          ? 'Canva traži plaćeni plan ili odobrenje za ovaj export.'
-          : `Canva posao nije uspeo (${code}).`
-      throw new ApiError('PROVIDER_ERROR', text)
+      throw new ApiError('PROVIDER_ERROR', canvaJobFailureMessage(body.job.error?.code))
     }
-    if (Date.now() - started > (options.maxWaitMs ?? 120_000)) {
+    // Netlify prekida funkciju posle 60 s, pa poruka mora da stigne pre toga
+    if (Date.now() - started > (options.maxWaitMs ?? 45_000)) {
       throw new ApiError('PROVIDER_ERROR', 'Canva posao traje predugo. Pokušajte ponovo za minut.')
     }
     await sleep(interval)
@@ -245,28 +255,126 @@ export async function createDesign(
   }
 }
 
+export interface CanvaDesignSummary {
+  id: string
+  title: string | null
+  /** sličica važi 15 minuta; njen odnos stranica je odnos prve strane dizajna */
+  thumbnail: { url: string; width: number; height: number } | null
+  pageCount: number | null
+  updatedAt: string | null
+}
+
+interface RawDesign {
+  id: string
+  title?: string
+  thumbnail?: { url: string; width: number; height: number }
+  page_count?: number
+  updated_at?: number
+}
+
+function toDesignSummary(d: RawDesign): CanvaDesignSummary {
+  return {
+    id: d.id,
+    title: d.title?.trim() || null,
+    thumbnail: d.thumbnail?.url
+      ? { url: d.thumbnail.url, width: d.thumbnail.width, height: d.thumbnail.height }
+      : null,
+    pageCount: d.page_count ?? null,
+    updatedAt: d.updated_at ? new Date(d.updated_at * 1000).toISOString() : null,
+  }
+}
+
+/** Dizajni korisnika i oni podeljeni sa njim; bez pretrage prvo poslednji menjani. */
+export async function listDesigns(
+  accessToken: string,
+  input: { query?: string; continuation?: string; limit?: number } = {},
+): Promise<{ items: CanvaDesignSummary[]; continuation: string | null }> {
+  const params = new URLSearchParams({ limit: String(input.limit ?? 24) })
+  if (input.query) params.set('query', input.query.slice(0, 255))
+  else params.set('sort_by', 'modified_descending')
+  if (input.continuation) params.set('continuation', input.continuation)
+  const { status, body } = await api<{ items?: RawDesign[]; continuation?: string }>(
+    accessToken,
+    `/designs?${params}`,
+  )
+  if (status === 403)
+    throw new ApiError('FORBIDDEN', 'Canva nije dozvolila čitanje dizajna. Povežite Canvu ponovo.')
+  return { items: (body.items ?? []).map(toDesignSummary), continuation: body.continuation ?? null }
+}
+
+export async function getDesign(accessToken: string, designId: string): Promise<CanvaDesignSummary> {
+  const { status, body } = await api<{ design?: RawDesign }>(
+    accessToken,
+    `/designs/${encodeURIComponent(designId)}`,
+  )
+  if (status === 403 || !body.design)
+    throw new ApiError('FORBIDDEN', 'Canva nije dozvolila pristup ovom dizajnu.')
+  return toDesignSummary(body.design)
+}
+
+/** Ciljna rezolucija videa; izlaz uvek prati odnos stranica dizajna, bez sečenja i rotiranja. */
+export type CanvaVideoQuality = `${'horizontal' | 'vertical'}_${'720p' | '1080p'}`
+
+/**
+ * Slike bez širine, u veličini dizajna: na besplatnom Canva planu export ne sme da uveća dizajn
+ * fiksnih dimenzija više od 1,125 puta, pa bi 2048 px od dizajna od 1080 px pao.
+ */
+export type CanvaExportFormat =
+  { type: 'png' } | { type: 'jpg' } | { type: 'mp4'; quality: CanvaVideoQuality }
+
+export interface CanvaExportJob {
+  id: string
+  status: 'in_progress' | 'success' | 'failed'
+  urls: string[]
+  errorCode: string | null
+}
+
+interface RawExportJob {
+  id: string
+  status: 'in_progress' | 'success' | 'failed'
+  urls?: string[]
+  error?: { code: string; message: string }
+}
+
+function toExportJob(job: RawExportJob): CanvaExportJob {
+  return { id: job.id, status: job.status, urls: job.urls ?? [], errorCode: job.error?.code ?? null }
+}
+
+/** Pokreće export bez čekanja; video prati pozadinski posao kroz `getExportJob`. */
+export async function startExport(
+  accessToken: string,
+  input: { designId: string; format: CanvaExportFormat },
+): Promise<CanvaExportJob> {
+  const format = input.format.type === 'jpg' ? { type: 'jpg', quality: 90 } : input.format
+  const { status, body } = await api<{ job?: RawExportJob; code?: string }>(accessToken, '/exports', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ design_id: input.designId, format }),
+  })
+  if (status === 403 || !body.job) {
+    throw new ApiError(
+      'FORBIDDEN',
+      body.code === 'license_required'
+        ? canvaJobFailureMessage(body.code)
+        : 'Canva nije dozvolila export ovog dizajna.',
+    )
+  }
+  return toExportJob(body.job)
+}
+
+export async function getExportJob(accessToken: string, jobId: string): Promise<CanvaExportJob> {
+  const { body } = await api<{ job: RawExportJob }>(accessToken, `/exports/${encodeURIComponent(jobId)}`)
+  return toExportJob(body.job)
+}
+
+/** Slika: export i čekanje u istom zahtevu, jer PNG i JPG Canva završi za nekoliko sekundi. */
 export async function exportDesign(
   accessToken: string,
-  input: { designId: string; format: 'png' | 'jpg'; width?: number },
+  input: { designId: string; format: 'png' | 'jpg' },
 ): Promise<string[]> {
-  const format: Record<string, unknown> =
-    input.format === 'jpg' ? { type: 'jpg', quality: 90 } : { type: 'png' }
-  if (input.width) format.width = input.width
-  const { body } = await api<{ job: { id: string; status: string; urls?: string[] } }>(
-    accessToken,
-    '/exports',
-    {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ design_id: input.designId, format }),
-    },
-  )
-  if (body.job.status === 'success' && body.job.urls?.length) return body.job.urls
-  const job = await pollJob<{
-    status: 'in_progress' | 'success' | 'failed'
-    urls?: string[]
-    error?: { code: string; message: string }
-  }>(accessToken, `/exports/${body.job.id}`)
-  if (!job.urls?.length) throw new ApiError('PROVIDER_ERROR', 'Canva export nema fajlove.')
-  return job.urls
+  const job = await startExport(accessToken, { designId: input.designId, format: { type: input.format } })
+  if (job.status === 'success' && job.urls.length) return job.urls
+  const done = await pollJob<RawExportJob>(accessToken, `/exports/${encodeURIComponent(job.id)}`)
+  if (!done.urls?.length) throw new ApiError('PROVIDER_ERROR', 'Canva export nema fajlove.')
+  return done.urls
 }

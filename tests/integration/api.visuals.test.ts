@@ -3,13 +3,18 @@ import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest
 
 vi.mock('@/lib/jobs/enqueue', async (importOriginal) => {
   const mod = await importOriginal<typeof import('@/lib/jobs/enqueue')>()
-  return { ...mod, enqueueVisualTemplateJob: vi.fn(async () => {}), enqueueImageJob: vi.fn(async () => {}) }
+  return {
+    ...mod,
+    enqueueVisualTemplateJob: vi.fn(async () => {}),
+    enqueueImageJob: vi.fn(async () => {}),
+    enqueueCanvaVideoExport: vi.fn(async () => {}),
+  }
 })
 
 import { GET as jobGet } from '@/app/api/ai/jobs/[id]/route'
 import { POST as templatePost } from '@/app/api/ai/visual/template/route'
 import { DELETE as canvaDisconnect } from '@/app/api/canva/connection/route'
-import { POST as canvaDesignsPost } from '@/app/api/canva/designs/route'
+import { GET as canvaDesignsGet, POST as canvaDesignsPost } from '@/app/api/canva/designs/route'
 import { POST as canvaExportPost } from '@/app/api/canva/export/route'
 import { GET as canvaStatusGet } from '@/app/api/canva/status/route'
 import { GET as canvaCallbackGet } from '@/app/api/integrations/canva/callback/route'
@@ -21,9 +26,11 @@ import { POST as unsplashSelectPost } from '@/app/api/unsplash/select/route'
 import { POST as workspacesPost } from '@/app/api/workspaces/route'
 import { resetBreakerForTests } from '@/lib/ai/orchestrator'
 import { setFeatureFlagForTests } from '@/lib/flags'
+import { enqueueCanvaVideoExport } from '@/lib/jobs/enqueue'
 import { resetMemoryRateLimit } from '@/lib/ratelimit'
 import { configureFontLoader } from '@/lib/visuals/fonts'
 import { attributionFor, resetUnsplashCacheForTests } from '@/integrations/unsplash/client'
+import { collectCanvaVideoExport, failCanvaVideoExport, startCanvaVideoExport } from '@/services/canva/video'
 import { runVisualTemplate } from '@/services/visuals/template'
 
 import { calls, enqueueReply, geminiServer, resetGeminiMock } from './gemini-mock'
@@ -40,6 +47,7 @@ interface JobView {
   status: string
   tokensCharged: number
   assetUrl: string | null
+  assetId: string | null
   errorMessage: string | null
   output: {
     template?: string
@@ -419,9 +427,10 @@ describe('Canva Connect', () => {
     )
     expect(e.status).toBe(200)
     expect(e.json.data!.asset.mimeType).toBe('image/png')
-    expect(visualsState.canvaExports[0]).toMatchObject({
+    // bez širine: besplatna Canva ne uvećava dizajn više od 1,125 puta (D-104)
+    expect(visualsState.canvaExports[0]).toEqual({
       design_id: d.json.data!.design.id,
-      format: { type: 'png', width: 2048 },
+      format: { type: 'png' },
     })
     const { data: asset } = await admin
       .from('media_assets')
@@ -430,6 +439,136 @@ describe('Canva Connect', () => {
       .single()
     expect(asset).toMatchObject({ source: 'canva', bucket: 'uploads' })
     expect(await balance()).toBe(start - 4)
+  })
+
+  it('lista dizajna iz Canve: poslednji menjani prvi, sledeća strana i pretraga, bez tokena', async () => {
+    type Page = {
+      items: Array<{ id: string; title: string; thumbnail: { width: number; height: number; url: string } }>
+      continuation: string | null
+    }
+    const start = await balance()
+    const first = await call<Page>(canvaDesignsGet, '/api/canva/designs', {
+      token: user.token,
+      query: { workspaceId: wsId },
+    })
+    expect(first.status).toBe(200)
+    expect(first.json.data!.items.map((d) => d.id)).toEqual(['DVID-1', 'DVID-2'])
+    expect(first.json.data!.items[0]).toMatchObject({
+      title: 'Reel jesen',
+      thumbnail: { width: 270, height: 480 },
+    })
+    expect(first.json.data!.continuation).toBe('strana-2')
+    expect(visualsState.canvaDesignLists[0]).toContain('sort_by=modified_descending')
+
+    const next = await call<Page>(canvaDesignsGet, '/api/canva/designs', {
+      token: user.token,
+      query: { workspaceId: wsId, continuation: 'strana-2' },
+    })
+    expect(next.json.data!.items.map((d) => d.id)).toEqual(['DVID-3'])
+    expect(next.json.data!.continuation).toBeNull()
+
+    const none = await call<Page>(canvaDesignsGet, '/api/canva/designs', {
+      token: user.token,
+      query: { workspaceId: wsId, query: 'nista' },
+    })
+    expect(none.json.data!.items).toEqual([])
+    expect(visualsState.canvaDesignLists[2]).toContain('query=nista')
+    expect(visualsState.canvaDesignLists[2]).not.toContain('sort_by')
+    expect(await balance()).toBe(start)
+  })
+
+  it('video iz Canve: 202 pa pozadinski posao; vertikalni 1080p MP4 u biblioteci za 2 tokena', async () => {
+    const start = await balance()
+    const r = await call<{ generationId: string; status: string; tokensReserved: number }>(
+      canvaExportPost,
+      '/api/canva/export',
+      {
+        token: user.token,
+        headers: { 'idempotency-key': crypto.randomUUID() },
+        body: { brandId, designId: 'DVID-1', format: 'mp4' },
+      },
+    )
+    expect(r.status).toBe(202)
+    expect(r.json.data).toMatchObject({ status: 'queued', tokensReserved: 2 })
+    const id = r.json.data!.generationId
+    expect(enqueueCanvaVideoExport).toHaveBeenCalledWith(id, wsId)
+    expect(await balance()).toBe(start - 2)
+
+    expect(await startCanvaVideoExport(id, '1080p')).toEqual({
+      status: 'started',
+      jobId: 'export-mp4-vertical_1080p',
+    })
+    expect(visualsState.canvaExports.at(-1)).toEqual({
+      design_id: 'DVID-1',
+      format: { type: 'mp4', quality: 'vertical_1080p' },
+    })
+    expect(await collectCanvaVideoExport(id, 'export-mp4-vertical_1080p', '1080p')).toEqual({
+      status: 'in_progress',
+    })
+    expect((await job(id)).status).toBe('running')
+    expect(await collectCanvaVideoExport(id, 'export-mp4-vertical_1080p', '1080p')).toEqual({
+      status: 'succeeded',
+    })
+
+    const done = await job(id)
+    expect(done).toMatchObject({ status: 'succeeded', tokensCharged: 2 })
+    expect(done.assetUrl).toContain('/storage/v1/object/sign/uploads/')
+    const { data: asset } = await admin
+      .from('media_assets')
+      .select('kind, source, mime_type, width, height, duration_ms, ai_generation_id, tags, storage_path')
+      .eq('id', done.assetId!)
+      .single()
+    expect(asset).toMatchObject({
+      kind: 'video',
+      source: 'canva',
+      mime_type: 'video/mp4',
+      width: 1080,
+      height: 1920,
+      duration_ms: 12_000,
+      ai_generation_id: id,
+      tags: ['canva'],
+    })
+    expect(asset!.storage_path).toContain('/canva/')
+    expect(await balance()).toBe(start - 2)
+    // Inngest može da ponovi korak posle uspeha: ništa se ne radi dvaput
+    expect(await collectCanvaVideoExport(id, 'export-mp4-vertical_1080p', '1080p')).toEqual({
+      status: 'skipped',
+    })
+  })
+
+  it('video: prevelik 1080p prelazi na 720p; Pro elementi i isteklo čekanje vraćaju tokene', async () => {
+    const exportVideo = (designId: string) =>
+      call<{ generationId: string }>(canvaExportPost, '/api/canva/export', {
+        token: user.token,
+        headers: { 'idempotency-key': crypto.randomUUID() },
+        body: { brandId, designId, format: 'mp4' },
+      })
+    visualsState.canvaVideoTooLarge = true
+    const start = await balance()
+    const id = (await exportVideo('DVID-WIDE')).json.data!.generationId
+    expect(await startCanvaVideoExport(id, '1080p')).toMatchObject({ jobId: 'export-mp4-horizontal_1080p' })
+    await collectCanvaVideoExport(id, 'export-mp4-horizontal_1080p', '1080p')
+    expect(await collectCanvaVideoExport(id, 'export-mp4-horizontal_1080p', '1080p')).toEqual({
+      status: 'too_large',
+    })
+    expect((await job(id)).status).toBe('running')
+    expect(await startCanvaVideoExport(id, '720p')).toMatchObject({ jobId: 'export-mp4-horizontal_720p' })
+    expect(await collectCanvaVideoExport(id, 'export-mp4-horizontal_720p', '720p')).toEqual({
+      status: 'succeeded',
+    })
+    expect(await balance()).toBe(start - 2)
+
+    const proId = (await exportVideo('DVID-PRO')).json.data!.generationId
+    expect(await startCanvaVideoExport(proId, '1080p')).toEqual({ status: 'failed' })
+    const pro = await job(proId)
+    expect(pro.status).toBe('failed')
+    expect(pro.errorMessage).toContain('Pro')
+
+    const slowId = (await exportVideo('DVID-1')).json.data!.generationId
+    await startCanvaVideoExport(slowId, '1080p')
+    expect(await failCanvaVideoExport(slowId, 'timeout')).toEqual({ status: 'failed' })
+    expect((await job(slowId)).errorMessage).toContain('predugo')
+    expect(await balance()).toBe(start - 2)
   })
 
   it('istekao token se osvežava (rotacija), a opozvan refresh označava needs_reauth', async () => {

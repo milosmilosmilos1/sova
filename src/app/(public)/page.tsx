@@ -12,7 +12,7 @@ import { Pricing } from '@/components/landing/pricing'
 import { pricingFromPlans, type PricingCosts } from '@/components/landing/pricing-math'
 import { Accent, Section, SectionHeading } from '@/components/landing/section'
 import { company } from '@/config/company'
-import { isFeatureEnabled } from '@/lib/flags'
+import { AI_IMAGES_FLAG, isFeatureEnabled } from '@/lib/flags'
 import { siteUrl } from '@/lib/seo'
 import { getTokenPrices } from '@/lib/tokens/prices'
 import { listPlans, type PlanRow } from '@/services/plans'
@@ -80,14 +80,16 @@ const jsonForScript = (value: unknown) => JSON.stringify(value).replace(/</g, '\
 /** Landing po dizajnu iz Claude Design-a (D-098); cene i troškovi tokena dolaze iz baze. */
 export default async function LandingPage() {
   const t = await getTranslations('landing')
-  const [plans, prices, registrationOpen] = await Promise.all([
+  const [plans, prices, registrationOpen, aiImages] = await Promise.all([
     listPlans().catch(() => []),
     getTokenPrices(),
     isFeatureEnabled('registration_open'),
+    isFeatureEnabled(AI_IMAGES_FLAG),
   ])
   const costs: PricingCosts = {
     text: prices.text,
-    image: prices.image_standard,
+    // bez AI slika (D-104) slika objave je vizual iz šablona ili uvoz iz Canve, oba po istoj ceni
+    image: aiImages ? prices.image_standard : prices.visual_template,
     strategy: prices.strategy,
     xPost: prices.x_post,
     xPostWithLink: prices.x_post_with_link,

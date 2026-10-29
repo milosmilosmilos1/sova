@@ -90,6 +90,7 @@ insert into public.feature_flags (key, enabled, description) values
   ('firecrawl', false, 'Firecrawl za SPA sajtove u Brand Brain-u'),
   ('canva', false, 'Canva Connect integracija'),
   ('canva_autofill', false, 'Canva Autofill (planovi sa brand template-ima)'),
+  ('ai_images', false, 'AI slike kroz Gemini u Studiju; isključene radi troška, slike idu sa Unsplash-a, iz Canve i šablona (D-104)'),
   ('autopilot_level3', false, 'Pun autopilot bez odobrenja'),
   ('assisted_publishing', true, 'Asistirano objavljivanje kao fallback'),
   ('registration_open', true, 'Da li je registracija otvorena')

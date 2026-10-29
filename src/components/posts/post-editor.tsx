@@ -864,7 +864,7 @@ function EditorForm({
           <CardHeader>
             <CardTitle className="text-base">Mediji</CardTitle>
             <CardDescription>
-              Iz biblioteke brenda (upload, Unsplash, šabloni, AI slike) ili otpremite fotografiju ili video
+              Iz biblioteke brenda (Unsplash, Canva, šabloni iz Studija) ili otpremite fotografiju ili video
               (MP4, MOV).
             </CardDescription>
           </CardHeader>

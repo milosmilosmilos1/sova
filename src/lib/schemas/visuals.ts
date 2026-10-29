@@ -69,9 +69,22 @@ export const canvaDesignSchema = z.object({
 })
 export type CanvaDesignInput = z.infer<typeof canvaDesignSchema>
 
+/** mp4 je video iz Canve: pozadinski posao (D-104), odgovor 202 sa ID-jem posla. */
 export const canvaExportSchema = z.object({
   brandId: z.uuid(),
-  designId: z.string().trim().min(3).max(100),
-  format: z.enum(['png', 'jpg']).default('png'),
+  designId: z
+    .string()
+    .trim()
+    .min(3)
+    .max(100)
+    .regex(/^[A-Za-z0-9_-]+$/, { error: 'Neispravan ID Canva dizajna.' }),
+  format: z.enum(['png', 'jpg', 'mp4']).default('png'),
 })
 export type CanvaExportInput = z.infer<typeof canvaExportSchema>
+
+export const canvaDesignListSchema = z.object({
+  workspaceId: z.uuid(),
+  query: z.string().trim().max(255).optional(),
+  continuation: z.string().max(2000).optional(),
+})
+export type CanvaDesignListInput = z.infer<typeof canvaDesignListSchema>

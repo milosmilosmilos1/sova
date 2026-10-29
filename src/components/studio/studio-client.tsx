@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -121,10 +121,13 @@ export function StudioClient({
   workspaceId,
   brandId,
   brandName,
+  aiImages,
 }: {
   workspaceId: string
   brandId: string
   brandName: string
+  /** AI slike kroz Gemini; podrazumevano isključene (D-104) */
+  aiImages: boolean
 }) {
   const queryClient = useQueryClient()
   const balance = useQuery({
@@ -156,17 +159,29 @@ export function StudioClient({
       </div>
 
       <Tabs defaultValue="text">
-        <TabsList>
-          <TabsTrigger value="text">Tekst za objavu ({balance.data?.prices.text ?? 2})</TabsTrigger>
-          <TabsTrigger value="photo">
-            Slika iz fotografije ({balance.data?.prices.image_standard ?? 8})
+        <TabsList className="max-w-full flex-wrap justify-start group-data-horizontal/tabs:h-auto">
+          <TabsTrigger value="text" className="flex-none">
+            Tekst za objavu ({balance.data?.prices.text ?? 2})
           </TabsTrigger>
-          <TabsTrigger value="prompt">
-            Slika iz prompta ({balance.data?.prices.image_standard ?? 8})
-          </TabsTrigger>
-          <TabsTrigger value="template">
+          <TabsTrigger value="template" className="flex-none">
             Vizual iz šablona ({balance.data?.prices.visual_template ?? 2})
           </TabsTrigger>
+          <TabsTrigger value="unsplash" className="flex-none">
+            Unsplash fotografije
+          </TabsTrigger>
+          <TabsTrigger value="canva" className="flex-none">
+            Iz Canve ({balance.data?.prices.canva_export ?? 2})
+          </TabsTrigger>
+          {aiImages ? (
+            <>
+              <TabsTrigger value="photo" className="flex-none">
+                Slika iz fotografije ({balance.data?.prices.image_standard ?? 8})
+              </TabsTrigger>
+              <TabsTrigger value="prompt" className="flex-none">
+                Slika iz prompta ({balance.data?.prices.image_standard ?? 8})
+              </TabsTrigger>
+            </>
+          ) : null}
         </TabsList>
         <TabsContent value="template">
           <VisualPanel workspaceId={workspaceId} brandId={brandId} onDone={refreshBalance} />
@@ -174,12 +189,27 @@ export function StudioClient({
         <TabsContent value="text">
           <TextPanel brandId={brandId} onDone={refreshBalance} />
         </TabsContent>
-        <TabsContent value="photo">
-          <ImagePanel workspaceId={workspaceId} brandId={brandId} mode="photo" onDone={refreshBalance} />
+        <TabsContent value="unsplash">
+          <UnsplashPanel brandId={brandId} />
         </TabsContent>
-        <TabsContent value="prompt">
-          <ImagePanel workspaceId={workspaceId} brandId={brandId} mode="prompt" onDone={refreshBalance} />
+        <TabsContent value="canva">
+          <CanvaImportPanel
+            workspaceId={workspaceId}
+            brandId={brandId}
+            price={balance.data?.prices.canva_export ?? 2}
+            onDone={refreshBalance}
+          />
         </TabsContent>
+        {aiImages ? (
+          <>
+            <TabsContent value="photo">
+              <ImagePanel workspaceId={workspaceId} brandId={brandId} mode="photo" onDone={refreshBalance} />
+            </TabsContent>
+            <TabsContent value="prompt">
+              <ImagePanel workspaceId={workspaceId} brandId={brandId} mode="prompt" onDone={refreshBalance} />
+            </TabsContent>
+          </>
+        ) : null}
       </Tabs>
     </div>
   )
@@ -922,5 +952,309 @@ function CanvaActions({
         <img src={exp.data.asset.url} alt="Dizajn iz Canve" className="max-h-64 rounded-md border" />
       ) : null}
     </div>
+  )
+}
+
+interface UnsplashSelected {
+  id: string
+  url: string
+  altText: string | null
+  attribution: { text: string } | null
+  reused: boolean
+}
+
+/** Fotografija bez šablona i bez AI-ja (D-104): kopija ide u biblioteku, objava je bira odande. */
+function UnsplashPanel({ brandId }: { brandId: string }) {
+  const [picked, setPicked] = useState<{ id: string; attribution: string } | null>(null)
+  const select = useMutation({
+    mutationFn: (photoId: string) =>
+      api<UnsplashSelected>('/api/unsplash/select', { method: 'POST', json: { brandId, photoId } }),
+  })
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Fotografija sa Unsplash-a</CardTitle>
+        <CardDescription>
+          Besplatne fotografije, bez AI-ja i bez tokena. Izabrana fotografija ide u biblioteku brenda sa
+          imenom autora, a u objavi je birate iz biblioteke.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <UnsplashPicker
+          value={picked}
+          onChange={(v) => {
+            setPicked(v)
+            select.reset()
+          }}
+        />
+        <Button disabled={!picked || select.isPending} onClick={() => picked && select.mutate(picked.id)}>
+          {select.isPending ? 'Čuvam…' : 'DODAJ U BIBLIOTEKU'}
+        </Button>
+        <ErrorBox error={select.error} />
+        {select.data ? (
+          <figure className="space-y-2">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={select.data.url}
+              alt={select.data.altText ?? 'Fotografija sa Unsplash-a'}
+              className="max-h-80 rounded-lg border"
+            />
+            <figcaption className="text-xs text-muted-foreground">
+              {select.data.reused ? 'Fotografija je već u biblioteci.' : 'Dodato u biblioteku brenda.'}
+              {select.data.attribution ? ` ${select.data.attribution.text}` : ''}
+            </figcaption>
+          </figure>
+        ) : null}
+      </CardContent>
+    </Card>
+  )
+}
+
+interface CanvaDesignItem {
+  id: string
+  title: string | null
+  thumbnail: { url: string; width: number; height: number } | null
+}
+
+/**
+ * Uvoz gotovog dizajna iz Canve (D-104): slika odmah, video kao pozadinski posao. Šabloni,
+ * fotografije i snimci iz Canve tako stižu u objave bez AI slika.
+ */
+function CanvaImportPanel({
+  workspaceId,
+  brandId,
+  price,
+  onDone,
+}: {
+  workspaceId: string
+  brandId: string
+  price: number
+  onDone: () => void
+}) {
+  const status = useQuery({
+    queryKey: ['canva-status', workspaceId],
+    queryFn: () => api<CanvaStatus>(`/api/canva/status?workspaceId=${workspaceId}`),
+  })
+  const connected = Boolean(status.data?.configured && status.data.enabled && status.data.connected)
+  const [query, setQuery] = useState('')
+  const [submitted, setSubmitted] = useState('')
+  const designs = useInfiniteQuery({
+    queryKey: ['canva-designs', workspaceId, submitted],
+    queryFn: ({ pageParam }) => {
+      const params = new URLSearchParams({ workspaceId })
+      if (submitted) params.set('query', submitted)
+      if (pageParam) params.set('continuation', pageParam)
+      return api<{ items: CanvaDesignItem[]; continuation: string | null }>(`/api/canva/designs?${params}`)
+    },
+    initialPageParam: '',
+    getNextPageParam: (last) => last.continuation ?? undefined,
+    enabled: connected,
+    // sličice iz Canve važe 15 minuta
+    staleTime: 10 * 60_000,
+  })
+  const [selected, setSelected] = useState<CanvaDesignItem | null>(null)
+  const [jobId, setJobId] = useState<string | null>(null)
+  const image = useMutation({
+    mutationFn: (designId: string) =>
+      api<{ asset: { url: string } }>('/api/canva/export', {
+        method: 'POST',
+        idempotent: true,
+        json: { brandId, designId, format: 'png' },
+      }),
+    onSettled: onDone,
+  })
+  const video = useMutation({
+    mutationFn: (designId: string) =>
+      api<{ generationId: string }>('/api/canva/export', {
+        method: 'POST',
+        idempotent: true,
+        json: { brandId, designId, format: 'mp4' },
+      }),
+    onSuccess: (d) => setJobId(d.generationId),
+    onSettled: onDone,
+  })
+  const job = useQuery({
+    queryKey: ['job', jobId],
+    queryFn: () => api<JobView>(`/api/ai/jobs/${jobId}`),
+    enabled: Boolean(jobId),
+    refetchInterval: (q) => {
+      const s = q.state.data?.status
+      return s && (s === 'succeeded' || s === 'failed' || s === 'canceled') ? false : 3000
+    },
+  })
+  const doneRef = useRef<string | null>(null)
+  useEffect(() => {
+    const s = job.data?.status
+    if (job.data && (s === 'succeeded' || s === 'failed') && doneRef.current !== job.data.id) {
+      doneRef.current = job.data.id
+      onDone()
+    }
+  }, [job.data, onDone])
+
+  const items = designs.data?.pages.flatMap((p) => p.items) ?? []
+  const videoRunning =
+    Boolean(jobId) && (!job.data || job.data.status === 'queued' || job.data.status === 'running')
+  const busy = image.isPending || video.isPending || videoRunning
+  const choose = (d: CanvaDesignItem) => {
+    if (busy) return
+    setSelected(d)
+    setJobId(null)
+    image.reset()
+    video.reset()
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Uvoz iz Canve</CardTitle>
+        <CardDescription>
+          Napravite objavu ili video u Canvi, sa njihovim šablonima, fotografijama i snimcima, pa ga ovde
+          uvezite u biblioteku brenda. Slika ili video, {price} tokena, bez AI-ja.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {status.isPending ? (
+          <p className="text-sm text-muted-foreground">Proveravam vezu sa Canvom…</p>
+        ) : null}
+        <ErrorBox error={status.error} />
+        {status.data && !status.data.configured ? (
+          <p className="text-sm text-muted-foreground">Canva nije podešena na serveru.</p>
+        ) : null}
+        {status.data?.configured && !status.data.enabled ? (
+          <p className="text-sm text-muted-foreground">Canva je trenutno isključena.</p>
+        ) : null}
+        {status.data?.configured && status.data.enabled && !status.data.connected ? (
+          <p className="text-sm">
+            <a
+              className="underline"
+              href={`/api/integrations/canva/connect?workspaceId=${workspaceId}&redirectTo=/app/studio`}
+            >
+              Povežite Canvu
+            </a>{' '}
+            da biste ovde videli svoje dizajne.
+          </p>
+        ) : null}
+        {connected ? (
+          <>
+            <div className="flex gap-2">
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Pretraga po nazivu dizajna (opciono)"
+                aria-label="Pretraga Canva dizajna"
+                onKeyDown={(e) => e.key === 'Enter' && setSubmitted(query.trim())}
+              />
+              <Button type="button" variant="outline" onClick={() => setSubmitted(query.trim())}>
+                Traži
+              </Button>
+            </div>
+            {designs.isPending ? <p className="text-sm text-muted-foreground">Učitavam dizajne…</p> : null}
+            <ErrorBox error={designs.error} />
+            {designs.data && items.length === 0 ? (
+              <p className="text-sm text-muted-foreground">
+                {submitted ? `Nema dizajna za „${submitted}”.` : 'U Canvi još nemate dizajne.'}
+              </p>
+            ) : null}
+            {items.length ? (
+              <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+                {items.map((d) => (
+                  <button
+                    key={d.id}
+                    type="button"
+                    onClick={() => choose(d)}
+                    aria-pressed={selected?.id === d.id}
+                    className="min-w-0 space-y-1 text-left"
+                  >
+                    <span
+                      className={`block overflow-hidden rounded-md border bg-muted ${selected?.id === d.id ? 'ring-2 ring-primary' : ''}`}
+                    >
+                      {d.thumbnail ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={d.thumbnail.url}
+                          alt=""
+                          className="aspect-square w-full object-contain"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <span className="flex aspect-square items-center justify-center text-xs text-muted-foreground">
+                          Bez sličice
+                        </span>
+                      )}
+                    </span>
+                    <span className="block truncate text-xs">{d.title ?? 'Bez naziva'}</span>
+                  </button>
+                ))}
+              </div>
+            ) : null}
+            {designs.hasNextPage ? (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => designs.fetchNextPage()}
+                disabled={designs.isFetchingNextPage}
+              >
+                {designs.isFetchingNextPage ? 'Učitavam…' : 'Još dizajna'}
+              </Button>
+            ) : null}
+            {selected ? (
+              <div className="space-y-3 rounded-md border p-3">
+                <p className="text-sm font-medium">{selected.title ?? 'Bez naziva'}</p>
+                <div className="flex flex-wrap gap-2">
+                  <Button onClick={() => image.mutate(selected.id)} disabled={busy}>
+                    {image.isPending ? 'Uvozim sliku…' : `UVEZI KAO SLIKU (${price})`}
+                  </Button>
+                  <Button variant="outline" onClick={() => video.mutate(selected.id)} disabled={busy}>
+                    {video.isPending ? 'Šaljem…' : `UVEZI KAO VIDEO (${price})`}
+                  </Button>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Slika je prva strana dizajna u njegovoj veličini. Video pravi Canva, od pola minuta do
+                  nekoliko minuta; možete da napustite stranicu, video stiže u biblioteku.
+                </p>
+                <ErrorBox error={image.error ?? video.error} />
+                {image.data ? (
+                  <figure className="space-y-2">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={image.data.asset.url}
+                      alt={selected.title ?? 'Dizajn iz Canve'}
+                      className="max-h-80 rounded-lg border"
+                    />
+                    <figcaption className="text-xs text-muted-foreground">
+                      Sačuvano u biblioteci brenda.
+                    </figcaption>
+                  </figure>
+                ) : null}
+                {videoRunning ? (
+                  <p className="text-sm text-muted-foreground" aria-live="polite">
+                    {job.data?.progress?.message ?? 'U redu za obradu…'}
+                  </p>
+                ) : null}
+                {job.data?.status === 'failed' ? (
+                  <ErrorBox error={new Error(job.data.errorMessage ?? 'Video nije uvezen.')} />
+                ) : null}
+                {job.data?.status === 'succeeded' && job.data.assetUrl ? (
+                  <figure className="space-y-2">
+                    <video
+                      src={job.data.assetUrl}
+                      controls
+                      playsInline
+                      preload="metadata"
+                      className="max-h-[480px] rounded-lg border bg-black"
+                      aria-label={selected.title ?? 'Video iz Canve'}
+                    />
+                    <figcaption className="text-xs text-muted-foreground">
+                      Video je u biblioteci brenda · naplaćeno {job.data.tokensCharged} tokena
+                    </figcaption>
+                  </figure>
+                ) : null}
+              </div>
+            ) : null}
+          </>
+        ) : null}
+      </CardContent>
+    </Card>
   )
 }

@@ -1,9 +1,19 @@
 import { assertViewer, createHandler } from '@/lib/api/handler'
 import { idempotentJson } from '@/lib/api/idempotent-route'
 import { jsonOk } from '@/lib/api/response'
-import { canvaDesignSchema } from '@/lib/schemas/visuals'
+import { canvaDesignListSchema, canvaDesignSchema } from '@/lib/schemas/visuals'
 import { getBrand } from '@/services/brands'
-import { createCanvaDesign } from '@/services/canva/designs'
+import { createCanvaDesign, listCanvaDesigns } from '@/services/canva/designs'
+
+/** Dizajni korisnika iz Canve za uvoz u biblioteku (D-104); bez tokena. */
+export const GET = createHandler(
+  {
+    auth: 'user',
+    query: canvaDesignListSchema,
+    rateLimit: { name: 'canva-list', limit: 60, windowSec: 60, by: 'user' },
+  },
+  async ({ viewer, query }) => listCanvaDesigns(assertViewer(viewer), query),
+)
 
 /** Novi Canva dizajn (opciono od slike iz biblioteke): vraća edit_url; 2 tokena. */
 export const POST = createHandler(

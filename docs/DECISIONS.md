@@ -709,3 +709,16 @@ Odluka:
 - Šema u `build` režimu i dalje ne traži ništa, pa CI i lokalni `next build` rade bez tajni.
 
 Razlog: tajne unosi vlasnik u Netlify UI, a agent ne lista promenljive (konektor vraća vrednosti koje nisu označene kao tajne). Provera u build-u je jedini pouzdan znak da je uvoz prošao, a da se vrednosti ne pokažu.
+
+## D-104 · 29.10.2026 · usvojeno · Slike i video bez Gemini-ja: Unsplash, Canva i šabloni; AI slike iza prekidača
+
+Odluka:
+
+- AI slike (Studio: „Slika iz fotografije” i „Slika iz prompta”) su iza feature flaga `ai_images`, podrazumevano isključenog. Server odbija zahtev sa 403 pre rezervacije tokena, a Studio te kartice ne prikazuje. Admin ih uključuje u admin panelu, bez deploya.
+- Slike za objave dolaze iz tri izvora bez AI slika. Prvi je vizual iz šablona (Satori). Drugi je fotografija sa Unsplash-a: nova kartica u Studiju, kopija u biblioteci sa atribucijom, bez tokena. Treći je gotov dizajn iz Canve: nova kartica „Iz Canve” sa listom dizajna korisnika (`GET /api/canva/designs`) i uvozom kao PNG, za 2 tokena.
+- Video: Unsplash API nema video, a Canva API ne daje pristup Canvinoj biblioteci, nego samo dizajnima korisnika. Video zato dolazi iz korisnikove Canve, kao MP4 export u pozadinskom poslu `canva-export-video` (Inngest, događaj `canva/video.export.requested`). Canva video pravi i po nekoliko minuta, a Netlify funkcija traje najviše 60 s.
+- Posao proverava Canvu na 5 s, posle pola minuta na 15 s, ukupno do oko 9 minuta. Gotov video preuzima i čuva u istom koraku, da link za preuzimanje ne izađe sa servera. Prvo pokušava 1080p. Ako fajl prelazi limit skladišta (`MEDIA_MAX_VIDEO_MB`, 50 MB na besplatnom Supabase-u), ponavlja export u 720p. Orijentaciju (`vertical_*` ili `horizontal_*`) bira po sličici dizajna, jer izlaz uvek prati odnos stranica dizajna. Cena je ista kao za uvoz slike, 2 tokena (`canva_export`).
+- Slike se iz Canve izvoze bez širine, u veličini dizajna. Na besplatnom Canva planu export ne sme da uveća dizajn fiksnih dimenzija više od 1,125 puta, pa je raniji zahtev od 2048 px padao na dizajnu od 1080 px. Čekanje na Canva posao u istom zahtevu je skraćeno na 45 s, ispod Netlify limita.
+- Dok su AI slike isključene, landing računa sliku objave po ceni vizuala iz šablona, 2 tokena.
+
+Razlog: jedna AI slika košta od 0,067 USD (standard) do 0,134 USD (premium), koliko dvadesetak tekstova (tekst objave košta oko 0,003 USD). Vlasnik je tražio da Gemini ne pravi slike, nego da slike i video dolaze iz Canve i sa Unsplash-a. Gemini ostaje za tekst, analizu brenda i strategiju. Ostaje i za rangiranje Unsplash kandidata u šablonu, oko 0,001 USD po vizualu, i to samo kad korisnik sam ne izabere fotografiju.

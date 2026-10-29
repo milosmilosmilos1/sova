@@ -191,6 +191,32 @@ async function storeVideo(
     originalName: string | null
   },
 ): Promise<MediaAssetRow> {
+  return storeServerVideo({
+    workspaceId: input.workspaceId,
+    brandId: input.brandId,
+    bytes: input.bytes,
+    mime: input.mime,
+    source: 'upload',
+    folder: 'uploads',
+    uploadedBy: viewer.user.id,
+    sourceData: input.originalName ? { original_name: input.originalName } : {},
+  })
+}
+
+/** Isti put za video koji preuzima server (Canva export, D-104); izvor, folder i atribucija po pozivaocu. */
+export async function storeServerVideo(input: {
+  workspaceId: string
+  brandId: string | null
+  bytes: Buffer
+  mime: string
+  source: Database['public']['Enums']['media_source']
+  folder: string
+  uploadedBy: string | null
+  sourceData?: Record<string, Json>
+  attribution?: Json
+  tags?: string[]
+  generationId?: string | null
+}): Promise<MediaAssetRow> {
   if (input.bytes.length > maxVideoBytes()) throw tooLarge('video')
   let info: VideoInfo
   try {
@@ -214,9 +240,9 @@ async function storeVideo(
       workspace_id: input.workspaceId,
       brand_id: input.brandId,
       kind: 'video',
-      source: 'upload',
+      source: input.source,
       bucket: 'uploads',
-      storage_path: `${folderFor(input.workspaceId, input.brandId, 'uploads')}/${id}.${ext}`,
+      storage_path: `${folderFor(input.workspaceId, input.brandId, input.folder)}/${id}.${ext}`,
       mime_type: input.mime,
       size_bytes: data.length,
       width: info.width,
@@ -224,9 +250,12 @@ async function storeVideo(
       duration_ms: info.durationMs,
       sha256,
       exif_stripped: true,
-      uploaded_by: viewer.user.id,
+      uploaded_by: input.uploadedBy,
+      ...(input.tags ? { tags: input.tags } : {}),
+      ...(input.attribution ? { attribution: input.attribution } : {}),
+      ...(input.generationId ? { ai_generation_id: input.generationId } : {}),
       source_data: {
-        ...(input.originalName ? { original_name: input.originalName } : {}),
+        ...input.sourceData,
         video_codec: info.videoCodec,
         audio_codec: info.audioCodec,
         rotation: info.rotation,

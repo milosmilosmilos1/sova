@@ -7,6 +7,7 @@ import { callWithFallback, costFor } from '@/lib/ai/orchestrator'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
+import { AI_IMAGES_FLAG, isFeatureEnabled } from '@/lib/flags'
 import { enqueueImageJob } from '@/lib/jobs/enqueue'
 import { logger } from '@/lib/logger'
 import type { ImageFromPhotoInput, ImageFromPromptInput } from '@/lib/schemas/ai'
@@ -55,6 +56,13 @@ async function acceptImageJob(
   job: Omit<ImageJobInput, 'brandName' | 'brandStyle'>,
   meta: { requestId: string; idempotencyKey?: string | null },
 ): Promise<ImageJobAccepted> {
+  // jedna AI slika košta 0,067–0,134 USD, koliko dvadesetak tekstova (D-104)
+  if (!(await isFeatureEnabled(AI_IMAGES_FLAG))) {
+    throw new ApiError(
+      'FORBIDDEN',
+      'AI slike su isključene. Uzmite fotografiju sa Unsplash-a, uvezite dizajn iz Canve ili napravite vizual iz šablona.',
+    )
+  }
   const brand = await getBrand(viewer, brandId)
   await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
   if (!viewer.profile.emailVerifiedAt) throw new ApiError('EMAIL_NOT_VERIFIED')

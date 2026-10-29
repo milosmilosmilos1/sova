@@ -1,8 +1,10 @@
 import { http, HttpResponse } from 'msw'
 import sharp from 'sharp'
 
+import { buildMp4 } from '../fixtures/mp4'
+
 /**
- * MSW mock za Unsplash API, Unsplash CDN i Canva Connect API (faza 7).
+ * MSW mock za Unsplash API, Unsplash CDN i Canva Connect API (faza 7, uvoz dizajna i video iz D-104).
  * Stanje je promenljivo da testovi mogu da provere brojače (download tracking, token exchange).
  */
 export const visualsState = {
@@ -14,6 +16,12 @@ export const visualsState = {
   canvaExports: [] as Record<string, unknown>[],
   canvaAutofill: false,
   canvaRefreshFails: false,
+  /** query string svakog `GET /designs` */
+  canvaDesignLists: [] as string[],
+  /** prva provera MP4 posla vraća in_progress, sledeće success */
+  canvaVideoPolls: 0,
+  /** 1080p video prijavljuje veličinu preko limita skladišta */
+  canvaVideoTooLarge: false,
 }
 
 export function resetVisualsState(): void {
@@ -25,6 +33,26 @@ export function resetVisualsState(): void {
   visualsState.canvaExports = []
   visualsState.canvaAutofill = false
   visualsState.canvaRefreshFails = false
+  visualsState.canvaDesignLists = []
+  visualsState.canvaVideoPolls = 0
+  visualsState.canvaVideoTooLarge = false
+}
+
+/** Dizajn kao u `GET /designs`; sličica nosi odnos stranica prve strane. */
+function canvaDesign(id: string, title: string, width: number, height: number) {
+  return {
+    id,
+    title,
+    owner: { user_id: 'canva-user-1', team_id: 'team-1' },
+    urls: {
+      edit_url: `https://www.canva.com/design/${id}/edit`,
+      view_url: `https://www.canva.com/design/${id}/view`,
+    },
+    thumbnail: { width, height, url: `https://document-export.canva.com/${id}/thumbnail/0001.png` },
+    page_count: 1,
+    created_at: 1761700000,
+    updated_at: 1761740000,
+  }
 }
 
 const photoCache = new Map<string, Buffer>()
@@ -179,21 +207,62 @@ export const canvaHandlers = [
       },
     })
   }),
-  http.post('https://api.canva.com/rest/v1/exports', async ({ request }) => {
-    const body = (await request.json()) as Record<string, unknown>
-    visualsState.canvaExports.push(body)
-    return HttpResponse.json({ job: { id: 'export-job-1', status: 'in_progress' } })
+  http.get('https://api.canva.com/rest/v1/designs', ({ request }) => {
+    const url = new URL(request.url)
+    visualsState.canvaDesignLists.push(url.search)
+    if (url.searchParams.get('query') === 'nista') return HttpResponse.json({ items: [] })
+    if (url.searchParams.get('continuation') === 'strana-2')
+      return HttpResponse.json({ items: [canvaDesign('DVID-3', 'Kvadrat', 400, 400)] })
+    return HttpResponse.json({
+      items: [
+        canvaDesign('DVID-1', 'Reel jesen', 270, 480),
+        canvaDesign('DVID-2', 'Objava popust', 400, 400),
+      ],
+      continuation: 'strana-2',
+    })
   }),
-  http.get('https://api.canva.com/rest/v1/exports/:id', () =>
-    HttpResponse.json({
+  http.get('https://api.canva.com/rest/v1/designs/:id', ({ params }) => {
+    const id = String(params.id)
+    if (id === 'missing')
+      return HttpResponse.json({ code: 'design_not_found', message: 'no' }, { status: 404 })
+    const wide = id === 'DVID-WIDE'
+    return HttpResponse.json({ design: canvaDesign(id, 'Dizajn', wide ? 480 : 270, wide ? 270 : 480) })
+  }),
+  http.post('https://api.canva.com/rest/v1/exports', async ({ request }) => {
+    const body = (await request.json()) as { design_id: string; format: { type: string; quality?: string } }
+    visualsState.canvaExports.push(body)
+    if (body.design_id === 'DVID-PRO')
+      return HttpResponse.json({ code: 'license_required', message: 'premium' }, { status: 403 })
+    const id = body.format.type === 'mp4' ? `export-mp4-${body.format.quality}` : 'export-job-1'
+    return HttpResponse.json({ job: { id, status: 'in_progress' } })
+  }),
+  http.get('https://api.canva.com/rest/v1/exports/:id', ({ params }) => {
+    const id = String(params.id)
+    if (id.startsWith('export-mp4-')) {
+      if (visualsState.canvaVideoPolls++ < 1) return HttpResponse.json({ job: { id, status: 'in_progress' } })
+      return HttpResponse.json({
+        job: { id, status: 'success', urls: [`https://export-download.canva.com/video/${id}.mp4?token=abc`] },
+      })
+    }
+    return HttpResponse.json({
       job: {
         id: 'export-job-1',
         status: 'success',
         urls: ['https://export-download.canva.com/DAF-1/page1.png?token=abc'],
       },
-    }),
-  ),
-  http.get('https://export-download.canva.com/*', async () => {
+    })
+  }),
+  http.get('https://export-download.canva.com/*', async ({ request }) => {
+    const { pathname } = new URL(request.url)
+    if (pathname.endsWith('.mp4')) {
+      // safeFetch odbija po zaglavlju, pre čitanja tela
+      if (visualsState.canvaVideoTooLarge && pathname.includes('1080p'))
+        return new HttpResponse(new Uint8Array(16), {
+          headers: { 'content-type': 'video/mp4', 'content-length': String(500 * 1024 * 1024) },
+        })
+      const mp4 = buildMp4({ durationMs: 12_000, width: 1080, height: 1920 })
+      return new HttpResponse(new Uint8Array(mp4), { headers: { 'content-type': 'video/mp4' } })
+    }
     const png = await sharp({
       create: { width: 640, height: 640, channels: 3, background: { r: 10, g: 120, b: 200 } },
     })

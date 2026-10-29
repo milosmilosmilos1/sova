@@ -34,6 +34,10 @@ export const events = {
   aiVisualTemplateRequested: eventType('ai/visual.requested', {
     schema: z.object({ generationId: uuid, workspaceId: uuid }),
   }),
+  // D-104: video iz Canve
+  canvaVideoExportRequested: eventType('canva/video.export.requested', {
+    schema: z.object({ generationId: uuid, workspaceId: uuid }),
+  }),
 
   // Faza 8
   socialHistoryImportRequested: eventType('social/history.import.requested', {
