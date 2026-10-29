@@ -131,7 +131,7 @@ Za punu produkciju:
 1. **Ključevi**: popunite `.env.netlify.local` u korenu projekta (tri tajne aplikacije su već generisane), pa ceo fajl uvezite: Netlify → Project configuration → Environment variables → Add a variable → Import from a .env file, uz oznaku „Contains secret values”. Promenljive važe tek posle novog build-a: Deploys → Trigger deploy.
 2. **Supabase → Authentication**: URL Configuration: Site URL `https://sovaai.netlify.app`, Redirect URLs `https://sovaai.netlify.app/**`. Emails → SMTP Settings: Resend (`smtp.resend.com`, port 465, korisnik `resend`, lozinka je Resend API ključ, pošiljalac `noreply@sovaai.rs` posle verifikacije domena u Resend-u); bez toga Supabase šalje potvrde samo članovima tima. Providers → Email: potvrda emaila uključena, lozinka najmanje 10 znakova.
 3. **Supabase → SQL Editor**: `drop function if exists public.admin_adjust_tokens(uuid, integer, text, uuid);`
-4. **Inngest**: Apps → Sync new app → `https://sovaai.netlify.app/api/inngest`.
+4. **Inngest**: urađeno 29.10.2026. Ključevi su u Netlify-ju; sinhronizacija posle deploy-a koji menja funkcije: `curl -X PUT https://sovaai.netlify.app/api/inngest` (ili Apps → Sync new app u Inngest-u).
 5. **Turnstile**: domen `sovaai.netlify.app` (kasnije i `sovaai.rs`).
 6. **Canva i mreže**: adrese iz odeljka 6 sa domenom `sovaai.netlify.app` dok sovaai.rs nije povezan.
 7. **Kraj pregleda**: kad su svi ključevi uneti, obrišite `SOVA_PREVIEW` u Netlify-ju i pustite nov deploy; server tada opet traži sve ključeve.
