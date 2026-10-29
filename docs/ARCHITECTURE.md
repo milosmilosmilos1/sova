@@ -543,7 +543,7 @@ Napomene: `gemini-3.5-flash` je deprecated i preusmerava na 3.6; `gemini-2.5-fla
 
 Pretpostavke: mesečni plan $39 za 500 tokena → prihod $0.078 po tokenu; godišnji $199 za 6.000 → $0.033 po tokenu.
 
-Od 25.10.2026 (D-099) cene su 47 € mesečno i 277 € godišnje: 0,094 € odnosno 0,046 € po tokenu, oko $0.105 i $0.052 po kursu 1,1193. Prihod po akciji je zato oko 35 % (mesečni) odnosno 57 % (godišnji) veći nego u tabeli.
+Od 25.10.2026 (D-099) mesečni plan je 47 €, a godišnji od 29.10.2026 297 € (D-105): 0,094 € odnosno 0,0495 € po tokenu, oko $0.105 i $0.055 po kursu 1,1193. Prihod po akciji je zato oko 35 % (mesečni) odnosno 68 % (godišnji) veći nego u tabeli.
 
 | Akcija                                                                 | Tokeni | Procenjen trošak | Prihod (mesečni / godišnji) |
 | ---------------------------------------------------------------------- | ------ | ---------------- | --------------------------- |

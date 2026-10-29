@@ -31,7 +31,7 @@ const PLANS: PlanInput[] = [
     code: 'yearly',
     kind: 'subscription',
     name: 'Godišnji',
-    price_cents: 27700,
+    price_cents: 29700,
     currency: 'EUR',
     tokens_per_period: 500,
     limits: { brands: 5, social_accounts: 10, members: 2 },

@@ -1161,7 +1161,7 @@ Storage politike: `(storage.foldername(name))[2]::uuid` je `workspace_id` → `i
 
 ## 8. Seed
 
-- `plans` (sve u EUR, D-099): free (0, 50 tokena once, limiti 1/2/1), monthly (47 €, 500/month, 5/10/2), yearly (277 €, 500/month kroz 12 meseci, 5/10/2), dopune 100 tokena 12 €, 300 tokena 30 €, 1000 tokena 85 €. Interni `vlasnik` (D-102): 0 €, limiti 100/100/10, `is_active = false`, dodeljuje se ručno pretplatom sa `provider = 'internal'`.
+- `plans` (sve u EUR, D-099): free (0, 50 tokena once, limiti 1/2/1), monthly (47 €, 500/month, 5/10/2), yearly (297 €, D-105, 500/month kroz 12 meseci, 5/10/2), dopune 100 tokena 12 €, 300 tokena 30 €, 1000 tokena 85 €. Interni `vlasnik` (D-102): 0 €, limiti 100/100/10, `is_active = false`, dodeljuje se ručno pretplatom sa `provider = 'internal'`.
 - `platform_settings`: `token_prices` (tabela iz brifa), `model_prices` (cene iz ARCHITECTURE 8.1), `fx_usd_rates` (kurs za admin statistiku, D-099), `allowed_models`, `rate_limits`, `maintenance { enabled: false }`, `free_tier { require_verified_email: true, block_disposable: true, ip_soft_limit: 3 }`.
 - `feature_flags`: `platform.facebook`, `platform.instagram`, `platform.linkedin`, `platform.tiktok`, `platform.x`, `platform.youtube`, `platform.pinterest`, `platform.google_business`, `firecrawl`, `canva`, `canva_autofill`, `autopilot_level3`.
 - `holidays`: Srbija 2026–2027 (državni i verski), plus globalni komercijalni datumi (Dan žena, Dan zaljubljenih, Black Friday, Nova godina).

@@ -722,3 +722,12 @@ Odluka:
 - Dok su AI slike isključene, landing računa sliku objave po ceni vizuala iz šablona, 2 tokena.
 
 Razlog: jedna AI slika košta od 0,067 USD (standard) do 0,134 USD (premium), koliko dvadesetak tekstova (tekst objave košta oko 0,003 USD). Vlasnik je tražio da Gemini ne pravi slike, nego da slike i video dolaze iz Canve i sa Unsplash-a. Gemini ostaje za tekst, analizu brenda i strategiju. Ostaje i za rangiranje Unsplash kandidata u šablonu, oko 0,001 USD po vizualu, i to samo kad korisnik sam ne izabere fotografiju.
+
+## D-105 · 29.10.2026 · usvojeno · Godišnji plan 297 €
+
+Odluka (vlasnik): godišnji plan ide sa 277 € na 297 €. Mesečni ostaje 47 €, a tokeni i dopune se ne menjaju (500 tokena mesečno kroz 12 meseci).
+
+- Katalog (`supabase/seed.sql`) i tabela `plans`, lokalno i u produkciji, imaju `price_cents` 29700. Landing čita cene iz baze pri svakom učitavanju, pa promena nije tražila deploy. Godišnji po mesecu je sada oko 25 € (bilo oko 23 €), a ušteda prema 12 mesečnih 47 % (bilo 51 %).
+- Stripe još nije podešen. Kad bude, godišnja cena se pravi kao 297 € (`STRIPE_PRICE_YEARLY`). Cena u Stripe-u se posle ne menja, nego se pravi nova sa novim ID-jem.
+
+Razlog: odluka vlasnika.
