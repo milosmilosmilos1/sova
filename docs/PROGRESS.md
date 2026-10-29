@@ -110,7 +110,8 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - **Sajt radi** (29.10.2026): Supabase ključ i tri tajne su u Netlify-ju, `/` i `/login` vraćaju 200, baza odgovara. Nalog vlasnika (`platform_admin`) napravljen je u Supabase-u sa lozinkom.
 - **Interni plan „Vlasnik”** (D-102): plan u seed-u i produkcijskoj bazi, migracija 026 (admin statistika ga ne broji kao prihod), nov test baze (32). Dodela radnom prostoru je u RUNBOOK 8.
 - **`/api/health`** javno vraća samo status; detalje vidi admin sa TOTP-om (D-102).
-- **Čeka vlasnika**: zamena Supabase secret key-a (bio je u razgovoru), ostali ključevi servisa i jedna SQL linija (DEPLOY.md 10).
+- **Čeka vlasnika**: Supabase Auth adrese (Site URL je još `http://localhost:3000`, pa linkovi iz mejlova za lozinku i potvrdu vode na localhost; DEPLOY.md 10, korak 2), zamena Supabase secret key-a (bio je u razgovoru), ostali ključevi servisa i jedna SQL linija.
+- **Lozinka vlasnika** (29.10.2026): stara nije prolazila, a link za novu je vodio na localhost; privremena lozinka je upisana direktno u `auth.users` (bcrypt), vlasnik je menja posle podešavanja adresa.
 
 ## Cene u evrima i favicon — šta je urađeno
 
