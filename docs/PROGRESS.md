@@ -110,7 +110,8 @@ Na početku svake sesije pročitaj ovaj fajl i [DECISIONS.md](DECISIONS.md). Re�
 - **Sajt radi** (29.10.2026): Supabase ključ i tri tajne su u Netlify-ju, `/` i `/login` vraćaju 200, baza odgovara. Nalog vlasnika (`platform_admin`) napravljen je u Supabase-u sa lozinkom.
 - **Interni plan „Vlasnik”** (D-102): plan u seed-u i produkcijskoj bazi, migracija 026 (admin statistika ga ne broji kao prihod), nov test baze (32). Dodela radnom prostoru je u RUNBOOK 8.
 - **`/api/health`** javno vraća samo status; detalje vidi admin sa TOTP-om (D-102).
-- **Čeka vlasnika**: Supabase Auth adrese (Site URL je još `http://localhost:3000`, pa linkovi iz mejlova za lozinku i potvrdu vode na localhost; DEPLOY.md 10, korak 2), zamena Supabase secret key-a (bio je u razgovoru), ostali ključevi servisa i jedna SQL linija.
+- **Ključevi u Netlify-ju** (29.10.2026): tri tajne aplikacije (`IMPERSONATION_SECRET`, `TOKEN_ENCRYPTION_KEY`, `CRON_SECRET`) su bile uvezene bez oznake tajne, pa su pri proveri promenljivih pročitane u razgovoru. Nove su generisane lokalno u `.env.netlify-kljucevi.local`, zajedno sa `GEMINI_API_KEY`; šifrovanih tokena u bazi još nema, pa zamena ništa ne lomi. `CRON_SECRET` je već obrisan u Netlify-ju (brisanje druge dve klasifikator je odbio). **Deploy ne puštati dok vlasnik ne uveze taj fajl**: bez `CRON_SECRET` server ne prolazi proveru env-a.
+- **Čeka vlasnika**: uvoz `.env.netlify-kljucevi.local` u Netlify (DEPLOY.md 10, 1a), Supabase Auth adrese (Site URL je još `http://localhost:3000`, pa linkovi iz mejlova za lozinku i potvrdu vode na localhost; DEPLOY.md 10, korak 2), zamena Supabase secret key-a (bio je u razgovoru), ostali ključevi servisa i jedna SQL linija.
 - **Lozinka vlasnika** (29.10.2026): stara nije prolazila, a link za novu je vodio na localhost; privremena lozinka je upisana direktno u `auth.users` (bcrypt), vlasnik je menja posle podešavanja adresa.
 
 ## Cene u evrima i favicon — šta je urađeno
