@@ -124,7 +124,7 @@ Redom; svaka stavka zavisi od prethodnih:
 
 Sajt `sovaai` (https://sovaai.netlify.app) i baza u postojećem Supabase projektu (Frankfurt) su napravljeni; migracije (do 026) i seed su pušteni. Od 29.10.2026 sajt radi u pregledu sa Supabase ključem i tri tajne aplikacije. Sajt radi u režimu pregleda (`SOVA_PREVIEW=true`, D-101): za početak su dovoljni korak 1a i adrese iz koraka 2 (Site URL i Redirect URLs), a ostali ključevi se dodaju kasnije.
 
-1a. **Pregled**: Supabase secret key je dodat kao jedna promenljiva (`SUPABASE_SERVICE_ROLE_KEY`, „Contains secret values”). Tri tajne aplikacije su 29.10.2026 zamenjene novim jer su stare, uvezene bez oznake tajne, pročitane kroz Netlify konektor; nove su sa Gemini ključem u `.env.netlify-kljucevi.local` i uvoze se kao u koraku 1 (sukob imena: „Update conflicts”). Iste vrednosti su prenete i u `.env.netlify.local`. Promenljive se ne listaju kroz konektor (`getAllEnvVars` vraća vrednosti koje nisu označene kao tajne).
+1a. **Pregled**: Supabase secret key je dodat kao jedna promenljiva (`SUPABASE_SERVICE_ROLE_KEY`, „Contains secret values”). Tri tajne aplikacije su 29.10.2026 zamenjene novim jer su stare, uvezene bez oznake tajne, pročitane kroz Netlify konektor; nove su, sa Gemini ključem, uvezene iz privremenog fajla (sukob imena: „Update conflicts”), koji je posle obrisan. Iste vrednosti su u `.env.netlify.local`. Promenljive se ne listaju kroz konektor (`getAllEnvVars` vraća vrednosti koje nisu označene kao tajne).
 
 Za punu produkciju:
 
