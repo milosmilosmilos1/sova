@@ -36,5 +36,18 @@
   },
   "health": {
     "title": "Stanje sistema"
+  },
+  "locale": {
+    "label": "Jezik interfejsa",
+    "sr-Latn": "Srpski",
+    "en": "English",
+    "uk": "Українська"
+  },
+  "contentLocale": {
+    "label": "Jezik objava",
+    "sr-Latn": "Srpski, latinica",
+    "sr-Cyrl": "Srpski, ćirilica",
+    "en": "Engleski",
+    "uk": "Ukrajinski"
   }
 }

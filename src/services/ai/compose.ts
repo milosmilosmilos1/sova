@@ -15,6 +15,7 @@ import { createPost } from '@/services/posts/posts'
 import { listSocialAccounts } from '@/services/social/accounts'
 import { pickPexelsPhotos, pickPexelsVideo } from '@/services/visuals/pexels'
 import { pickUnsplashPhotos } from '@/services/visuals/unsplash'
+import { toContentLocale } from '@/config/locales'
 
 /**
  * „Nova objava” u Studiju (D-107): jezik, vrsta objave (ili AI bira) i izvor vizuala. Gemini piše
@@ -171,7 +172,7 @@ export async function composePost(
     masterText: variantToText(first).text,
     firstComment: first.first_comment?.trim() ? first.first_comment.trim().slice(0, 2200) : undefined,
     linkUrl: link,
-    language: input.locale ?? (brand.content_locale as 'sr-Latn' | 'sr-Cyrl' | 'en'),
+    language: input.locale ?? toContentLocale(brand.content_locale),
     targets,
     media: media.map((m, i) => ({ mediaAssetId: m.asset.id, sortOrder: i })),
     source: 'ai',

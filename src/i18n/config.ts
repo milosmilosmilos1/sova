@@ -1,4 +1,4 @@
-export const locales = ['sr-Latn', 'en'] as const
+export const locales = ['sr-Latn', 'en', 'uk'] as const
 export type AppLocale = (typeof locales)[number]
 export const defaultLocale: AppLocale = 'sr-Latn'
 export const LOCALE_COOKIE = 'sova_locale'

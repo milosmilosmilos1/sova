@@ -752,6 +752,8 @@ describe('Autopilot: jezik i vrste objava (D-107)', () => {
 
   it('podešavanja: jezik, vrste i mešanje; bez ijedne vrste 400', async () => {
     expect((await patch({ formats: [] })).status).toBe(400)
+    expect((await patch({ language: 'uk', formats: ['image'], mix: true })).status).toBe(200)
+    expect(await view()).toMatchObject({ language: 'uk' })
     expect((await patch({ language: 'en', formats: ['story', 'video'], mix: false })).status).toBe(200)
     expect(await view()).toMatchObject({ language: 'en', formats: ['story', 'video'], mix: false })
   })

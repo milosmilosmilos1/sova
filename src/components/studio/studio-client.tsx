@@ -1494,6 +1494,7 @@ const COMPOSE_LOCALES = [
   ['sr-Latn', 'Srpski, latinica'],
   ['sr-Cyrl', 'Srpski, ćirilica'],
   ['en', 'Engleski'],
+  ['uk', 'Ukrajinski'],
 ] as const
 
 interface ComposeView {

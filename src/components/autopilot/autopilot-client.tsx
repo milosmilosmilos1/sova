@@ -31,7 +31,7 @@ interface View {
   level3Available: boolean
   level3ConfirmedAt: string | null
   level3AccountIds: string[]
-  language: 'sr-Latn' | 'sr-Cyrl' | 'en'
+  language: 'sr-Latn' | 'sr-Cyrl' | 'en' | 'uk'
   formats: PostFormat[]
   mix: boolean
   paused: boolean
@@ -460,6 +460,7 @@ const AUTOPILOT_LOCALES = [
   ['sr-Latn', 'Srpski, latinica'],
   ['sr-Cyrl', 'Srpski, ćirilica'],
   ['en', 'Engleski'],
+  ['uk', 'Ukrajinski'],
 ] as const
 
 /**

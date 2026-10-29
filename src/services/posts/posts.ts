@@ -16,6 +16,7 @@ import { mapDbError, unwrap } from '@/lib/supabase/errors'
 import { getBrand, type BrandRow } from '@/services/brands'
 import { signedUrl } from '@/services/media'
 import type { Database, Json } from '@/types/database'
+import type { ContentLocale } from '@/config/locales'
 
 /**
  * Objave (faza 9a): jedna objava = master tekst + target po nalogu mreže (sa svojim tekstom)
@@ -595,7 +596,7 @@ export async function duplicatePost(viewer: Viewer, postId: string): Promise<Pos
     firstComment: view.firstComment ?? undefined,
     linkUrl: view.linkUrl ?? undefined,
     utm: view.utm ?? undefined,
-    language: (view.language as 'sr-Latn' | 'sr-Cyrl' | 'en' | null) ?? undefined,
+    language: (view.language as ContentLocale | null) ?? undefined,
     targets: view.targets.map((t) => ({
       socialAccountId: t.socialAccountId,
       text: t.usesMaster ? undefined : t.text,

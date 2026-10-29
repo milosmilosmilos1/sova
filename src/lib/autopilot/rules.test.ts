@@ -113,6 +113,10 @@ describe('kontrola kvaliteta', () => {
         text: 'Сервис клима уређаја у Београду, долазимо на адресу и чистимо јединицу.',
       }).checks.find((c) => c.name === 'script')?.ok,
     ).toBe(false)
+    // ukrajinski se piše ćirilicom: latinica pada, ćirilica prolazi (D-108)
+    const uk = 'Сервіс кондиціонерів у Києві: приїдемо за адресою і почистимо внутрішній блок.'
+    expect(qaCheck({ ...ok, locale: 'uk', text: uk }).checks.find((c) => c.name === 'script')?.ok).toBe(true)
+    expect(qaCheck({ ...ok, locale: 'uk' }).checks.find((c) => c.name === 'script')?.ok).toBe(false)
     const price = qaCheck({ ...ok, text: `${ok.text} Akcija: 20% popusta, servis 2900 dinara.` })
     expect(price.checks.find((c) => c.name === 'facts')).toMatchObject({ ok: false })
     expect(price.checks.find((c) => c.name === 'facts')?.message).toContain('20')

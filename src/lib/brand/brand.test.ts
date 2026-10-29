@@ -122,6 +122,20 @@ describe('heuristic profile', () => {
     expect(profile.meta.generated_by).toBe('heuristic')
     expect(brandProfileSchema.safeParse(profile).success).toBe(true)
   })
+  it('detektuje ukrajinski po slovima і, ї, є, ґ (D-108)', () => {
+    expect(
+      detectLocale(
+        [
+          page({
+            text: 'Ми допомагаємо бізнесу: їхні сайти стають видимими, а клієнти знаходять ґрунтовні відповіді. '.repeat(
+              10,
+            ),
+          }),
+        ],
+        'sr-Latn',
+      ).locale,
+    ).toBe('uk')
+  })
   it('detektuje ćirilicu i engleski', () => {
     expect(
       detectLocale(

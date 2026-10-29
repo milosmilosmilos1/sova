@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
+import { contentLocaleSchema } from '@/config/locales'
 
 const platformEnum = z.enum(Object.keys(PLATFORMS) as [SocialPlatform, ...SocialPlatform[]])
 
@@ -39,7 +40,7 @@ export const createPostSchema = z.object({
   firstComment: z.string().trim().max(2200).optional(),
   linkUrl: z.url().max(2048).optional(),
   utm: z.record(z.string(), z.string().max(200)).optional(),
-  language: z.enum(['sr-Latn', 'sr-Cyrl', 'en']).optional(),
+  language: contentLocaleSchema.optional(),
   targets: z.array(targetInputSchema).max(16).default([]),
   media: z.array(mediaInputSchema).max(20).default([]),
   scheduledFor: z.iso.datetime({ offset: true }).optional(),
@@ -58,7 +59,7 @@ export const updatePostSchema = z.object({
   firstComment: z.string().trim().max(2200).nullable().optional(),
   linkUrl: z.url().max(2048).nullable().optional(),
   utm: z.record(z.string(), z.string().max(200)).nullable().optional(),
-  language: z.enum(['sr-Latn', 'sr-Cyrl', 'en']).nullable().optional(),
+  language: contentLocaleSchema.nullable().optional(),
   targets: z.array(targetInputSchema).max(16).optional(),
   media: z.array(mediaInputSchema).max(20).optional(),
   scheduledFor: z.iso.datetime({ offset: true }).nullable().optional(),

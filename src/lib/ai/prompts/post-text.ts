@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { FORMAT_LABEL, POST_FORMATS, type PostFormat } from '@/config/post-formats'
+import type { ContentLocale } from '@/config/locales'
 
 /**
  * Prompt i šema za „Tekst za objavu” (brif 6.1). Brand kontekst je opcion do faze 6
@@ -10,8 +11,8 @@ import { FORMAT_LABEL, POST_FORMATS, type PostFormat } from '@/config/post-forma
 export const postGoalSchema = z.enum(['awareness', 'engagement', 'sales', 'education'])
 export type PostGoal = z.infer<typeof postGoalSchema>
 
-export const contentLocaleSchema = z.enum(['sr-Latn', 'sr-Cyrl', 'en'])
-export type ContentLocale = z.infer<typeof contentLocaleSchema>
+export { contentLocaleSchema } from '@/config/locales'
+export type { ContentLocale } from '@/config/locales'
 
 export interface BrandContext {
   name: string
@@ -143,6 +144,7 @@ const LOCALE_INSTRUCTION: Record<ContentLocale, string> = {
   'sr-Latn': 'Piši na srpskom jeziku, latinicom (č, ć, ž, š, đ).',
   'sr-Cyrl': 'Piši na srpskom jeziku, ćirilicom.',
   en: 'Write in English.',
+  uk: 'Пиши українською мовою.',
 }
 
 export function buildPostTextSystemPrompt(): string {

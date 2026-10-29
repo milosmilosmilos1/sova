@@ -67,6 +67,7 @@ const LOCALE_INSTRUCTION: Record<ContentLocale, string> = {
   'sr-Latn': 'Piši na srpskom jeziku, latinicom (č, ć, ž, š, đ).',
   'sr-Cyrl': 'Piši na srpskom jeziku, ćirilicom.',
   en: 'Write in English.',
+  uk: 'Пиши українською мовою.',
 }
 
 export function buildInsightsSystemPrompt(): string {

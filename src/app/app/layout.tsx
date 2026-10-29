@@ -6,6 +6,7 @@ import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { getCurrentWorkspace, listMemberships } from '@/lib/auth/workspace'
 import { configured, isPreview } from '@/lib/env'
+import { isFeatureEnabled } from '@/lib/flags'
 import { listBrands } from '@/services/brands'
 
 export const metadata: Metadata = { robots: { index: false, follow: false } }
@@ -46,6 +47,7 @@ export default async function AppLayout({ children }: LayoutProps<'/app'>) {
   const brands = current ? await listBrands(viewer, current.workspaceId) : []
   const currentBrand = current ? await getCurrentBrand(viewer, current.workspaceId) : null
   const pending = previewPending()
+  const showLocaleSwitcher = await isFeatureEnabled('ui_languages')
 
   return (
     <AppShell
@@ -62,6 +64,7 @@ export default async function AppLayout({ children }: LayoutProps<'/app'>) {
       current={current}
       brands={brands}
       currentBrand={currentBrand}
+      showLocaleSwitcher={showLocaleSwitcher}
     >
       {pending.length ? (
         <p role="status" className="mb-4 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">

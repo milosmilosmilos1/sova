@@ -1,4 +1,5 @@
 import { validateText, type SocialPlatform } from '@/config/platforms'
+import { CYRILLIC_LOCALES, type ContentLocale } from '@/config/locales'
 
 /**
  * Čista pravila Autopilota (brif 9.2–9.3, faza 10c): nivoi, budžet tokena (80 % / 100 %),
@@ -157,7 +158,7 @@ export interface QaInput {
   platform: SocialPlatform
   text: string
   hashtags: string[]
-  locale: 'sr-Latn' | 'sr-Cyrl' | 'en'
+  locale: ContentLocale
   forbiddenWords: string[]
   /** tekst iz kog smeju da dođu brojke (činjenice profila, usluge, odlomci sa sajta, tema) */
   factsCorpus: string
@@ -264,13 +265,14 @@ export function qaCheck(input: QaInput): QaReport {
   })
 
   const cyr = cyrillicRatio(text)
-  const scriptOk = input.locale === 'sr-Cyrl' ? cyr >= 0.5 : cyr <= 0.2
+  const cyrillic = CYRILLIC_LOCALES.has(input.locale)
+  const scriptOk = cyrillic ? cyr >= 0.5 : cyr <= 0.2
   checks.push({
     name: 'script',
     ok: scriptOk,
     message: scriptOk
       ? 'Pismo odgovara brendu.'
-      : input.locale === 'sr-Cyrl'
+      : cyrillic
         ? 'Tekst nije na ćirilici.'
         : 'Tekst je na pogrešnom pismu (ćirilica).',
   })

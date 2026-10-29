@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { CONTENT_LOCALES } from '@/config/locales'
 
 /**
  * Profil brenda (Brand Brain, brif 5.3): svako polje nosi vrednost, pouzdanost (0–1)
@@ -26,7 +27,7 @@ export const recentPostSchema = z.object({
   published_at: str(40).nullable(),
 })
 
-export const contentLocaleValues = ['sr-Latn', 'sr-Cyrl', 'en'] as const
+export const contentLocaleValues = CONTENT_LOCALES
 export const addressValues = ['vi', 'ti'] as const
 export const formalityValues = ['formal', 'neutral', 'casual'] as const
 export const marketValues = ['b2b', 'b2c', 'both', 'unknown'] as const

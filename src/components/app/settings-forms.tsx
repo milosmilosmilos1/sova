@@ -53,6 +53,7 @@ export function ProfileForm({
           >
             <option value="sr-Latn">Srpski (latinica)</option>
             <option value="en">English</option>
+            <option value="uk">Українська</option>
           </select>
         </div>
         <div className="space-y-1.5">
@@ -139,6 +140,7 @@ export function CreateBrandForm({ workspaceId }: { workspaceId: string }) {
             <option value="sr-Latn">Srpski, latinica</option>
             <option value="sr-Cyrl">Srpski, ćirilica</option>
             <option value="en">Engleski</option>
+            <option value="uk">Ukrajinski</option>
           </select>
         </div>
         <div className="space-y-1.5">

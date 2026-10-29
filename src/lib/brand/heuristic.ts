@@ -98,7 +98,13 @@ export function detectLocale(
   if (!text.trim()) return { locale: fallback, confidence: 0.3 }
   const cyr = (text.match(/[Ѐ-ӿ]/g) ?? []).length
   const lat = (text.match(/[A-Za-zČĆŽŠĐčćžšđ]/g) ?? []).length
-  if (cyr > lat * 0.5 && cyr > 200) return { locale: 'sr-Cyrl', confidence: 0.9 }
+  if (cyr > lat * 0.5 && cyr > 200) {
+    // ukrajinski ima і, ї, є, ґ; srpska ćirilica ђ, ј, љ, њ, ћ, џ (D-108)
+    const uk = (text.match(/[іїєґІЇЄҐ]/g) ?? []).length
+    const sr = (text.match(/[ђјљњћџЂЈЉЊЋЏ]/g) ?? []).length
+    if (uk > sr) return { locale: 'uk', confidence: 0.85 }
+    return { locale: 'sr-Cyrl', confidence: 0.9 }
+  }
   const lang = pages.find((p) => p.lang)?.lang ?? ''
   const serbianHits = (
     text.match(/\b(i|je|za|na|su|da|se|ili|smo|vam|naš|naša|naše|usluge|kontakt)\b/gi) ?? []

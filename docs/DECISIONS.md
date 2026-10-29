@@ -755,3 +755,30 @@ Odluka:
 - Priče idu na Instagram i Facebook stranicu. Target nosi `options.format = 'story'`, a editor ima kvačicu „Objavi kao priču (Story)”. Na Instagramu se pravi kontejner `media_type: STORIES` pa se objavljuje. Na Facebook-u se fotografija otpremi neobjavljena pa ide u `photo_stories`, a video kroz `video_stories` (start, bajtovi na rupload, finish). Priča nema opis ni prvi komentar. Tekst ostaje uz nacrt, a provera pre objave ne gleda njegovu dužinu ni da li se ponavlja. Priča ima tačno jedan medij, a video u priči traje od 3 do 60 sekundi.
 
 Razlog: vlasnik je tražio da bira jezik i vrstu objave, da ima sve vrste koje postoje i da AI može da ih meša. Tekst sa heštegovima i dalje piše Gemini, a slike i video se ne prave AI-jem (D-104). Pexels je dodat jer Unsplash API nema video, a Canva API ne daje pristup Canvinoj biblioteci.
+
+## D-108 · 30.10.2026 · usvojeno · Funkcije po uzoru na Moonya u fazama; bez AI fotografija; cene ostaju; interfejs i objave na tri jezika
+
+Odluka (vlasnik): vlasnik je poslao snimke ekrana aplikacije Moonya i jedne svoje ranije aplikacije i tražio da Sova dobije sve te opcije. Na tri pitanja je odgovorio ovako:
+
+- AI fotografija nema. Slike u objavama su samo besplatne: Unsplash, Pexels i galerija korisnika. D-104 i dalje važi.
+- Cene ostaju 47 € i 297 € (D-099, D-105, D-106), bez probe od 7 dana.
+- Interfejs je na srpskom, engleskom i ukrajinskom, sa izborom jezika aplikacije. Objave se pišu na srpskom (latinica i ćirilica), engleskom i ukrajinskom.
+
+Plan po fazama. Svaka faza ima testove, commit i zapis u PROGRESS:
+
+1. Jezici: interfejs sr, en i uk sa izborom jezika, ukrajinski kao jezik objava.
+2. Stilovi objava: 22 stila za objavu, karusel i priču, boje brenda, pregled uživo. Gemini piše slajdove.
+3. Tokovi („Automatizuj objave”): tema, format i stil, raspored po danima. Nacrti idu na odobravanje. „Generiši odmah” prikazuje napredak. Instagram saradnici.
+4. Odobravanje: pregled nacrta sa slajdovima, izmena opisa i heštegova, sačuvaj i zakaži, objavi odmah, generiši ponovo, preskoči, preuzmi.
+5. Uvod u sedam koraka: jezik, mreže, analiza sajta, PDF-a i Instagrama, glas brenda i teme, boje, stil. Teme postaju tokovi.
+6. Brend i nalog u karticama i strana Brain: šta zna, izvori, playbook.
+7. Galerija sa kategorijama i opisima, izbor slike iz galerije u tokovima.
+8. Početna, kalendar sa pločicama, vodič i podrška, tabla za predloge funkcija.
+9. Studio kao razgovor.
+10. Inbox poruka, komentara i recenzija i DM automatizacija, iza prekidača dok Meta ne odobri dozvole za poruke i komentare.
+11. Karusel u video, instalacija na telefon i obaveštenja za odobravanje.
+12. Prevod postojećih ekrana na engleski i ukrajinski.
+
+Novi ekrani se odmah pišu na sva tri jezika (next-intl), a postojeći se prevode u fazi 12. Do tada je izbor jezika u meniju iza prekidača `ui_languages`, da korisnik ne dobije pola ekrana na jednom jeziku, a pola na drugom. Izgled prati Sovin dizajn (D-091) i ne kopira Moonyu: preuzimaju se funkcije, ne izgled ni tekstovi.
+
+Razlog: zahtev vlasnika. AI fotografije ne, zbog troška (D-104).

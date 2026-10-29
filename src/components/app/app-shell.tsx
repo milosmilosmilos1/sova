@@ -24,6 +24,7 @@ import { AuthSync } from '@/components/app/auth-sync'
 import { AutoSubmitSelect } from '@/components/app/auto-submit-select'
 import { NotificationsBell } from '@/components/app/notifications-bell'
 import { CurrentPathInput, NavGroup, NavLink } from '@/components/app/nav-link'
+import { LocaleSwitcher } from '@/components/shared/locale-switcher'
 import { Badge } from '@/components/ui/badge'
 import { signOutAction, switchBrandAction, switchWorkspaceAction } from '@/lib/auth/actions'
 import type { Membership } from '@/lib/auth/workspace'
@@ -52,6 +53,7 @@ export function AppShell({
   current,
   brands,
   currentBrand,
+  showLocaleSwitcher = false,
   children,
 }: {
   viewer: ShellViewer
@@ -59,6 +61,8 @@ export function AppShell({
   current: Membership | null
   brands: BrandSummary[]
   currentBrand: BrandSummary | null
+  /** izbor jezika interfejsa (D-108); prekidač ui_languages dok se svi ekrani ne prevedu */
+  showLocaleSwitcher?: boolean
   children: ReactNode
 }) {
   return (
@@ -179,29 +183,32 @@ export function AppShell({
             </NavGroup>
           </nav>
 
-          <div className="mt-auto flex items-center gap-3 border-t border-sidebar-border pt-4 text-sm">
-            <span
-              aria-hidden
-              className="grid size-9 shrink-0 place-items-center rounded-full bg-sidebar-accent font-medium text-sidebar-accent-foreground"
-            >
-              {(viewer.fullName ?? viewer.email).trim().charAt(0).toUpperCase()}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="truncate font-medium">{viewer.fullName ?? viewer.email}</p>
-              <p className="truncate text-xs text-muted-foreground">{viewer.email}</p>
-            </div>
-            <form action={signOutAction}>
-              <button
-                type="submit"
-                title={viewer.impersonation ? 'Završite impersonaciju' : 'Odjavite se'}
-                className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+          <div className="mt-auto space-y-3 border-t border-sidebar-border pt-4">
+            {showLocaleSwitcher ? <LocaleSwitcher /> : null}
+            <div className="flex items-center gap-3 text-sm">
+              <span
+                aria-hidden
+                className="grid size-9 shrink-0 place-items-center rounded-full bg-sidebar-accent font-medium text-sidebar-accent-foreground"
               >
-                <LogOut className="size-4" aria-hidden />
-                <span className="sr-only">
-                  {viewer.impersonation ? 'Završite impersonaciju' : 'Odjavite se'}
-                </span>
-              </button>
-            </form>
+                {(viewer.fullName ?? viewer.email).trim().charAt(0).toUpperCase()}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate font-medium">{viewer.fullName ?? viewer.email}</p>
+                <p className="truncate text-xs text-muted-foreground">{viewer.email}</p>
+              </div>
+              <form action={signOutAction}>
+                <button
+                  type="submit"
+                  title={viewer.impersonation ? 'Završite impersonaciju' : 'Odjavite se'}
+                  className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
+                >
+                  <LogOut className="size-4" aria-hidden />
+                  <span className="sr-only">
+                    {viewer.impersonation ? 'Završite impersonaciju' : 'Odjavite se'}
+                  </span>
+                </button>
+              </form>
+            </div>
           </div>
         </aside>
         <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>

@@ -1,6 +1,8 @@
 import { z } from 'zod'
 
 import { emailSchema } from './auth'
+import { contentLocaleSchema } from '@/config/locales'
+import { locales } from '@/i18n/config'
 
 export const workspaceRoleSchema = z.enum(['owner', 'admin', 'editor', 'approver', 'viewer'])
 export const assignableRoleSchema = z.enum(['admin', 'editor', 'approver', 'viewer'])
@@ -102,7 +104,7 @@ export const createBrandSchema = z.object({
   name,
   websiteUrl: websiteUrlSchema,
   timezone: timeZoneField.default('Europe/Belgrade'),
-  contentLocale: z.enum(['sr-Latn', 'sr-Cyrl', 'en']).default('sr-Latn'),
+  contentLocale: contentLocaleSchema.default('sr-Latn'),
 })
 
 export const updateBrandSchema = z
@@ -110,7 +112,7 @@ export const updateBrandSchema = z
     name: name.optional(),
     websiteUrl: websiteUrlSchema,
     timezone: timeZoneField.optional(),
-    contentLocale: z.enum(['sr-Latn', 'sr-Cyrl', 'en']).optional(),
+    contentLocale: contentLocaleSchema.optional(),
     status: z.enum(['active', 'paused', 'archived']).optional(),
     /** uz promenu zone: zakazane objave zadržavaju isto lokalno vreme (EDGE_CASES K7) */
     shiftSchedule: z.boolean().optional(),
@@ -124,7 +126,7 @@ export const updateBrandSchema = z
 
 export const updateProfileSchema = z.object({
   fullName: z.string().trim().min(2).max(100),
-  locale: z.enum(['sr-Latn', 'en']),
+  locale: z.enum(locales),
   timezone: timeZoneField,
 })
 

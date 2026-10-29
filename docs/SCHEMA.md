@@ -70,7 +70,7 @@ create table profiles (
   email citext not null,                      -- kopija radi admin pretrage, sinhronizuje trigger na auth.users
   full_name text check (char_length(full_name) <= 100),
   avatar_url text,
-  locale text not null default 'sr-Latn' check (locale in ('sr-Latn','en')),
+  locale text not null default 'sr-Latn' check (locale in ('sr-Latn','en','uk')),  -- uk od migracije 029 (D-108)
   timezone text not null default 'Europe/Belgrade',
   platform_role platform_role not null default 'user',
   is_banned boolean not null default false,

@@ -193,6 +193,16 @@ describe('Nova objava (POST /api/ai/compose)', () => {
     expect(targets.every((t) => t.options?.format === 'story')).toBe(true)
   })
 
+  it('ukrajinski: model dobija uputstvo na ukrajinskom, nacrt nosi jezik uk (D-108)', async () => {
+    enqueueReply(reply('image', 'kyiv cafe'))
+    const r = await compose({ format: 'image', locale: 'uk' })
+    expect(r.status).toBe(200)
+    expect(r.json.data!.locale).toBe('uk')
+    expect(JSON.stringify(calls[0]!.body)).toContain('Пиши українською мовою.')
+    const { data: post } = await admin.from('posts').select('language').eq('id', r.json.data!.postId).single()
+    expect(post!.language).toBe('uk')
+  })
+
   it('Reels: uspravan snimak sa Pexels-a; bez snimka nacrt ostaje bez videa uz napomenu', async () => {
     enqueueReply(
       reply('video', 'barista coffee', ['instagram']),

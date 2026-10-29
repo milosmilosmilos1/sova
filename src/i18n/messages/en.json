@@ -36,5 +36,18 @@
   },
   "health": {
     "title": "System status"
+  },
+  "locale": {
+    "label": "Interface language",
+    "sr-Latn": "Srpski",
+    "en": "English",
+    "uk": "Українська"
+  },
+  "contentLocale": {
+    "label": "Post language",
+    "sr-Latn": "Serbian (Latin)",
+    "sr-Cyrl": "Serbian (Cyrillic)",
+    "en": "English",
+    "uk": "Ukrainian"
   }
 }

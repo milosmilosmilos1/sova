@@ -28,6 +28,7 @@ import { searchKnowledge } from '@/services/brand-brain/embed'
 import { getBrandContextForBrand } from '@/services/brand-brain/profile'
 import { getBrand } from '@/services/brands'
 import { downloadAsset, getAsset } from '@/services/media'
+import { toContentLocale } from '@/config/locales'
 
 export interface PostTextResult {
   generationId: string
@@ -49,9 +50,7 @@ export async function buildBrandContext(
 ): Promise<BrandContext> {
   const fromProfile = await getBrandContextForBrand(brand.id)
   const localeRaw = (override ?? fromProfile?.locale ?? brand.content_locale) as BrandContext['locale']
-  const locale: BrandContext['locale'] = ['sr-Latn', 'sr-Cyrl', 'en'].includes(localeRaw)
-    ? localeRaw
-    : 'sr-Latn'
+  const locale: BrandContext['locale'] = toContentLocale(localeRaw)
   let context: BrandContext
   if (fromProfile) {
     context = {

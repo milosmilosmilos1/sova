@@ -23,6 +23,7 @@ import { mapDbError, unwrap } from '@/lib/supabase/errors'
 import { getBrand } from '@/services/brands'
 import { systemTransition } from '@/services/posts/system'
 import type { Database, Json } from '@/types/database'
+import type { ContentLocale } from '@/config/locales'
 
 /**
  * Podešavanja Autopilota po brendu (brif 9.2): nivo 0–3, mesečni budžet tokena, rok za odobrenje,
@@ -33,7 +34,7 @@ type BrandRow = Database['public']['Tables']['brands']['Row']
 
 export interface AutopilotSettingsJson {
   /** jezik objava Autopilota (D-107); prazno = jezik brenda */
-  language?: 'sr-Latn' | 'sr-Cyrl' | 'en' | null
+  language?: ContentLocale | null
   /** dozvoljene vrste objava (D-107); prazno = sve */
   formats?: PostFormat[]
   /** AI meša dozvoljene vrste kroz nedelju; isključeno = uvek prva dozvoljena */
@@ -52,14 +53,14 @@ export function autopilotSettings(brand: Pick<BrandRow, 'settings'>): AutopilotS
 
 /** Jezik, vrste objava i mešanje (D-107) sa podrazumevanim vrednostima: jezik brenda, sve vrste, AI meša. */
 export function autopilotContentPrefs(brand: Pick<BrandRow, 'settings' | 'content_locale'>): {
-  language: 'sr-Latn' | 'sr-Cyrl' | 'en'
+  language: ContentLocale
   formats: PostFormat[]
   mix: boolean
 } {
   const s = autopilotSettings(brand)
   const formats = (s.formats ?? []).filter((f) => (POST_FORMATS as readonly string[]).includes(f))
   return {
-    language: s.language ?? (brand.content_locale as 'sr-Latn' | 'sr-Cyrl' | 'en'),
+    language: s.language ?? (brand.content_locale as ContentLocale),
     formats: formats.length ? formats : [...POST_FORMATS],
     mix: s.mix ?? true,
   }
@@ -118,7 +119,7 @@ export interface AutopilotView {
   level3ConfirmedAt: string | null
   level3AccountIds: string[]
   /** D-107 */
-  language: 'sr-Latn' | 'sr-Cyrl' | 'en'
+  language: ContentLocale
   formats: PostFormat[]
   mix: boolean
   paused: boolean
