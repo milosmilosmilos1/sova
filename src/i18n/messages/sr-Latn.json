@@ -350,5 +350,87 @@
       "saving": "Čuvam…",
       "backToList": "Automatizuj objave"
     }
+  },
+  "review": {
+    "title": "Odobravanje",
+    "subtitle": "Pregledajte šta je Sova pripremila, doradite i odlučite kada ide publici.",
+    "refresh": "Osveži",
+    "newFlow": "Nova automatizacija",
+    "tabs": {
+      "waiting": "Čekaju",
+      "approved": "Odobreni",
+      "published": "Objavljeni",
+      "skipped": "Preskočeni",
+      "all": "Svi"
+    },
+    "search": "Pretraži nacrte…",
+    "formatFilter": "Svi formati",
+    "formats": {
+      "carousel": "Karusel",
+      "single": "Objava",
+      "story": "Priča",
+      "video": "Video",
+      "text": "Tekst"
+    },
+    "slides": "{n, plural, one {# slajd} few {# slajda} other {# slajdova}}",
+    "sort": {
+      "new": "Najnovije",
+      "old": "Najstarije"
+    },
+    "listTitle": "Nacrti",
+    "empty": {
+      "waiting": "Nema nacrta koji čekaju odluku.",
+      "other": "Ovde još nema objava."
+    },
+    "select": "Izaberite nacrt sa leve strane.",
+    "status": {
+      "draft": "Nacrt",
+      "in_review": "Čeka pregled",
+      "approved": "Odobreno",
+      "scheduled": "Zakazano",
+      "publishing": "Objavljuje se",
+      "published": "Objavljeno",
+      "partially_published": "Delimično objavljeno",
+      "failed": "Neuspelo",
+      "rejected": "Odbijeno",
+      "canceled": "Preskočeno",
+      "paused": "Pauzirano"
+    },
+    "preview": {
+      "prev": "Prethodni slajd",
+      "next": "Sledeći slajd",
+      "slide": "Slajd {n} od {total}",
+      "noMedia": "Objava bez vizuala."
+    },
+    "actions": {
+      "edit": "Uredi objavu",
+      "download": "Preuzmi",
+      "saveSchedule": "Sačuvaj i zakaži",
+      "publishNow": "Objavi odmah",
+      "regenerate": "Generiši ponovo",
+      "regenerating": "Generišem…",
+      "skip": "Preskoči",
+      "save": "Sačuvaj izmene",
+      "saving": "Čuvam…",
+      "confirmSkip": "Preskočiti ovaj nacrt? Možete ga vratiti iz editora objave.",
+      "confirmPublish": "Objaviti odmah na izabrane mreže?",
+      "confirmRegenerate": "Napraviti nov tekst i nove slajdove? Troši {tokens} tokena."
+    },
+    "panel": {
+      "decision": "Odluka",
+      "fromFlow": "Tok: {name}",
+      "networks": "Mreže za objavu",
+      "manageAccounts": "Upravljaj nalozima",
+      "base": "Osnovni",
+      "caption": "Opis",
+      "captionHint": "Heštegovi su na kraju opisa.",
+      "firstComment": "Prvi komentar",
+      "usesBase": "Isti kao osnovni opis.",
+      "scheduleAt": "Termin objave",
+      "timezone": "Vreme po zoni brenda ({tz})",
+      "noApprove": "Vaša uloga menja tekst, a odobrava vlasnik, administrator ili odobravalac.",
+      "done": "Sačuvano.",
+      "scheduled": "Zakazano za {when}."
+    }
   }
 }

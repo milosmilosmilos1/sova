@@ -2,6 +2,7 @@ import {
   Bot,
   Brain,
   CalendarDays,
+  CheckCircle2,
   CreditCard,
   FileText,
   Home,
@@ -55,6 +56,7 @@ export function AppShell({
   brands,
   currentBrand,
   showLocaleSwitcher = false,
+  waitingApprovals = 0,
   children,
 }: {
   viewer: ShellViewer
@@ -64,6 +66,8 @@ export function AppShell({
   currentBrand: BrandSummary | null
   /** izbor jezika interfejsa (D-108); prekidač ui_languages dok se svi ekrani ne prevedu */
   showLocaleSwitcher?: boolean
+  /** broj nacrta koji čekaju odluku (D-108), značka uz „Odobravanje” */
+  waitingApprovals?: number
   children: ReactNode
 }) {
   return (
@@ -123,6 +127,11 @@ export function AppShell({
               <NavLink href="/app/flows">
                 <Workflow aria-hidden />
                 Automatizuj objave
+              </NavLink>
+              <NavLink href="/app/approvals">
+                <CheckCircle2 aria-hidden />
+                Odobravanje
+                {waitingApprovals ? <Badge className="ml-auto">{waitingApprovals}</Badge> : null}
               </NavLink>
               <NavLink href="/app/inbox">
                 <Inbox aria-hidden />

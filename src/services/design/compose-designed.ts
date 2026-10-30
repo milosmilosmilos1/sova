@@ -16,7 +16,11 @@ import { getAsset, signedUrl } from '@/services/media'
 import { createPost } from '@/services/posts/posts'
 import { listSocialAccounts } from '@/services/social/accounts'
 
+import { createSupabaseAdminClient } from '@/lib/supabase/admin'
+import type { Json } from '@/types/database'
+
 import { resolveDesign } from './brand-design'
+import type { PostDesignContext } from './post-design'
 import { captionFor, generateDesignedCopy } from './copy'
 import { renderDesignSlides } from './render-post'
 
@@ -132,6 +136,22 @@ export async function composeDesigned(
     media: rendered.assetIds.map((mediaAssetId, sortOrder) => ({ mediaAssetId, sortOrder })),
     source: 'ai',
   })
+  // „Generiši ponovo” u odobravanju piše nov tekst istim stilom (migracija 032)
+  const designContext: PostDesignContext = {
+    topic: input.topic,
+    cta: input.cta ?? null,
+    format: format === 'story' ? 'story' : format === 'carousel' ? 'carousel' : 'single',
+    styleId,
+    slides: copy.slides.length,
+    photoSource: input.photoSource ?? design.photoSource,
+    size: input.size ?? design.size,
+    locale,
+    platforms,
+  }
+  await createSupabaseAdminClient()
+    .from('posts')
+    .update({ design: designContext as unknown as Json })
+    .eq('id', post.id)
   const media = await Promise.all(
     rendered.assetIds.map(async (id) => {
       const asset = await getAsset(viewer, id)

@@ -48,6 +48,14 @@ export default async function AppLayout({ children }: LayoutProps<'/app'>) {
   const currentBrand = current ? await getCurrentBrand(viewer, current.workspaceId) : null
   const pending = previewPending()
   const showLocaleSwitcher = await isFeatureEnabled('ui_languages')
+  const { count: waitingApprovals } = currentBrand
+    ? await viewer.supabase
+        .from('posts')
+        .select('id', { count: 'exact', head: true })
+        .eq('brand_id', currentBrand.id)
+        .eq('status', 'in_review')
+        .is('deleted_at', null)
+    : { count: 0 }
 
   return (
     <AppShell
@@ -65,6 +73,7 @@ export default async function AppLayout({ children }: LayoutProps<'/app'>) {
       brands={brands}
       currentBrand={currentBrand}
       showLocaleSwitcher={showLocaleSwitcher}
+      waitingApprovals={waitingApprovals ?? 0}
     >
       {pending.length ? (
         <p role="status" className="mb-4 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">

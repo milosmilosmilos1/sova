@@ -16,6 +16,7 @@ import { notifyRoles, recentTexts, type StepRunner } from '@/services/autopilot/
 import type { BrandRow } from '@/services/brands'
 import { resolveDesign } from '@/services/design/brand-design'
 import { captionFor, generateDesignedCopy, type DesignedCopy } from '@/services/design/copy'
+import type { PostDesignContext } from '@/services/design/post-design'
 import { renderDesignSlides } from '@/services/design/render-post'
 import { systemSubmitForReview } from '@/services/posts/system'
 import type { Json } from '@/types/database'
@@ -149,22 +150,25 @@ export async function runFlow(runId: string, step: StepRunner): Promise<FlowRunR
 
   try {
     await setRun(runId, { step: 'images', tokens: copy.tokens })
-    const assetIds = await step('images', async () => {
+    const rendered = await step('images', async () => {
       const design = await resolveDesign(brand)
-      const rendered = await renderDesignSlides({
+      const styleId = flow.style_id && isStyleId(flow.style_id) ? flow.style_id : design.styleId
+      const photoSource = (flow.photo_source as PhotoSource | null) ?? design.photoSource
+      const out = await renderDesignSlides({
         workspaceId: brand.workspace_id,
         brandId: brand.id,
         design,
-        styleId: flow.style_id && isStyleId(flow.style_id) ? flow.style_id : design.styleId,
+        styleId,
         format: format === 'story' ? 'story' : design.size,
         slides: copy.slides as Slide[],
-        photoSource: (flow.photo_source as PhotoSource | null) ?? design.photoSource,
+        photoSource,
         query: (copy.visualQuery || flow.topic).slice(0, 100),
         uploadedBy: null,
         origin: { flowId: flow.id, runId },
       })
-      return rendered.assetIds
+      return { assetIds: out.assetIds, styleId, photoSource, size: design.size }
     })
+    const assetIds = rendered.assetIds
 
     await setRun(runId, { step: 'check' })
     const postId = await step('post', async () => {
@@ -200,6 +204,19 @@ export async function runFlow(runId: string, step: StepRunner): Promise<FlowRunR
           flow_id: flow.id,
           language: locale,
           qa_report: report as unknown as Json,
+          design: {
+            topic: flow.topic,
+            cta: flow.cta,
+            format,
+            styleId: rendered.styleId,
+            slides: copy.slides.length,
+            photoSource: rendered.photoSource,
+            size: rendered.size,
+            locale,
+            platforms,
+            flowId: flow.id,
+            dmCta: flow.cta_mode === 'dm',
+          } satisfies PostDesignContext as unknown as Json,
         })
         .select('id')
         .single()

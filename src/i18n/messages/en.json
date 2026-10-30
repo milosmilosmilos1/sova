@@ -350,5 +350,87 @@
       "saving": "Saving…",
       "backToList": "Automate posts"
     }
+  },
+  "review": {
+    "title": "Approvals",
+    "subtitle": "Review what Sova prepared, refine it and decide when it goes out.",
+    "refresh": "Refresh",
+    "newFlow": "New automation",
+    "tabs": {
+      "waiting": "Waiting",
+      "approved": "Approved",
+      "published": "Published",
+      "skipped": "Skipped",
+      "all": "All"
+    },
+    "search": "Search drafts…",
+    "formatFilter": "All formats",
+    "formats": {
+      "carousel": "Carousel",
+      "single": "Post",
+      "story": "Story",
+      "video": "Video",
+      "text": "Text"
+    },
+    "slides": "{n, plural, one {# slide} other {# slides}}",
+    "sort": {
+      "new": "Newest",
+      "old": "Oldest"
+    },
+    "listTitle": "Drafts",
+    "empty": {
+      "waiting": "No drafts are waiting for a decision.",
+      "other": "No posts here yet."
+    },
+    "select": "Choose a draft on the left.",
+    "status": {
+      "draft": "Draft",
+      "in_review": "Waiting for review",
+      "approved": "Approved",
+      "scheduled": "Scheduled",
+      "publishing": "Publishing",
+      "published": "Published",
+      "partially_published": "Partly published",
+      "failed": "Failed",
+      "rejected": "Rejected",
+      "canceled": "Skipped",
+      "paused": "Paused"
+    },
+    "preview": {
+      "prev": "Previous slide",
+      "next": "Next slide",
+      "slide": "Slide {n} of {total}",
+      "noMedia": "Post without a visual."
+    },
+    "actions": {
+      "edit": "Edit post",
+      "download": "Download",
+      "saveSchedule": "Save and schedule",
+      "publishNow": "Publish now",
+      "regenerate": "Regenerate",
+      "regenerating": "Regenerating…",
+      "skip": "Skip",
+      "save": "Save changes",
+      "saving": "Saving…",
+      "confirmSkip": "Skip this draft? You can restore it from the post editor.",
+      "confirmPublish": "Publish now to the selected networks?",
+      "confirmRegenerate": "Create new copy and new slides? It uses {tokens} tokens."
+    },
+    "panel": {
+      "decision": "Decision",
+      "fromFlow": "Flow: {name}",
+      "networks": "Networks",
+      "manageAccounts": "Manage accounts",
+      "base": "Base",
+      "caption": "Caption",
+      "captionHint": "Hashtags go at the end of the caption.",
+      "firstComment": "First comment",
+      "usesBase": "Same as the base caption.",
+      "scheduleAt": "Publish time",
+      "timezone": "Time in the brand time zone ({tz})",
+      "noApprove": "Your role can edit the copy; the owner, an admin or an approver approves it.",
+      "done": "Saved.",
+      "scheduled": "Scheduled for {when}."
+    }
   }
 }

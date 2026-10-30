@@ -1285,6 +1285,7 @@ create table content_flow_runs (
   unique (flow_id, slot_at)
 );
 alter table posts add column flow_id uuid references content_flows(id) on delete set null;
+alter table posts add column design jsonb;          -- kontekst za „Generiši ponovo”: tema, format, stil, slajdovi, fotografije, jezik, mreže (migracija 032, D-111)
 create table autopilot_runs (
   id uuid primary key default gen_random_uuid(),
   brand_id uuid not null references brands(id) on delete cascade,

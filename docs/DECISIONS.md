@@ -812,3 +812,16 @@ Odluka (faza 3 iz D-108):
 - Postojeći Autopilot (nedeljni nacrti iz strategije, nivoi, budžet) ostaje kakav jeste. Tokovi su poseban, jednostavniji put. Spajanje dve stvari je pitanje za kasnije, kad vlasnik vidi kako se koriste.
 
 Razlog: zahtev vlasnika (D-108). Vreme pripreme umesto vremena objave čuva odobravanje kao jedino mesto gde se objava pušta u svet.
+
+## D-111 · 30.10.2026 · usvojeno · Odobravanje: pregled slajdova i odluka u jednom potezu
+
+Odluka (faza 4 iz D-108):
+
+- Nova strana „Odobravanje” (`/app/approvals`) sa karticama: čekaju (`in_review`), odobreni (odobreno, zakazano, pauzirano), objavljeni, preskočeni (otkazano i odbijeno) i svi. Ima pretragu, filter po formatu (karusel, objava, priča, video, tekst) i redosled. Meni pokazuje broj nacrta koji čekaju odluku.
+- Srednji deo prikazuje slajdove jedan po jedan, sa strelicama i sličicama. Desni panel ima opis po mreži (osnovni i poseban za svaku mrežu, sa brojačem prema granici mreže), prvi komentar i termin objave u zoni brenda. Termin je predlog: sledeći slobodan termin iz reda objava, inače sutra u 10:00.
+- Odluke idu kroz postojeći state machine i prava (`workflow.ts`). „Sačuvaj i zakaži” radi izmene, odobrenje (ako nacrt čeka) i zakazivanje u jednom zahtevu. „Objavi odmah” isto, sa objavom odmah. Urednik bez prava odobravanja vidi „Sačuvaj izmene” i napomenu ko odobrava. „Preskoči” nacrt koji čeka odobrenje prvo vraća u nacrte, pa ga otkazuje, jer state machine ne otkazuje iz odobravanja. Vraća se iz editora objave.
+- „Generiši ponovo” piše nov tekst (2 tokena) i crta nove slajdove istim stilom, formatom i izvorom fotografija. Kontekst za to je nova kolona `posts.design` (migracija 032), koju upisuju „Nova objava” i tokovi. Objave bez tog konteksta (ručne i stare) nemaju ovo dugme. Verzija objave štiti od dvostrukog klika: drugi zahtev sa starom verzijom dobija 409 i ne troši tokene. Stari slajdovi ostaju u biblioteci.
+- „Preuzmi” daje slajdove kao ZIP (01.jpg, 02.jpg …). ZIP pravi sopstvena mala funkcija bez kompresije (`src/lib/zip.ts`), jer su slajdovi već JPEG.
+- „Napravi video” iz karusela dolazi u fazi 11.
+
+Razlog: zahtev vlasnika (D-108). Jedan potez za čestu odluku (izmeni, odobri, zakaži) skraćuje odobravanje, a sve ostaje u istim pravilima kao editor.
