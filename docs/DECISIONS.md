@@ -863,3 +863,15 @@ Odluka (faza 7 iz D-108):
 - Migracija 035 ponavlja D-079 za tabele iz 031, 033 i 035: strani ključevi sa CASCADE ili SET NULL su DEFERRABLE, inače brisanje naloga pada kad kaskada dva puta dira isti red.
 
 Razlog: zahtev vlasnika (D-108). Fotografije brenda su vrednije od stoka, a opis i kategorija su ono što Sovi treba da ih koristi na pravom mestu.
+
+## D-115 · 30.10.2026 · usvojeno · Početna, kalendar sa pločicama, vodič i podrška, tabla predloga
+
+Odluka (faza 8 iz D-108):
+
+- Početna je prepisana na tri jezika: pozdrav po dobu dana u zoni brenda i stanje (problem sa nalogom ili tokom pali žutu tačku), četiri ključna koraka (mreža, glas brenda, prvi tok, prva odluka o nacrtu) sa preporučenim sledećim, rezultati za 30 dana (pratioci, doseg, angažovanje sa promenom), nacrti koji čekaju odluku sa sličicama, ova nedelja po danima, Brain (zaključak iz playbook-a ili šta nedostaje), tokovi sa sledećim nacrtom, jedan preporučen potez (ponovno povezivanje, odobravanje, sledeći korak, tokeni, Studio), tokeni i Inbox, najjače objave. Traka „Dodaj logo” se vidi dok slajdovi nemaju logo.
+- Kalendar je prepisan na tri jezika: mesec ili nedelja, pločice dana sa sličicom prve slike objave, vremenom i statusom, legenda, brojači (danas, zakazano za 14 dana, objavljeno u mesecu, sledeći slobodan dan), sledeća objava, sledećih sedam dana i spisak objava u mesecu. Sličice daje `listCalendar` (potpisani URL-ovi u jednom pozivu po bucket-u).
+- „Vodič i podrška”: plutajuće dugme u celoj aplikaciji (osim uvoda) sa sledećim ključnim korakom i brojem urađenih; prozor ima sve korake, uvod, tablu predloga, prijavu problema i email podrške. Koraci su isti kao na početnoj (`getGuide`, `GET /api/guide`).
+- Tabla predloga (`/app/ideas`, migracija 036): ideje vide i za njih glasaju svi korisnici (jedan glas po korisniku, bez imena autora), prijavu problema vide samo autor i administratori platforme. Glas uključuje i isključuje jedna `security definer` funkcija (`toggle_feature_vote`, samo za service role), pa je broj tačan i kad dva korisnika kliknu istovremeno. Status (ideja, planirano, u izradi, gotovo, odbijeno) menja samo administrator platforme.
+- Meni: „Predlozi i podrška” u grupi Podešavanja.
+
+Razlog: zahtev vlasnika (D-108). Početna i vodič vode novog korisnika do prvog nacrta, a tabla predloga daje korisnicima glas bez dodatnog alata.

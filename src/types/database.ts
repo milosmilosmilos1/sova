@@ -583,6 +583,30 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"feature_requests": {
+                  Row: {
+                    "author_id": string | null,"body": string,"created_at": string,"id": string,"kind": string,"status": string,"title": string,"updated_at": string,"votes": number,"workspace_id": string | null
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "author_id"?: string | null,"body"?: string,"created_at"?: string,"id"?: string,"kind"?: string,"status"?: string,"title": string,"updated_at"?: string,"votes"?: number,"workspace_id"?: string | null
+                  }
+                  Update: {
+                    "author_id"?: string | null,"body"?: string,"created_at"?: string,"id"?: string,"kind"?: string,"status"?: string,"title"?: string,"updated_at"?: string,"votes"?: number,"workspace_id"?: string | null
+                  }
+                  Relationships: []
+                },"feature_votes": {
+                  Row: {
+                    "created_at": string,"request_id": string,"user_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"request_id": string,"user_id": string
+                  }
+                  Update: {
+                    "created_at"?: string,"request_id"?: string,"user_id"?: string
+                  }
+                  Relationships: []
                 },"gallery_categories": {
                   Row: {
                     "brand_id": string,"created_at": string,"id": string,"name": string,"workspace_id": string
@@ -1865,6 +1889,9 @@ isOneToOne: false
           Functions: {
             "accept_invitation":
 { Args: { "p_token": string }; Returns: Json
+                           },
+"toggle_feature_vote":
+{ Args: { "p_request_id": string,"p_user_id": string }; Returns: Json
                            },
 "admin_activity_counts":
 { Args: Record<PropertyKey, never>; Returns: Json

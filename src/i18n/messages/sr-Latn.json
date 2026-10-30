@@ -812,5 +812,306 @@
     "confirmDelete": "Obrisati fotografiju iz galerije?",
     "previewTitle": "Pregled fotografije",
     "tags": "Pojmovi"
+  },
+  "guide": {
+    "title": "Vodič i podrška",
+    "progress": "Ključni koraci: {done} od {total}",
+    "allDone": "Sva četiri koraka su urađena. Sova sama priprema nacrte.",
+    "allDoneShort": "Sve je spremno",
+    "next": "Sledeće: {step}",
+    "close": "Zatvori",
+    "done": "urađeno",
+    "todo": "nije urađeno",
+    "steps": {
+      "networks": {
+        "title": "Povežite mrežu",
+        "hint": "Sova objavljuje samo na mreže koje povežete."
+      },
+      "voice": {
+        "title": "Opišite glas brenda",
+        "hint": "Vaše reči o ponudi, publici i tonu idu u svaki nacrt."
+      },
+      "flow": {
+        "title": "Uključite prvi tok",
+        "hint": "Tok priprema nacrte po rasporedu, bez vašeg pokretanja."
+      },
+      "decision": {
+        "title": "Odlučite o prvom nacrtu",
+        "hint": "Odobrite, zakažite ili preskočite nacrt koji je Sova pripremila."
+      }
+    },
+    "setupAgain": "Prođite uvod ponovo",
+    "setupContinue": "Nastavite uvod",
+    "idea": "Predložite funkciju",
+    "bug": "Prijavite problem",
+    "email": "Pišite podršci"
+  },
+  "home": {
+    "noBrand": "Napravite prvi brend u delu Brend i nalog.",
+    "status": {
+      "ok": "Sve radi kako treba",
+      "check": "Ima nešto za proveru"
+    },
+    "greeting": {
+      "morning": "Dobro jutro, {name}",
+      "day": "Dobar dan, {name}",
+      "evening": "Dobro veče, {name}"
+    },
+    "greetingPlain": {
+      "morning": "Dobro jutro",
+      "day": "Dobar dan",
+      "evening": "Dobro veče"
+    },
+    "subtitle": {
+      "waiting": "{count, plural, one {# nacrt čeka} few {# nacrta čekaju} other {# nacrta čeka}} vašu odluku pre sledećeg termina.",
+      "calm": "Sova radi po vašim tokovima, a nacrti stižu na odobravanje."
+    },
+    "actions": {
+      "review": "Pregledaj nacrte ({count})",
+      "newPost": "Nova objava",
+      "newFlow": "Nova automatizacija"
+    },
+    "banner": {
+      "setupTitle": "Završite podešavanje",
+      "setupText": "Još par koraka i Sova pravi objave za {brand}.",
+      "setupCta": "Nastavi uvod",
+      "logo": "Slajdovi još nemaju logo, pa na njima piše samo ime brenda.",
+      "logoCta": "Dodaj logo"
+    },
+    "passwordChanged": "Lozinka je promenjena.",
+    "steps": {
+      "eyebrow": "Do objava koje se same pripremaju",
+      "title": "Četiri ključna koraka",
+      "text": "Kad su sva četiri urađena, Sova redovno priprema nacrte. Ništa se ne objavljuje bez vas.",
+      "progress": "{done} od {total}",
+      "done": "Urađeno",
+      "next": "Sledeće",
+      "later": "Posle",
+      "recommended": "Preporučeno sledeće",
+      "items": {
+        "networks": {
+          "title": "Povežite mrežu",
+          "why": "Bez povezane mreže tok ne može da pripremi nacrt.",
+          "cta": "Poveži mrežu"
+        },
+        "voice": {
+          "title": "Opišite glas brenda",
+          "why": "Vaše reči o ponudi, publici i tonu idu u svaki nacrt i imaju prednost nad sajtom.",
+          "cta": "Opiši glas"
+        },
+        "flow": {
+          "title": "Uključite prvi tok",
+          "why": "Tok sam priprema nacrte u danima koje izaberete.",
+          "cta": "Napravi tok"
+        },
+        "decision": {
+          "title": "Odlučite o prvom nacrtu",
+          "why": "Pregledajte nacrt koji je Sova pripremila i odobrite ga, zakažite ili preskočite.",
+          "cta": "Otvori odobravanje"
+        }
+      }
+    },
+    "pulse": {
+      "title": "Rezultati za 30 dana",
+      "text": "Sve povezane mreže zajedno.",
+      "followers": "Pratioci",
+      "reach": "Doseg",
+      "engagement": "Angažovanje",
+      "change": "{change} u odnosu na prethodnih 30 dana",
+      "posts": "{count, plural, one {# objava} few {# objave} other {# objava}} sa rezultatima u periodu.",
+      "empty": "Metrike stižu posle prvih objava."
+    },
+    "review": {
+      "title": "Sledeće za odluku",
+      "text": "Nacrti koji čekaju odobrenje.",
+      "badge": "{count} čeka",
+      "untitled": "Nacrt bez naslova",
+      "empty": "Nema nacrta na čekanju.",
+      "open": "Otvori odobravanje"
+    },
+    "week": {
+      "title": "Ova nedelja",
+      "text": "Zakazane objave po danima, zona {timezone}.",
+      "open": "Otvori kalendar"
+    },
+    "brain": {
+      "eyebrow": "Brain",
+      "needFlow": "Sova zna vaš brend. Sledeći korak je da uključite prvi tok.",
+      "needBasics": "Povežite mrežu i opišite glas brenda, pa Sova može da počne.",
+      "learning": "Sova uči iz rezultata. Playbook se puni posle prvih objava sa metrikama.",
+      "rules": "{count, plural, one {# pravilo} few {# pravila} other {# pravila}} u playbook-u",
+      "noPlaybook": "Playbook još nije spreman",
+      "open": "Otvori Brain"
+    },
+    "flows": {
+      "title": "Tokovi · aktivno {active} od {total}",
+      "text": "Nacrti iz tokova idu na odobravanje.",
+      "manage": "Upravljaj tokovima",
+      "next": "Sledeći nacrt: {when}",
+      "paused": "Pauziran",
+      "active": "Aktivan",
+      "pausedBadge": "Pauziran",
+      "empty": "Još nema tokova. Tok sam priprema nacrte po vašem rasporedu."
+    },
+    "recommended": {
+      "title": "Preporučeno sledeće",
+      "text": "Jedan potez sa najvećim efektom.",
+      "items": {
+        "reauth": {
+          "title": "{count, plural, one {# nalog treba ponovo povezati} few {# naloga treba ponovo povezati} other {# naloga treba ponovo povezati}}",
+          "text": "Bez nove prijave objave na tu mrežu ne prolaze.",
+          "cta": "Poveži ponovo"
+        },
+        "approve": {
+          "title": "Odobrite spremne nacrte",
+          "text": "Nacrti čekaju vašu odluku pre objave na izabranim mrežama.",
+          "cta": "Otvori odobravanje"
+        },
+        "networks": {
+          "title": "Povežite mrežu",
+          "text": "Bez povezane mreže tok ne može da pripremi nacrt.",
+          "cta": "Poveži mrežu"
+        },
+        "voice": {
+          "title": "Opišite glas brenda",
+          "text": "Vaše reči idu u svaki nacrt.",
+          "cta": "Opiši glas"
+        },
+        "flow": {
+          "title": "Uključite prvi tok",
+          "text": "Tok sam priprema nacrte po rasporedu.",
+          "cta": "Napravi tok"
+        },
+        "decision": {
+          "title": "Odlučite o prvom nacrtu",
+          "text": "Prva odluka uči Sovu šta vam odgovara.",
+          "cta": "Otvori odobravanje"
+        },
+        "tokens": {
+          "title": "Tokeni su pri kraju",
+          "text": "Dopunite tokene da tokovi nastave da pripremaju nacrte.",
+          "cta": "Dopuni tokene"
+        },
+        "studio": {
+          "title": "Napravite objavu u Studiju",
+          "text": "Sve je spremno. Isprobajte novu ideju ili format.",
+          "cta": "Otvori Studio"
+        }
+      }
+    },
+    "tokens": {
+      "label": "Tokeni · plan {plan}"
+    },
+    "inbox": "Predlozi u Inboxu",
+    "top": {
+      "title": "Najjače objave",
+      "text": "Po angažovanju, poslednjih 30 dana.",
+      "open": "Analitika",
+      "date": "Datum",
+      "post": "Objava",
+      "reach": "Doseg",
+      "engagement": "Angažovanje"
+    },
+    "brands": "Brendovi: {count} od {limit}"
+  },
+  "calendar": {
+    "metaTitle": "Kalendar",
+    "eyebrow": "Plan objava",
+    "title": "Kalendar objava",
+    "subtitle": "Zakazane i objavljene objave na jednom mestu, u zoni {timezone}.",
+    "newPost": "Nova objava",
+    "stats": {
+      "today": "Danas",
+      "posts": "{count, plural, one {# objava} few {# objave} other {# objava}}",
+      "upcoming": "Zakazano za 14 dana",
+      "published": "Objavljeno · {month}",
+      "freeDay": "Sledeći slobodan dan"
+    },
+    "prev": "Prethodni",
+    "next": "Sledeći",
+    "today": "Danas",
+    "legend": {
+      "scheduled": "Zakazano",
+      "published": "Objavljeno",
+      "in_review": "Na odobravanju",
+      "failed": "Greška"
+    },
+    "viewLabel": "Prikaz",
+    "view": {
+      "month": "Mesec",
+      "week": "Nedelja"
+    },
+    "more": "+{count} još",
+    "untitled": "Objava bez naslova",
+    "nextPost": "Sledeća objava",
+    "open": "Otvori objavu",
+    "noNext": "Nema sledeće objave",
+    "noNextText": "Napravite objavu ili uključite tok koji sam priprema nacrte.",
+    "week": "Sledećih 7 dana",
+    "weekHint": "zakazano i na odobravanju",
+    "weekEmpty": "Ništa nije zakazano za narednu nedelju.",
+    "monthList": "Objave · {month}",
+    "monthEmpty": "U ovom mesecu nema objava.",
+    "status": {
+      "draft": "Nacrt",
+      "in_review": "Na odobravanju",
+      "approved": "Odobreno",
+      "scheduled": "Zakazano",
+      "publishing": "Objavljuje se",
+      "published": "Objavljeno",
+      "partially_published": "Delimično objavljeno",
+      "failed": "Greška",
+      "paused": "Pauzirano",
+      "canceled": "Otkazano",
+      "rejected": "Odbijeno"
+    }
+  },
+  "ideas": {
+    "metaTitle": "Predlozi i podrška",
+    "eyebrow": "Gradite sa nama",
+    "title": "Vaš glas oblikuje Sovu",
+    "subtitle": "Predložite novu mogućnost, prijavite problem i glasajte za ono što vam je najvažnije.",
+    "emailLead": "Ili nam pišite direktno:",
+    "newIdea": "Predložite funkciju",
+    "newBug": "Prijavite problem",
+    "search": "Pretražite predloge…",
+    "sortLabel": "Redosled",
+    "sort": {
+      "new": "Najnovije",
+      "top": "Najviše glasova"
+    },
+    "empty": "Još nema predloga. Budite prvi.",
+    "noResults": "Nijedan predlog ne odgovara pretrazi.",
+    "vote": "Glasaj za: {title}",
+    "unvote": "Povuci glas: {title}",
+    "status": {
+      "new": "Ideja",
+      "planned": "Planirano",
+      "in_progress": "U izradi",
+      "done": "Gotovo",
+      "declined": "Odbijeno"
+    },
+    "bugBadge": "Prijava problema",
+    "mine": "Vaše",
+    "statusLabel": "Status: {title}",
+    "form": {
+      "ideaTitle": "Nova funkcija",
+      "bugTitle": "Prijava problema",
+      "ideaText": "Opišite šta biste voleli da Sova radi i zašto vam je važno.",
+      "bugText": "Opišite šta se desilo i šta ste očekivali.",
+      "kind": "Vrsta",
+      "idea": "Funkcija",
+      "bug": "Problem",
+      "titleLabel": "Naslov",
+      "ideaPlaceholder": "Npr. Ponavljanje objave svake nedelje",
+      "bugPlaceholder": "Npr. Pregled slajda se ne učitava",
+      "bodyLabel": "Opis",
+      "ideaBodyPlaceholder": "Kako biste to koristili? Šta sada radite umesto toga?",
+      "bugBodyPlaceholder": "Koraci do greške, šta se pojavilo na ekranu i na kojoj strani.",
+      "bugPrivate": "Prijavu problema vidite samo vi i tim Sove.",
+      "cancel": "Otkaži",
+      "send": "Pošalji",
+      "sending": "Šaljem…"
+    }
   }
 }

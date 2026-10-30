@@ -7,6 +7,7 @@ import {
   Home,
   Images,
   Inbox,
+  Lightbulb,
   LogOut,
   Settings,
   Share2,
@@ -24,10 +25,12 @@ import { ImpersonationBanner } from '@/components/admin/impersonation-banner'
 import { SovaLogo } from '@/components/brand/sova-logo'
 import { AuthSync } from '@/components/app/auth-sync'
 import { AutoSubmitSelect } from '@/components/app/auto-submit-select'
+import { GuideWidget } from '@/components/app/guide-widget'
 import { NotificationsBell } from '@/components/app/notifications-bell'
 import { CurrentPathInput, NavGroup, NavLink } from '@/components/app/nav-link'
 import { LocaleSwitcher } from '@/components/shared/locale-switcher'
 import { Badge } from '@/components/ui/badge'
+import { company } from '@/config/company'
 import { signOutAction, switchBrandAction, switchWorkspaceAction } from '@/lib/auth/actions'
 import type { Membership } from '@/lib/auth/workspace'
 import type { BrandSummary } from '@/services/brands'
@@ -187,6 +190,10 @@ export function AppShell({
                 <Settings aria-hidden />
                 Brend i nalog
               </NavLink>
+              <NavLink href="/app/ideas">
+                <Lightbulb aria-hidden />
+                Predlozi i podrška
+              </NavLink>
               {viewer.platformRole === 'platform_admin' && !viewer.impersonation ? (
                 <NavLink href="/admin">
                   <ShieldCheck aria-hidden />
@@ -225,8 +232,12 @@ export function AppShell({
             </div>
           </div>
         </aside>
-        <main className="min-w-0 flex-1 px-4 py-6 md:px-8 md:py-8">{children}</main>
+        {/* pb-24: poslednji red strane ne ostaje ispod plutajućeg dugmeta „Vodič i podrška” */}
+        <main className="min-w-0 flex-1 px-4 pt-6 pb-24 md:px-8 md:pt-8">{children}</main>
       </div>
+      {currentBrand && !viewer.impersonation ? (
+        <GuideWidget brandId={currentBrand.id} supportEmail={company.supportEmail} />
+      ) : null}
     </>
   )
 }

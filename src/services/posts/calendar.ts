@@ -5,6 +5,7 @@ import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import { statusLabel, type PostStatus } from '@/lib/posts/state-machine'
 import type { QueueSlotInput } from '@/lib/schemas/posts'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
 import { zonedToUtc } from '@/lib/zoned-time'
 import { getBrand } from '@/services/brands'
@@ -29,6 +30,8 @@ export interface CalendarItem {
     permalink: string | null
   }>
   mediaCount: number
+  /** sličica prve slike objave (potpisan URL, 1 h); video i tekst bez sličice */
+  thumb: string | null
 }
 
 export async function listCalendar(
@@ -58,9 +61,33 @@ export async function listCalendar(
   if (pErr) throw mapDbError(pErr)
   const ids = (posts ?? []).map((p) => p.id)
   const mediaCount = new Map<string, number>()
+  const thumbs = new Map<string, string>()
   if (ids.length) {
-    const { data: media } = await viewer.supabase.from('post_media').select('post_id').in('post_id', ids)
-    for (const m of media ?? []) mediaCount.set(m.post_id, (mediaCount.get(m.post_id) ?? 0) + 1)
+    const { data: media } = await viewer.supabase
+      .from('post_media')
+      .select('post_id, sort_order, media_assets(kind, bucket, storage_path)')
+      .in('post_id', ids)
+      .order('sort_order')
+    const first = new Map<string, { bucket: string; path: string }>()
+    for (const m of media ?? []) {
+      mediaCount.set(m.post_id, (mediaCount.get(m.post_id) ?? 0) + 1)
+      const asset = m.media_assets as { kind: string; bucket: string; storage_path: string } | null
+      if (!first.has(m.post_id) && asset?.kind === 'image')
+        first.set(m.post_id, { bucket: asset.bucket, path: asset.storage_path })
+    }
+    // potpisani linkovi u jednom pozivu po bucket-u (kalendar ima i desetine objava)
+    const byBucket = new Map<string, string[]>()
+    for (const f of first.values()) byBucket.set(f.bucket, [...(byBucket.get(f.bucket) ?? []), f.path])
+    const urls = new Map<string, string>()
+    const admin = createSupabaseAdminClient()
+    for (const [bucket, paths] of byBucket) {
+      const { data } = await admin.storage.from(bucket).createSignedUrls(paths, 3600)
+      for (const d of data ?? []) if (d.path && d.signedUrl) urls.set(`${bucket}/${d.path}`, d.signedUrl)
+    }
+    for (const [postId, f] of first) {
+      const url = urls.get(`${f.bucket}/${f.path}`)
+      if (url) thumbs.set(postId, url)
+    }
   }
   const items: CalendarItem[] = (posts ?? [])
     .map((p) => ({
@@ -81,6 +108,7 @@ export async function listCalendar(
           permalink: t.permalink,
         })),
       mediaCount: mediaCount.get(p.id) ?? 0,
+      thumb: thumbs.get(p.id) ?? null,
     }))
     .sort((a, b) => (a.scheduledFor ?? '').localeCompare(b.scheduledFor ?? ''))
   return { items, timezone: brand.timezone }

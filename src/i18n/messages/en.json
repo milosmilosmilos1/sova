@@ -812,5 +812,306 @@
     "confirmDelete": "Delete the photo from the gallery?",
     "previewTitle": "Photo preview",
     "tags": "Keywords"
+  },
+  "guide": {
+    "title": "Guide and support",
+    "progress": "Key steps: {done} of {total}",
+    "allDone": "All four steps are done. Sova prepares drafts on its own.",
+    "allDoneShort": "All set",
+    "next": "Next: {step}",
+    "close": "Close",
+    "done": "done",
+    "todo": "not done",
+    "steps": {
+      "networks": {
+        "title": "Connect a network",
+        "hint": "Sova only posts to the networks you connect."
+      },
+      "voice": {
+        "title": "Describe your brand voice",
+        "hint": "Your words about the offer, audience and tone go into every draft."
+      },
+      "flow": {
+        "title": "Turn on your first flow",
+        "hint": "A flow prepares drafts on a schedule, without you starting it."
+      },
+      "decision": {
+        "title": "Decide on your first draft",
+        "hint": "Approve, schedule or skip a draft Sova prepared."
+      }
+    },
+    "setupAgain": "Go through setup again",
+    "setupContinue": "Continue setup",
+    "idea": "Suggest a feature",
+    "bug": "Report a problem",
+    "email": "Email support"
+  },
+  "home": {
+    "noBrand": "Create your first brand under Brand and account.",
+    "status": {
+      "ok": "Everything is running",
+      "check": "Something needs a look"
+    },
+    "greeting": {
+      "morning": "Good morning, {name}",
+      "day": "Good afternoon, {name}",
+      "evening": "Good evening, {name}"
+    },
+    "greetingPlain": {
+      "morning": "Good morning",
+      "day": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "subtitle": {
+      "waiting": "{count, plural, one {# draft is} other {# drafts are}} waiting for your decision before the next slot.",
+      "calm": "Sova is working through your flows, and drafts arrive for approval."
+    },
+    "actions": {
+      "review": "Review drafts ({count})",
+      "newPost": "New post",
+      "newFlow": "New automation"
+    },
+    "banner": {
+      "setupTitle": "Finish setting up",
+      "setupText": "A few more steps and Sova starts making posts for {brand}.",
+      "setupCta": "Continue setup",
+      "logo": "Your slides don't have a logo yet, so they only show the brand name.",
+      "logoCta": "Add logo"
+    },
+    "passwordChanged": "Your password has been changed.",
+    "steps": {
+      "eyebrow": "Towards posts that prepare themselves",
+      "title": "Four key steps",
+      "text": "Once all four are done, Sova prepares drafts regularly. Nothing is posted without you.",
+      "progress": "{done} of {total}",
+      "done": "Done",
+      "next": "Next",
+      "later": "Later",
+      "recommended": "Recommended next",
+      "items": {
+        "networks": {
+          "title": "Connect a network",
+          "why": "Without a connected network, a flow can't prepare a draft.",
+          "cta": "Connect a network"
+        },
+        "voice": {
+          "title": "Describe your brand voice",
+          "why": "Your words about the offer, audience and tone go into every draft and take priority over the website.",
+          "cta": "Describe the voice"
+        },
+        "flow": {
+          "title": "Turn on your first flow",
+          "why": "A flow prepares drafts on the days you choose.",
+          "cta": "Create a flow"
+        },
+        "decision": {
+          "title": "Decide on your first draft",
+          "why": "Review the draft Sova prepared, then approve, schedule or skip it.",
+          "cta": "Open approvals"
+        }
+      }
+    },
+    "pulse": {
+      "title": "Last 30 days",
+      "text": "All connected networks together.",
+      "followers": "Followers",
+      "reach": "Reach",
+      "engagement": "Engagement",
+      "change": "{change} compared with the previous 30 days",
+      "posts": "{count, plural, one {# post} other {# posts}} with results in this period.",
+      "empty": "Metrics arrive after your first posts."
+    },
+    "review": {
+      "title": "Next to decide",
+      "text": "Drafts waiting for approval.",
+      "badge": "{count} waiting",
+      "untitled": "Untitled draft",
+      "empty": "No drafts waiting.",
+      "open": "Open approvals"
+    },
+    "week": {
+      "title": "This week",
+      "text": "Scheduled posts by day, {timezone} time.",
+      "open": "Open calendar"
+    },
+    "brain": {
+      "eyebrow": "Brain",
+      "needFlow": "Sova knows your brand. The next step is to turn on your first flow.",
+      "needBasics": "Connect a network and describe your brand voice so Sova can start.",
+      "learning": "Sova learns from results. The playbook fills in after your first posts with metrics.",
+      "rules": "{count, plural, one {# rule} other {# rules}} in the playbook",
+      "noPlaybook": "The playbook is not ready yet",
+      "open": "Open Brain"
+    },
+    "flows": {
+      "title": "Flows · {active} of {total} active",
+      "text": "Drafts from flows go to approvals.",
+      "manage": "Manage flows",
+      "next": "Next draft: {when}",
+      "paused": "Paused",
+      "active": "Active",
+      "pausedBadge": "Paused",
+      "empty": "No flows yet. A flow prepares drafts on its own, on your schedule."
+    },
+    "recommended": {
+      "title": "Recommended next",
+      "text": "One move with the biggest effect.",
+      "items": {
+        "reauth": {
+          "title": "{count, plural, one {# account needs} other {# accounts need}} to be reconnected",
+          "text": "Posts to that network won't go through until you log in again.",
+          "cta": "Reconnect"
+        },
+        "approve": {
+          "title": "Approve ready drafts",
+          "text": "Drafts are waiting for your decision before they go out on the chosen networks.",
+          "cta": "Open approvals"
+        },
+        "networks": {
+          "title": "Connect a network",
+          "text": "Without a connected network, a flow can't prepare a draft.",
+          "cta": "Connect a network"
+        },
+        "voice": {
+          "title": "Describe your brand voice",
+          "text": "Your words go into every draft.",
+          "cta": "Describe the voice"
+        },
+        "flow": {
+          "title": "Turn on your first flow",
+          "text": "A flow prepares drafts on a schedule.",
+          "cta": "Create a flow"
+        },
+        "decision": {
+          "title": "Decide on your first draft",
+          "text": "Your first decision teaches Sova what suits you.",
+          "cta": "Open approvals"
+        },
+        "tokens": {
+          "title": "Tokens are running low",
+          "text": "Top up tokens so your flows keep preparing drafts.",
+          "cta": "Top up tokens"
+        },
+        "studio": {
+          "title": "Create a post in Studio",
+          "text": "Everything is set. Try a new idea or format.",
+          "cta": "Open Studio"
+        }
+      }
+    },
+    "tokens": {
+      "label": "Tokens · {plan} plan"
+    },
+    "inbox": "Inbox suggestions",
+    "top": {
+      "title": "Top posts",
+      "text": "By engagement, last 30 days.",
+      "open": "Analytics",
+      "date": "Date",
+      "post": "Post",
+      "reach": "Reach",
+      "engagement": "Engagement"
+    },
+    "brands": "Brands: {count} of {limit}"
+  },
+  "calendar": {
+    "metaTitle": "Calendar",
+    "eyebrow": "Post plan",
+    "title": "Post calendar",
+    "subtitle": "Scheduled and published posts in one place, in {timezone} time.",
+    "newPost": "New post",
+    "stats": {
+      "today": "Today",
+      "posts": "{count, plural, one {# post} other {# posts}}",
+      "upcoming": "Scheduled for 14 days",
+      "published": "Published · {month}",
+      "freeDay": "Next free day"
+    },
+    "prev": "Previous",
+    "next": "Next",
+    "today": "Today",
+    "legend": {
+      "scheduled": "Scheduled",
+      "published": "Published",
+      "in_review": "In review",
+      "failed": "Error"
+    },
+    "viewLabel": "View",
+    "view": {
+      "month": "Month",
+      "week": "Week"
+    },
+    "more": "+{count} more",
+    "untitled": "Untitled post",
+    "nextPost": "Next post",
+    "open": "Open post",
+    "noNext": "No upcoming post",
+    "noNextText": "Create a post or turn on a flow that prepares drafts on its own.",
+    "week": "Next 7 days",
+    "weekHint": "scheduled and in review",
+    "weekEmpty": "Nothing is scheduled for the coming week.",
+    "monthList": "Posts · {month}",
+    "monthEmpty": "No posts this month.",
+    "status": {
+      "draft": "Draft",
+      "in_review": "In review",
+      "approved": "Approved",
+      "scheduled": "Scheduled",
+      "publishing": "Publishing",
+      "published": "Published",
+      "partially_published": "Partly published",
+      "failed": "Error",
+      "paused": "Paused",
+      "canceled": "Canceled",
+      "rejected": "Rejected"
+    }
+  },
+  "ideas": {
+    "metaTitle": "Ideas and support",
+    "eyebrow": "Build with us",
+    "title": "Your voice shapes Sova",
+    "subtitle": "Suggest a new feature, report a problem and vote for what matters most to you.",
+    "emailLead": "Or write to us directly:",
+    "newIdea": "Suggest a feature",
+    "newBug": "Report a problem",
+    "search": "Search ideas…",
+    "sortLabel": "Order",
+    "sort": {
+      "new": "Newest",
+      "top": "Most votes"
+    },
+    "empty": "No ideas yet. Be the first.",
+    "noResults": "No idea matches your search.",
+    "vote": "Vote for: {title}",
+    "unvote": "Remove vote: {title}",
+    "status": {
+      "new": "Idea",
+      "planned": "Planned",
+      "in_progress": "In progress",
+      "done": "Done",
+      "declined": "Declined"
+    },
+    "bugBadge": "Problem report",
+    "mine": "Yours",
+    "statusLabel": "Status: {title}",
+    "form": {
+      "ideaTitle": "New feature",
+      "bugTitle": "Problem report",
+      "ideaText": "Describe what you'd like Sova to do and why it matters to you.",
+      "bugText": "Describe what happened and what you expected.",
+      "kind": "Type",
+      "idea": "Feature",
+      "bug": "Problem",
+      "titleLabel": "Title",
+      "ideaPlaceholder": "E.g. Repeat a post every week",
+      "bugPlaceholder": "E.g. The slide preview doesn't load",
+      "bodyLabel": "Description",
+      "ideaBodyPlaceholder": "How would you use it? What do you do instead today?",
+      "bugBodyPlaceholder": "Steps to the error, what appeared on the screen and on which page.",
+      "bugPrivate": "Only you and the Sova team can see problem reports.",
+      "cancel": "Cancel",
+      "send": "Send",
+      "sending": "Sending…"
+    }
   }
 }

@@ -1323,6 +1323,21 @@ alter table media_assets add column description text;      -- do 500 znakova; op
 alter table media_assets add column last_used_at timestamptz;  -- rotacija: poslednja upotreba u objavi
 alter table content_flows add column gallery_category_id uuid references gallery_categories(id) on delete set null;
 -- RLS: kategorije čitaju članovi sa pristupom brendu, piše samo service role
+
+-- Tabla predloga (migracija 036, D-115)
+create table feature_requests (
+  id uuid primary key default gen_random_uuid(),
+  kind text not null default 'idea',               -- idea | bug
+  title text not null, body text not null default '',
+  status text not null default 'new',              -- new | planned | in_progress | done | declined
+  author_id uuid references profiles(id) on delete set null,
+  workspace_id uuid references workspaces(id) on delete set null,
+  votes integer not null default 0,
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now()
+);
+create table feature_votes (request_id uuid references feature_requests(id) on delete cascade, user_id uuid references profiles(id) on delete cascade, primary key (request_id, user_id));
+-- RLS: ideje čitaju svi ulogovani, prijavu problema samo autor; svoje glasove korisnik vidi sam
+-- toggle_feature_vote(p_request_id, p_user_id) → {voted, votes}: security definer, samo service role
 create table autopilot_runs (
   id uuid primary key default gen_random_uuid(),
   brand_id uuid not null references brands(id) on delete cascade,
