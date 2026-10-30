@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
+import { BrandAccountHeader } from '@/components/brand/brand-account-header'
 import { CanvaCard } from '@/components/app/canva-card'
 import { NotificationPrefsCard } from '@/components/app/notification-prefs-card'
 import { PrivacyCard } from '@/components/app/privacy-card'
@@ -46,8 +47,8 @@ export default async function SettingsPage({ searchParams }: PageProps<'/app/set
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Podešavanja</h1>
+      <div className="space-y-3">
+        <BrandAccountHeader />
         <p className="text-sm text-muted-foreground">Profil, radni prostor i brendovi.</p>
       </div>
 

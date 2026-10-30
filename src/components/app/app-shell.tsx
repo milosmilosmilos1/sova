@@ -3,7 +3,6 @@ import {
   Brain,
   CalendarDays,
   CheckCircle2,
-  CreditCard,
   FileText,
   Home,
   Inbox,
@@ -165,9 +164,9 @@ export function AppShell({
                 <Sparkles aria-hidden />
                 AI Studio
               </NavLink>
-              <NavLink href="/app/brand">
+              <NavLink href="/app/brain">
                 <Brain aria-hidden />
-                Brand Brain
+                Brain
               </NavLink>
             </NavGroup>
             <NavGroup label="Podešavanja">
@@ -179,13 +178,9 @@ export function AppShell({
                 <Users aria-hidden />
                 Tim
               </NavLink>
-              <NavLink href="/app/billing">
-                <CreditCard aria-hidden />
-                Naplata
-              </NavLink>
-              <NavLink href="/app/settings">
+              <NavLink href="/app/brand" also={['/app/billing', '/app/settings']}>
                 <Settings aria-hidden />
-                Podešavanja
+                Brend i nalog
               </NavLink>
               {viewer.platformRole === 'platform_admin' && !viewer.impersonation ? (
                 <NavLink href="/admin">

@@ -11,6 +11,7 @@ import {
   insightsOutputSchema,
 } from '@/lib/ai/prompts/insights'
 import type { Viewer } from '@/lib/auth/viewer'
+import { mergePlaybook, parsePlaybook, storedPlaybook } from '@/lib/brand/playbook'
 import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
@@ -189,6 +190,19 @@ export async function generateInsights(
         .select('*')
         .single(),
     )
+    if (parsed.data.playbook) {
+      const playbook = mergePlaybook(parsePlaybook(brand.playbook), parsed.data.playbook, {
+        insightId: insight.id,
+        posts: overview.totals.withMetrics,
+        from: range.from.slice(0, 10),
+        to: range.to.slice(0, 10),
+      })
+      const { error: pbError } = await admin
+        .from('brands')
+        .update({ playbook: storedPlaybook(playbook) as NonNullable<Json> })
+        .eq('id', brandId)
+      if (pbError) logger.warn('playbook_update_failed', { brandId, error: pbError.message })
+    }
     let suggestions = 0
     for (const i of items) {
       if (!i.suggestionKind) continue

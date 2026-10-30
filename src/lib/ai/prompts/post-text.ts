@@ -41,6 +41,8 @@ export interface BrandContext {
     avoid?: string
     cta?: string
   } | null
+  /** playbook (D-113): šta je Brain naučio iz rezultata objava */
+  playbook?: { summary: string; works: string[]; avoid: string[] } | null
 }
 
 export interface PostTextInput {
@@ -204,6 +206,18 @@ export function brandPromptLines(b: BrandContext): string[] {
     ? ['', 'GLAS BRENDA (reči vlasnika; imaju prednost nad opisom i odlomcima sa sajta)', ...voiceLines]
     : []
 
+  const pb = b.playbook
+  const playbookBlock =
+    pb && (pb.summary || pb.works.length || pb.avoid.length)
+      ? [
+          '',
+          'PLAYBOOK (naučeno iz rezultata ranijih objava; primeni kad odgovara temi)',
+          pb.summary ? `Zaključak: ${pb.summary}` : null,
+          ...pb.works.map((w) => `Ponavljaj: ${w}`),
+          ...pb.avoid.map((a) => `Izbegavaj: ${a}`),
+        ].filter((l): l is string => l !== null)
+      : []
+
   const knowledgeLines = b.knowledge?.length
     ? [
         '',
@@ -214,7 +228,7 @@ export function brandPromptLines(b: BrandContext): string[] {
       ]
     : []
 
-  return ['BREND', ...(brandLines as string[]), ...voiceBlock, ...knowledgeLines]
+  return ['BREND', ...(brandLines as string[]), ...voiceBlock, ...playbookBlock, ...knowledgeLines]
 }
 
 export function buildPostTextPrompt(input: PostTextInput): string {

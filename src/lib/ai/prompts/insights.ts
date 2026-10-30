@@ -7,6 +7,13 @@ import type { BrandContext, ContentLocale } from '@/lib/ai/prompts/post-text'
  * Nedeljni AI uvidi (brif 10, faza 10b): 3–5 tvrdnji sa preporukom, dokazima (ID-jevi objava)
  * i pouzdanošću; deo uvida nosi predlog za Inbox (ideja objave, ponavljanje formata, korekcija strategije).
  */
+/** Playbook (D-113): pravila iz istih brojeva, za svaki sledeći nacrt. */
+const playbookOutputSchema = z.object({
+  summary: z.string(),
+  works: z.array(z.string()),
+  avoid: z.array(z.string()),
+})
+
 export const insightsOutputSchema = z.object({
   items: z.array(
     z.object({
@@ -21,6 +28,8 @@ export const insightsOutputSchema = z.object({
       suggestion_body: z.string(),
     }),
   ),
+  /** opciono pri čitanju (stari odgovori), obavezno u šemi koju dobija model */
+  playbook: playbookOutputSchema.optional(),
 })
 export type InsightsOutput = z.infer<typeof insightsOutputSchema>
 
@@ -123,13 +132,17 @@ export function buildInsightsPrompt(input: InsightsPromptInput): string {
     '1. items: 3 do 5 uvida. claim = šta podaci pokazuju (jedna rečenica sa brojem); recommendation = šta uraditi sledeće nedelje; evidence_post_ids = ID-jevi objava iz podataka (prazno samo za uvide o pratiocima); confidence 0–1 (mali uzorak → ≤ 0,5).',
     '2. Za najviše 2 uvida koji vode direktno u akciju popuni suggestion_kind (post_idea = nova objava, repeat_format = ponoviti format koji radi, strategy_tweak = promena ritma ili mreže, campaign = mini kampanja), suggestion_title (do 80 znakova) i suggestion_body (2–3 rečenice sa konkretnim predlogom). Ostalim uvidima suggestion_kind je prazan string, a title i body prazni.',
     '3. Bez opštih saveta („objavljujte redovno”); svaki uvid mora da se oslanja na brojeve iznad.',
+    '4. playbook: pravila za sledeće nacrte iz istih brojeva. summary = jedan zaključak za sledeći nacrt (do 200 znakova); works = 1 do 4 pravila šta ponavljati (do 140 znakova svako: format, vrsta naslova, tema, dužina, termin ili mreža koji rade); avoid = 0 do 3 pravila šta izbegavati, samo kad slabije objave to jasno pokazuju. Pravilo je uputstvo za pisanje, bez ID-jeva objava i bez brojeva koje model koji piše objavu ne može da proveri.',
   ]
     .filter((l) => l !== null)
     .join('\n')
 }
 
 export function insightsJsonSchema(): Record<string, unknown> {
-  const schema = z.toJSONSchema(insightsOutputSchema) as Record<string, unknown>
+  const schema = z.toJSONSchema(insightsOutputSchema.extend({ playbook: playbookOutputSchema })) as Record<
+    string,
+    unknown
+  >
   delete schema.$schema
   return schema
 }

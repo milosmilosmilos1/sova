@@ -8,9 +8,21 @@ import type { ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 
 /** Link u bočnoj navigaciji; aktivno stanje računa na klijentu (usePathname), ne na serveru. */
-export function NavLink({ href, exact, children }: { href: Route; exact?: boolean; children: ReactNode }) {
+export function NavLink({
+  href,
+  exact,
+  also = [],
+  children,
+}: {
+  href: Route
+  exact?: boolean
+  /** druge putanje pod istom stavkom (npr. kartice „Brend i nalog”) */
+  also?: string[]
+  children: ReactNode
+}) {
   const pathname = usePathname()
-  const active = exact ? pathname === href : pathname === href || pathname.startsWith(`${href}/`)
+  const under = (path: string) => pathname === path || pathname.startsWith(`${path}/`)
+  const active = exact ? pathname === href : under(href) || also.some(under)
   return (
     <Link
       href={href}

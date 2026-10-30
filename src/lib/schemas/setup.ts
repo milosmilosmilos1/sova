@@ -9,6 +9,9 @@ export type SetupStep = (typeof SETUP_STEPS)[number]
 /** PDF o brendu: do 10 MB (granica skladišta brand-assets), najviše 10 po brendu. */
 export const MAX_DOCUMENT_BYTES = 10 * 1024 * 1024
 export const MAX_DOCUMENTS = 10
+/** Beleška o brendu (D-113): ručni izvor do 5.000 znakova, najviše 20 po brendu. */
+export const MAX_NOTES = 20
+export const NOTE_MAX_CHARS = 5000
 
 const documentName = z.string().trim().min(1, { error: 'Fajl nema ime.' }).max(200)
 
@@ -24,6 +27,15 @@ export const documentUploadSchema = z.object({
 export const documentCompleteSchema = z.object({
   uploadId: z.uuid({ error: 'Neispravan identifikator otpremanja.' }),
   name: documentName,
+})
+
+export const noteCreateSchema = z.object({
+  title: z.string().trim().min(1, { error: 'Upišite naslov beleške.' }).max(120),
+  content: z
+    .string()
+    .trim()
+    .min(1, { error: 'Beleška je prazna.' })
+    .max(NOTE_MAX_CHARS, { error: `Beleška ima najviše ${NOTE_MAX_CHARS} znakova.` }),
 })
 
 export const documentParamsSchema = z.object({

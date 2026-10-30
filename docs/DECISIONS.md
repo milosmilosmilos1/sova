@@ -838,3 +838,15 @@ Odluka (faza 5 iz D-108):
 - Uputstvo modelu za srpsku latinicu (`WRITE_IN`) sada traži č, ć, ž, š i đ i kad ih izvori nemaju. Provera predloga uživo pokazala je da model inače prepisuje tekst bez kvačica iz PDF-a; isto važi za karusele.
 
 Razlog: zahtev vlasnika (D-108). Uvod vodi novog korisnika do prvih nacrta u jednom prolazu, a glas brenda daje vlasniku kontrolu nad onim što je analiza pogrešno ili nepotpuno zaključila.
+
+## D-113 · 30.10.2026 · usvojeno · Brain i „Brend i nalog”; playbook iz rezultata u istom pozivu kao uvidi
+
+Odluka (faza 6 iz D-108):
+
+- Nova strana „Brain” (`/app/brain`, u meniju umesto „Brand Brain”): šta Sova zna o brendu (naziv, ponuda, publika, ton, iz glasa vlasnika ili iz profila sa sajta, sa brojem popunjenih), odakle uči (mreže i uvezene objave, sajt i datum analize, pročitani PDF-ovi, objave sa metrikama u 30 dana, ručne beleške) i playbook. Ispod je postojeća analiza sajta sa celim profilom (sidro `#sajt`), pa „Osveži analizu” vodi tamo.
+- Playbook (`brands.playbook`, migracija 034): zaključak za sledeći nacrt, do šest pravila „šta radi” i do četiri „šta izbegavati”. Piše ga nedeljni poziv za uvide, u istom pozivu (šema dobija polje `playbook`), pa nema dodatnog AI troška; „Osveži sada” na strani Brain pokreće uvide za 30 dana kad postoje bar tri objave sa metrikama. Novo pravilo ide na vrh, staro ostaje dok ima mesta, a pravilo koje nova analiza prebaci na suprotnu stranu se briše. Prompt svakog nacrta ima blok „PLAYBOOK” posle glasa brenda, ispred odlomaka sa sajta. Ne uređuje se ručno.
+- Beleška (`brand_documents.kind = 'note'`, do 5.000 znakova, najviše 20 po brendu): ručni izvor bez fajla („Dodaj izvor”), ide u bazu znanja istim pozadinskim poslom kao PDF; kratka beleška je jedan odlomak.
+- „Brend i nalog” (u meniju umesto „Naplata” i „Podešavanja”): zajedničko zaglavlje sa karticama Glas brenda (`/app/brand`: glas, PDF-ovi, veza ka Brain-u i analizi sajta), Vizuelni identitet (`/app/brand/visual`: boje, logo, fotografije, format, nalog na slajdovima, pregled uživo), Stilovi (`/app/brand/styles`), Pretplata (`/app/billing`) i Nalog (`/app/settings`). Kartice su posebne strane, pa stari linkovi i dalje rade.
+- Sopstveni logo na slajdovima (`brands.design.logoAssetId`): slika iz biblioteke tog brenda ima prednost nad logoom sa sajta; „Vrati logo sa sajta” ga briše. Server proverava da je slika iz istog radnog prostora i brenda.
+
+Razlog: zahtev vlasnika (D-108). Playbook u istom pozivu kao uvidi uči iz rezultata bez novog troška, a zajedničko zaglavlje drži podešavanja brenda i naloga na jednom mestu bez selidbe postojećih strana.

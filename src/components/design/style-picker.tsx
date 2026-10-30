@@ -18,6 +18,8 @@ export function previewUrl(input: {
   kind?: 'cover' | 'point' | 'cta'
   colors?: DesignColors | null
   photo?: boolean
+  /** menja adresu kad se promeni nešto što server čita sam (npr. logo), da pregledač ne vrati staru sliku */
+  v?: string | null
 }): string {
   const q = new URLSearchParams({
     brandId: input.brandId,
@@ -26,6 +28,7 @@ export function previewUrl(input: {
     kind: input.kind ?? 'cover',
     photo: input.photo === false ? '0' : '1',
   })
+  if (input.v) q.set('v', input.v)
   if (input.colors)
     q.set(
       'c',

@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 
+import { BrandAccountHeader } from '@/components/brand/brand-account-header'
 import { BillingPanel } from '@/components/app/billing-panel'
 import { getViewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
@@ -17,8 +18,8 @@ export default async function BillingPage({ searchParams }: PageProps<'/app/bill
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Naplata</h1>
+      <div className="space-y-3">
+        <BrandAccountHeader />
         <p className="text-sm text-muted-foreground">
           Plan, tokeni i plaćanja radnog prostora „{current.name}”.
         </p>

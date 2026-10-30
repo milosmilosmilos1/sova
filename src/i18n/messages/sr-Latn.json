@@ -201,6 +201,26 @@
         "name": "Minimal mono",
         "desc": "Mnogo belog prostora, suptilan i premium ton, bez fotografije."
       }
+    },
+    "visual": {
+      "title": "Vizuelni identitet",
+      "description": "Boje, logo, fotografije i format objava. Važi za Studio i tokove automatizacije."
+    },
+    "stylesCard": {
+      "title": "Stilovi objava",
+      "description": "Izaberite stil za objave, karusele i priče. Pregled koristi vaše boje i logo.",
+      "save": "Sačuvaj stil"
+    },
+    "logo": {
+      "label": "Logo na slajdovima",
+      "fromSite": "Logo sa sajta",
+      "custom": "Vaš logo",
+      "none": "Bez logoa: slajdovi ispisuju ime brenda",
+      "upload": "Otpremi logo",
+      "uploading": "Otpremam…",
+      "remove": "Vrati logo sa sajta",
+      "hint": "PNG sa providnom pozadinom izgleda najbolje. Do 20 MB.",
+      "notImage": "Izaberite sliku: PNG, JPG ili WebP."
     }
   },
   "flows": {
@@ -616,5 +636,132 @@
     "confirmDelete": "Obrisati „{name}”? Sova ga više neće koristiti.",
     "empty": "Još nema dokumenata.",
     "verifyEmail": "Potvrdite email da biste dodali dokument."
+  },
+  "brain": {
+    "metaTitle": "Brain",
+    "eyebrow": "Pamćenje vaše Sove",
+    "subtitle": "Pamti brend, uči iz rezultata objava i primenjuje playbook u svakom novom nacrtu.",
+    "editBrand": "Uredi brend",
+    "hero": {
+      "active": "Brain je aktivan",
+      "learning": "Brain tek uči",
+      "title": "Svaka objava uči Sovu nečemu novom.",
+      "text": "Sova povezuje ono što zna o brendu sa brojevima vaših objava i iz toga pravi pravila za sledeće nacrte.",
+      "nodes": {
+        "sources": "Izvori",
+        "sourcesHint": "sajt, PDF, mreže",
+        "results": "Rezultati",
+        "resultsHint": "doseg i angažovanje",
+        "playbook": "Playbook",
+        "playbookOn": "pravila za nacrte",
+        "playbookOff": "čeka prve rezultate"
+      }
+    },
+    "knows": {
+      "title": "Šta Sova zna o brendu",
+      "text": "Osnova svakog nacrta. Menjate je u Brend i nalog.",
+      "filled": "{filled} od {total} popunjeno",
+      "items": {
+        "name": "Naziv",
+        "offer": "Ponuda",
+        "audience": "Publika",
+        "tone": "Ton"
+      },
+      "filledItem": "Popunjeno",
+      "emptyItem": "Nedostaje",
+      "missing": "Još ne znamo. Dopunite u Brend i nalog.",
+      "sourceVoice": "Vaše reči iz glasa brenda.",
+      "sourceProfile": "Predlog iz analize sajta, dok ne sačuvate glas brenda.",
+      "sourceNone": "Analizirajte sajt ili opišite brend svojim rečima.",
+      "edit": "Uredi u Brend i nalog"
+    },
+    "sources": {
+      "title": "Odakle Sova uči",
+      "text": "Svaki izvor popravlja sledeći nacrt.",
+      "add": "Dodaj izvor",
+      "networks": "Mreže",
+      "networksOn": "{accounts, plural, one {# nalog} few {# naloga} other {# naloga}} · uvezenih objava: {posts}",
+      "networksOff": "Nijedna mreža nije povezana.",
+      "manage": "Upravljaj mrežama",
+      "connect": "Poveži mrežu",
+      "site": "Sajt",
+      "siteOn": "{url} · pročitan {date}",
+      "siteNotAnalyzed": "{url} · još nije analiziran",
+      "siteOff": "Nema adrese sajta.",
+      "refreshSite": "Osveži analizu",
+      "analyzeSite": "Analiziraj sajt",
+      "documents": "Dokumenti",
+      "documentsOn": "Pročitanih PDF-ova: {count}",
+      "documentsOff": "Nema PDF-a o brendu.",
+      "addPdf": "Dodaj PDF",
+      "results": "Rezultati",
+      "resultsOn": "Objava sa metrikama u 30 dana: {count}",
+      "resultsOff": "Još nema objava sa metrikama.",
+      "notes": "Beleške",
+      "noteProcessing": "Pamtim belešku…",
+      "noteFailed": "Nije zapamćeno",
+      "noteReady": "Dodato ručno, {date}",
+      "deleteNote": "Obriši belešku {name}",
+      "confirmDelete": "Obrisati belešku „{name}”? Sova je više neće koristiti."
+    },
+    "addSource": {
+      "title": "Dodaj izvor",
+      "text": "Sova uči iz svega što joj date. Izaberite izvor.",
+      "pdf": "PDF o brendu",
+      "pdfHint": "Brendbuk, cenovnik, katalog",
+      "site": "Sajt",
+      "siteHint": "Nova ili ponovna analiza",
+      "note": "Beleška",
+      "noteTitle": "Naslov",
+      "noteTitlePlaceholder": "Npr. Radno vreme i dostava",
+      "noteContent": "Šta Sova treba da zna",
+      "noteContentPlaceholder": "Npr. Radimo radnim danima od 8 do 20 h, subotom do 15 h. Dostava po Beogradu je besplatna za porudžbine preko 3.000 dinara.",
+      "verifyEmail": "Potvrdite email da biste dodali belešku.",
+      "cancel": "Otkaži",
+      "save": "Sačuvaj belešku",
+      "saving": "Čuvam…"
+    },
+    "playbook": {
+      "title": "Playbook: šta je Sova naučila",
+      "text": "Pravila iz rezultata vaših objava. Sova ih sama uči i primenjuje u sledećim nacrtima.",
+      "auto": "Uči sama",
+      "refresh": "Osveži sada",
+      "refreshing": "Učim…",
+      "refreshNeeds": "Treba bar {count} objave sa metrikama u poslednjih 30 dana.",
+      "refreshFailed": "Playbook nije osvežen.",
+      "summary": "Zaključak za sledeći nacrt",
+      "summaryEmpty": "Sova još nema dovoljno rezultata. Povežite mrežu i objavite prve nacrte.",
+      "updated": "Osveženo {date} · objava u analizi: {posts}",
+      "readyToLearn": "Ima dovoljno rezultata. Kliknite „Osveži sada” ili sačekajte nedeljnu analizu.",
+      "needs": "Playbook se puni kad bude bar {count} objave sa metrikama.",
+      "works": "Šta radi, ponavljaj",
+      "worksEmpty": "Još nema pravila. Pojaviće se posle prve analize rezultata.",
+      "avoid": "Šta izbegavati",
+      "avoidEmpty": "Nema ničega što treba izbegavati."
+    }
+  },
+  "brandAccount": {
+    "eyebrow": "Vaša podešavanja",
+    "title": "Brend i nalog",
+    "subtitle": "Glas brenda, izgled, pretplata i nalog na jednom mestu.",
+    "tabsLabel": "Kartice podešavanja",
+    "tabs": {
+      "voice": "Glas brenda",
+      "visual": "Vizuelni identitet",
+      "styles": "Stilovi",
+      "billing": "Pretplata",
+      "account": "Nalog"
+    },
+    "brainCard": {
+      "title": "Sova Brain",
+      "text": "Sve što Sova zna o brendu: izvori, profil sa sajta i playbook.",
+      "open": "Otvori Brain"
+    },
+    "site": {
+      "title": "Sajt brenda",
+      "analyzed": "Analiziran {url}, {date}",
+      "none": "Sajt još nije analiziran.",
+      "open": "Dodaj ili osveži sajt"
+    }
   }
 }

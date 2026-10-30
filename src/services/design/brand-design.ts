@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import { brandProfileSchema } from '@/lib/brand/profile-schema'
@@ -19,7 +20,7 @@ import type { DesignColors } from '@/lib/visuals/design/types'
 import { prepareLogoForTemplate } from '@/lib/visuals/render'
 import { getCurrentProfileRow } from '@/services/brand-brain/profile'
 import { getBrand, type BrandRow } from '@/services/brands'
-import { downloadAsset } from '@/services/media'
+import { downloadAsset, getAsset } from '@/services/media'
 import type { Json } from '@/types/database'
 
 /**
@@ -37,6 +38,8 @@ export interface ResolvedDesign {
   handle: string | null
   brandName: string
   logoAssetId: string | null
+  /** odakle je logo: sopstveni (D-113) ili sa sajta */
+  logoSource: 'custom' | 'site' | null
   /** šta je sačuvano, a šta podrazumevano (UI prikazuje „iz profila brenda”) */
   saved: { colors: boolean; handle: boolean }
 }
@@ -108,7 +111,8 @@ export async function resolveDesign(
     fonts: fromProfile?.fonts ?? { headings: 'Inter', body: 'Inter' },
     handle: handle ? (handle.startsWith('@') ? handle : `@${handle}`) : null,
     brandName: brand.name,
-    logoAssetId: profileLogo ?? brand.logo_asset_id ?? null,
+    logoAssetId: stored.logoAssetId ?? profileLogo ?? brand.logo_asset_id ?? null,
+    logoSource: stored.logoAssetId ? 'custom' : (profileLogo ?? brand.logo_asset_id) ? 'site' : null,
     saved: { colors: Boolean(stored.colors), handle: stored.handle !== undefined },
   }
 }
@@ -131,6 +135,20 @@ export async function updateDesign(
   if (input.photoSource !== undefined) next.photoSource = input.photoSource
   if (input.slides !== undefined) next.slides = input.slides
   if (input.colors !== undefined) next.colors = input.colors
+  if (input.logoAssetId !== undefined) {
+    if (input.logoAssetId === null) delete next.logoAssetId
+    else {
+      // logo mora biti slika iz biblioteke ovog brenda (ili radnog prostora)
+      const asset = await getAsset(viewer, input.logoAssetId)
+      if (
+        asset.kind !== 'image' ||
+        asset.workspace_id !== brand.workspace_id ||
+        (asset.brand_id !== null && asset.brand_id !== brand.id)
+      )
+        throw new ApiError('VALIDATION', 'Logo mora biti slika iz biblioteke ovog brenda.')
+      next.logoAssetId = asset.id
+    }
+  }
   if (input.handle !== undefined) {
     const h = input.handle?.replace(/^@/, '').trim()
     if (h) next.handle = `@${h}`

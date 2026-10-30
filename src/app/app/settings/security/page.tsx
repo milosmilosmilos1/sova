@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 
+import { BrandAccountHeader } from '@/components/brand/brand-account-header'
 import { MfaPanel } from '@/components/app/mfa-panel'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { getViewer } from '@/lib/auth/viewer'
@@ -16,9 +17,12 @@ export default async function SecurityPage({ searchParams }: PageProps<'/app/set
 
   return (
     <div className="space-y-8">
-      <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Bezbednost</h1>
-        <p className="text-sm text-muted-foreground">Dvofaktorska zaštita i lozinka.</p>
+      <div className="space-y-3">
+        <BrandAccountHeader />
+        <div>
+          <h2 className="text-xl font-semibold tracking-tight">Bezbednost</h2>
+          <p className="text-sm text-muted-foreground">Dvofaktorska zaštita i lozinka.</p>
+        </div>
       </div>
       <Card>
         <CardHeader>

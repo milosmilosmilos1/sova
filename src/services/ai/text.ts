@@ -26,7 +26,7 @@ import { wallClock } from '@/lib/zoned-time'
 import { assertDailyQuota, failGeneration, startGeneration } from '@/services/ai/generations'
 import { searchKnowledge } from '@/services/brand-brain/embed'
 import { getBrandContextForBrand } from '@/services/brand-brain/profile'
-import { voiceForPrompt } from '@/services/brand-brain/voice'
+import { brandMemoryForPrompt } from '@/services/brand-brain/voice'
 import { getBrand } from '@/services/brands'
 import { downloadAsset, getAsset } from '@/services/media'
 import { toContentLocale } from '@/config/locales'
@@ -42,11 +42,18 @@ export interface PostTextResult {
 
 /**
  * Brand kontekst: profil iz Brand Brain-a (faza 6) kad postoji, inače osnovni podaci iz `brands`.
- * Uz to glas brenda koji je vlasnik sačuvao (D-112) i RAG: do 5 odlomaka sa sajta i iz PDF-a o
- * brendu relevantnih za temu (prazno bez indeksa ili ključa).
+ * Uz to glas brenda koji je vlasnik sačuvao (D-112), playbook iz rezultata (D-113) i RAG: do 5
+ * odlomaka sa sajta, iz PDF-a i beleški relevantnih za temu (prazno bez indeksa ili ključa).
  */
 export async function buildBrandContext(
-  brand: { id: string; name: string; content_locale: string; settings: unknown; voice?: unknown },
+  brand: {
+    id: string
+    name: string
+    content_locale: string
+    settings: unknown
+    voice?: unknown
+    playbook?: unknown
+  },
   topic: string,
   override?: string,
 ): Promise<BrandContext> {
@@ -83,9 +90,10 @@ export async function buildBrandContext(
       facts: Array.isArray(settings.facts) ? (settings.facts as string[]) : [],
     }
   }
-  const [hits, voice] = await Promise.all([searchKnowledge(brand.id, topic, 5), voiceForPrompt(brand)])
+  const [hits, memory] = await Promise.all([searchKnowledge(brand.id, topic, 5), brandMemoryForPrompt(brand)])
   context.knowledge = hits.map((h) => h.content.slice(0, 700))
-  context.voice = voice
+  context.voice = memory.voice
+  context.playbook = memory.playbook
   return context
 }
 

@@ -14,7 +14,9 @@ import { cn } from '@/lib/utils'
 
 export interface BrandDocument {
   id: string
+  kind: 'pdf' | 'note'
   name: string
+  excerpt: string | null
   sizeBytes: number
   pages: number | null
   chars: number
@@ -67,7 +69,8 @@ export function DocumentsPanel({
     },
   })
 
-  const list = docs.data ?? []
+  // beleške su na strani Brain; ovde su samo PDF-ovi
+  const list = (docs.data ?? []).filter((d) => d.kind === 'pdf')
   const full = list.length >= MAX_DOCUMENTS
   const disabled = !canEdit || !emailVerified || upload.isPending || full
 

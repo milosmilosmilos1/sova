@@ -10,10 +10,10 @@ import { callWithFallback } from '@/lib/ai/orchestrator'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
-import { chunkText } from '@/lib/crawler/chunk'
+import { chunkText, estimateTokens } from '@/lib/crawler/chunk'
 import { enqueueDocumentIndex } from '@/lib/jobs/enqueue'
 import { logger } from '@/lib/logger'
-import { MAX_DOCUMENT_BYTES, MAX_DOCUMENTS } from '@/lib/schemas/setup'
+import { MAX_DOCUMENT_BYTES, MAX_DOCUMENTS, MAX_NOTES } from '@/lib/schemas/setup'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError } from '@/lib/supabase/errors'
 import { EMBED_DIMENSIONS, isEmbeddingAvailable } from '@/services/brand-brain/embed'
@@ -24,7 +24,8 @@ import type { Database, Json } from '@/types/database'
  * Dokumenti o brendu (D-112): PDF ide pravo u skladište `brand-assets` preko potpisanog URL-a, server
  * proverava da je PDF i upisuje red „processing”, a pozadinski posao čita tekst (unpdf), deli ga na
  * odlomke i pamti u bazi znanja (`knowledge_chunks`, source_type 'manual'). Odatle ga koriste RAG pri
- * svakom generisanju i predlog glasa brenda.
+ * svakom generisanju i predlog glasa brenda. Beleška (D-113) je izvor bez fajla: tekst do 5.000 znakova
+ * ide istim putem u bazu znanja.
  */
 const BUCKET = 'brand-assets'
 const MAX_PAGES = 150
@@ -36,7 +37,10 @@ type DocumentRow = Database['public']['Tables']['brand_documents']['Row']
 
 export interface DocumentView {
   id: string
+  kind: 'pdf' | 'note'
   name: string
+  /** početak beleške; za PDF null */
+  excerpt: string | null
   sizeBytes: number
   pages: number | null
   chars: number
@@ -49,7 +53,9 @@ export interface DocumentView {
 function toView(row: DocumentRow): DocumentView {
   return {
     id: row.id,
+    kind: row.kind === 'note' ? 'note' : 'pdf',
     name: row.name,
+    excerpt: row.content ? row.content.slice(0, 200) : null,
     sizeBytes: row.size_bytes,
     pages: row.pages,
     chars: row.chars,
@@ -64,11 +70,12 @@ function documentPath(workspaceId: string, brandId: string, id: string): string 
   return `ws/${workspaceId}/brand/${brandId}/documents/${id}.pdf`
 }
 
-async function activeCount(brandId: string): Promise<number> {
+async function activeCount(brandId: string, kind: 'pdf' | 'note' = 'pdf'): Promise<number> {
   const { count } = await createSupabaseAdminClient()
     .from('brand_documents')
     .select('id', { count: 'exact', head: true })
     .eq('brand_id', brandId)
+    .eq('kind', kind)
     .is('deleted_at', null)
   return count ?? 0
 }
@@ -186,6 +193,42 @@ export async function completeDocument(
   return toView(row)
 }
 
+/** Beleška (D-113): ručni izvor bez fajla; tekst ide u bazu znanja istim pozadinskim poslom kao PDF. */
+export async function createNote(
+  viewer: Viewer,
+  brandId: string,
+  input: { title: string; content: string },
+): Promise<DocumentView> {
+  const brand = await getBrand(viewer, brandId)
+  await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
+  if (!viewer.profile.emailVerifiedAt) throw new ApiError('EMAIL_NOT_VERIFIED')
+  if ((await activeCount(brand.id, 'note')) >= MAX_NOTES)
+    throw new ApiError('PLAN_LIMIT', `Brend može imati najviše ${MAX_NOTES} beleški. Obrišite neku staru.`)
+  const admin = createSupabaseAdminClient()
+  const { data: row, error } = await admin
+    .from('brand_documents')
+    .insert({
+      brand_id: brand.id,
+      workspace_id: brand.workspace_id,
+      kind: 'note',
+      name: input.title,
+      content: input.content,
+      size_bytes: Buffer.byteLength(input.content, 'utf8'),
+      status: 'processing',
+      uploaded_by: viewer.user.id,
+    })
+    .select('*')
+    .single()
+  if (error) throw mapDbError(error)
+  try {
+    await enqueueDocumentIndex(row.id, brand.id)
+  } catch (err) {
+    await markFailed(row.id, 'Pozadinski servis nije dostupan. Obrišite belešku i pokušajte ponovo.')
+    throw err
+  }
+  return toView(row)
+}
+
 export async function deleteDocument(viewer: Viewer, brandId: string, documentId: string): Promise<void> {
   const brand = await getBrand(viewer, brandId)
   await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
@@ -204,7 +247,7 @@ export async function deleteDocument(viewer: Viewer, brandId: string, documentId
     .eq('brand_id', brand.id)
     .eq('source_type', 'manual')
     .eq('source_id', row.id)
-  await admin.storage.from(BUCKET).remove([row.storage_path])
+  if (row.storage_path) await admin.storage.from(BUCKET).remove([row.storage_path])
   const { error } = await admin
     .from('brand_documents')
     .update({ deleted_at: new Date().toISOString() })
@@ -270,14 +313,19 @@ export async function indexDocument(
     await markFailed(row.id, 'AI servis nije podešen, dokument nije pročitan.')
     return { status: 'failed', chunks: 0 }
   }
-  const { data: blob, error } = await admin.storage.from(BUCKET).download(row.storage_path)
-  if (error || !blob) {
-    await markFailed(row.id, 'Fajl nije pronađen u skladištu.')
-    return { status: 'failed', chunks: 0 }
-  }
-  let extracted: { pages: number; text: string }
+  let extracted: { pages: number | null; text: string }
   try {
-    extracted = await extractPdfText(new Uint8Array(await blob.arrayBuffer()))
+    if (row.kind === 'note') extracted = { pages: null, text: (row.content ?? '').trim() }
+    else {
+      const { data: blob, error } = row.storage_path
+        ? await admin.storage.from(BUCKET).download(row.storage_path)
+        : { data: null, error: true }
+      if (error || !blob) {
+        await markFailed(row.id, 'Fajl nije pronađen u skladištu.')
+        return { status: 'failed', chunks: 0 }
+      }
+      extracted = await extractPdfText(new Uint8Array(await blob.arrayBuffer()))
+    }
   } catch (err) {
     const name = err instanceof Error ? err.name : ''
     logger.warn('brand_document_parse_failed', { documentId, name })
@@ -289,7 +337,7 @@ export async function indexDocument(
     )
     return { status: 'failed', chunks: 0 }
   }
-  if (extracted.text.length < 80) {
+  if (row.kind !== 'note' && extracted.text.length < 80) {
     await admin
       .from('brand_documents')
       .update({
@@ -304,6 +352,9 @@ export async function indexDocument(
 
   const header = row.name.replace(/\.pdf$/i, '')
   const chunks = chunkText(extracted.text, { max: MAX_CHUNKS })
+  // kratka beleška (ispod 40 znakova) je jedan odlomak, jer je i to činjenica koju Sova treba da zna
+  if (!chunks.length && extracted.text)
+    chunks.push({ index: 0, content: extracted.text, tokenEstimate: estimateTokens(extracted.text) })
   for (let i = 0; i < chunks.length; i += BATCH) {
     const batch = chunks.slice(i, i + BATCH)
     const outcome = await callWithFallback(

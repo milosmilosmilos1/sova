@@ -18,6 +18,7 @@ import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import { toBrandContext } from '@/lib/brand/compose'
 import { brandProfileSchema, type BrandProfile } from '@/lib/brand/profile-schema'
+import { parsePlaybook } from '@/lib/brand/playbook'
 import { clip, parseVoice, voiceFromProfile } from '@/lib/brand/voice'
 import { EMPTY_VOICE, isVoiceEmpty, type BrandVoice } from '@/lib/schemas/voice'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
@@ -104,20 +105,32 @@ export async function saveVoice(viewer: Viewer, brandId: string, voice: BrandVoi
   return getVoiceView(viewer, brand.id)
 }
 
-/** Glas za prompt (bez tema, one pripadaju tokovima); null kad vlasnik još nije sačuvao svoj. */
-export async function voiceForPrompt(brand: { id: string; voice?: unknown }): Promise<BrandContext['voice']> {
-  let raw = brand.voice
-  if (raw === undefined) {
+/**
+ * Pamćenje brenda za prompt: glas bez tema (one pripadaju tokovima; null dok vlasnik ne sačuva svoj)
+ * i playbook naučen iz rezultata (D-113). Jedan upit kad kolone nisu stigle uz brend.
+ */
+export async function brandMemoryForPrompt(brand: {
+  id: string
+  voice?: unknown
+  playbook?: unknown
+}): Promise<{ voice: BrandContext['voice']; playbook: BrandContext['playbook'] }> {
+  let raw: { voice?: unknown; playbook?: unknown } = brand
+  if (brand.voice === undefined || brand.playbook === undefined) {
     const { data } = await createSupabaseAdminClient()
       .from('brands')
-      .select('voice')
+      .select('voice, playbook')
       .eq('id', brand.id)
       .maybeSingle()
-    raw = data?.voice
+    raw = data ?? {}
   }
-  const v = parseVoice(raw)
-  if (!v) return null
-  return { offer: v.offer, audience: v.audience, tone: v.tone, usp: v.usp, avoid: v.avoid, cta: v.cta }
+  const v = parseVoice(raw.voice)
+  const p = parsePlaybook(raw.playbook)
+  return {
+    voice: v
+      ? { offer: v.offer, audience: v.audience, tone: v.tone, usp: v.usp, avoid: v.avoid, cta: v.cta }
+      : null,
+    playbook: p ? { summary: p.summary, works: p.works, avoid: p.avoid } : null,
+  }
 }
 
 function profileLines(p: BrandProfile): string[] {

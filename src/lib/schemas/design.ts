@@ -34,6 +34,8 @@ export const storedDesignSchema = z
     slides: z.number().int().min(SLIDES_MIN).max(SLIDES_MAX),
     colors: designColorsSchema,
     handle: z.string().trim().max(40).nullable(),
+    /** sopstveni logo (D-113); bez njega slajdovi uzimaju logo sa sajta */
+    logoAssetId: z.uuid(),
   })
   .partial()
 export type StoredDesign = z.infer<typeof storedDesignSchema>
@@ -55,6 +57,8 @@ export const updateDesignSchema = z
       })
       .nullable()
       .optional(),
+    /** sopstveni logo iz biblioteke (D-113); null vraća logo sa sajta */
+    logoAssetId: z.uuid().nullable().optional(),
     /** vraća sve na podrazumevano iz profila brenda */
     reset: z.boolean().optional(),
   })

@@ -1302,6 +1302,13 @@ create table brand_documents (
 );
 -- RLS: čitaju članovi sa pristupom brendu, piše samo service role; odlomci su knowledge_chunks
 -- sa source_type 'manual' i source_id = id dokumenta (ponovna analiza sajta ih ne dira)
+
+-- Brain: playbook i beleške (migracija 034, D-113)
+alter table brands add column playbook jsonb not null default '{}';  -- summary, works[] (do 6), avoid[] (do 4), updated_at, insight_id, based_on{posts, from, to}; piše ga poziv za uvide
+alter table brand_documents add column kind text not null default 'pdf';   -- pdf | note
+alter table brand_documents add column content text;                      -- tekst beleške, 1–5.000 znakova
+alter table brand_documents alter column storage_path drop not null;      -- beleška nema fajl
+-- check: (kind = 'pdf' and storage_path is not null) or (kind = 'note' and content is not null)
 create table autopilot_runs (
   id uuid primary key default gen_random_uuid(),
   brand_id uuid not null references brands(id) on delete cascade,

@@ -201,6 +201,26 @@
         "name": "Minimal Mono",
         "desc": "Lots of white space, a subtle premium tone, no photo."
       }
+    },
+    "visual": {
+      "title": "Visual identity",
+      "description": "Colors, logo, photos and post format. Applies to Studio and automation flows."
+    },
+    "stylesCard": {
+      "title": "Post styles",
+      "description": "Pick a style for posts, carousels and stories. The preview uses your colors and logo.",
+      "save": "Save style"
+    },
+    "logo": {
+      "label": "Logo on slides",
+      "fromSite": "Logo from the website",
+      "custom": "Your logo",
+      "none": "No logo: slides show the brand name",
+      "upload": "Upload logo",
+      "uploading": "Uploading…",
+      "remove": "Use the website logo",
+      "hint": "A PNG with a transparent background looks best. Up to 20 MB.",
+      "notImage": "Choose an image: PNG, JPG or WebP."
     }
   },
   "flows": {
@@ -616,5 +636,132 @@
     "confirmDelete": "Delete “{name}”? Sova will stop using it.",
     "empty": "No documents yet.",
     "verifyEmail": "Confirm your email to add a document."
+  },
+  "brain": {
+    "metaTitle": "Brain",
+    "eyebrow": "Your Sova's memory",
+    "subtitle": "Remembers your brand, learns from post results and applies the playbook in every new draft.",
+    "editBrand": "Edit brand",
+    "hero": {
+      "active": "Brain is active",
+      "learning": "Brain is still learning",
+      "title": "Every post teaches Sova something new.",
+      "text": "Sova connects what it knows about your brand with the numbers from your posts and turns that into rules for the next drafts.",
+      "nodes": {
+        "sources": "Sources",
+        "sourcesHint": "website, PDF, networks",
+        "results": "Results",
+        "resultsHint": "reach and engagement",
+        "playbook": "Playbook",
+        "playbookOn": "rules for drafts",
+        "playbookOff": "waiting for first results"
+      }
+    },
+    "knows": {
+      "title": "What Sova knows about your brand",
+      "text": "The base of every draft. You change it under Brand and account.",
+      "filled": "{filled} of {total} filled in",
+      "items": {
+        "name": "Name",
+        "offer": "Offer",
+        "audience": "Audience",
+        "tone": "Tone"
+      },
+      "filledItem": "Filled in",
+      "emptyItem": "Missing",
+      "missing": "Not known yet. Add it under Brand and account.",
+      "sourceVoice": "Your own words from the brand voice.",
+      "sourceProfile": "Suggested from the website analysis until you save the brand voice.",
+      "sourceNone": "Analyze your website or describe the brand in your own words.",
+      "edit": "Edit under Brand and account"
+    },
+    "sources": {
+      "title": "Where Sova learns from",
+      "text": "Every source improves the next draft.",
+      "add": "Add source",
+      "networks": "Networks",
+      "networksOn": "{accounts, plural, one {# account} other {# accounts}} · imported posts: {posts}",
+      "networksOff": "No network connected.",
+      "manage": "Manage networks",
+      "connect": "Connect a network",
+      "site": "Website",
+      "siteOn": "{url} · read on {date}",
+      "siteNotAnalyzed": "{url} · not analyzed yet",
+      "siteOff": "No website address.",
+      "refreshSite": "Refresh analysis",
+      "analyzeSite": "Analyze website",
+      "documents": "Documents",
+      "documentsOn": "PDFs read: {count}",
+      "documentsOff": "No brand PDF.",
+      "addPdf": "Add PDF",
+      "results": "Results",
+      "resultsOn": "Posts with metrics in 30 days: {count}",
+      "resultsOff": "No posts with metrics yet.",
+      "notes": "Notes",
+      "noteProcessing": "Saving the note…",
+      "noteFailed": "Not saved",
+      "noteReady": "Added manually, {date}",
+      "deleteNote": "Delete note {name}",
+      "confirmDelete": "Delete the note “{name}”? Sova will stop using it."
+    },
+    "addSource": {
+      "title": "Add source",
+      "text": "Sova learns from everything you give it. Pick a source.",
+      "pdf": "Brand PDF",
+      "pdfHint": "Brand book, price list, catalog",
+      "site": "Website",
+      "siteHint": "New or repeated analysis",
+      "note": "Note",
+      "noteTitle": "Title",
+      "noteTitlePlaceholder": "E.g. Opening hours and delivery",
+      "noteContent": "What Sova should know",
+      "noteContentPlaceholder": "E.g. We're open weekdays 8 am to 8 pm and Saturdays until 3 pm. Delivery in Belgrade is free for orders over 3,000 dinars.",
+      "verifyEmail": "Confirm your email to add a note.",
+      "cancel": "Cancel",
+      "save": "Save note",
+      "saving": "Saving…"
+    },
+    "playbook": {
+      "title": "Playbook: what Sova has learned",
+      "text": "Rules from your post results. Sova learns them on its own and applies them in the next drafts.",
+      "auto": "Learns on its own",
+      "refresh": "Refresh now",
+      "refreshing": "Learning…",
+      "refreshNeeds": "Needs at least {count} posts with metrics in the last 30 days.",
+      "refreshFailed": "The playbook was not refreshed.",
+      "summary": "Takeaway for the next draft",
+      "summaryEmpty": "Sova doesn't have enough results yet. Connect a network and publish your first drafts.",
+      "updated": "Refreshed {date} · posts analyzed: {posts}",
+      "readyToLearn": "There are enough results. Click “Refresh now” or wait for the weekly analysis.",
+      "needs": "The playbook fills in once there are at least {count} posts with metrics.",
+      "works": "What works, repeat it",
+      "worksEmpty": "No rules yet. They appear after the first results analysis.",
+      "avoid": "What to avoid",
+      "avoidEmpty": "Nothing to avoid."
+    }
+  },
+  "brandAccount": {
+    "eyebrow": "Your settings",
+    "title": "Brand and account",
+    "subtitle": "Brand voice, look, subscription and account in one place.",
+    "tabsLabel": "Settings tabs",
+    "tabs": {
+      "voice": "Brand voice",
+      "visual": "Visual identity",
+      "styles": "Styles",
+      "billing": "Subscription",
+      "account": "Account"
+    },
+    "brainCard": {
+      "title": "Sova Brain",
+      "text": "Everything Sova knows about your brand: sources, website profile and playbook.",
+      "open": "Open Brain"
+    },
+    "site": {
+      "title": "Brand website",
+      "analyzed": "Analyzed {url}, {date}",
+      "none": "The website hasn't been analyzed yet.",
+      "open": "Add or refresh website"
+    }
   }
 }
