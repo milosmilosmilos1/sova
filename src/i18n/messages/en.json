@@ -1421,5 +1421,113 @@
       "sent": "Sent to {count, plural, one {# device} other {# devices}}.",
       "sentNone": "No device received the notification."
     }
+  },
+  "plan": {
+    "metaTitle": "Monthly plan",
+    "eyebrow": "Monthly plan",
+    "title": "A whole month of posts in one click",
+    "subtitle": "Sova picks topics and post types for the whole month. You remove what you do not want, and the drafts make themselves and wait in Approvals.",
+    "newPlan": "New plan",
+    "formats": {
+      "carousel": "Carousel",
+      "image": "Post with image",
+      "video": "Video (Reels)",
+      "story": "Story",
+      "text": "Text only",
+      "link": "Link"
+    },
+    "goals": {
+      "awareness": "Brand awareness",
+      "engagement": "Engagement",
+      "sales": "Sales",
+      "education": "Education"
+    },
+    "setup": {
+      "title": "Make a plan for the month",
+      "text": "Pick the month and how many posts per week. Every content type is included, and Sova spreads the slots and decides what to write about.",
+      "noAccounts": "Connect at least one network to make a plan.",
+      "connect": "Connect networks",
+      "month": "Month",
+      "rest": "Rest of the month, {from} to {to}",
+      "whole": "Whole month",
+      "perWeek": "Posts per week",
+      "perWeekValue": "{n} per week",
+      "networks": "Networks",
+      "formats": "Content types",
+      "allFormats": "All types",
+      "formatsHint": "Carousels and images come most often. Each post goes to the networks that accept its type.",
+      "locale": "Post language",
+      "notes": "What matters this month? (optional)",
+      "notesPlaceholder": "Promotions, events, new products… Leave it empty and Sova decides.",
+      "estimate": "About {count, plural, one {# post} other {# posts}}. The plan costs {plan} tokens, and the drafts about {posts} tokens.",
+      "balance": "Balance: {count, plural, one {# token} other {# tokens}}.",
+      "cancel": "Cancel",
+      "create": "Make the plan",
+      "replaceConfirm": "A new plan replaces the current plan for that month, except posts already made. Continue?"
+    },
+    "board": {
+      "summary": "{count, plural, one {# post} other {# posts}} from {from} to {to}",
+      "mode": "After the drafts are made",
+      "modes": {
+        "review": "To approvals",
+        "schedule": "Schedule right away"
+      },
+      "modeHint": {
+        "review": "Drafts wait for your decision in Approvals, with the time from the plan.",
+        "schedule": "Posts are scheduled automatically at the plan times, without approval."
+      },
+      "generate": "Generate all ({count} · {tokens} tokens)",
+      "retry": "Try again ({count} · {tokens} tokens)",
+      "planning": "Sova is picking topics for the whole month. This takes about half a minute.",
+      "generating": "Making drafts: {done} of {total}",
+      "background": "You can close the page. Sova keeps going in the background and lets you know when it is done.",
+      "failed": "The plan was not made: {error}",
+      "doneReview": "Done: {count, plural, one {# draft waits} other {# drafts wait}} in Approvals.",
+      "doneScheduled": "Done: {count, plural, one {# post is scheduled} other {# posts are scheduled}}.",
+      "someFailed": "{count, plural, one {# post was not made} other {# posts were not made}}.",
+      "openApprovals": "Open Approvals",
+      "openCalendar": "Open calendar",
+      "list": "Posts in the plan",
+      "deletePlan": "Delete plan",
+      "deletePlanConfirm": "Delete the plan? Drafts already made stay in Approvals.",
+      "week": "Week {n} · {range}",
+      "openPost": "Open draft",
+      "edit": "Edit: {topic}",
+      "delete": "Delete: {topic}",
+      "deleteSelected": "Delete selected",
+      "deleteSelectedConfirm": "Delete {count, plural, one {# post} other {# posts}} from the plan?",
+      "refreshing": "The page refreshes on its own."
+    },
+    "edit": {
+      "title": "Edit a planned post",
+      "description": "Change the topic, description, type or time. Sova writes the post from this.",
+      "topic": "Topic",
+      "brief": "What the post says",
+      "format": "Type",
+      "date": "Date",
+      "time": "Time",
+      "cancel": "Cancel",
+      "saving": "Saving…",
+      "save": "Save"
+    }
+  },
+  "bulk": {
+    "selectAll": "Select all",
+    "select": "Select: {name}",
+    "bar": "Actions for selected items",
+    "selected": "Selected: {count}",
+    "clear": "Clear",
+    "delete": "Delete",
+    "deleteConfirm": "Delete {count, plural, one {# item} other {# items}}?",
+    "skip": "Skip",
+    "skipConfirm": "Skip {count, plural, one {# draft} other {# drafts}}?",
+    "markDone": "Done",
+    "dismiss": "Dismiss",
+    "pause": "Pause",
+    "resume": "Turn on",
+    "moveTo": "Move to category",
+    "noCategory": "No category",
+    "result": "Done: {done}.",
+    "resultFailed": "Done: {done}. Failed: {failed}."
   }
 }

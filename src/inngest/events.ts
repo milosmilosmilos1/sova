@@ -78,6 +78,13 @@ export const events = {
   brandDocumentUploaded: eventType('brand/document.uploaded', {
     schema: z.object({ documentId: uuid, brandId: uuid }),
   }),
+  // D-119: mesečni plan, teme za sve termine i pravljenje svih nacrta
+  monthPlanRequested: eventType('plan/month.requested', {
+    schema: z.object({ planId: uuid, brandId: uuid }),
+  }),
+  monthPlanGenerate: eventType('plan/month.generate', {
+    schema: z.object({ planId: uuid, brandId: uuid }),
+  }),
 
   // Faza 12
   billingWebhookReceived: eventType('billing/webhook.received', {

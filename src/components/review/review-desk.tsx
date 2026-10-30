@@ -1,13 +1,26 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Download, FileText, Film, Pencil, RefreshCw, Search } from 'lucide-react'
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  FileText,
+  Film,
+  Pencil,
+  RefreshCw,
+  Search,
+  SkipForward,
+  Trash2,
+} from 'lucide-react'
 import Link from 'next/link'
 import { useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { api } from '@/components/shared/api-client'
+import { BulkBar, SelectAllBox, SelectBox, useSelection } from '@/components/shared/bulk'
 import { ErrorBox } from '@/components/shared/error-box'
+import { MediaThumb } from '@/components/shared/media-thumb'
 import { VideoDialog } from '@/components/review/video-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -29,6 +42,7 @@ interface Item {
   format: Format
   slides: number
   thumb: string | null
+  thumbKind: 'image' | 'video'
   flowName: string | null
   platforms: SocialPlatform[]
   scheduledFor: string | null
@@ -103,6 +117,20 @@ export function ReviewDesk({
   const items = list.data?.items ?? []
   const current = selected && items.some((i) => i.id === selected) ? selected : (items[0]?.id ?? null)
   const refresh = () => qc.invalidateQueries({ queryKey: ['review', brandId] })
+  // označavanje više nacrta (D-119): preskakanje ili brisanje svih označenih odjednom
+  const tb = useTranslations('bulk')
+  const selection = useSelection(items.map((i) => i.id))
+  const bulk = useMutation({
+    mutationFn: (input: { ids: string[]; action: 'delete' | 'skip' }) =>
+      api<{ done: string[]; failed: Array<{ id: string; message: string }> }>('/api/posts/bulk', {
+        method: 'POST',
+        json: input,
+      }),
+    onSuccess: () => {
+      selection.clear()
+      void refresh()
+    },
+  })
 
   return (
     <div className="space-y-5">
@@ -183,9 +211,20 @@ export function ReviewDesk({
 
       <div className="grid gap-4 lg:grid-cols-[16rem_minmax(0,1fr)_22rem]">
         <section aria-label={t('listTitle')} className="space-y-2">
-          <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
-            {t('listTitle')} <span className="ml-1 rounded-full bg-muted px-1.5">{items.length}</span>
-          </p>
+          <div className="flex items-center justify-between gap-2">
+            <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
+              {t('listTitle')} <span className="ml-1 rounded-full bg-muted px-1.5">{items.length}</span>
+            </p>
+            {items.length ? <SelectAllBox selection={selection} className="text-xs" /> : null}
+          </div>
+          {bulk.data ? (
+            <p role="status" className="text-xs text-muted-foreground">
+              {bulk.data.failed.length
+                ? `${tb('resultFailed', { done: bulk.data.done.length, failed: bulk.data.failed.length })} ${bulk.data.failed[0]!.message}`
+                : tb('result', { done: bulk.data.done.length })}
+            </p>
+          ) : null}
+          <ErrorBox error={bulk.error} />
           {items.length === 0 && list.data ? (
             <p className="rounded-lg border border-dashed p-4 text-sm text-muted-foreground">
               {t(tab === 'waiting' ? 'empty.waiting' : 'empty.other')}
@@ -193,19 +232,25 @@ export function ReviewDesk({
           ) : null}
           <ul className="space-y-2">
             {items.map((i) => (
-              <li key={i.id}>
+              <li key={i.id} className="flex items-start gap-2">
+                <SelectBox
+                  selection={selection}
+                  id={i.id}
+                  label={i.title ?? t('formats.text')}
+                  className="mt-3"
+                />
                 <button
                   type="button"
                   onClick={() => setSelected(i.id)}
                   aria-current={current === i.id ? 'true' : undefined}
                   className={cn(
-                    'flex w-full gap-3 rounded-lg border bg-card p-2 text-left',
+                    'flex min-w-0 flex-1 gap-3 rounded-lg border bg-card p-2 text-left',
                     current === i.id && 'border-primary ring-1 ring-primary',
+                    selection.has(i.id) && 'bg-primary/5',
                   )}
                 >
                   {i.thumb ? (
-                    // eslint-disable-next-line @next/next/no-img-element -- potpisan URL iz skladišta
-                    <img src={i.thumb} alt="" className="size-14 shrink-0 rounded-md object-cover" />
+                    <MediaThumb url={i.thumb} kind={i.thumbKind} className="size-14 rounded-md" />
                   ) : (
                     <span className="grid size-14 shrink-0 place-items-center rounded-md bg-muted">
                       <FileText className="size-5 text-muted-foreground" aria-hidden />
@@ -243,6 +288,32 @@ export function ReviewDesk({
           </Card>
         )}
       </div>
+      <BulkBar selection={selection}>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={bulk.isPending}
+          onClick={() =>
+            window.confirm(tb('skipConfirm', { count: selection.count })) &&
+            bulk.mutate({ ids: [...selection.selected], action: 'skip' })
+          }
+        >
+          <SkipForward aria-hidden />
+          {tb('skip')}
+        </Button>
+        <Button
+          size="sm"
+          variant="destructive"
+          disabled={bulk.isPending}
+          onClick={() =>
+            window.confirm(tb('deleteConfirm', { count: selection.count })) &&
+            bulk.mutate({ ids: [...selection.selected], action: 'delete' })
+          }
+        >
+          <Trash2 aria-hidden />
+          {tb('delete')}
+        </Button>
+      </BulkBar>
     </div>
   )
 }

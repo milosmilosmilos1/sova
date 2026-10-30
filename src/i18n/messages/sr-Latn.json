@@ -1421,5 +1421,113 @@
       "sent": "Poslato na {count, plural, one {# uređaj} few {# uređaja} other {# uređaja}}.",
       "sentNone": "Nijedan uređaj nije primio obaveštenje."
     }
+  },
+  "plan": {
+    "metaTitle": "Mesečni plan",
+    "eyebrow": "Mesečni plan",
+    "title": "Ceo mesec objava na jedan klik",
+    "subtitle": "Sova bira teme i vrste objava za ceo mesec. Vi izbacite šta ne želite, a nacrti se prave sami i čekaju u Odobravanju.",
+    "newPlan": "Nov plan",
+    "formats": {
+      "carousel": "Karusel",
+      "image": "Objava sa slikom",
+      "video": "Video (Reels)",
+      "story": "Priča",
+      "text": "Samo tekst",
+      "link": "Link"
+    },
+    "goals": {
+      "awareness": "Svest o brendu",
+      "engagement": "Angažovanje",
+      "sales": "Prodaja",
+      "education": "Edukacija"
+    },
+    "setup": {
+      "title": "Napravite plan za mesec",
+      "text": "Izaberite mesec i koliko objava nedeljno. Sve vrste sadržaja su uključene, a Sova sama raspoređuje termine i bira o čemu se piše.",
+      "noAccounts": "Povežite bar jednu mrežu da biste napravili plan.",
+      "connect": "Povežite mreže",
+      "month": "Mesec",
+      "rest": "Ostatak meseca, od {from} do {to}",
+      "whole": "Ceo mesec",
+      "perWeek": "Objava nedeljno",
+      "perWeekValue": "{n} nedeljno",
+      "networks": "Mreže",
+      "formats": "Vrste sadržaja",
+      "allFormats": "Sve vrste",
+      "formatsHint": "Karusel i slika dolaze najčešće. Svaka objava ide na mreže koje primaju njenu vrstu.",
+      "locale": "Jezik objava",
+      "notes": "Šta je važno ovog meseca? (opciono)",
+      "notesPlaceholder": "Akcije, događaji, novi proizvodi… Prazno znači da Sova bira sama.",
+      "estimate": "Oko {count, plural, one {# objava} few {# objave} other {# objava}}. Plan košta {plan} tokena, a nacrti oko {posts} tokena.",
+      "balance": "Na stanju: {count, plural, one {# token} other {# tokena}}.",
+      "cancel": "Odustani",
+      "create": "Napravi plan",
+      "replaceConfirm": "Nov plan zamenjuje postojeći plan za taj mesec, osim objava koje su već napravljene. Nastaviti?"
+    },
+    "board": {
+      "summary": "{count, plural, one {# objava} few {# objave} other {# objava}} od {from} do {to}",
+      "mode": "Šta posle pravljenja",
+      "modes": {
+        "review": "Na odobravanje",
+        "schedule": "Zakaži odmah"
+      },
+      "modeHint": {
+        "review": "Nacrti čekaju vašu odluku u Odobravanju, sa terminom iz plana.",
+        "schedule": "Objave se zakazuju same u termine iz plana, bez odobravanja."
+      },
+      "generate": "Generiši sve ({count} · {tokens} tokena)",
+      "retry": "Pokušaj ponovo ({count} · {tokens} tokena)",
+      "planning": "Sova bira teme za ceo mesec. To traje oko pola minuta.",
+      "generating": "Pravim nacrte: {done} od {total}",
+      "background": "Možete da zatvorite stranu. Sova nastavlja u pozadini i javlja kad završi.",
+      "failed": "Plan nije napravljen: {error}",
+      "doneReview": "Gotovo: {count, plural, one {# nacrt čeka} few {# nacrta čekaju} other {# nacrta čeka}} u Odobravanju.",
+      "doneScheduled": "Gotovo: {count, plural, one {# objava je zakazana} few {# objave su zakazane} other {# objava je zakazano}}.",
+      "someFailed": "{count, plural, one {# objava nije napravljena} few {# objave nisu napravljene} other {# objava nije napravljeno}}.",
+      "openApprovals": "Otvori Odobravanje",
+      "openCalendar": "Otvori kalendar",
+      "list": "Objave u planu",
+      "deletePlan": "Obriši plan",
+      "deletePlanConfirm": "Da obrišem plan? Napravljeni nacrti ostaju u Odobravanju.",
+      "week": "Nedelja {n} · {range}",
+      "openPost": "Otvori nacrt",
+      "edit": "Izmeni: {topic}",
+      "delete": "Obriši: {topic}",
+      "deleteSelected": "Obriši označene",
+      "deleteSelectedConfirm": "Da obrišem {count, plural, one {# objavu} few {# objave} other {# objava}} iz plana?",
+      "refreshing": "Strana se sama osvežava."
+    },
+    "edit": {
+      "title": "Izmena objave u planu",
+      "description": "Promenite temu, opis, vrstu ili termin. Sova piše objavu po ovome.",
+      "topic": "Tema",
+      "brief": "Šta objava kaže",
+      "format": "Vrsta",
+      "date": "Datum",
+      "time": "Vreme",
+      "cancel": "Otkaži",
+      "saving": "Čuvam…",
+      "save": "Sačuvaj"
+    }
+  },
+  "bulk": {
+    "selectAll": "Označi sve",
+    "select": "Označi: {name}",
+    "bar": "Radnje za označeno",
+    "selected": "Označeno: {count}",
+    "clear": "Poništi",
+    "delete": "Obriši",
+    "deleteConfirm": "Da obrišem {count, plural, one {# stavku} few {# stavke} other {# stavki}}?",
+    "skip": "Preskoči",
+    "skipConfirm": "Da preskočim {count, plural, one {# nacrt} few {# nacrta} other {# nacrta}}?",
+    "markDone": "Rešeno",
+    "dismiss": "Odbaci",
+    "pause": "Pauziraj",
+    "resume": "Uključi",
+    "moveTo": "Premesti u kategoriju",
+    "noCategory": "Bez kategorije",
+    "result": "Urađeno: {done}.",
+    "resultFailed": "Urađeno: {done}. Nije uspelo: {failed}."
   }
 }

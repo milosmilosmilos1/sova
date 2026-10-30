@@ -1426,6 +1426,40 @@ create table push_subscriptions (
   last_sent_at timestamptz
 );
 -- RLS: korisnik vidi samo svoje pretplate; upis i brisanje kroz API (service role)
+
+-- Mesečni plan na jedan klik (migracija 040, D-119)
+alter type ai_generation_type add value 'month_plan';
+create table month_plans (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  brand_id uuid not null references brands(id) on delete cascade,
+  month date not null,                              -- prvi dan meseca
+  period_start date not null, period_end date not null,   -- tekući mesec počinje od sutra
+  status text not null default 'planning',          -- planning | ready | generating | done | failed
+  settings jsonb not null default '{}',             -- kind, perWeek, platforms, formats, locale, notes, mode, slots[]
+  error text,
+  tokens_charged integer not null default 0,        -- plan (3) i nacrti (po 2)
+  created_by uuid references profiles(id) on delete set null,
+  created_at timestamptz, updated_at timestamptz
+);
+create table month_plan_items (
+  id uuid primary key default gen_random_uuid(),
+  plan_id uuid not null references month_plans(id) on delete cascade,
+  brand_id uuid not null references brands(id) on delete cascade,
+  position smallint not null,
+  scheduled_for timestamptz not null,               -- termin u zoni brenda, pretvoren u UTC
+  format text not null,                             -- text | image | carousel | video | story | link
+  platforms text[] not null,                        -- 1 do 8 mreža koje primaju tu vrstu
+  topic text not null,                              -- do 200 znakova
+  brief text not null default '',                   -- do 1.000 znakova, za pisca objave
+  goal text not null default 'engagement',          -- awareness | engagement | sales | education
+  pillar text, cta text,
+  status text not null default 'planned',           -- planned | generating | done | failed
+  post_id uuid references posts(id) on delete set null,   -- nacrt napravljen iz stavke
+  error text,
+  created_at timestamptz, updated_at timestamptz
+);
+-- RLS: obe tabele čitaju članovi sa pristupom brendu; piše service role (API i posao month-plan-*)
 create table autopilot_runs (
   id uuid primary key default gen_random_uuid(),
   brand_id uuid not null references brands(id) on delete cascade,

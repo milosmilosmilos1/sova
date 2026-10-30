@@ -16,6 +16,7 @@ import { useTranslations } from 'next-intl'
 import { useRef, useState } from 'react'
 
 import { api } from '@/components/shared/api-client'
+import { BulkBar, SelectAllBox, SelectBox, useSelection } from '@/components/shared/bulk'
 import { ErrorBox } from '@/components/shared/error-box'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -126,6 +127,33 @@ export function GalleryClient({
         return next
       })
       setPreview(null)
+      await refresh()
+    },
+  })
+
+  // označavanje više fotografija (D-119): brisanje i premeštanje u kategoriju odjednom
+  const tb = useTranslations('bulk')
+  const selection = useSelection(canEdit ? (view?.items ?? []).map((i) => i.id) : [])
+  const bulkDelete = useMutation({
+    mutationFn: (ids: string[]) =>
+      api<{ done: string[]; failed: Array<{ id: string; message: string }> }>('/api/gallery/delete', {
+        method: 'POST',
+        json: { brandId, ids },
+      }),
+    onSuccess: async (r) => {
+      setEdits((cur) => Object.fromEntries(Object.entries(cur).filter(([id]) => !r.done.includes(id))))
+      selection.clear()
+      await refresh()
+    },
+  })
+  const bulkMove = useMutation({
+    mutationFn: (v: { ids: string[]; categoryId: string | null }) =>
+      api('/api/gallery', {
+        method: 'PATCH',
+        json: { brandId, items: v.ids.map((id) => ({ id, categoryId: v.categoryId })) },
+      }),
+    onSuccess: async () => {
+      selection.clear()
       await refresh()
     },
   })
@@ -363,10 +391,20 @@ export function GalleryClient({
             </h2>
             <p className="text-sm text-muted-foreground">{t('gridHint')}</p>
           </div>
-          <span className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
-            {t('count', { count: view?.items.length ?? 0 })}
-          </span>
+          <div className="flex items-center gap-3">
+            {canEdit && view?.items.length ? <SelectAllBox selection={selection} /> : null}
+            <span className="text-xs font-medium tracking-wider text-muted-foreground uppercase">
+              {t('count', { count: view?.items.length ?? 0 })}
+            </span>
+          </div>
         </div>
+        {bulkDelete.data?.failed.length ? (
+          <p role="status" className="text-sm text-muted-foreground">
+            {tb('resultFailed', { done: bulkDelete.data.done.length, failed: bulkDelete.data.failed.length })}{' '}
+            {bulkDelete.data.failed[0]!.message}
+          </p>
+        ) : null}
+        <ErrorBox error={bulkDelete.error ?? bulkMove.error} />
 
         {view && !view.items.length ? (
           <div className="rounded-xl border border-dashed p-10 text-center text-sm text-muted-foreground">
@@ -379,7 +417,18 @@ export function GalleryClient({
           {(view?.items ?? []).map((item) => {
             const v = value(item)
             return (
-              <li key={item.id} className="flex flex-col overflow-hidden rounded-xl border bg-card">
+              <li
+                key={item.id}
+                className={cn(
+                  'relative flex flex-col overflow-hidden rounded-xl border bg-card',
+                  selection.has(item.id) && 'ring-2 ring-primary',
+                )}
+              >
+                {canEdit ? (
+                  <span className="absolute top-2 left-2 z-10 grid size-7 place-items-center rounded-md bg-background/90 shadow">
+                    <SelectBox selection={selection} id={item.id} label={v.description || t('photo')} />
+                  </span>
+                ) : null}
                 <button
                   type="button"
                   className="group relative aspect-square overflow-hidden bg-muted"
@@ -394,7 +443,7 @@ export function GalleryClient({
                     className="size-full object-cover transition-transform duration-300 group-hover:scale-[1.03]"
                   />
                   {!v.description ? (
-                    <span className="absolute top-2 left-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
+                    <span className="absolute bottom-2 left-2 rounded-full bg-amber-100 px-2 py-0.5 text-xs font-medium text-amber-900">
                       {t('noDescription')}
                     </span>
                   ) : null}
@@ -463,6 +512,45 @@ export function GalleryClient({
           })}
         </ul>
       </section>
+
+      <BulkBar selection={selection}>
+        <label className="sr-only" htmlFor="gallery-move">
+          {tb('moveTo')}
+        </label>
+        <select
+          id="gallery-move"
+          value=""
+          disabled={bulkMove.isPending}
+          onChange={(e) => {
+            if (!e.target.value) return
+            bulkMove.mutate({
+              ids: [...selection.selected],
+              categoryId: e.target.value === 'none' ? null : e.target.value,
+            })
+          }}
+          className="h-8 rounded-md border border-input bg-background px-2 text-sm"
+        >
+          <option value="">{tb('moveTo')}</option>
+          <option value="none">{tb('noCategory')}</option>
+          {(view?.categories ?? []).map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
+        </select>
+        <Button
+          size="sm"
+          variant="destructive"
+          disabled={bulkDelete.isPending}
+          onClick={() =>
+            window.confirm(tb('deleteConfirm', { count: selection.count })) &&
+            bulkDelete.mutate([...selection.selected])
+          }
+        >
+          <Trash2 aria-hidden />
+          {tb('delete')}
+        </Button>
+      </BulkBar>
 
       {preview ? (
         <Dialog open onOpenChange={(open) => !open && setPreview(null)}>

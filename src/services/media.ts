@@ -608,8 +608,11 @@ export async function listMedia(
  * Piše kroz service role posle provere: SELECT politika skriva obrisan red, pa bi UPDATE kroz
  * korisnički klijent pao sa 42501 (D-081).
  */
-export async function deleteMediaAsset(viewer: Viewer, assetId: string): Promise<void> {
+export async function deleteMediaAsset(viewer: Viewer, assetId: string, brandId?: string): Promise<void> {
   const asset = await getAsset(viewer, assetId)
+  // brisanje iz galerije jednog brenda ne dira medije drugog brenda (D-119)
+  if (brandId && asset.brand_id && asset.brand_id !== brandId)
+    throw new ApiError('NOT_FOUND', 'Fajl ne postoji ili nemate pristup.')
   await requireMembership(viewer, asset.workspace_id, EDIT_ROLES)
   const { error } = await createSupabaseAdminClient()
     .from('media_assets')

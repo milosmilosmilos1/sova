@@ -7,6 +7,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { api } from '@/components/shared/api-client'
+import { BulkBar, runBulk, SelectAllBox, SelectBox, useSelection } from '@/components/shared/bulk'
 import { ErrorBox } from '@/components/shared/error-box'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -73,6 +74,20 @@ export function FlowsClient({
     mutationFn: (f: FlowItem) => api<RunView>(`/api/flows/${f.id}/run`, { method: 'POST' }),
     onSuccess: (run, f) => setRunning({ runId: run.id, name: f.name }),
   })
+  // označavanje više tokova (D-119): uključivanje, pauza i brisanje odjednom
+  const tb = useTranslations('bulk')
+  const bulk = useMutation({
+    mutationFn: (v: { ids: string[]; action: 'pause' | 'resume' | 'delete' }) =>
+      runBulk(v.ids, (id) =>
+        v.action === 'delete'
+          ? api(`/api/flows/${id}`, { method: 'DELETE' })
+          : api(`/api/flows/${id}`, { method: 'PATCH', json: { active: v.action === 'resume' } }),
+      ),
+    onSuccess: () => {
+      selection.clear()
+      return qc.invalidateQueries({ queryKey: key })
+    },
+  })
 
   const fmt = new Intl.DateTimeFormat(INTL[locale] ?? 'sr-Latn-RS', {
     timeZone,
@@ -89,6 +104,7 @@ export function FlowsClient({
     .filter(
       (f) => !search.trim() || `${f.name} ${f.topic}`.toLowerCase().includes(search.trim().toLowerCase()),
     )
+  const selection = useSelection(canEdit ? visible.map((f) => f.id) : [])
   const upcoming = all
     .filter((f) => f.active && f.nextRunAt)
     .sort((a, b) => (a.nextRunAt! < b.nextRunAt! ? -1 : 1))[0]
@@ -214,14 +230,25 @@ export function FlowsClient({
                 />
               </label>
             </div>
+            {canEdit ? <SelectAllBox selection={selection} /> : null}
+            {bulk.data?.failed.length ? (
+              <p role="status" className="text-sm text-muted-foreground">
+                {tb('resultFailed', { done: bulk.data.done, failed: bulk.data.failed.length })}{' '}
+                {bulk.data.failed[0]!.message}
+              </p>
+            ) : null}
             <ul className="divide-y">
               {visible.map((f) => (
                 <li
                   key={f.id}
-                  className="grid gap-3 py-4 md:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))_auto] md:items-center"
+                  className={cn(
+                    'grid gap-3 py-4 md:grid-cols-[minmax(0,2fr)_repeat(3,minmax(0,1fr))_auto] md:items-center',
+                    selection.has(f.id) && 'bg-primary/5',
+                  )}
                 >
                   <div className="min-w-0 space-y-1">
                     <div className="flex flex-wrap items-center gap-2">
+                      {canEdit ? <SelectBox selection={selection} id={f.id} label={f.name} /> : null}
                       <p className="font-medium">{f.name}</p>
                       {f.lastRun?.status === 'failed' ? (
                         <Badge variant="destructive">{t('status.failed')}</Badge>
@@ -287,6 +314,37 @@ export function FlowsClient({
           </CardContent>
         </Card>
       ) : null}
+
+      <BulkBar selection={selection}>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={bulk.isPending}
+          onClick={() => bulk.mutate({ ids: [...selection.selected], action: 'resume' })}
+        >
+          {tb('resume')}
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={bulk.isPending}
+          onClick={() => bulk.mutate({ ids: [...selection.selected], action: 'pause' })}
+        >
+          {tb('pause')}
+        </Button>
+        <Button
+          size="sm"
+          variant="destructive"
+          disabled={bulk.isPending}
+          onClick={() =>
+            window.confirm(tb('deleteConfirm', { count: selection.count })) &&
+            bulk.mutate({ ids: [...selection.selected], action: 'delete' })
+          }
+        >
+          <Trash2 aria-hidden />
+          {tb('delete')}
+        </Button>
+      </BulkBar>
 
       {running ? (
         <RunProgress

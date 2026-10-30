@@ -2,6 +2,7 @@ import {
   Bot,
   Brain,
   CalendarDays,
+  CalendarRange,
   CheckCircle2,
   FileText,
   Home,
@@ -156,6 +157,10 @@ export function AppShell({
               </NavLink>
             </NavGroup>
             <NavGroup label="Plan i rast">
+              <NavLink href="/app/plan">
+                <CalendarRange aria-hidden />
+                Mesečni plan
+              </NavLink>
               <NavLink href="/app/strategy">
                 <Target aria-hidden />
                 Strategija

@@ -109,6 +109,7 @@ export interface PostListItem {
   targetStatuses: TargetRow['status'][]
   mediaCount: number
   thumbnailUrl: string | null
+  thumbnailKind: 'image' | 'video'
 }
 
 async function brandAndRole(
@@ -272,13 +273,16 @@ export async function listPosts(
   if (error) throw mapDbError(error)
   const ids = (data ?? []).map((p) => p.id)
   const targetsBy = new Map<string, Array<{ platform: TargetRow['platform']; status: TargetRow['status'] }>>()
-  const mediaBy = new Map<string, { count: number; first: { bucket: string; storage_path: string } | null }>()
+  const mediaBy = new Map<
+    string,
+    { count: number; first: { kind: string; bucket: string; storage_path: string } | null }
+  >()
   if (ids.length) {
     const [t, m] = await Promise.all([
       viewer.supabase.from('post_targets').select('post_id, platform, status').in('post_id', ids),
       viewer.supabase
         .from('post_media')
-        .select('post_id, sort_order, media_assets(bucket, storage_path)')
+        .select('post_id, sort_order, media_assets(kind, bucket, storage_path)')
         .in('post_id', ids)
         .order('sort_order', { ascending: true }),
     ])
@@ -313,6 +317,7 @@ export async function listPosts(
         targetStatuses: t.map((x) => x.status),
         mediaCount: m?.count ?? 0,
         thumbnailUrl: m?.first ? await signedUrl(m.first) : null,
+        thumbnailKind: m?.first?.kind === 'video' ? ('video' as const) : ('image' as const),
       }
     }),
   )

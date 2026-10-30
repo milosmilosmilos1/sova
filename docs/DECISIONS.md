@@ -915,3 +915,18 @@ Odluka (faza 11 iz D-108):
 - Ključevi `VAPID_PUBLIC_KEY` i `VAPID_PRIVATE_KEY` su opcioni. Bez njih Sova ne nudi obaveštenja na uređaju, a instalacija i video rade.
 
 Razlog: zahtev vlasnika (D-108). Odluka o nacrtu traje nekoliko sekundi i najčešće se donosi sa telefona; video od gotovih slajdova daje Reels bez novog troška.
+
+## D-119 · 30.10.2026 · usvojeno · Mesečni plan na jedan klik i označavanje u listama
+
+Odluka:
+
+- Nova strana „Mesečni plan” (`/app/plan`, prva u grupi „Plan i rast”). Korisnik bira mesec (ostatak tekućeg od sutra ili ceo sledeći), broj objava nedeljno (3, 5, 7, 10 ili 14), mreže, vrste objava („Sve vrste” je podrazumevano), jezik i opcionu napomenu („šta vam je važno ovog meseca”). Procena broja objava i cene se računa u pregledaču, pre bilo kakvog troška.
+- Raspored pravi Sova bez modela: dani su rašireni kroz nedelju, vrste se smenjuju redom karusel, slika, video, karusel, priča, slika, tekst, link (samo izabrane i samo one koje bar jedna mreža prima), a vreme je najbolji sat iz strategije ili podrazumevani; drugi termin istog dana ide u suprotan deo dana. Najviše 60 termina po planu.
+- Model (Gemini, jedan poziv, 3 tokena) za svaki termin piše temu, kratak opis za pisca, cilj, stub i poziv na akciju. U upitu su glas i podaci brenda, teme vlasnika, stubovi strategije, skorašnje objave (da se ne ponavljaju), praznici i napomena. Isti slot dva puta, nepoznat slot i ponovljena tema se odbacuju.
+- Pre generisanja korisnik briše stavke (jednu, označene ili ceo plan) i menja temu, opis, vrstu, datum i vreme. „Generiši sve” pravi svaki nacrt kao poseban korak pozadinskog posla: dizajnirane vrste (slika, karusel, priča) kroz isti put kao „Nova objava” (tekst i slajdovi u stilu brenda), tekst i link kroz pisca objave, video kroz pisca i Pexels. Cena je cena teksta po objavi (2 tokena), proverava se unapred za ceo plan.
+- Nacrti po podrazumevanom idu na Odobravanje sa terminom iz plana, bez obaveštenja po nacrtu; na kraju stiže jedno obaveštenje („Mesečni plan je spreman”, na telefon). Vlasnik i administrator mogu da izaberu „Zakaži odmah”: nacrt se odmah zakazuje za termin iz plana (termin u prošlosti ide na odobravanje). Neuspela stavka ostaje u planu sa razlogom i ponovo se pokušava sledećim „Generiši sve”.
+- Nov plan za isti mesec briše stari samo ako iz njega nije napravljen nijedan nacrt; dok se nacrti prave, nov plan za taj mesec nije moguć.
+- Označavanje u listama: kvačica na svakoj stavci, „Označi sve” (sa međustanjem) i traka sa radnjama na dnu u Odobravanju (preskoči, obriši), Objavama (obriši), Galeriji (obriši, premesti u kategoriju), Predlozima (odbaci), Tokovima (nastavi, pauziraj, obriši), Inbox-u (završeno) i Mesečnom planu (obriši). Svaka stavka ide kroz iste provere kao pojedinačna radnja, pa jedna greška ne zaustavlja ostale; korisnik vidi koliko je urađeno i zašto ostalo nije.
+- Brisanje objave iz liste: sa odobravanja se prvo vraća u nacrte, zakazana i odobrena se prvo otkazuje, a briše vlasnik ili administrator (urednik samo otkazuje). Objavljena objava se ne briše iz Sove.
+
+Razlog: zahtev vlasnika da ceo mesec sadržaja nastane bez smišljanja tema, uz kontrolu pre trošenja tokena, i da u svakoj listi može da se označi i obriše više stavki odjednom.

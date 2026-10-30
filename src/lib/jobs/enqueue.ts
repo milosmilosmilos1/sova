@@ -210,3 +210,28 @@ export async function enqueueDocumentIndex(documentId: string, brandId: string):
     )
   }
 }
+
+async function sendPlanEvent(send: () => Promise<unknown>, planId: string): Promise<void> {
+  try {
+    await send()
+  } catch (error) {
+    logger.error('enqueue_month_plan_failed', { planId, error })
+    throw new AiError(
+      'PROVIDER_ERROR',
+      process.env.NODE_ENV === 'development'
+        ? 'Pozadinski servis nije dostupan. Pokrenite `npm run inngest:dev` pa pokušajte ponovo.'
+        : 'Pozadinski servis trenutno nije dostupan. Pokušajte ponovo za minut.',
+      { retryable: true, cause: error },
+    )
+  }
+}
+
+/** Mesečni plan (D-119): teme za termine meseca. */
+export async function enqueueMonthPlan(planId: string, brandId: string): Promise<void> {
+  await sendPlanEvent(() => inngest.send(events.monthPlanRequested.create({ planId, brandId })), planId)
+}
+
+/** Mesečni plan (D-119): svi nacrti iz plana, jedan po jedan. */
+export async function enqueueMonthPlanGenerate(planId: string, brandId: string): Promise<void> {
+  await sendPlanEvent(() => inngest.send(events.monthPlanGenerate.create({ planId, brandId })), planId)
+}

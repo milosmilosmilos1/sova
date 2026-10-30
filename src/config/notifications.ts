@@ -145,6 +145,12 @@ export const NOTIFICATION_TYPES = {
     description: 'Kupljeni tokeni su stigli na stanje.',
     emailDefault: false,
   },
+  month_plan_ready: {
+    label: 'Mesečni plan je gotov',
+    description: 'Sova je napravila sve nacrte iz mesečnog plana.',
+    emailDefault: false,
+    pushDefault: true,
+  },
 } as const satisfies Record<string, NotificationTypeDef>
 
 export type NotificationType = keyof typeof NOTIFICATION_TYPES

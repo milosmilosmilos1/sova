@@ -3,7 +3,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Route } from 'next'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
+
+import { BulkBar, runBulk, SelectAllBox, SelectBox, useSelection } from '@/components/shared/bulk'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -95,6 +98,26 @@ export function InboxClient({
     onSuccess: refresh,
   })
   const counts = list.data?.counts
+  // označavanje više predloga (D-119): odbacivanje svih označenih odjednom
+  const tb = useTranslations('bulk')
+  const open = (list.data?.items ?? []).filter((s) => s.status === 'new')
+  const selection = useSelection(canEdit ? open.map((s) => s.id) : [])
+  const bulkDismiss = useMutation({
+    mutationFn: (ids: string[]) =>
+      runBulk(ids, async (id) => {
+        const res = await fetch(`/api/suggestions/${id}/dismiss`, {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: '{}',
+        })
+        const data = (await res.json()) as ApiResponse<unknown>
+        if (!data.ok) throw new Error(data.error.message)
+      }),
+    onSuccess: () => {
+      selection.clear()
+      refresh()
+    },
+  })
 
   return (
     <div className={embedded ? 'max-w-3xl space-y-6' : 'mx-auto max-w-3xl space-y-6'}>
@@ -136,10 +159,14 @@ export function InboxClient({
           {status === 'new' ? 'Nema novih predloga. Stižu iz bloga, praznika i analitike.' : 'Prazno.'}
         </p>
       ) : null}
+      {open.length && canEdit ? <SelectAllBox selection={selection} /> : null}
       <ul className="space-y-3">
         {list.data?.items.map((s) => (
-          <li key={s.id}>
-            <Card>
+          <li key={s.id} className="flex items-start gap-2">
+            {s.status === 'new' && canEdit ? (
+              <SelectBox selection={selection} id={s.id} label={s.title} className="mt-5" />
+            ) : null}
+            <Card className={`min-w-0 flex-1 ${selection.has(s.id) ? 'ring-2 ring-primary' : ''}`}>
               <CardContent className="space-y-2 py-4">
                 <div className="flex flex-wrap items-center gap-2">
                   <Badge variant="secondary">{SOURCE[s.source]}</Badge>
@@ -188,6 +215,21 @@ export function InboxClient({
           </li>
         ))}
       </ul>
+      {bulkDismiss.data?.failed.length ? (
+        <p role="status" className="text-sm text-muted-foreground">
+          {tb('resultFailed', { done: bulkDismiss.data.done, failed: bulkDismiss.data.failed.length })}
+        </p>
+      ) : null}
+      <BulkBar selection={selection}>
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={bulkDismiss.isPending}
+          onClick={() => bulkDismiss.mutate([...selection.selected])}
+        >
+          {tb('dismiss')}
+        </Button>
+      </BulkBar>
     </div>
   )
 }

@@ -17,6 +17,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { InboxClient } from '@/components/autopilot/inbox-client'
 import { api } from '@/components/shared/api-client'
+import { BulkBar, runBulk, SelectAllBox, SelectBox, useSelection } from '@/components/shared/bulk'
 import { ErrorBox } from '@/components/shared/error-box'
 import { Button } from '@/components/ui/button'
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
@@ -107,6 +108,17 @@ export function InboxShell({
 
   const data = inbox.data
   const threads = data?.threads ?? []
+  // označavanje više razgovora (D-119): „Rešeno” za sve označene odjednom
+  const tb = useTranslations('bulk')
+  const selection = useSelection(canEdit ? threads.map((x) => x.id) : [])
+  const bulkDone = useMutation({
+    mutationFn: (ids: string[]) =>
+      runBulk(ids, (id) => api(`/api/inbox/threads/${id}`, { method: 'PATCH', json: { status: 'done' } })),
+    onSuccess: () => {
+      selection.clear()
+      void qc.invalidateQueries({ queryKey: ['inbox', brandId] })
+    },
+  })
   const current = selected && threads.some((x) => x.id === selected) ? selected : (threads[0]?.id ?? null)
   const readers = (data?.accounts ?? []).filter((a) => a.read.includes(kind))
   const platforms = [...new Set((data?.accounts ?? []).map((a) => a.platform))]
@@ -242,9 +254,18 @@ export function InboxShell({
                 ) : null}
               </div>
             ) : null}
+            {canEdit && threads.length ? <SelectAllBox selection={selection} className="text-xs" /> : null}
             <ul className="max-h-[65vh] space-y-1.5 overflow-y-auto">
               {threads.map((x) => (
-                <li key={x.id}>
+                <li key={x.id} className="flex items-start gap-2">
+                  {canEdit ? (
+                    <SelectBox
+                      selection={selection}
+                      id={x.id}
+                      label={x.authorName ?? x.authorHandle ?? t('unknown')}
+                      className="mt-4"
+                    />
+                  ) : null}
                   <ThreadButton
                     thread={x}
                     active={x.id === current}
@@ -280,6 +301,19 @@ export function InboxShell({
           </div>
         </div>
       )}
+      {tab !== 'suggestions' ? (
+        <BulkBar selection={selection}>
+          <Button
+            size="sm"
+            variant="outline"
+            disabled={bulkDone.isPending}
+            onClick={() => bulkDone.mutate([...selection.selected])}
+          >
+            <CheckCircle2 aria-hidden />
+            {tb('markDone')}
+          </Button>
+        </BulkBar>
+      ) : null}
     </div>
   )
 }

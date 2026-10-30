@@ -19,6 +19,7 @@ import { getFormatter, getTranslations } from 'next-intl/server'
 import type { ReactNode } from 'react'
 
 import { InstallCard } from '@/components/app/install-card'
+import { MediaThumb } from '@/components/shared/media-thumb'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
@@ -361,8 +362,7 @@ export default async function AppHomePage({ searchParams }: PageProps<'/app'>) {
                     className="flex items-center gap-3 rounded-lg border p-2 transition-colors hover:bg-muted/50"
                   >
                     {item.thumb ? (
-                      // eslint-disable-next-line @next/next/no-img-element -- potpisan URL iz skladišta
-                      <img src={item.thumb} alt="" className="size-12 shrink-0 rounded-md object-cover" />
+                      <MediaThumb url={item.thumb} kind={item.thumbKind} className="size-12 rounded-md" />
                     ) : (
                       <span className="grid size-12 shrink-0 place-items-center rounded-md bg-muted">
                         <PenSquare className="size-4 text-muted-foreground" aria-hidden />

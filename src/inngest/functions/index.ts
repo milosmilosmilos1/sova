@@ -11,6 +11,7 @@ import { canvaExportVideo } from './canva-export-video'
 import { flowRun, flowsTick } from './flows'
 import { inboxSync } from './inbox-sync'
 import { mediaIncomingCleanup } from './media-incoming-cleanup'
+import { monthPlanCreate, monthPlanGenerate } from './month-plan'
 import { ping } from './ping'
 import { postMetrics } from './post-metrics'
 import { publishTarget } from './publish-target'
@@ -44,6 +45,8 @@ export const functions = [
   flowsTick,
   flowRun,
   inboxSync,
+  monthPlanCreate,
+  monthPlanGenerate,
   mediaIncomingCleanup,
   billingProcessEvent,
   billingDaily,

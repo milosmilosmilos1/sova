@@ -52,6 +52,7 @@ export interface ReviewItem {
   format: ReviewFormat
   slides: number
   thumb: string | null
+  thumbKind: 'image' | 'video'
   flowName: string | null
   platforms: SocialPlatform[]
   scheduledFor: string | null
@@ -128,6 +129,7 @@ export async function listReviewDesk(
       thumb: media[0]?.media_assets
         ? await signedUrl(media[0].media_assets as never).catch(() => null)
         : null,
+      thumbKind: media[0]?.media_assets?.kind === 'video' ? ('video' as const) : ('image' as const),
       flowName: (r.content_flows as unknown as { name: string } | null)?.name ?? null,
       platforms: [...new Set(targets.map((t) => t.platform))],
       scheduledFor: r.scheduled_for,
