@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   FileText,
   Home,
+  Images,
   Inbox,
   LogOut,
   Settings,
@@ -163,6 +164,10 @@ export function AppShell({
               <NavLink href="/app/studio">
                 <Sparkles aria-hidden />
                 AI Studio
+              </NavLink>
+              <NavLink href="/app/gallery">
+                <Images aria-hidden />
+                Galerija
               </NavLink>
               <NavLink href="/app/brain">
                 <Brain aria-hidden />

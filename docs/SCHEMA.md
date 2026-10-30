@@ -1309,6 +1309,20 @@ alter table brand_documents add column kind text not null default 'pdf';   -- pd
 alter table brand_documents add column content text;                      -- tekst beleške, 1–5.000 znakova
 alter table brand_documents alter column storage_path drop not null;      -- beleška nema fajl
 -- check: (kind = 'pdf' and storage_path is not null) or (kind = 'note' and content is not null)
+
+-- Galerija (migracija 035, D-114)
+create table gallery_categories (
+  id uuid primary key default gen_random_uuid(),
+  brand_id uuid not null references brands(id) on delete cascade,
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  name text not null,                               -- 1–40 znakova, jedinstven po brendu (lower(btrim(name)))
+  created_at timestamptz not null default now()
+);
+alter table media_assets add column category_id uuid references gallery_categories(id) on delete set null;
+alter table media_assets add column description text;      -- do 500 znakova; opis za izbor vizuala
+alter table media_assets add column last_used_at timestamptz;  -- rotacija: poslednja upotreba u objavi
+alter table content_flows add column gallery_category_id uuid references gallery_categories(id) on delete set null;
+-- RLS: kategorije čitaju članovi sa pristupom brendu, piše samo service role
 create table autopilot_runs (
   id uuid primary key default gen_random_uuid(),
   brand_id uuid not null references brands(id) on delete cascade,

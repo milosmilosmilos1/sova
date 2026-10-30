@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { GALLERY_SOURCES, galleryWords, rankGalleryPhotos } from '@/lib/gallery/pick'
 import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getStyle, wantsPhoto, type StyleId } from '@/lib/visuals/design'
@@ -28,34 +29,59 @@ export interface RenderedDesign {
 }
 
 /** Fotografije iz galerije brenda: prvo one čiji opis ili oznake liče na pojam, pa najnovije. */
+/**
+ * Fotografije iz galerije brenda (D-114): samo kategorija toka kad je zadata (a sve kad je ona
+ * prazna), redosled po poklapanju opisa, kategorije i tagova sa temom, pa po najdužem nekorišćenju.
+ * Izabrane dobijaju `last_used_at`, da sledeća objava uzme druge.
+ */
 export async function pickGalleryPhotos(
   brandId: string,
   query: string,
   count: number,
+  opts: { categoryId?: string | null; topic?: string | null } = {},
 ): Promise<MediaAssetRow[]> {
   if (count <= 0) return []
-  const { data } = await createSupabaseAdminClient()
-    .from('media_assets')
-    .select('*')
-    .eq('brand_id', brandId)
-    .eq('kind', 'image')
-    .in('source', ['upload', 'canva'])
-    .is('deleted_at', null)
-    .order('created_at', { ascending: false })
-    .limit(200)
-  const words = query
-    .toLowerCase()
-    .split(/[^\p{L}\p{N}]+/u)
-    .filter((w) => w.length > 2)
-  const score = (a: MediaAssetRow) => {
-    const hay = `${a.alt_text ?? ''} ${a.tags.join(' ')}`.toLowerCase()
-    return words.reduce((n, w) => n + (hay.includes(w) ? 1 : 0), 0)
-  }
-  return (data ?? [])
-    .map((a, i) => ({ a, s: score(a), i }))
-    .sort((x, y) => y.s - x.s || x.i - y.i)
-    .slice(0, count)
-    .map((x) => x.a)
+  const admin = createSupabaseAdminClient()
+  const [{ data }, { data: categories }] = await Promise.all([
+    admin
+      .from('media_assets')
+      .select('*')
+      .eq('brand_id', brandId)
+      .eq('kind', 'image')
+      .in('source', [...GALLERY_SOURCES])
+      .is('deleted_at', null)
+      .order('created_at', { ascending: false })
+      .limit(300),
+    admin.from('gallery_categories').select('id, name').eq('brand_id', brandId),
+  ])
+  const names = new Map((categories ?? []).map((c) => [c.id, c.name]))
+  const all = data ?? []
+  const inCategory = opts.categoryId ? all.filter((a) => a.category_id === opts.categoryId) : []
+  const pool = inCategory.length ? inCategory : all
+  const words = galleryWords(query, opts.topic)
+  const ranked = rankGalleryPhotos(
+    pool.map((a) => ({
+      row: a,
+      id: a.id,
+      description: a.description,
+      altText: a.alt_text,
+      tags: a.tags,
+      categoryName: a.category_id ? (names.get(a.category_id) ?? null) : null,
+      lastUsedAt: a.last_used_at,
+      createdAt: a.created_at,
+    })),
+    words,
+  )
+  const picked = ranked.slice(0, count).map((x) => x.row)
+  if (picked.length)
+    await admin
+      .from('media_assets')
+      .update({ last_used_at: new Date().toISOString() })
+      .in(
+        'id',
+        picked.map((a) => a.id),
+      )
+  return picked
 }
 
 async function pickPhotos(input: {
@@ -66,9 +92,15 @@ async function pickPhotos(input: {
   count: number
   crop: 'square' | 'portrait'
   uploadedBy: string | null
+  galleryCategoryId?: string | null
+  topic?: string | null
 }): Promise<MediaAssetRow[]> {
   if (input.source === 'none' || input.count <= 0) return []
-  if (input.source === 'gallery') return pickGalleryPhotos(input.brandId, input.query, input.count)
+  if (input.source === 'gallery')
+    return pickGalleryPhotos(input.brandId, input.query, input.count, {
+      categoryId: input.galleryCategoryId,
+      topic: input.topic,
+    })
   const ctx = {
     workspaceId: input.workspaceId,
     brandId: input.brandId,
@@ -93,6 +125,9 @@ export async function renderDesignSlides(input: {
   query: string
   uploadedBy: string | null
   colors?: DesignColors
+  /** galerija (D-114): kategorija toka i tema za izbor fotografije */
+  galleryCategoryId?: string | null
+  topic?: string | null
   /** oznaka u source_data (npr. ID toka ili objave) */
   origin?: Record<string, string | null>
 }): Promise<RenderedDesign> {
@@ -112,6 +147,8 @@ export async function renderDesignSlides(input: {
       count,
       crop: input.format === 'story' ? 'portrait' : 'square',
       uploadedBy: input.uploadedBy,
+      galleryCategoryId: input.galleryCategoryId,
+      topic: input.topic,
     })
   } catch (error) {
     logger.warn('design_photos_failed', { brandId: input.brandId, error })

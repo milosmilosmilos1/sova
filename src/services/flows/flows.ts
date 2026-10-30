@@ -31,6 +31,7 @@ export interface FlowView {
   styleId: string | null
   slides: number | null
   photoSource: string | null
+  galleryCategoryId: string | null
   locale: string | null
   autoAccounts: boolean
   accountIds: string[]
@@ -79,6 +80,7 @@ function toView(row: FlowRow, lastRun: FlowRunRow | null): FlowView {
     styleId: row.style_id,
     slides: row.slides,
     photoSource: row.photo_source,
+    galleryCategoryId: row.gallery_category_id,
     locale: row.locale,
     autoAccounts: row.auto_accounts,
     accountIds: row.account_ids,
@@ -147,6 +149,17 @@ export async function getFlow(viewer: Viewer, flowId: string): Promise<FlowView>
 }
 
 /** Nalozi iz izbora moraju pripadati brendu. */
+async function assertGalleryCategory(brandId: string, categoryId: string | null | undefined): Promise<void> {
+  if (!categoryId) return
+  const { data } = await createSupabaseAdminClient()
+    .from('gallery_categories')
+    .select('id')
+    .eq('id', categoryId)
+    .eq('brand_id', brandId)
+    .maybeSingle()
+  if (!data) throw new ApiError('VALIDATION', 'Kategorija galerije ne pripada ovom brendu.')
+}
+
 async function assertAccounts(brandId: string, ids: string[]): Promise<void> {
   if (!ids.length) return
   const { data } = await createSupabaseAdminClient()
@@ -162,6 +175,7 @@ export async function createFlow(viewer: Viewer, input: CreateFlowInput): Promis
   const brand = await getBrand(viewer, input.brandId)
   await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
   await assertAccounts(brand.id, input.accountIds)
+  await assertGalleryCategory(brand.id, input.galleryCategoryId)
   const admin = createSupabaseAdminClient()
   const { count } = await admin
     .from('content_flows')
@@ -192,6 +206,7 @@ export async function createFlow(viewer: Viewer, input: CreateFlowInput): Promis
       style_id: input.styleId ?? null,
       slides: input.slides ?? null,
       photo_source: input.photoSource ?? null,
+      gallery_category_id: input.galleryCategoryId ?? null,
       locale: input.locale ?? null,
       auto_accounts: input.autoAccounts,
       account_ids: input.accountIds,
@@ -209,6 +224,7 @@ export async function updateFlow(viewer: Viewer, flowId: string, input: UpdateFl
   const { flow, brand } = await loadFlow(viewer, flowId)
   await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
   if (input.accountIds) await assertAccounts(brand.id, input.accountIds)
+  await assertGalleryCategory(brand.id, input.galleryCategoryId)
   const update: Database['public']['Tables']['content_flows']['Update'] = {
     updated_at: new Date().toISOString(),
   }
@@ -220,6 +236,7 @@ export async function updateFlow(viewer: Viewer, flowId: string, input: UpdateFl
   if (input.styleId !== undefined) update.style_id = input.styleId
   if (input.slides !== undefined) update.slides = input.slides
   if (input.photoSource !== undefined) update.photo_source = input.photoSource
+  if (input.galleryCategoryId !== undefined) update.gallery_category_id = input.galleryCategoryId
   if (input.locale !== undefined) update.locale = input.locale
   if (input.autoAccounts !== undefined) update.auto_accounts = input.autoAccounts
   if (input.accountIds !== undefined) update.account_ids = input.accountIds

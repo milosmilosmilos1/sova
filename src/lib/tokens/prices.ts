@@ -24,6 +24,7 @@ export const tokenActionSchema = z.enum([
   'x_post',
   'x_post_with_link',
   'other_post',
+  'photo_describe',
 ])
 export type TokenAction = z.infer<typeof tokenActionSchema>
 
@@ -46,6 +47,8 @@ export const DEFAULT_TOKEN_PRICES: Record<TokenAction, number> = {
   x_post: 1,
   x_post_with_link: 6,
   other_post: 0,
+  /** opis fotografije iz galerije (D-114) */
+  photo_describe: 1,
 }
 
 export interface ModelPrice {

@@ -368,7 +368,11 @@
       "cancel": "Otkaži",
       "save": "Sačuvaj automatizaciju",
       "saving": "Čuvam…",
-      "backToList": "Automatizuj objave"
+      "backToList": "Automatizuj objave",
+      "galleryCategory": "Kategorija galerije",
+      "galleryAll": "Cela galerija",
+      "galleryOption": "{name} ({count})",
+      "galleryHint": "Tok uzima fotografije samo iz ove kategorije. Kad je prazna, uzima iz cele galerije."
     }
   },
   "review": {
@@ -763,5 +767,50 @@
       "none": "Sajt još nije analiziran.",
       "open": "Dodaj ili osveži sajt"
     }
+  },
+  "gallery": {
+    "metaTitle": "Galerija",
+    "eyebrow": "Biblioteka brenda",
+    "title": "Vaše fotografije",
+    "subtitle": "Dodajte fotografije jednom, opišite ih i Sova ih koristi u karuselima, pričama, tokovima i Studiju. Opis joj pomaže da za temu izabere pravu.",
+    "describeAll": "Opiši automatski ({count}) · {price, plural, one {# token} few {# tokena} other {# tokena}}",
+    "describing": "Opisujem {done} od {total}…",
+    "verifyEmail": "Potvrdite email da biste koristili automatski opis.",
+    "save": "Sačuvaj izmene ({count})",
+    "saving": "Čuvam…",
+    "add": "Dodaj fotografije",
+    "uploading": "Otpremam {done} od {total}…",
+    "notImage": "Izaberite slike: PNG, JPG, WebP ili HEIC.",
+    "stats": {
+      "total": "Ukupno fotografija",
+      "categories": "Kategorije",
+      "described": "Sa opisom",
+      "missing": "Bez opisa"
+    },
+    "categoriesLabel": "Kategorije",
+    "all": "Sve",
+    "uncategorized": "Bez kategorije",
+    "renameCategory": "Preimenuj kategoriju {name}",
+    "renamePrompt": "Nov naziv kategorije",
+    "deleteCategory": "Obriši kategoriju {name}",
+    "confirmDeleteCategory": "Obrisati kategoriju „{name}”? Fotografije ostaju u galeriji, bez kategorije.",
+    "newCategory": "Nova kategorija…",
+    "addCategory": "Dodaj kategoriju",
+    "allPhotos": "Sve fotografije",
+    "gridHint": "Kliknite fotografiju za veliki pregled. Opis pomaže Sovi da izabere pravi vizual.",
+    "count": "{count, plural, one {# fotografija} few {# fotografije} other {# fotografija}}",
+    "empty": "Još nema fotografija u ovoj kategoriji.",
+    "open": "Otvori fotografiju: {name}",
+    "photo": "fotografija",
+    "noDescription": "Bez opisa",
+    "unsaved": "Nije sačuvano",
+    "descriptionPlaceholder": "Npr. Ekipa montira klimu u dnevnoj sobi, svetao prostor.",
+    "description": "Opis fotografije",
+    "category": "Kategorija",
+    "describeOne": "Opiši automatski",
+    "delete": "Obriši fotografiju",
+    "confirmDelete": "Obrisati fotografiju iz galerije?",
+    "previewTitle": "Pregled fotografije",
+    "tags": "Pojmovi"
   }
 }

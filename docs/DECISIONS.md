@@ -850,3 +850,16 @@ Odluka (faza 6 iz D-108):
 - Sopstveni logo na slajdovima (`brands.design.logoAssetId`): slika iz biblioteke tog brenda ima prednost nad logoom sa sajta; „Vrati logo sa sajta” ga briše. Server proverava da je slika iz istog radnog prostora i brenda.
 
 Razlog: zahtev vlasnika (D-108). Playbook u istom pozivu kao uvidi uči iz rezultata bez novog troška, a zajedničko zaglavlje drži podešavanja brenda i naloga na jednom mestu bez selidbe postojećih strana.
+
+## D-114 · 30.10.2026 · usvojeno · Galerija: kategorije, opisi, automatski opis i izbor fotografije za temu
+
+Odluka (faza 7 iz D-108):
+
+- Nova strana „Galerija” (`/app/gallery`, meni Sadržaj): fotografije koje je brend sam dodao (otpremljene i iz Canve; bez slajdova, stoka i AI slika), brojači (ukupno, kategorije, sa opisom, bez opisa), kategorije kao filter (sa „Bez kategorije”), dodavanje više fotografija odjednom u otvorenu kategoriju, opis i kategorija na svakoj kartici i „Sačuvaj izmene” za sve odjednom. Klik otvara veliki pregled.
+- Kategorije (`gallery_categories`, migracija 035): do 30 po brendu, naziv jedinstven bez obzira na velika slova. Brisanje kategorije ostavlja fotografije u galeriji, bez kategorije.
+- Opis (`media_assets.description`, do 500 znakova) i „Opiši automatski”: Gemini čita umanjenu fotografiju (najviše 768 px) i vraća rečenicu šta se vidi i pojmove na jeziku brenda i na engleskom, jer je upit za vizual iz teksta objave na engleskom. Košta 1 token po fotografiji (nova cena `photo_describe`); do šest u zahtevu, tri istovremeno; slika koja ne uspe ne troši token.
+- Izbor fotografije za objavu: reči iz teme, naslova slajdova i upita za vizual porede se sa opisom, kategorijom i tagovima (tačna reč vredi više od istog korena). Među jednako dobrim prednost ima fotografija koja najduže nije korišćena (`media_assets.last_used_at`), pa se iste ne ponavljaju.
+- Tok sa izvorom „Moja galerija” može da uzima samo jednu kategoriju (`content_flows.gallery_category_id`); kad je ona prazna, uzima celu galeriju.
+- Migracija 035 ponavlja D-079 za tabele iz 031, 033 i 035: strani ključevi sa CASCADE ili SET NULL su DEFERRABLE, inače brisanje naloga pada kad kaskada dva puta dira isti red.
+
+Razlog: zahtev vlasnika (D-108). Fotografije brenda su vrednije od stoka, a opis i kategorija su ono što Sovi treba da ih koristi na pravom mestu.

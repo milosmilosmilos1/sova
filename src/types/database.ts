@@ -487,14 +487,14 @@ isOneToOne: false
                   ]
                 },"content_flows": {
                   Row: {
-                    "account_ids": (string)[],"active": boolean,"auto_accounts": boolean,"auto_time": boolean,"brand_id": string,"collaborators": (string)[],"created_at": string,"created_by": string | null,"cta": string | null,"cta_mode": string,"days": (number)[],"deleted_at": string | null,"format": string,"id": string,"last_run_at": string | null,"locale": string | null,"name": string,"next_run_at": string | null,"photo_source": string | null,"slides": number | null,"style_id": string | null,"time_local": string,"topic": string,"updated_at": string,"workspace_id": string
+                    "account_ids": (string)[],"active": boolean,"auto_accounts": boolean,"auto_time": boolean,"brand_id": string,"collaborators": (string)[],"created_at": string,"created_by": string | null,"cta": string | null,"cta_mode": string,"days": (number)[],"deleted_at": string | null,"format": string,"id": string,"last_run_at": string | null,"locale": string | null,"name": string,"next_run_at": string | null,"photo_source": string | null,"slides": number | null,"style_id": string | null,"time_local": string,"topic": string,"updated_at": string,"workspace_id": string,"gallery_category_id": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "account_ids"?: (string)[],"active"?: boolean,"auto_accounts"?: boolean,"auto_time"?: boolean,"brand_id": string,"collaborators"?: (string)[],"created_at"?: string,"created_by"?: string | null,"cta"?: string | null,"cta_mode"?: string,"days"?: (number)[],"deleted_at"?: string | null,"format"?: string,"id"?: string,"last_run_at"?: string | null,"locale"?: string | null,"name": string,"next_run_at"?: string | null,"photo_source"?: string | null,"slides"?: number | null,"style_id"?: string | null,"time_local"?: string,"topic": string,"updated_at"?: string,"workspace_id": string
+                    "account_ids"?: (string)[],"active"?: boolean,"auto_accounts"?: boolean,"auto_time"?: boolean,"brand_id": string,"collaborators"?: (string)[],"created_at"?: string,"created_by"?: string | null,"cta"?: string | null,"cta_mode"?: string,"days"?: (number)[],"deleted_at"?: string | null,"format"?: string,"id"?: string,"last_run_at"?: string | null,"locale"?: string | null,"name": string,"next_run_at"?: string | null,"photo_source"?: string | null,"slides"?: number | null,"style_id"?: string | null,"time_local"?: string,"topic": string,"updated_at"?: string,"workspace_id": string,"gallery_category_id"?: string | null
                   }
                   Update: {
-                    "account_ids"?: (string)[],"active"?: boolean,"auto_accounts"?: boolean,"auto_time"?: boolean,"brand_id"?: string,"collaborators"?: (string)[],"created_at"?: string,"created_by"?: string | null,"cta"?: string | null,"cta_mode"?: string,"days"?: (number)[],"deleted_at"?: string | null,"format"?: string,"id"?: string,"last_run_at"?: string | null,"locale"?: string | null,"name"?: string,"next_run_at"?: string | null,"photo_source"?: string | null,"slides"?: number | null,"style_id"?: string | null,"time_local"?: string,"topic"?: string,"updated_at"?: string,"workspace_id"?: string
+                    "account_ids"?: (string)[],"active"?: boolean,"auto_accounts"?: boolean,"auto_time"?: boolean,"brand_id"?: string,"collaborators"?: (string)[],"created_at"?: string,"created_by"?: string | null,"cta"?: string | null,"cta_mode"?: string,"days"?: (number)[],"deleted_at"?: string | null,"format"?: string,"id"?: string,"last_run_at"?: string | null,"locale"?: string | null,"name"?: string,"next_run_at"?: string | null,"photo_source"?: string | null,"slides"?: number | null,"style_id"?: string | null,"time_local"?: string,"topic"?: string,"updated_at"?: string,"workspace_id"?: string,"gallery_category_id"?: string | null
                   }
                   Relationships: [
                     {
@@ -583,6 +583,18 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"gallery_categories": {
+                  Row: {
+                    "brand_id": string,"created_at": string,"id": string,"name": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "brand_id": string,"created_at"?: string,"id"?: string,"name": string,"workspace_id": string
+                  }
+                  Update: {
+                    "brand_id"?: string,"created_at"?: string,"id"?: string,"name"?: string,"workspace_id"?: string
+                  }
+                  Relationships: []
                 },"historical_posts": {
                   Row: {
                     "brand_id": string,"external_id": string,"id": string,"imported_at": string,"media": Json | null,"metrics": NonNullable<Json>,"permalink": string | null,"post_type": string | null,"published_at": string | null,"social_account_id": string,"text_content": string | null
@@ -767,14 +779,14 @@ isOneToOne: false
                   ]
                 },"media_assets": {
                   Row: {
-                    "ai_generation_id": string | null,"alt_text": string | null,"attribution": Json | null,"brand_id": string | null,"bucket": string,"created_at": string,"deleted_at": string | null,"duration_ms": number | null,"exif_stripped": boolean,"height": number | null,"id": string,"is_ai_generated": boolean,"kind": Database["public"]['Enums']["media_kind"],"mime_type": string,"sha256": string | null,"size_bytes": number,"source": Database["public"]['Enums']["media_source"],"source_data": Json | null,"storage_path": string,"tags": (string)[],"uploaded_by": string | null,"width": number | null,"workspace_id": string
+                    "ai_generation_id": string | null,"alt_text": string | null,"attribution": Json | null,"brand_id": string | null,"bucket": string,"created_at": string,"deleted_at": string | null,"duration_ms": number | null,"exif_stripped": boolean,"height": number | null,"id": string,"is_ai_generated": boolean,"kind": Database["public"]['Enums']["media_kind"],"mime_type": string,"sha256": string | null,"size_bytes": number,"source": Database["public"]['Enums']["media_source"],"source_data": Json | null,"storage_path": string,"tags": (string)[],"uploaded_by": string | null,"width": number | null,"workspace_id": string,"category_id": string | null,"description": string | null,"last_used_at": string | null
                   }
                   ComputedFields: never
                   Insert: {
-                    "ai_generation_id"?: string | null,"alt_text"?: string | null,"attribution"?: Json | null,"brand_id"?: string | null,"bucket": string,"created_at"?: string,"deleted_at"?: string | null,"duration_ms"?: number | null,"exif_stripped"?: boolean,"height"?: number | null,"id"?: string,"is_ai_generated"?: boolean,"kind": Database["public"]['Enums']["media_kind"],"mime_type": string,"sha256"?: string | null,"size_bytes": number,"source": Database["public"]['Enums']["media_source"],"source_data"?: Json | null,"storage_path": string,"tags"?: (string)[],"uploaded_by"?: string | null,"width"?: number | null,"workspace_id": string
+                    "ai_generation_id"?: string | null,"alt_text"?: string | null,"attribution"?: Json | null,"brand_id"?: string | null,"bucket": string,"created_at"?: string,"deleted_at"?: string | null,"duration_ms"?: number | null,"exif_stripped"?: boolean,"height"?: number | null,"id"?: string,"is_ai_generated"?: boolean,"kind": Database["public"]['Enums']["media_kind"],"mime_type": string,"sha256"?: string | null,"size_bytes": number,"source": Database["public"]['Enums']["media_source"],"source_data"?: Json | null,"storage_path": string,"tags"?: (string)[],"uploaded_by"?: string | null,"width"?: number | null,"workspace_id": string,"category_id"?: string | null,"description"?: string | null,"last_used_at"?: string | null
                   }
                   Update: {
-                    "ai_generation_id"?: string | null,"alt_text"?: string | null,"attribution"?: Json | null,"brand_id"?: string | null,"bucket"?: string,"created_at"?: string,"deleted_at"?: string | null,"duration_ms"?: number | null,"exif_stripped"?: boolean,"height"?: number | null,"id"?: string,"is_ai_generated"?: boolean,"kind"?: Database["public"]['Enums']["media_kind"],"mime_type"?: string,"sha256"?: string | null,"size_bytes"?: number,"source"?: Database["public"]['Enums']["media_source"],"source_data"?: Json | null,"storage_path"?: string,"tags"?: (string)[],"uploaded_by"?: string | null,"width"?: number | null,"workspace_id"?: string
+                    "ai_generation_id"?: string | null,"alt_text"?: string | null,"attribution"?: Json | null,"brand_id"?: string | null,"bucket"?: string,"created_at"?: string,"deleted_at"?: string | null,"duration_ms"?: number | null,"exif_stripped"?: boolean,"height"?: number | null,"id"?: string,"is_ai_generated"?: boolean,"kind"?: Database["public"]['Enums']["media_kind"],"mime_type"?: string,"sha256"?: string | null,"size_bytes"?: number,"source"?: Database["public"]['Enums']["media_source"],"source_data"?: Json | null,"storage_path"?: string,"tags"?: (string)[],"uploaded_by"?: string | null,"width"?: number | null,"workspace_id"?: string,"category_id"?: string | null,"description"?: string | null,"last_used_at"?: string | null
                   }
                   Relationships: [
                     {

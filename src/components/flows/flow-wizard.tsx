@@ -37,6 +37,7 @@ export interface WizardFlow {
   styleId: StyleId | null
   slides: number | null
   photoSource: PhotoSource | null
+  galleryCategoryId: string | null
   locale: string | null
   autoAccounts: boolean
   accountIds: string[]
@@ -67,6 +68,7 @@ export function FlowWizard({
   flow,
   accounts,
   design,
+  galleryCategories,
   canEdit,
 }: {
   brandId: string
@@ -74,6 +76,8 @@ export function FlowWizard({
   flow: WizardFlow | null
   accounts: WizardAccount[]
   design: { styleId: StyleId; size: PostSize; photoSource: PhotoSource; slides: number; colors: DesignColors }
+  /** kategorije galerije (D-114) za tok koji uzima fotografije iz galerije */
+  galleryCategories: Array<{ id: string; name: string; count: number }>
   canEdit: boolean
 }) {
   const t = useTranslations('flows.wizard')
@@ -90,6 +94,8 @@ export function FlowWizard({
   const [styleId, setStyleId] = useState<StyleId>(flow?.styleId ?? design.styleId)
   const [slides, setSlides] = useState<number>(flow?.slides ?? design.slides)
   const [photoSource, setPhotoSource] = useState<PhotoSource | null>(flow?.photoSource ?? null)
+  const [galleryCategoryId, setGalleryCategoryId] = useState<string | null>(flow?.galleryCategoryId ?? null)
+  const fromGallery = (photoSource ?? design.photoSource) === 'gallery'
   const [locale, setLocale] = useState<string | null>(flow?.locale ?? null)
   const [autoAccounts, setAutoAccounts] = useState(flow?.autoAccounts ?? true)
   const [accountIds, setAccountIds] = useState<string[]>(flow?.accountIds ?? [])
@@ -122,6 +128,7 @@ export function FlowWizard({
         styleId: ownStyle ? styleId : null,
         slides: format === 'single' ? null : slidesValue,
         photoSource,
+        galleryCategoryId: fromGallery ? galleryCategoryId : null,
         locale,
         autoAccounts,
         accountIds: autoAccounts ? [] : accountIds,
@@ -342,6 +349,25 @@ export function FlowWizard({
                     ))}
                   </select>
                 </div>
+                {fromGallery ? (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="flow-gallery">{t('galleryCategory')}</Label>
+                    <select
+                      id="flow-gallery"
+                      value={galleryCategoryId ?? ''}
+                      onChange={(e) => setGalleryCategoryId(e.target.value || null)}
+                      className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
+                    >
+                      <option value="">{t('galleryAll')}</option>
+                      {galleryCategories.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {t('galleryOption', { name: c.name, count: c.count })}
+                        </option>
+                      ))}
+                    </select>
+                    <p className="text-xs text-muted-foreground">{t('galleryHint')}</p>
+                  </div>
+                ) : null}
                 <div className="space-y-1.5">
                   <Label htmlFor="flow-locale">{t('language')}</Label>
                   <select

@@ -164,6 +164,8 @@ export async function runFlow(runId: string, step: StepRunner): Promise<FlowRunR
         photoSource,
         query: (copy.visualQuery || flow.topic).slice(0, 100),
         uploadedBy: null,
+        galleryCategoryId: flow.gallery_category_id,
+        topic: [flow.topic, ...copy.slides.map((s) => s.title)].join(' '),
         origin: { flowId: flow.id, runId },
       })
       return { assetIds: out.assetIds, styleId, photoSource, size: design.size }

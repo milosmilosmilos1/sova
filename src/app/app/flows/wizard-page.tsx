@@ -7,6 +7,7 @@ import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
 import { getBrand } from '@/services/brands'
 import { resolveDesign } from '@/services/design/brand-design'
 import { getFlow } from '@/services/flows/flows'
+import { listGalleryCategories } from '@/services/gallery'
 import { listSocialAccounts } from '@/services/social/accounts'
 
 /** Zajednička strana čarobnjaka toka (nov tok i izmena), D-108. */
@@ -20,9 +21,10 @@ export async function FlowWizardPage({ flowId }: { flowId: string | null }) {
   const flow = flowId ? await getFlow(viewer, flowId).catch(() => null) : null
   if (flowId && !flow) redirect('/app/flows')
   const brand = await getBrand(viewer, flow?.brandId ?? summary.id)
-  const [design, { accounts }] = await Promise.all([
+  const [design, { accounts }, gallery] = await Promise.all([
     resolveDesign(brand),
     listSocialAccounts(viewer, brand.id),
+    listGalleryCategories(viewer, brand.id),
   ])
   return (
     <FlowWizard
@@ -39,6 +41,7 @@ export async function FlowWizardPage({ flowId }: { flowId: string | null }) {
         slides: design.slides,
         colors: design.colors,
       }}
+      galleryCategories={gallery}
       canEdit={EDIT_ROLES.includes(current.role)}
     />
   )

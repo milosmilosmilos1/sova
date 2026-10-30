@@ -368,7 +368,11 @@
       "cancel": "Cancel",
       "save": "Save automation",
       "saving": "Saving…",
-      "backToList": "Automate posts"
+      "backToList": "Automate posts",
+      "galleryCategory": "Gallery category",
+      "galleryAll": "Whole gallery",
+      "galleryOption": "{name} ({count})",
+      "galleryHint": "The flow only uses photos from this category. If it is empty, it uses the whole gallery."
     }
   },
   "review": {
@@ -763,5 +767,50 @@
       "none": "The website hasn't been analyzed yet.",
       "open": "Add or refresh website"
     }
+  },
+  "gallery": {
+    "metaTitle": "Gallery",
+    "eyebrow": "Brand library",
+    "title": "Your photos",
+    "subtitle": "Add photos once, describe them, and Sova uses them in carousels, stories, flows and Studio. The description helps it pick the right one for a topic.",
+    "describeAll": "Describe automatically ({count}) · {price, plural, one {# token} other {# tokens}}",
+    "describing": "Describing {done} of {total}…",
+    "verifyEmail": "Confirm your email to use automatic descriptions.",
+    "save": "Save changes ({count})",
+    "saving": "Saving…",
+    "add": "Add photos",
+    "uploading": "Uploading {done} of {total}…",
+    "notImage": "Choose images: PNG, JPG, WebP or HEIC.",
+    "stats": {
+      "total": "Total photos",
+      "categories": "Categories",
+      "described": "With a description",
+      "missing": "No description"
+    },
+    "categoriesLabel": "Categories",
+    "all": "All",
+    "uncategorized": "No category",
+    "renameCategory": "Rename category {name}",
+    "renamePrompt": "New category name",
+    "deleteCategory": "Delete category {name}",
+    "confirmDeleteCategory": "Delete the category “{name}”? The photos stay in the gallery, without a category.",
+    "newCategory": "New category…",
+    "addCategory": "Add category",
+    "allPhotos": "All photos",
+    "gridHint": "Click a photo for a large preview. The description helps Sova pick the right visual.",
+    "count": "{count, plural, one {# photo} other {# photos}}",
+    "empty": "No photos in this category yet.",
+    "open": "Open photo: {name}",
+    "photo": "photo",
+    "noDescription": "No description",
+    "unsaved": "Not saved",
+    "descriptionPlaceholder": "E.g. The crew installing an AC in a bright living room.",
+    "description": "Photo description",
+    "category": "Category",
+    "describeOne": "Describe automatically",
+    "delete": "Delete photo",
+    "confirmDelete": "Delete the photo from the gallery?",
+    "previewTitle": "Photo preview",
+    "tags": "Keywords"
   }
 }
