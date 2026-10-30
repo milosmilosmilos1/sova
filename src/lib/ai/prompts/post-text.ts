@@ -269,7 +269,9 @@ export function buildPostTextPrompt(input: PostTextInput): string {
       ? 'Priložena je fotografija. Prvo je opiši u polju image_description (šta se vidi, atmosfera, boje), pa tekst gradi na tome. alt_text opisuje fotografiju za čitače ekrana.'
       : 'Nema fotografije: image_description ostavi null, a alt_text napiši kao predlog opisa vizuala koji bi pratio objavu.',
     'first_comment: za Instagram, Facebook i LinkedIn predloži prvi komentar (npr. link, pitanje za publiku ili hashtagovi) ili null.',
+    'Ako tema nije u opisu brenda, piši o njoj korisno i opšte, bez izmišljenih činjenica o brendu; brend se tada pojavljuje samo u pozivu na akciju.',
     '',
+    'TEMA OBJAVE (tekst je o ovome; usluge brenda pominji samo kad su deo teme)',
     '<<<PODACI>>>',
     input.topic,
     '<<<KRAJ PODATAKA>>>',

@@ -1,15 +1,18 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 
-import { StudioClient } from '@/components/studio/studio-client'
+import { StudioChat } from '@/components/studio/studio-chat'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
-import { getCurrentWorkspace } from '@/lib/auth/workspace'
-import { configured } from '@/lib/env'
-import { AI_IMAGES_FLAG, isFeatureEnabled } from '@/lib/flags'
+import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
 
-export const metadata: Metadata = { title: 'AI Studio' }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('studio')
+  return { title: t('metaTitle') }
+}
 
+/** Studio kao razgovor (D-116); ručni alati su na /app/studio/tools. */
 export default async function StudioPage() {
   const viewer = await getViewer()
   if (!viewer) redirect('/login?next=/app/studio')
@@ -18,13 +21,11 @@ export default async function StudioPage() {
   const brand = await getCurrentBrand(viewer, current.workspaceId)
   if (!brand) redirect('/app/settings')
   return (
-    <StudioClient
+    <StudioChat
       workspaceId={current.workspaceId}
       brandId={brand.id}
-      brandName={brand.name}
-      brandLocale={brand.content_locale}
-      sources={{ unsplash: configured.unsplash, pexels: configured.pexels }}
-      aiImages={await isFeatureEnabled(AI_IMAGES_FLAG)}
+      canEdit={EDIT_ROLES.includes(current.role)}
+      emailVerified={Boolean(viewer.profile.emailVerifiedAt)}
     />
   )
 }

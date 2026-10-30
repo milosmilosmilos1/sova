@@ -168,7 +168,13 @@ export async function runFlow(runId: string, step: StepRunner): Promise<FlowRunR
         topic: [flow.topic, ...copy.slides.map((s) => s.title)].join(' '),
         origin: { flowId: flow.id, runId },
       })
-      return { assetIds: out.assetIds, styleId, photoSource, size: design.size }
+      return {
+        assetIds: out.assetIds,
+        photoIds: out.photos.map((p) => p.id),
+        styleId,
+        photoSource,
+        size: design.size,
+      }
     })
     const assetIds = rendered.assetIds
 
@@ -218,6 +224,8 @@ export async function runFlow(runId: string, step: StepRunner): Promise<FlowRunR
             platforms,
             flowId: flow.id,
             dmCta: flow.cta_mode === 'dm',
+            // korak iz ranije verzije (pre D-116) nema photoIds
+            copy: { slides: copy.slides as Slide[], photoAssetIds: rendered.photoIds ?? [] },
           } satisfies PostDesignContext as unknown as Json,
         })
         .select('id')

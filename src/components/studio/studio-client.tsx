@@ -1,6 +1,7 @@
 'use client'
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
 
@@ -34,8 +35,8 @@ import type { DesignColors } from '@/lib/visuals/design/types'
 import { uploadMediaFile } from '@/lib/media/client-upload'
 
 /**
- * Najprostija stranica za testiranje tri funkcije iz prve verzije (brif, faza 5).
- * Dizajn dolazi u fazi 14; ovde su funkcionalnost i 4 stanja.
+ * Ručni alati Studija: forma „Nova objava” i alati iz prve verzije (brif, faza 5). Od D-116 je
+ * glavni Studio razgovor (`studio-chat.tsx`), a ovi alati su na /app/studio/tools.
  */
 interface Balance {
   balance: { total: number; reserved: number; available: number }
@@ -169,7 +170,10 @@ export function StudioClient({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">AI Studio</h1>
+          <Link href="/app/studio" className="text-sm text-primary hover:underline">
+            ← Nazad na razgovor sa Sovom
+          </Link>
+          <h1 className="text-2xl font-semibold tracking-tight">Ručni alati Studija</h1>
           <p className="text-sm text-muted-foreground">Brend: {brandName}</p>
         </div>
         <div className="rounded-md border px-3 py-2 text-sm">

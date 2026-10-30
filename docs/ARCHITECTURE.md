@@ -111,7 +111,7 @@ sova/
 │   │   │   ├── onboarding/
 │   │   │   ├── dashboard/
 │   │   │   ├── brand/           Brand Brain
-│   │   │   ├── studio/          AI Studio
+│   │   │   ├── studio/          Studio: razgovor sa Sovom (D-116), tools/ ručni alati
 │   │   │   ├── composer/
 │   │   │   ├── calendar/
 │   │   │   ├── strategies/
@@ -499,6 +499,7 @@ Legenda uloga: O owner, A admin, E editor, P approver, V viewer, PA platform_adm
 |                   | `GET /api/brands/[id]/brain`, `POST /api/brands/[id]/notes`                                                                                       | član / O,A,E                                                                                                 | beleške 20 na 10 min               | D-113: šta Sova zna, izvori i playbook; beleška ide u bazu znanja (202), briše se kao dokument                                      |
 | Galerija          | `GET/PATCH /api/gallery`, `POST /api/gallery/categories`, `PATCH/DELETE /api/gallery/categories/[id]`, `POST /api/gallery/describe`               | član / O,A,E                                                                                                 | izmene 30/min, opis 20 na 10 min   | D-114: opis 1 token po fotografiji, do 6 u zahtevu                                                                                  |
 | Predlozi i vodič  | `GET/POST /api/ideas`, `PATCH /api/ideas/[id]`, `POST /api/ideas/[id]/vote`, `GET /api/guide`                                                     | ulogovan / status: admin platforme                                                                           | predlozi 5/h, glasovi 60/min       | D-115: prijavu problema vide autor i admin; glas preko `toggle_feature_vote`                                                        |
+| Studio            | `GET/DELETE /api/studio`, `POST /api/studio/messages`                                                                                             | član / O,A,E                                                                                                 | poruke 10/min                      | D-116: poruka 1 token, objava iz poruke kao tekst (2); izmena otvorene objave i slajdova                                            |
 | AI                | `POST /api/ai/text`                                                                                                                               | O,A,E                                                                                                        | 10/min, 100/dan free               | 2 tokena, sinhrono, Idempotency-Key obavezan                                                                                        |
 |                   | `POST /api/ai/image/from-photo`, `POST /api/ai/image/from-prompt`                                                                                 | O,A,E                                                                                                        | 10/min                             | 8 ili 15 tokena, 202                                                                                                                |
 |                   | `POST /api/ai/visual/template`                                                                                                                    | O,A,E                                                                                                        | 10/min                             | 2 tokena, 202                                                                                                                       |
@@ -565,6 +566,7 @@ Od 25.10.2026 (D-099) mesečni plan je 47 €, a godišnji od 29.10.2026 297 €
 | ---------------------------------------------------------------------- | ------ | ---------------- | --------------------------- |
 | Tekst za objavu (≈4k ulaz, 1,5k izlaz, 3.6-flash)                      | 2      | ≈ $0.009         | $0.156 / $0.066             |
 | Prepis, hashtag                                                        | 1      | ≈ $0.004         | $0.078 / $0.033             |
+| Poruka u Studiju (≈5k ulaz, 0,5k izlaz, do 4 slike od 768 px)          | 1      | ≈ $0.007         | $0.078 / $0.033             |
 | Vizual iz šablona (Unsplash + vision rangiranje 8 slika)               | 2      | ≈ $0.01          | $0.156 / $0.066             |
 | Gemini slika standard (1K)                                             | 8      | $0.067           | $0.62 / $0.27               |
 | Gemini slika premium (2K)                                              | 15     | $0.134           | $1.17 / $0.50               |

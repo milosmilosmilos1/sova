@@ -245,7 +245,8 @@ export function ReviewDesk({
   )
 }
 
-function DetailPanes({
+/** Pregled i panel za odluku jednog nacrta; koristi ga i Studio za objavu iz razgovora (D-116). */
+export function DetailPanes({
   postId,
   timeZone,
   textPrice,

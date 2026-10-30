@@ -8,6 +8,8 @@ import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import type { ComposeInput } from '@/lib/schemas/ai'
 import { wallClock } from '@/lib/zoned-time'
+import { getStyle } from '@/lib/visuals/design'
+import type { StyleId } from '@/lib/visuals/design/catalog'
 import type { Slide } from '@/lib/visuals/design/types'
 import { assertDailyQuota } from '@/services/ai/generations'
 import { buildBrandContext } from '@/services/ai/text'
@@ -64,6 +66,14 @@ export async function composeDesigned(
   if (!viewer.profile.emailVerifiedAt) throw new ApiError('EMAIL_NOT_VERIFIED')
   await assertDailyQuota(brand.workspace_id)
   const platforms = input.platforms as SocialPlatform[]
+  // priložene fotografije (D-116) se proveravaju pre naplate teksta
+  const photoIds: string[] = []
+  for (const id of input.photoAssetIds ?? []) {
+    const asset = await getAsset(viewer, id)
+    if ((asset.brand_id && asset.brand_id !== brand.id) || asset.kind !== 'image')
+      throw new ApiError('VALIDATION', 'Za slajdove možete priložiti samo fotografije ovog brenda.')
+    photoIds.push(asset.id)
+  }
   const design = await resolveDesign(brand)
   const slides =
     dFormat === 'single'
@@ -96,7 +106,9 @@ export async function composeDesigned(
         : copy.slides.length > 1
           ? 'carousel'
           : 'image'
-  const styleId = input.styleId ?? design.styleId
+  const baseStyle = input.styleId ?? design.styleId
+  // priložena fotografija traži stil koji je crta: tipografski stil bez fotografije prelazi na „Poster”
+  const styleId: StyleId = photoIds.length && getStyle(baseStyle).photo === 'none' ? 'poster' : baseStyle
   const rendered = await renderDesignSlides({
     workspaceId: brand.workspace_id,
     brandId: brand.id,
@@ -107,6 +119,7 @@ export async function composeDesigned(
     photoSource: input.photoSource ?? design.photoSource,
     query: (copy.visualQuery || input.topic).slice(0, 100),
     uploadedBy: viewer.user.id,
+    photoAssetIds: photoIds.length ? photoIds : undefined,
   })
   const notes = [...rendered.notes]
   if (format === 'story') notes.push('Priča nema opis: tekst je sačuvan uz nacrt, a objavljuju se slajdovi.')
@@ -147,6 +160,8 @@ export async function composeDesigned(
     size: input.size ?? design.size,
     locale,
     platforms,
+    ...(photoIds.length ? { ownPhotos: true } : {}),
+    copy: { slides: copy.slides, photoAssetIds: rendered.photos.map((p) => p.id) },
   }
   await createSupabaseAdminClient()
     .from('posts')

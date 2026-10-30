@@ -152,6 +152,8 @@ Brand Brain (faza 6):
 - **Embeddings**: `embedContent` kroz `batchEmbedContents` u grupama od 16. Zamka SDK-a: `contents: string[]` se spaja u JEDAN sadržaj sa više delova (vraća jedan vektor); svaki tekst mora biti poseban `Content` (`{ role: 'user', parts: [{ text }] }`).
 - **Naplata**: prva analiza 0, sledeće `brand_analyze_again` (10). Kad AI nije podešen ili padne, profil je heuristički i rezervacija se oslobađa.
 
+Studio kao razgovor (D-116): jedan `generateContent` po poruci, `responseJsonSchema` iz `studioDecisionSchema` (radnja, odgovor, brif ili izmena, predlozi), do četiri priložene fotografije smanjene na 768 px JPEG, temperatura 0,6, `thinkingLevel: low`, oznaka `studio-chat` u logu. Nova objava ide kroz postojeći poziv za slajdove. Link iz poruke čita crawler (`fetchPage`, SSRF zaštita, 8 s, 2 MB), a naziv, opis i cena proizvoda dolaze iz schema.org `Product` u JSON-LD-u.
+
 ## 13a. Stripe (naplata, faza 12, D-090)
 
 - **SDK i verzija**: stripe-node 23.0.0 (zakucan), `apiVersion: 2026-09-30.endive`, fetch HTTP klijent. Od basil verzije period pretplate je na stavci (`items.data[].current_period_*`), a pretplata fakture u `invoice.parent.subscription_details.subscription`; endive odbija `payment_method_types` u Checkout-u.

@@ -1113,5 +1113,101 @@
       "send": "Pošalji",
       "sending": "Šaljem…"
     }
+  },
+  "studio": {
+    "metaTitle": "Studio",
+    "eyebrow": "Studio",
+    "title": "Recite Sovi šta vam treba",
+    "subtitle": "Sova zna vaš brend. Napiše objavu, nacrta slajdove u vašem stilu, nađe fotografije i pripremi sve za zakazivanje.",
+    "tools": "Ručni alati",
+    "gallery": "Galerija",
+    "clear": "Obriši razgovor",
+    "confirmClear": "Da obrišem ceo razgovor? Objave koje je Sova napravila ostaju.",
+    "balance": "Dostupno: {count, plural, one {# token} other {# tokena}}",
+    "chat": {
+      "label": "Razgovor sa Sovom",
+      "title": "Sova",
+      "status": "zna vaš brend"
+    },
+    "empty": {
+      "title": "Od čega počinjemo?",
+      "text": "Opišite objavu svojim rečima, priložite fotografiju ili nalepite link do proizvoda. Sova napiše tekst, nacrta slajdove i pripremi objavu desno."
+    },
+    "ideas": {
+      "label": "Brze ideje",
+      "topic": "Karusel na temu: {topic}",
+      "week": "Predloži tri objave za ovu nedelju",
+      "tips": "Karusel sa pet saveta za naše kupce",
+      "story": "Priča koja najavljuje akciju"
+    },
+    "settings": {
+      "label": "Sledeća objava",
+      "hint": "Važi za sledeću objavu koju Sova napravi.",
+      "format": "Vrsta objave",
+      "networks": "Mreže",
+      "locale": "Jezik objave",
+      "brandLocale": "Jezik brenda",
+      "noAccounts": "Nema povezanih mreža, pa se nacrt pravi za Instagram i Facebook.",
+      "connect": "Povežite mreže"
+    },
+    "formats": {
+      "auto": "Sova bira vrstu",
+      "text": "Samo tekst",
+      "image": "Objava sa slikom",
+      "carousel": "Karusel",
+      "video": "Video (Reels)",
+      "story": "Priča (Story)",
+      "link": "Link"
+    },
+    "composer": {
+      "label": "Poruka Sovi",
+      "placeholder": "Opišite objavu, priložite fotografiju ili nalepite link do proizvoda…",
+      "send": "Pošalji",
+      "upload": "Priloži fotografiju sa računara",
+      "fromGallery": "Izaberi fotografije iz galerije",
+      "remove": "Ukloni fotografiju",
+      "uploading": "Otpremam fotografiju…",
+      "notImage": "Priložite fotografiju (JPG, PNG, WebP ili HEIC).",
+      "maxPhotos": "Uz poruku idu najviše četiri fotografije.",
+      "link": "Sova će pročitati stranicu sa linka.",
+      "price": "Poruka košta {message, plural, one {# token} other {# tokena}}. Nova objava košta {text, plural, one {# token} other {# tokena}} za tekst, a poruka uz nju se ne plaća.",
+      "drop": "Pustite fotografiju ovde",
+      "readOnly": "Vaša uloga u timu ne dozvoljava pravljenje objava.",
+      "verify": "Potvrdite email adresu pa pišite Sovi."
+    },
+    "message": {
+      "thinking": "Sova piše…",
+      "slow": "Kad pravi objavu, to traje do pola minuta.",
+      "created": "Napravljena objava: {format}",
+      "revised": "Izmenjena objava",
+      "failed": "Nije uspelo",
+      "open": "Otvori desno",
+      "opened": "Otvoreno desno",
+      "tokens": "{count, plural, one {# token} other {# tokena}}",
+      "photo": "Priložena fotografija"
+    },
+    "notes": {
+      "brief_missing": "Nije mi jasno šta da napravim. Opišite objavu malo detaljnije.",
+      "revise_no_post": "Desno nije otvorena nijedna objava. Napravite novu ili otvorite jednu iz razgovora.",
+      "revise_locked": "Ova objava je zakazana ili objavljena, pa se ne menja. Otkažite je u Objavama pa pokušajte ponovo.",
+      "revise_empty": "Nisam našla šta da promenim. Recite tačno šta da izmenim.",
+      "slides_locked": "Slajdovi ove objave ne menjaju se iz razgovora jer je napravljena pre ove mogućnosti. Opis može da se menja."
+    },
+    "result": {
+      "label": "Objava iz razgovora",
+      "working": "Sova pravi objavu…",
+      "empty": {
+        "title": "Ovde se pojavljuje objava",
+        "text": "Kad Sova napravi objavu, ovde je pregledate, izmenite opis po mrežama i zakažete ili objavite."
+      },
+      "next": "Sledeća objava: {format}"
+    },
+    "picker": {
+      "title": "Fotografije iz galerije",
+      "description": "Izaberite do četiri fotografije za sledeću poruku.",
+      "empty": "Galerija je prazna. Dodajte fotografije u Galeriji ili ih priložite sa računara.",
+      "selected": "Izabrano: {count}",
+      "done": "Gotovo"
+    }
   }
 }

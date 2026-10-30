@@ -1113,5 +1113,101 @@
       "send": "Send",
       "sending": "Sending…"
     }
+  },
+  "studio": {
+    "metaTitle": "Studio",
+    "eyebrow": "Studio",
+    "title": "Tell Sova what you need",
+    "subtitle": "Sova knows your brand. It writes the post, draws slides in your style, finds photos and gets everything ready to schedule.",
+    "tools": "Manual tools",
+    "gallery": "Gallery",
+    "clear": "Clear chat",
+    "confirmClear": "Delete the whole chat? Posts Sova made will stay.",
+    "balance": "Available: {count, plural, one {# token} other {# tokens}}",
+    "chat": {
+      "label": "Chat with Sova",
+      "title": "Sova",
+      "status": "knows your brand"
+    },
+    "empty": {
+      "title": "Where do we start?",
+      "text": "Describe the post in your own words, attach a photo or paste a product link. Sova writes the text, draws the slides and prepares the post on the right."
+    },
+    "ideas": {
+      "label": "Quick ideas",
+      "topic": "Carousel about: {topic}",
+      "week": "Suggest three posts for this week",
+      "tips": "Carousel with five tips for our customers",
+      "story": "A story announcing a promotion"
+    },
+    "settings": {
+      "label": "Next post",
+      "hint": "Applies to the next post Sova makes.",
+      "format": "Post type",
+      "networks": "Networks",
+      "locale": "Post language",
+      "brandLocale": "Brand language",
+      "noAccounts": "No networks are connected, so the draft is made for Instagram and Facebook.",
+      "connect": "Connect networks"
+    },
+    "formats": {
+      "auto": "Sova picks the type",
+      "text": "Text only",
+      "image": "Post with image",
+      "carousel": "Carousel",
+      "video": "Video (Reels)",
+      "story": "Story",
+      "link": "Link"
+    },
+    "composer": {
+      "label": "Message to Sova",
+      "placeholder": "Describe the post, attach a photo or paste a product link…",
+      "send": "Send",
+      "upload": "Attach a photo from your computer",
+      "fromGallery": "Pick photos from the gallery",
+      "remove": "Remove photo",
+      "uploading": "Uploading photo…",
+      "notImage": "Attach a photo (JPG, PNG, WebP or HEIC).",
+      "maxPhotos": "A message can carry up to four photos.",
+      "link": "Sova will read the page behind the link.",
+      "price": "A message costs {message, plural, one {# token} other {# tokens}}. A new post costs {text, plural, one {# token} other {# tokens}} for the text, and the message that makes it is free.",
+      "drop": "Drop the photo here",
+      "readOnly": "Your team role does not allow creating posts.",
+      "verify": "Confirm your email address, then write to Sova."
+    },
+    "message": {
+      "thinking": "Sova is writing…",
+      "slow": "Making a post takes up to half a minute.",
+      "created": "Post made: {format}",
+      "revised": "Post updated",
+      "failed": "Did not work",
+      "open": "Open on the right",
+      "opened": "Open on the right",
+      "tokens": "{count, plural, one {# token} other {# tokens}}",
+      "photo": "Attached photo"
+    },
+    "notes": {
+      "brief_missing": "I am not sure what to make. Describe the post in a bit more detail.",
+      "revise_no_post": "No post is open on the right. Make a new one or open one from the chat.",
+      "revise_locked": "This post is scheduled or published, so it cannot change. Cancel it in Posts and try again.",
+      "revise_empty": "I did not find anything to change. Tell me exactly what to edit.",
+      "slides_locked": "The slides of this post cannot be changed from the chat because it was made before this option. The caption can."
+    },
+    "result": {
+      "label": "Post from the chat",
+      "working": "Sova is making the post…",
+      "empty": {
+        "title": "Your post shows up here",
+        "text": "When Sova makes a post, you review it here, edit the caption per network and schedule or publish it."
+      },
+      "next": "Next post: {format}"
+    },
+    "picker": {
+      "title": "Photos from the gallery",
+      "description": "Pick up to four photos for the next message.",
+      "empty": "The gallery is empty. Add photos in the Gallery or attach them from your computer.",
+      "selected": "Selected: {count}",
+      "done": "Done"
+    }
   }
 }

@@ -9,11 +9,12 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError } from '@/lib/supabase/errors'
 import type { Slide } from '@/lib/visuals/design/types'
 import { zipStore } from '@/lib/zip'
+import type { Json } from '@/types/database'
 import { buildBrandContext } from '@/services/ai/text'
 import { getBrand } from '@/services/brands'
 import { resolveDesign } from '@/services/design/brand-design'
 import { captionFor, generateDesignedCopy } from '@/services/design/copy'
-import { parsePostDesign } from '@/services/design/post-design'
+import { parsePostDesign, type PostDesignContext } from '@/services/design/post-design'
 import { renderDesignSlides } from '@/services/design/render-post'
 import { downloadAsset, signedUrl } from '@/services/media'
 import { nextFreeSlot } from '@/services/posts/calendar'
@@ -305,9 +306,11 @@ export async function regeneratePost(viewer: Viewer, postId: string, version: nu
     photoSource: ctx.photoSource,
     query: (copy.visualQuery || ctx.topic).slice(0, 100),
     uploadedBy: viewer.user.id,
+    // fotografije koje je dao korisnik ostaju; ostale se biraju ponovo po novom tekstu
+    photoAssetIds: ctx.ownPhotos ? ctx.copy?.photoAssetIds : undefined,
     origin: { postId },
   })
-  return updatePost(viewer, postId, {
+  const updated = await updatePost(viewer, postId, {
     version: view.version,
     title: copy.slides[0]?.title.slice(0, 200) ?? view.title,
     masterText: captionFor(copy, 'instagram'),
@@ -320,6 +323,16 @@ export async function regeneratePost(viewer: Viewer, postId: string, version: nu
     media: rendered.assetIds.map((mediaAssetId, sortOrder) => ({ mediaAssetId, sortOrder })),
     changeSummary: 'Generisano ponovo',
   })
+  const next: PostDesignContext = {
+    ...ctx,
+    slides: copy.slides.length,
+    copy: { slides: copy.slides as Slide[], photoAssetIds: rendered.photos.map((p) => p.id) },
+  }
+  await createSupabaseAdminClient()
+    .from('posts')
+    .update({ design: next as unknown as Json })
+    .eq('id', postId)
+  return updated
 }
 
 /** Slajdovi objave kao ZIP (01.jpg, 02.jpg …), redom kao u objavi. */

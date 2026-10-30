@@ -42,7 +42,8 @@ create type media_source as enum ('upload','canva','unsplash','template','gemini
 create type media_kind as enum ('image','video');
 create type ai_generation_type as enum ('text','rewrite','translate','hashtags','repurpose','variants',
   'image_from_photo','image_from_prompt','visual_template','vision_describe','unsplash_rank',
-  'strategy','insights','brand_profile','photo_style','embedding','quality_check','canva_design','canva_export');
+  'strategy','insights','brand_profile','photo_style','embedding','quality_check','canva_design','canva_export',
+  'studio_chat');                                   -- studio_chat: migracija 037, D-116
 create type ai_generation_status as enum ('queued','running','succeeded','failed','canceled');
 create type token_grant_source as enum ('signup','subscription','topup','admin','refund');
 create type token_reservation_status as enum ('reserved','confirmed','released','expired');
@@ -1286,6 +1287,7 @@ create table content_flow_runs (
 );
 alter table posts add column flow_id uuid references content_flows(id) on delete set null;
 alter table posts add column design jsonb;          -- kontekst za „Generiši ponovo”: tema, format, stil, slajdovi, fotografije, jezik, mreže (migracija 032, D-111)
+-- posts.design.copy {slides, photoAssetIds}: tekst slajdova i fotografije iz njih, za izmenu slajda iz Studija; ownPhotos: fotografije je dao korisnik (D-116)
 
 -- glas brenda, uvod i PDF o brendu (migracija 033, D-112)
 alter table brands add column voice jsonb not null default '{}';   -- offer, audience, tone, usp, avoid, cta, topics[] (do 8), updated_at, updated_by
@@ -1338,6 +1340,22 @@ create table feature_requests (
 create table feature_votes (request_id uuid references feature_requests(id) on delete cascade, user_id uuid references profiles(id) on delete cascade, active boolean not null default true, created_at timestamptz, updated_at timestamptz, primary key (request_id, user_id));  -- glas se uključuje i isključuje istim redom, bez brisanja
 -- RLS: ideje čitaju svi ulogovani, prijavu problema samo autor; svoje glasove korisnik vidi sam
 -- toggle_feature_vote(p_request_id, p_user_id) → {voted, votes}: security definer, samo service role
+
+-- Studio kao razgovor (migracija 037, D-116)
+create table studio_messages (
+  id uuid primary key default gen_random_uuid(),
+  brand_id uuid not null references brands(id) on delete cascade,
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade,
+  role text not null,                               -- user | assistant
+  body text not null,                               -- 1–4000 znakova
+  action text,                                      -- reply | create | revise | failed (samo poruke Sove)
+  post_id uuid references posts(id) on delete set null,  -- objava koju je poruka napravila ili izmenila
+  attachments jsonb not null default '[]',          -- [{kind: photo, assetId} | {kind: link, url, title}]
+  meta jsonb not null default '{}',                 -- format, napomene, predlozi, tokeni, greška
+  created_at timestamptz not null default now()
+);
+-- RLS: korisnik čita samo svoj razgovor za brend kome ima pristup; piše service role; najviše 200 poruka po razgovoru
 create table autopilot_runs (
   id uuid primary key default gen_random_uuid(),
   brand_id uuid not null references brands(id) on delete cascade,

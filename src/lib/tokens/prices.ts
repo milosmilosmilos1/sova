@@ -25,6 +25,7 @@ export const tokenActionSchema = z.enum([
   'x_post_with_link',
   'other_post',
   'photo_describe',
+  'studio_chat',
 ])
 export type TokenAction = z.infer<typeof tokenActionSchema>
 
@@ -49,6 +50,8 @@ export const DEFAULT_TOKEN_PRICES: Record<TokenAction, number> = {
   other_post: 0,
   /** opis fotografije iz galerije (D-114) */
   photo_describe: 1,
+  /** poruka u Studiju (D-116); poruka koja pravi objavu se ne plaća, plaća se tekst objave */
+  studio_chat: 1,
 }
 
 export interface ModelPrice {

@@ -114,6 +114,20 @@ async function pickPhotos(input: {
   return [...fromUnsplash, ...rest.map((p) => p.asset)]
 }
 
+/** Fotografije po ID-ju, redom kojim su date; samo slike ovog brenda (ili bez brenda) koje nisu obrisane. */
+async function loadPhotos(brandId: string, ids: string[]): Promise<MediaAssetRow[]> {
+  const { data } = await createSupabaseAdminClient()
+    .from('media_assets')
+    .select('*')
+    .in('id', ids)
+    .eq('kind', 'image')
+    .is('deleted_at', null)
+  const byId = new Map(
+    (data ?? []).filter((a) => !a.brand_id || a.brand_id === brandId).map((a) => [a.id, a]),
+  )
+  return ids.map((id) => byId.get(id)).filter((a): a is MediaAssetRow => Boolean(a))
+}
+
 export async function renderDesignSlides(input: {
   workspaceId: string
   brandId: string
@@ -128,6 +142,8 @@ export async function renderDesignSlides(input: {
   /** galerija (D-114): kategorija toka i tema za izbor fotografije */
   galleryCategoryId?: string | null
   topic?: string | null
+  /** tačno ove fotografije iz biblioteke, redom (priložene u Studiju ili iz prethodnih slajdova) */
+  photoAssetIds?: string[]
   /** oznaka u source_data (npr. ID toka ili objave) */
   origin?: Record<string, string | null>
 }): Promise<RenderedDesign> {
@@ -139,17 +155,20 @@ export async function renderDesignSlides(input: {
   const notes: string[] = []
   let photos: MediaAssetRow[] = []
   try {
-    photos = await pickPhotos({
-      source: input.photoSource,
-      workspaceId: input.workspaceId,
-      brandId: input.brandId,
-      query: input.query,
-      count,
-      crop: input.format === 'story' ? 'portrait' : 'square',
-      uploadedBy: input.uploadedBy,
-      galleryCategoryId: input.galleryCategoryId,
-      topic: input.topic,
-    })
+    photos =
+      count > 0 && input.photoAssetIds?.length
+        ? await loadPhotos(input.brandId, input.photoAssetIds)
+        : await pickPhotos({
+            source: input.photoSource,
+            workspaceId: input.workspaceId,
+            brandId: input.brandId,
+            query: input.query,
+            count,
+            crop: input.format === 'story' ? 'portrait' : 'square',
+            uploadedBy: input.uploadedBy,
+            galleryCategoryId: input.galleryCategoryId,
+            topic: input.topic,
+          })
   } catch (error) {
     logger.warn('design_photos_failed', { brandId: input.brandId, error })
   }

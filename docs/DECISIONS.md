@@ -875,3 +875,18 @@ Odluka (faza 8 iz D-108):
 - Meni: „Predlozi i podrška” u grupi Podešavanja.
 
 Razlog: zahtev vlasnika (D-108). Početna i vodič vode novog korisnika do prvog nacrta, a tabla predloga daje korisnicima glas bez dodatnog alata.
+
+## D-116 · 30.10.2026 · usvojeno · Studio kao razgovor
+
+Odluka (faza 9 iz D-108):
+
+- Studio (`/app/studio`) je razgovor sa Sovom: levo poruke, desno objava koju je razgovor napravio ili izmenio, sa istim pregledom i odlukama kao u Odobravanju (opis po mrežama, prvi komentar, termin, sačuvaj i zakaži, objavi odmah, generiši ponovo, preskoči, preuzmi). Dosadašnja forma „Nova objava” i alati (Unsplash, Pexels, Canva, šablon) su na `/app/studio/tools`.
+- Svaka poruka je jedan poziv Gemini-ja. Model vidi glas brenda, playbook, odlomke iz baze znanja, poslednjih 12 poruka, objavu otvorenu desno, priložene fotografije i stranicu sa linka iz poruke. Bira jednu radnju: odgovor, nova objava (brif ide u „Novu objavu” sa slajdovima u stilu brenda) ili izmena otvorene objave (opis, prvi komentar, tekst pojedinih slajdova).
+- Cena: poruka 1 token (`studio_chat`, menja se u podešavanjima platforme). Poruka koja napravi objavu se ne naplaćuje, plaća se tekst objave (2 tokena), kao u formi. Kad model ne odgovori, poruka se ne upisuje i ne naplaćuje. Objava koja ne uspe ostaje u razgovoru kao neuspela, sa razlogom i bez naplate.
+- Slajdovi se menjaju iz razgovora: `posts.design.copy` čuva tekst slajdova i fotografije iz njih, pa izmena crta slajdove ponovo sa istim fotografijama. Važi za objave iz Studija, forme i tokova od ove faze; starijim objavama se menja samo opis.
+- Fotografije uz poruku (otpremljene, iz galerije, prevučene ili nalepljene, najviše četiri) model vidi. Idu u slajdove u stilu brenda (tipografski stil bez fotografije tada prelazi na „Poster”) ili u objavu kakve jesu, kad korisnik tako traži. „Generiši ponovo” zadržava fotografije koje je dao korisnik (`posts.design.ownPhotos`).
+- Link iz poruke Sova otvara kroz crawler (SSRF zaštita, 8 s, 2 MB) i uzima naslov, opis, cenu proizvoda iz JSON-LD-a i početak teksta. Stranica koja se ne otvori ne obara poruku.
+- Temu objave bira korisnik. Sova ne odbija temu koja nije u opisu brenda, ali ne izmišlja činjenice o brendu. Isto pravilo je dodato u upite za tekst i slajdove, gde je tema dobila oznaku „TEMA OBJAVE”: bez nje je model za temu van opisa brenda pisao o uslugama brenda.
+- Razgovor se čuva po korisniku i brendu (`studio_messages`, migracija 037), najviše 200 poruka. „Obriši razgovor” briše poruke, a objave ostaju.
+
+Razlog: zahtev vlasnika (D-108). Razgovor skraćuje put od ideje do nacrta, a ispravke se traže rečima umesto kroz formu sa deset polja.
