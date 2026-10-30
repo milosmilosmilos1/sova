@@ -63,7 +63,7 @@ async function render(styleId: string, slide: Slide, format: DesignFormat, index
 describe('stilovi objava (D-108)', () => {
   it('katalog i stilovi se poklapaju', () => {
     expect(catalogProblems()).toEqual([])
-    expect(STYLE_IDS).toHaveLength(22)
+    expect(STYLE_IDS).toHaveLength(28)
   })
 
   it('svaki stil crta naslovni slajd, slajd sadržaja i poziv na akciju (4:5)', async () => {
@@ -78,7 +78,18 @@ describe('stilovi objava (D-108)', () => {
   }, 120_000)
 
   it('priča je 9:16, kvadrat 1:1, i bez fotografije stil sa fotografijom ne puca', async () => {
-    for (const id of ['poster', 'editorial', 'film', 'headline']) {
+    for (const id of [
+      'poster',
+      'editorial',
+      'film',
+      'headline',
+      'pop',
+      'magazine',
+      'split',
+      'sticker',
+      'blocks',
+      'aurora',
+    ]) {
       const story = await sharp((await render(id, slides[0]!, 'story', 0)).bytes).metadata()
       expect([story.width, story.height]).toEqual([216, 384])
       const square = await sharp((await render(id, slides[1]!, 'square', 1)).bytes).metadata()

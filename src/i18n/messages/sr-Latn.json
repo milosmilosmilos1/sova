@@ -121,6 +121,30 @@
         "name": "Snažna poruka",
         "desc": "Jedna snažna rečenica preko pune boje brenda."
       },
+      "pop": {
+        "name": "Pop boje",
+        "desc": "Preliv, veliki krugovi u bojama i fotografija u krugu."
+      },
+      "magazine": {
+        "name": "Magazin",
+        "desc": "Fotografija preko celog slajda, veo u boji i krupan naslov."
+      },
+      "split": {
+        "name": "Pola-pola",
+        "desc": "Gore fotografija, dole puna boja, oznaka na spoju."
+      },
+      "sticker": {
+        "name": "Nalepnica",
+        "desc": "Bela kartica sa trakama preko jarke boje i polaroid fotografija."
+      },
+      "blocks": {
+        "name": "Blokovi",
+        "desc": "Geometrijski oblici u bojama i fotografija u luku."
+      },
+      "aurora": {
+        "name": "Aurora",
+        "desc": "Meki prelivi u bojama i providna ploča sa tekstom."
+      },
       "editorial": {
         "name": "Uredništvo",
         "desc": "Časopisni raspored: uramljena fotografija i naslov sa mnogo belog prostora."
@@ -1453,6 +1477,13 @@
       "months": "Koliko meseci unapred",
       "monthsValue": "{count, plural, one {# mesec} few {# meseca} other {# meseci}}",
       "monthsHint": "Plan pokriva period od {from} do {to}, a Sova bira teme za svaki mesec posebno i ne ponavlja ih.",
+      "look": "Izgled objava",
+      "looks": {
+        "vivid": "Šareno",
+        "vividHint": "Svaka objava u drugom stilu i bojama, uvek sa fotografijama koje se ne ponavljaju.",
+        "brand": "Moj stil",
+        "brandHint": "Stil i boje iz dizajna brenda, kao u „Novoj objavi”."
+      },
       "perWeek": "Objava nedeljno",
       "perWeekValue": "{n} nedeljno",
       "networks": "Mreže",

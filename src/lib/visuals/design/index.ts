@@ -1,12 +1,15 @@
 import { DEFAULT_STYLE, STYLE_IDS } from './catalog'
 import { PHOTO_STYLES } from './styles-photo'
 import { TYPE_STYLES } from './styles-type'
+import { VIVID_STYLES } from './styles-vivid'
 import type { Slide, SlideKind, StyleDef } from './types'
 
 export * from './catalog'
 export * from './types'
 
-const BY_ID = new Map<string, StyleDef>([...TYPE_STYLES, ...PHOTO_STYLES].map((s) => [s.id, s]))
+const BY_ID = new Map<string, StyleDef>(
+  [...TYPE_STYLES, ...PHOTO_STYLES, ...VIVID_STYLES].map((s) => [s.id, s]),
+)
 
 /** Svaki ID iz kataloga mora imati stil i obrnuto (proverava i test). */
 export function catalogProblems(): string[] {

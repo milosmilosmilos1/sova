@@ -108,10 +108,21 @@ async function pickPhotos(input: {
     crop: input.crop,
     uploadedBy: input.uploadedBy,
   }
-  const fromUnsplash = (await pickUnsplashPhotos({ ...ctx, count: input.count })).map((p) => p.asset)
+  // Unsplash koji ne odgovori (limit, mreža) ne ostavlja objavu bez slike: ostatak daje Pexels
+  let fromUnsplash: MediaAssetRow[] = []
+  try {
+    fromUnsplash = (await pickUnsplashPhotos({ ...ctx, count: input.count })).map((p) => p.asset)
+  } catch (error) {
+    logger.warn('design_unsplash_failed', { brandId: input.brandId, error })
+  }
   if (fromUnsplash.length >= input.count) return fromUnsplash
-  const rest = await pickPexelsPhotos({ ...ctx, count: input.count - fromUnsplash.length })
-  return [...fromUnsplash, ...rest.map((p) => p.asset)]
+  try {
+    const rest = await pickPexelsPhotos({ ...ctx, count: input.count - fromUnsplash.length })
+    return [...fromUnsplash, ...rest.map((p) => p.asset)]
+  } catch (error) {
+    logger.warn('design_pexels_failed', { brandId: input.brandId, error })
+    return fromUnsplash
+  }
 }
 
 /** Fotografije po ID-ju, redom kojim su date; samo slike ovog brenda (ili bez brenda) koje nisu obrisane. */
@@ -151,7 +162,8 @@ export async function renderDesignSlides(input: {
   const colors = input.colors ?? input.design.colors
   const needs = input.slides.map((s, i) => wantsPhoto(style, s.kind, i))
   const needed = needs.filter(Boolean).length
-  const count = needed === 0 ? 0 : style.photo === 'all' ? Math.min(needed, 4) : 1
+  // svaki slajd sa fotografijom dobija drugu fotografiju (D-121); naslovni stil traži samo jednu
+  const count = needed === 0 ? 0 : style.photo === 'cover' ? 1 : Math.min(needed, 10)
   const notes: string[] = []
   let photos: MediaAssetRow[] = []
   try {
@@ -181,14 +193,14 @@ export async function renderDesignSlides(input: {
   const prepared = await Promise.all(
     photos.map(async (p) => {
       try {
-        return await preparePhoto(await downloadAsset(p), style, colors)
+        return { asset: p, uri: await preparePhoto(await downloadAsset(p), style, colors) }
       } catch (error) {
         logger.warn('design_photo_prepare_failed', { assetId: p.id, error })
         return null
       }
     }),
   )
-  const usable = prepared.filter((p): p is string => Boolean(p))
+  const usable = prepared.filter((p): p is { asset: MediaAssetRow; uri: string } => Boolean(p))
   const logo = await logoDataUri(input.design.logoAssetId)
 
   const assetIds: string[] = []
@@ -196,7 +208,12 @@ export async function renderDesignSlides(input: {
   let size = { width: 0, height: 0 }
   for (let i = 0; i < input.slides.length; i++) {
     const slide = input.slides[i]!
-    const photo = needs[i] && usable.length ? usable[k++ % usable.length]! : null
+    // izabrana fotografija se u istoj objavi ne ponavlja: kad ih ponestane, slajd ostaje u bojama;
+    // fotografije koje je dao korisnik idu ukrug, jer je to njegov izbor
+    const own = Boolean(input.photoAssetIds?.length)
+    const picked =
+      needs[i] && usable.length && (own || k < usable.length) ? usable[k++ % usable.length]! : null
+    const photo = picked?.uri ?? null
     const rendered = await renderSlide({
       styleId: input.styleId,
       slide,
@@ -227,7 +244,7 @@ export async function renderDesignSlides(input: {
         kind: slide.kind,
         index: i,
         total: input.slides.length,
-        photoAssetId: photo ? (photos[(k - 1) % photos.length]?.id ?? null) : null,
+        photoAssetId: picked?.asset.id ?? null,
         ...(input.origin ?? {}),
       },
       uploadedBy: input.uploadedBy,

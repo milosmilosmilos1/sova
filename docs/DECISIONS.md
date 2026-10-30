@@ -943,3 +943,14 @@ Odluka:
 - Lista plana od više meseci ima naslov za svaki mesec, a nedelje se broje u okviru meseca. „Generiši sve” pravi nacrte za ceo period jednim klikom.
 
 Razlog: vlasnik traži da objave može da napravi za mesec unapred ili više. Tri meseca je kvartal, uobičajen horizont plana sadržaja; teme za dalje mesece brzo zastarevaju (sezona, akcije, novosti), a duži plan se lako doda kasnije.
+
+## D-121 · 30.10.2026 · usvojeno · Šareni plan: šest novih stilova, smena boja i fotografije koje se ne ponavljaju
+
+Odluka:
+
+- Šest novih šarenih stilova: Pop boje (preliv, veliki krugovi, fotografija u krugu), Magazin (fotografija preko celog slajda, veo u boji, krupan kondenzovan naslov), Pola-pola (gore fotografija, dole puna boja, oznaka na spoju), Nalepnica (bela kartica sa trakama i polaroid fotografija), Blokovi (geometrijski oblici i fotografija u luku) i Aurora (meki prelivi i providna ploča). Rade u 4:5, 1:1 i 9:16, sa fotografijom i bez nje, i stoje u biraču stilova pored starih. Naslovi koriste Montserrat (ima ćirilicu) ili Oswald.
+- Mesečni plan po podrazumevanom pravi „Šareno”: svaka dizajnirana objava dobija drugi stil i drugu paletu od prethodne, iz smene deset stilova koji svi nose fotografiju (šest novih, Poster, Duoton, Okvir i Događaj). Svaka treća objava je u paleti iz boje brenda (puna, tamna ili svetla nijansa), ostale u dvanaest šarenih paleta sa čitljivim tekstom. Izbor zavisi od mesta u planu i semena plana, pa je stalan. Brend bez izvora fotografija u šarenom planu dobija besplatne fotografije. „Moj stil” zadržava stil i boje iz dizajna brenda. Paleta se čuva u objavi (`posts.design.colors`), pa „Generiši ponovo” i izmene u Studiju zadržavaju iste boje.
+- Fotografije i snimci se ne ponavljaju: automatski izbor sa Unsplash-a i Pexels-a preskače sve što je brend već dobio (i posle brisanja iz galerije) i traži sledeće strane i kraće oblike upita. Kad novog nema, slajd ostaje u bojama, a video stavka plana javlja grešku, umesto da se vrati stara slika ili snimak. Ručni izbor u Studiju i dalje može uzeti istu fotografiju.
+- U jednoj objavi svaki slajd koji traži fotografiju dobija drugu (do deset), umesto da se jedna ponavlja. Fotografije koje je dao korisnik i dalje idu ukrug, jer je to njegov izbor. Kad Unsplash ne odgovori (limit, mreža), fotografije daje Pexels.
+
+Razlog: vlasnik traži mnogo šarenije i raznovrsnije objave, sa slikama koje se ne ponavljaju i videom koji se ne ponavlja.

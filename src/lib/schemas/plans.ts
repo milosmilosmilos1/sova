@@ -12,6 +12,8 @@ export const planRequestSchema = z.object({
   kind: z.enum(['current', 'next']).default('next'),
   /** koliko meseci plan pokriva, od izabranog početka (D-120) */
   months: z.number().int().min(1).max(3).default(1),
+  /** šareno: drugi stil i paleta za svaku objavu (D-121); brand: dizajn brenda */
+  look: z.enum(['vivid', 'brand']).default('vivid'),
   perWeek: z.number().int().min(1).max(14).default(5),
   platforms: z.array(platformEnum).max(8).default([]),
   formats: z

@@ -218,6 +218,7 @@ function SetupCard({
     current && daysBetween(current.start, current.end) >= 7 ? 'current' : 'next',
   )
   const [months, setMonths] = useState(1)
+  const [look, setLook] = useState<'vivid' | 'brand'>('vivid')
   const [perWeek, setPerWeek] = useState(5)
   const [platforms, setPlatforms] = useState<SocialPlatform[]>(options.platforms)
   const [formats, setFormats] = useState<PostFormat[]>([...POST_FORMATS])
@@ -242,6 +243,7 @@ function SetupCard({
           brandId,
           kind,
           months,
+          look,
           perWeek,
           platforms,
           formats,
@@ -321,6 +323,24 @@ function SetupCard({
             })}
           </p>
         ) : null}
+      </fieldset>
+
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">{t('setup.look')}</legend>
+        <div className="grid gap-2 sm:grid-cols-2">
+          {(['vivid', 'brand'] as const).map((l) => (
+            <button
+              key={l}
+              type="button"
+              aria-pressed={look === l}
+              onClick={() => setLook(l)}
+              className={cn(chip(look === l), 'text-left')}
+            >
+              <span className="block font-medium">{t(`setup.looks.${l}`)}</span>
+              <span className="block text-xs text-muted-foreground">{t(`setup.looks.${l}Hint`)}</span>
+            </button>
+          ))}
+        </div>
       </fieldset>
 
       <fieldset className="space-y-2">

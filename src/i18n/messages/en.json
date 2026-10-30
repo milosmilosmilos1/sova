@@ -121,6 +121,30 @@
         "name": "Bold Statement",
         "desc": "One strong sentence over a full brand colour."
       },
+      "pop": {
+        "name": "Pop colours",
+        "desc": "Gradient, big colour circles and a round photo."
+      },
+      "magazine": {
+        "name": "Magazine",
+        "desc": "Full-bleed photo, a colour veil and a big headline."
+      },
+      "split": {
+        "name": "Split",
+        "desc": "Photo on top, solid colour below, a label on the seam."
+      },
+      "sticker": {
+        "name": "Sticker",
+        "desc": "A white taped card over a bright colour and a polaroid photo."
+      },
+      "blocks": {
+        "name": "Blocks",
+        "desc": "Geometric colour shapes and a photo in an arch."
+      },
+      "aurora": {
+        "name": "Aurora",
+        "desc": "Soft colour glows and a translucent text panel."
+      },
       "editorial": {
         "name": "Editorial",
         "desc": "Magazine layout: a framed photo and a headline with plenty of white space."
@@ -1453,6 +1477,13 @@
       "months": "How many months ahead",
       "monthsValue": "{count, plural, one {# month} other {# months}}",
       "monthsHint": "The plan covers {from} to {to}, and Sova picks topics for each month separately without repeating them.",
+      "look": "Post look",
+      "looks": {
+        "vivid": "Colourful",
+        "vividHint": "Each post in a different style and colours, always with photos that never repeat.",
+        "brand": "My style",
+        "brandHint": "The style and colours from your brand design, as in “New post”."
+      },
       "perWeek": "Posts per week",
       "perWeekValue": "{n} per week",
       "networks": "Networks",

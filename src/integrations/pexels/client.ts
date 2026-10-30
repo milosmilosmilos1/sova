@@ -178,11 +178,13 @@ function searchQuery(
   query: string,
   orientation: PexelsOrientation | undefined,
   perPage: number,
+  page = 1,
 ): URLSearchParams {
   const qs = new URLSearchParams({
     query: query.trim().slice(0, 100),
     per_page: String(Math.min(40, Math.max(1, perPage))),
   })
+  if (page > 1) qs.set('page', String(page))
   if (orientation) qs.set('orientation', orientation)
   return qs
 }
@@ -191,8 +193,9 @@ export async function searchVideos(params: {
   query: string
   orientation?: PexelsOrientation
   perPage?: number
+  page?: number
 }): Promise<PexelsVideo[]> {
-  const qs = searchQuery(params.query, params.orientation, params.perPage ?? 12)
+  const qs = searchQuery(params.query, params.orientation, params.perPage ?? 12, params.page)
   qs.set('size', 'medium')
   const key = `pexels:videos:${qs.toString()}`
   const cached = await cacheGet<PexelsVideo[]>(key)
@@ -208,8 +211,9 @@ export async function searchPhotos(params: {
   query: string
   orientation?: PexelsOrientation
   perPage?: number
+  page?: number
 }): Promise<PexelsPhoto[]> {
-  const qs = searchQuery(params.query, params.orientation, params.perPage ?? 12)
+  const qs = searchQuery(params.query, params.orientation, params.perPage ?? 12, params.page)
   const key = `pexels:photos:${qs.toString()}`
   const cached = await cacheGet<PexelsPhoto[]>(key)
   if (cached) return cached

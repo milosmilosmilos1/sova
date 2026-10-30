@@ -306,6 +306,7 @@ export async function regeneratePost(viewer: Viewer, postId: string, version: nu
     format: ctx.format === 'story' ? 'story' : ctx.size,
     slides: copy.slides as Slide[],
     photoSource: ctx.photoSource,
+    colors: ctx.colors,
     query: (copy.visualQuery || ctx.topic).slice(0, 100),
     uploadedBy: viewer.user.id,
     // fotografije koje je dao korisnik ostaju; ostale se biraju ponovo po novom tekstu

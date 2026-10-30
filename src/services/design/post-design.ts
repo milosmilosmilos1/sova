@@ -2,6 +2,7 @@ import { z } from 'zod'
 
 import { CONTENT_LOCALES } from '@/config/locales'
 import { PLATFORMS } from '@/config/platforms'
+import { designColorsSchema } from '@/lib/schemas/design'
 import { PHOTO_SOURCES, POST_SIZES, STYLE_IDS } from '@/lib/visuals/design/catalog'
 
 /** Tekst jednog slajda kako ga je napisao Gemini (D-116: Studio menja pojedinačne slajdove). */
@@ -36,6 +37,8 @@ export const postDesignSchema = z.object({
   dmCta: z.boolean().optional(),
   /** fotografije je dao korisnik: „Generiši ponovo” ih zadržava umesto da traži nove */
   ownPhotos: z.boolean().optional(),
+  /** paleta objave iz šarenog plana (D-121); bez nje važe boje brenda */
+  colors: designColorsSchema.optional(),
   copy: z
     .object({
       slides: z.array(designSlideSchema).min(1).max(10),

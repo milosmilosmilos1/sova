@@ -35,7 +35,8 @@ export interface DesignColors {
 }
 
 /** Porodica fonta: 'brand' znači font brenda iz profila, inače ime Google fonta. */
-export type FontChoice = 'brand' | 'Inter' | 'Playfair Display' | 'Oswald' | 'JetBrains Mono' | 'Caveat'
+export type FontChoice =
+  'brand' | 'Inter' | 'Playfair Display' | 'Oswald' | 'JetBrains Mono' | 'Caveat' | 'Montserrat'
 
 export interface DesignContext {
   format: DesignFormat

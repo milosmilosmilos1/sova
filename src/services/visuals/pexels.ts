@@ -22,6 +22,7 @@ import {
 import { getBrand } from '@/services/brands'
 import { maxVideoBytes, storeServerVideo, type MediaAssetRow } from '@/services/media'
 import { storeServerImage } from '@/services/visuals/store'
+import { queryVariants, usedStockIds } from '@/services/visuals/used'
 import type { Json } from '@/types/database'
 
 /**
@@ -224,8 +225,9 @@ export async function selectPexelsMedia(viewer: Viewer, input: PexelsSelectInput
 }
 
 /**
- * Automatski izbor snimka za upit („Nova objava”, Autopilot): prvi rezultat od 3 do 60 sekundi
- * (priča i Reels) koji staje u limit; `null` kad Pexels nije podešen ili nema rezultata.
+ * Automatski izbor snimka za upit („Nova objava”, plan, Autopilot): snimak od 3 do 60 sekundi
+ * (priča i Reels) koji staje u limit. Snimak koji je brend već dobio se preskače (D-121), pa se
+ * traže sledeće strane i kraći oblici upita; `null` kad Pexels nije podešen ili novog snimka nema.
  */
 export async function pickPexelsVideo(input: {
   workspaceId: string
@@ -235,19 +237,33 @@ export async function pickPexelsVideo(input: {
   uploadedBy: string | null
 }): Promise<StoredPexels | null> {
   if (!isPexelsConfigured()) return null
-  const videos = await searchVideos({ query: input.query, orientation: input.orientation, perPage: 8 })
-  for (const v of videos.filter((x) => x.durationSec >= 3 && x.durationSec <= 60)) {
-    try {
-      return await storePexelsMedia({ ...input, kind: 'video', id: v.id })
-    } catch (error) {
-      if (error instanceof ApiError && error.code === 'PAYLOAD_TOO_LARGE') continue
-      throw error
+  const used = await usedStockIds(input.brandId, 'pexels-video')
+  const variants = queryVariants(input.query)
+  for (let v = 0; v < variants.length; v++) {
+    for (let page = 1; page <= (v === 0 ? 3 : 1); page++) {
+      const videos = await searchVideos({
+        query: variants[v]!,
+        orientation: input.orientation,
+        perPage: 30,
+        page,
+      })
+      for (const clip of videos.filter((x) => x.durationSec >= 3 && x.durationSec <= 60)) {
+        if (used.has(String(clip.id))) continue
+        used.add(String(clip.id))
+        try {
+          return await storePexelsMedia({ ...input, kind: 'video', id: clip.id })
+        } catch (error) {
+          if (error instanceof ApiError && error.code === 'PAYLOAD_TOO_LARGE') continue
+          throw error
+        }
+      }
+      if (videos.length < 30) break
     }
   }
   return null
 }
 
-/** Automatski izbor fotografija za upit; vraća koliko je nađeno, najviše `count`. */
+/** Automatski izbor fotografija za upit, bez onih koje je brend već dobio; najviše `count`. */
 export async function pickPexelsPhotos(input: {
   workspaceId: string
   brandId: string
@@ -256,24 +272,35 @@ export async function pickPexelsPhotos(input: {
   crop: 'square' | 'portrait'
   uploadedBy: string | null
 }): Promise<StoredPexels[]> {
-  if (!isPexelsConfigured()) return []
-  const photos = await searchPhotos({
-    query: input.query,
-    orientation: input.crop === 'portrait' ? 'portrait' : 'square',
-    perPage: Math.max(input.count, 6),
-  })
+  if (!isPexelsConfigured() || input.count <= 0) return []
+  const used = await usedStockIds(input.brandId, 'pexels-photo')
   const out: StoredPexels[] = []
-  for (const p of photos.slice(0, input.count)) {
-    out.push(
-      await storePexelsMedia({
-        workspaceId: input.workspaceId,
-        brandId: input.brandId,
-        kind: 'photo',
-        id: p.id,
-        crop: input.crop,
-        uploadedBy: input.uploadedBy,
-      }),
-    )
+  const variants = queryVariants(input.query)
+  for (let v = 0; v < variants.length && out.length < input.count; v++) {
+    for (let page = 1; page <= (v === 0 ? 3 : 1) && out.length < input.count; page++) {
+      const photos = await searchPhotos({
+        query: variants[v]!,
+        orientation: input.crop === 'portrait' ? 'portrait' : 'square',
+        perPage: 40,
+        page,
+      })
+      for (const photo of photos) {
+        if (out.length >= input.count) break
+        if (used.has(String(photo.id))) continue
+        used.add(String(photo.id))
+        out.push(
+          await storePexelsMedia({
+            workspaceId: input.workspaceId,
+            brandId: input.brandId,
+            kind: 'photo',
+            id: photo.id,
+            crop: input.crop,
+            uploadedBy: input.uploadedBy,
+          }),
+        )
+      }
+      if (photos.length < 40) break
+    }
   }
   return out
 }

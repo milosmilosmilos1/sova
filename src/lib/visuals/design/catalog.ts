@@ -5,6 +5,13 @@
 export const STYLE_IDS = [
   'headline',
   'bold',
+  // šareni stilovi (D-121)
+  'pop',
+  'magazine',
+  'split',
+  'sticker',
+  'blocks',
+  'aurora',
   'editorial',
   'cover',
   'poster',
@@ -35,6 +42,8 @@ export function isStyleId(value: unknown): value is StyleId {
 
 /** Stilovi kojima je fotografija deo izgleda (bez nje padaju na preliv u bojama brenda). */
 export const PHOTO_STYLE_IDS: ReadonlySet<StyleId> = new Set([
+  'magazine',
+  'split',
   'editorial',
   'cover',
   'poster',

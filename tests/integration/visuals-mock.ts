@@ -128,9 +128,16 @@ export const unsplashHandlers = [
         { total: 0, total_pages: 0, results: [] },
         { headers: { 'x-ratelimit-remaining': '48' } },
       )
-    const results = ['a1', 'b2', 'c3', 'd4'].map((id) => unsplashPhoto(id))
+    // tri strane po četiri fotografije, kao pravi API sa više strana (D-121: automatski izbor ne ponavlja)
+    const pages = [
+      ['a1', 'b2', 'c3', 'd4'],
+      ['e5', 'f6', 'g7', 'h8'],
+      ['i9', 'j10', 'k11', 'l12'],
+    ]
+    const page = Math.min(3, Math.max(1, Number(url.searchParams.get('page') ?? 1)))
+    const results = pages[page - 1]!.map((id) => unsplashPhoto(id))
     return HttpResponse.json(
-      { total: 4, total_pages: 1, results },
+      { total: 12, total_pages: 3, results },
       { headers: { 'x-ratelimit-remaining': '47', 'x-ratelimit-limit': '50' } },
     )
   }),
@@ -353,7 +360,10 @@ export const pexelsHandlers = [
       `video:${url.searchParams.get('query')}:${url.searchParams.get('orientation') ?? ''}`,
     )
     if (visualsState.pexelsEmpty) return HttpResponse.json({ videos: [] })
-    return HttpResponse.json({ videos: [pexelsVideo(101), pexelsVideo(202)] })
+    // neparni su uspravni i kratki (Reels, priča), parni vodoravni i dugi
+    return HttpResponse.json({
+      videos: [pexelsVideo(101), pexelsVideo(202), pexelsVideo(303), pexelsVideo(505), pexelsVideo(707)],
+    })
   }),
   http.get('https://api.pexels.com/videos/videos/:id', ({ params }) =>
     HttpResponse.json(pexelsVideo(Number(params.id))),

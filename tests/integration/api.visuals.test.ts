@@ -673,7 +673,7 @@ describe('Pexels (D-107)', () => {
     const r = await call<SearchView>(pexelsSearchGet, '/api/pexels/search', { token: user.token, query: q })
     expect(r.status).toBe(200)
     expect(r.json.data!.configured).toBe(true)
-    expect(r.json.data!.results.map((x) => x.id)).toEqual([101, 202])
+    expect(r.json.data!.results.map((x) => x.id)).toEqual([101, 202, 303, 505, 707])
     expect(r.json.data!.results[0]).toMatchObject({
       kind: 'video',
       durationSec: 12,

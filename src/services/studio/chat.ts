@@ -344,6 +344,7 @@ async function reviseStudioPost(
       format: design.format === 'story' ? 'story' : design.size,
       slides: slides as Slide[],
       photoSource: design.photoSource,
+      colors: design.colors,
       query: design.topic.slice(0, 100),
       uploadedBy: viewer.user.id,
       // iste fotografije kao do sada; menja se samo tekst

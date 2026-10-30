@@ -257,6 +257,7 @@ export async function requestPlan(viewer: Viewer, input: PlanRequestInput): Prom
   const settings: PlanSettings = {
     kind: input.kind,
     months: input.months,
+    look: input.look,
     perWeek: input.perWeek,
     platforms,
     formats,

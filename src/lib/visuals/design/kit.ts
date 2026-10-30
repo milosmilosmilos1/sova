@@ -121,6 +121,34 @@ export function alpha(hex: string, a: number): string {
 
 export const isDark = (hex: string) => luminance(hex) < 0.35
 
+/** Boja u HSL: nijansa 0–360, zasićenost i svetlina 0–1 (za šarene palete iz boje brenda). */
+export function hexToHsl(hex: string): [number, number, number] {
+  const [r, g, b] = hexToRgb(hex).map((v) => v / 255) as [number, number, number]
+  const max = Math.max(r, g, b)
+  const min = Math.min(r, g, b)
+  const l = (max + min) / 2
+  if (max === min) return [0, 0, l]
+  const d = max - min
+  const s = l > 0.5 ? d / (2 - max - min) : d / (max + min)
+  const h = max === r ? (g - b) / d + (g < b ? 6 : 0) : max === g ? (b - r) / d + 2 : (r - g) / d + 4
+  return [h * 60, s, l]
+}
+
+export function hslToHex(h: number, s: number, l: number): string {
+  const hue = (((h % 360) + 360) % 360) / 360
+  if (s === 0) return toHex(l * 255, l * 255, l * 255)
+  const q = l < 0.5 ? l * (1 + s) : l + s - l * s
+  const p = 2 * l - q
+  const channel = (t: number) => {
+    const x = t < 0 ? t + 1 : t > 1 ? t - 1 : t
+    if (x < 1 / 6) return p + (q - p) * 6 * x
+    if (x < 1 / 2) return q
+    if (x < 2 / 3) return p + (q - p) * (2 / 3 - x) * 6
+    return p
+  }
+  return toHex(channel(hue + 1 / 3) * 255, channel(hue) * 255, channel(hue - 1 / 3) * 255)
+}
+
 // ponovljeni delovi -----------------------------------------------------------------------------
 
 export const pad2 = (n: number) => String(n).padStart(2, '0')

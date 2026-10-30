@@ -1288,6 +1288,7 @@ create table content_flow_runs (
 alter table posts add column flow_id uuid references content_flows(id) on delete set null;
 alter table posts add column design jsonb;          -- kontekst za „Generiši ponovo”: tema, format, stil, slajdovi, fotografije, jezik, mreže (migracija 032, D-111)
 -- posts.design.copy {slides, photoAssetIds}: tekst slajdova i fotografije iz njih, za izmenu slajda iz Studija; ownPhotos: fotografije je dao korisnik (D-116)
+-- posts.design.colors {primary, secondary, background, text, muted}: paleta objave iz šarenog plana (D-121); bez nje važe boje brenda
 
 -- glas brenda, uvod i PDF o brendu (migracija 033, D-112)
 alter table brands add column voice jsonb not null default '{}';   -- offer, audience, tone, usp, avoid, cta, topics[] (do 8), updated_at, updated_by
@@ -1436,7 +1437,7 @@ create table month_plans (
   month date not null,                              -- prvi dan prvog meseca plana (plan traje do tri meseca)
   period_start date not null, period_end date not null,   -- tekući mesec počinje od sutra
   status text not null default 'planning',          -- planning | ready | generating | done | failed
-  settings jsonb not null default '{}',             -- kind, months (1–3, D-120), perWeek, platforms, formats, locale, notes, mode, slots[]
+  settings jsonb not null default '{}',             -- kind, months (1–3, D-120), look (vivid | brand, D-121), perWeek, platforms, formats, locale, notes, mode, slots[]
   error text,                                       -- i mesec za koji teme nisu izabrane (plan ostaje spreman)
   tokens_charged integer not null default 0,        -- plan (3 po mesecu) i nacrti (po 2)
   created_by uuid references profiles(id) on delete set null,

@@ -23,6 +23,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getTokenPrice } from '@/lib/tokens/prices'
 import { confirmReservation } from '@/lib/tokens/reservation'
 import type { Slide } from '@/lib/visuals/design/types'
+import { planLook, seedFrom } from '@/lib/visuals/design/variety'
 import { wallClock, zonedToUtc } from '@/lib/zoned-time'
 import { failGeneration, startGeneration } from '@/services/ai/generations'
 import { buildBrandContext } from '@/services/ai/text'
@@ -50,6 +51,8 @@ export interface PlanSettings {
   kind: 'current' | 'next'
   /** koliko meseci plan pokriva (1–3); stariji planovi nemaju polje i pokrivaju jedan */
   months?: number
+  /** izgled objava (D-121): šareno (podrazumevano) ili stil i boje iz dizajna brenda */
+  look?: 'vivid' | 'brand'
   perWeek: number
   platforms: SocialPlatform[]
   formats: PostFormat[]
@@ -391,6 +394,10 @@ export async function runPlanItem(itemId: string): Promise<'done' | 'failed' | '
     const designed = DESIGNED[format]
     if (designed) {
       const look = await resolveDesign(brand)
+      // šaren plan (D-121): svaka objava drugi stil i paleta, uvek sa fotografijama; „Moj stil” ostaje
+      const vivid = settings.look !== 'brand' ? planLook(item.position, seedFrom(plan.id), look.colors) : null
+      const styleId = vivid?.styleId ?? look.styleId
+      const photoSource = vivid && look.photoSource === 'none' ? 'stock' : look.photoSource
       const slides = designed === 'carousel' ? look.slides : 1
       const copy = await generateDesignedCopy({
         workspaceId: brand.workspace_id,
@@ -411,10 +418,11 @@ export async function runPlanItem(itemId: string): Promise<'done' | 'failed' | '
         workspaceId: brand.workspace_id,
         brandId: brand.id,
         design: look,
-        styleId: look.styleId,
+        styleId,
         format: story ? 'story' : look.size,
         slides: copy.slides as Slide[],
-        photoSource: look.photoSource,
+        photoSource,
+        colors: vivid?.colors,
         query: (copy.visualQuery || item.topic).slice(0, 100),
         uploadedBy: null,
         topic: [item.topic, ...copy.slides.map((s) => s.title)].join(' '),
@@ -429,10 +437,11 @@ export async function runPlanItem(itemId: string): Promise<'done' | 'failed' | '
         topic: topic.slice(0, 2000),
         cta: item.cta,
         format: designed as PostDesignContext['format'],
-        styleId: look.styleId,
+        styleId,
         slides: copy.slides.length,
-        photoSource: look.photoSource,
+        photoSource,
         size: look.size,
+        ...(vivid ? { colors: vivid.colors } : {}),
         locale,
         platforms,
         copy: { slides: copy.slides as Slide[], photoAssetIds: rendered.photos.map((p) => p.id) },

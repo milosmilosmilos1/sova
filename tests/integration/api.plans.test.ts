@@ -311,9 +311,16 @@ describe('mesečni plan', () => {
     const ids = plan.items.map((i) => i.postId!)
     const { data: posts } = await admin
       .from('posts')
-      .select('id, status, scheduled_for, post_targets(platform), post_media(id)')
+      .select('id, status, scheduled_for, design, post_targets(platform), post_media(id)')
       .in('id', ids)
     expect(posts!.every((p) => p.status === 'in_review')).toBe(true)
+    // šaren plan (D-121): dizajnirani nacrti imaju različite stilove i sačuvanu paletu
+    const designed = posts!
+      .map((p) => p.design as { styleId?: string; colors?: { background: string } } | null)
+      .filter((d): d is { styleId: string; colors?: { background: string } } => Boolean(d?.styleId))
+    expect(designed.length).toBeGreaterThanOrEqual(2)
+    expect(new Set(designed.map((d) => d.styleId)).size).toBeGreaterThan(1)
+    expect(designed.every((d) => d.colors?.background)).toBe(true)
     for (const item of plan.items) {
       const post = posts!.find((p) => p.id === item.postId)!
       expect(Date.parse(post.scheduled_for!)).toBe(Date.parse(item.scheduledFor))
