@@ -151,14 +151,15 @@ export class MetaProvider implements SocialProvider {
     return Boolean(env.META_APP_ID && env.META_APP_SECRET)
   }
 
-  getAuthUrl(ctx: { state: string; redirectUri: string }): string {
+  getAuthUrl(ctx: { state: string; redirectUri: string; extraScopes?: readonly string[] }): string {
     const u = new URL(`https://www.facebook.com/${env.META_GRAPH_VERSION}/dialog/oauth`)
     u.searchParams.set('client_id', env.META_APP_ID ?? '')
     u.searchParams.set('redirect_uri', ctx.redirectUri)
     u.searchParams.set('state', ctx.state)
     u.searchParams.set('response_type', 'code')
     if (env.META_LOGIN_CONFIG_ID) u.searchParams.set('config_id', env.META_LOGIN_CONFIG_ID)
-    else u.searchParams.set('scope', META_SCOPES.join(','))
+    // sa konfiguracijom prijave (Facebook Login for Business) dozvole su u Meta podešavanjima, ne u URL-u
+    else u.searchParams.set('scope', [...META_SCOPES, ...(ctx.extraScopes ?? [])].join(','))
     return u.toString()
   }
 

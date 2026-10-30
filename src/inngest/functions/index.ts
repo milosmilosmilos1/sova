@@ -9,6 +9,7 @@ import { brandDocumentIndex } from './brand-document-index'
 import { brandSiteCheck } from './brand-site-check'
 import { canvaExportVideo } from './canva-export-video'
 import { flowRun, flowsTick } from './flows'
+import { inboxSync } from './inbox-sync'
 import { mediaIncomingCleanup } from './media-incoming-cleanup'
 import { ping } from './ping'
 import { postMetrics } from './post-metrics'
@@ -42,6 +43,7 @@ export const functions = [
   autopilotDaily,
   flowsTick,
   flowRun,
+  inboxSync,
   mediaIncomingCleanup,
   billingProcessEvent,
   billingDaily,

@@ -1209,5 +1209,163 @@
       "selected": "Selected: {count}",
       "done": "Done"
     }
+  },
+  "inbox": {
+    "metaTitle": "Inbox",
+    "eyebrow": "Inbox",
+    "title": "Messages, comments and reviews in one place",
+    "subtitle": "Read and reply to people from your connected networks without opening every app. Sova can suggest a reply.",
+    "sync": "Refresh inbox",
+    "syncing": "Refreshing…",
+    "syncErrors": "Some networks did not respond: {list}",
+    "waiting": {
+      "title": "Waiting for Meta approval",
+      "text": "Messages and comments from Instagram and Facebook arrive here once Meta approves Sova’s messaging and comment permissions. Until then, your content suggestions are in the last tab."
+    },
+    "tabs": {
+      "message": "Messages",
+      "comment": "Comments",
+      "review": "Reviews",
+      "suggestions": "Suggestions"
+    },
+    "listLabel": "Conversations",
+    "allNetworks": "All networks",
+    "statusLabel": "Status",
+    "status": {
+      "all": "All",
+      "open": "Open",
+      "done": "Done"
+    },
+    "empty": {
+      "message": "No messages yet.",
+      "comment": "No comments yet.",
+      "review": "No reviews yet."
+    },
+    "noPermission": "Your connected accounts do not have this permission. Reconnect them and give Sova access.",
+    "noAccounts": "Connect Instagram, Facebook or a Google Business Profile.",
+    "connect": "Networks",
+    "select": "Pick a conversation on the left.",
+    "unknown": "Unknown person",
+    "unread": "Unread",
+    "rating": "Rating {n} out of 5",
+    "threadLabel": "Conversation with: {name}",
+    "onPost": "On post",
+    "openPost": "Open post",
+    "markDone": "Done",
+    "reopen": "Reopen",
+    "fromAutomation": "DM automation",
+    "fromBrand": "Your reply",
+    "replyWaiting": "Replying turns on once Meta approves the permissions.",
+    "replyRole": "Your team role does not allow replying.",
+    "replyPermission": "The account cannot reply. Reconnect it in Networks.",
+    "replyLabel": "Reply",
+    "replyPlaceholder": {
+      "message": "Write a message…",
+      "comment": "Write a public reply to the comment…",
+      "review": "Write a reply to the review…"
+    },
+    "suggest": "Sova suggests a reply ({price, plural, one {# token} other {# tokens}})",
+    "sending": "Sending…",
+    "send": "Send"
+  },
+  "automations": {
+    "metaTitle": "DM automation",
+    "eyebrow": "DM automation",
+    "title": "A comment becomes a conversation",
+    "subtitle": "When someone comments a keyword, Sova replies publicly, sends a private message with a link and counts the clicks.",
+    "new": "New flow",
+    "waiting": {
+      "title": "Waiting for Meta approval",
+      "text": "You can set up flows now. They turn on once Meta approves Sova’s messaging and comment permissions."
+    },
+    "hero": {
+      "eyebrow": "First DM flow",
+      "title": "Turn a comment into a sale",
+      "text": "Pick an Instagram or Facebook account, set a keyword (for example PRICE) and a message. Sova replies to every such comment and sends the person a link in a private message.",
+      "steps": {
+        "keyword": "Keyword",
+        "message": "Private message",
+        "link": "Link and reminder"
+      },
+      "cta": "Create the first flow"
+    },
+    "noAccounts": "Connect an Instagram or Facebook account to create a flow.",
+    "connect": "Networks",
+    "status": {
+      "title": "Flows",
+      "active": "Active",
+      "paused": "Off",
+      "problems": "Problems"
+    },
+    "list": {
+      "title": "Your flows",
+      "hint": "Each keyword runs its own flow.",
+      "emptyTitle": "No DM flow yet",
+      "emptyText": "When someone comments your keyword, Sova replies to the comment and sends them a message with a link. Setup takes two minutes.",
+      "error": "Last error: {error}",
+      "toggle": "Turn on flow {name}",
+      "edit": "Edit flow {name}",
+      "delete": "Delete flow {name}",
+      "confirmDelete": "Delete the flow and its contacts?"
+    },
+    "totals": {
+      "title": "Total result",
+      "hint": "From comment to link click.",
+      "matches": "Matches",
+      "dms": "Messages sent",
+      "clicks": "Clicks"
+    },
+    "contacts": {
+      "title": "Contacts",
+      "hint": "People who went through your flows.",
+      "account": "Account",
+      "flow": "Flow",
+      "stage": "Stage",
+      "when": "When",
+      "unknown": "No name",
+      "empty": "No contacts yet. When someone comments a keyword, they show up here."
+    },
+    "stages": {
+      "matched": "Commented",
+      "dm_sent": "Got the message",
+      "clicked": "Clicked the link",
+      "followed_up": "Got the reminder",
+      "failed": "Not sent"
+    },
+    "editor": {
+      "newTitle": "New DM flow",
+      "editTitle": "Edit flow",
+      "description": "A keyword in a comment triggers a public reply and a private message with a link.",
+      "account": "Account",
+      "noMessaging": "This account cannot send messages yet. You can save the flow and turn it on after reconnecting.",
+      "name": "Flow name",
+      "namePlaceholder": "For example: Summer offer price",
+      "keywords": "Keywords",
+      "removeKeyword": "Remove {keyword}",
+      "keywordsPlaceholder": "Type a word and press Enter",
+      "keywordsHint": "Case, accents and Cyrillic do not matter: PRICE, price and Price are the same word.",
+      "publicReplies": "Public reply to the comment",
+      "publicReply": "Variant {n}",
+      "publicReplyPlaceholder": "For example: We sent you the details in a message!",
+      "addVariant": "Add a variant",
+      "publicRepliesHint": "Sova picks one of the variants so replies do not look the same. Empty means no public reply.",
+      "message": "Private message",
+      "messagePlaceholder": "For example: Hi! Here are the prices and dates for the summer offer.",
+      "link": "Link in the message",
+      "linkLabel": "Text before the link",
+      "linkLabelPlaceholder": "For example: Book here",
+      "linkHint": "Sova swaps the link for its own to count clicks and sends the person to your link.",
+      "followUp": "Reminder (optional)",
+      "followUpPlaceholder": "For example: Did you get a chance to look at the offer?",
+      "followUpHours": "After",
+      "hours": "{n, plural, one {# hour} other {# hours}}",
+      "followUpHint": "The reminder goes out only if the person replied to the message and did not click the link. Meta does not allow a second message without a reply.",
+      "active": "Flow is on",
+      "activeHint": "A flow that is off does not reply to comments.",
+      "activeWaiting": "Turns on once Meta approves messaging permissions.",
+      "cancel": "Cancel",
+      "saving": "Saving…",
+      "save": "Save flow"
+    }
   }
 }

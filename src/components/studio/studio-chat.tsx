@@ -784,7 +784,7 @@ function GalleryPicker({
   const items = gallery.data?.items ?? []
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl">
+      <DialogContent className="sm:max-w-2xl">
         <DialogHeader>
           <DialogTitle>{t('picker.title')}</DialogTitle>
           <DialogDescription>{t('picker.description')}</DialogDescription>

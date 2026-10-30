@@ -1209,5 +1209,163 @@
       "selected": "Izabrano: {count}",
       "done": "Gotovo"
     }
+  },
+  "inbox": {
+    "metaTitle": "Inbox",
+    "eyebrow": "Inbox",
+    "title": "Poruke, komentari i recenzije na jednom mestu",
+    "subtitle": "Čitajte i odgovarajte ljudima sa povezanih mreža bez otvaranja svake aplikacije. Sova može da predloži odgovor.",
+    "sync": "Osveži Inbox",
+    "syncing": "Osvežavam…",
+    "syncErrors": "Neke mreže nisu odgovorile: {list}",
+    "waiting": {
+      "title": "Čeka odobrenje Mete",
+      "text": "Poruke i komentari sa Instagrama i Facebook-a stižu ovde kad Meta odobri Sovi dozvole za poruke i komentare. Do tada su vam predlozi sadržaja u poslednjoj kartici."
+    },
+    "tabs": {
+      "message": "Poruke",
+      "comment": "Komentari",
+      "review": "Recenzije",
+      "suggestions": "Predlozi"
+    },
+    "listLabel": "Razgovori",
+    "allNetworks": "Sve mreže",
+    "statusLabel": "Status",
+    "status": {
+      "all": "Svi",
+      "open": "Otvoreni",
+      "done": "Rešeni"
+    },
+    "empty": {
+      "message": "Još nema poruka.",
+      "comment": "Još nema komentara.",
+      "review": "Još nema recenzija."
+    },
+    "noPermission": "Povezani nalozi nemaju dozvolu za ovo. Povežite ih ponovo i odobrite Sovi pristup.",
+    "noAccounts": "Povežite Instagram, Facebook ili Google poslovni profil.",
+    "connect": "Mreže",
+    "select": "Izaberite razgovor sa leve strane.",
+    "unknown": "Nepoznata osoba",
+    "unread": "Nepročitano",
+    "rating": "Ocena {n} od 5",
+    "threadLabel": "Razgovor sa: {name}",
+    "onPost": "Ispod objave",
+    "openPost": "Otvori objavu",
+    "markDone": "Rešeno",
+    "reopen": "Otvori ponovo",
+    "fromAutomation": "DM automatizacija",
+    "fromBrand": "Vaš odgovor",
+    "replyWaiting": "Odgovaranje se uključuje kad Meta odobri dozvole.",
+    "replyRole": "Vaša uloga u timu ne dozvoljava odgovaranje.",
+    "replyPermission": "Nalog nema dozvolu za odgovor. Povežite ga ponovo u Mrežama.",
+    "replyLabel": "Odgovor",
+    "replyPlaceholder": {
+      "message": "Napišite poruku…",
+      "comment": "Napišite javni odgovor na komentar…",
+      "review": "Napišite odgovor na recenziju…"
+    },
+    "suggest": "Sova predlaže odgovor ({price, plural, one {# token} other {# tokena}})",
+    "sending": "Šaljem…",
+    "send": "Pošalji"
+  },
+  "automations": {
+    "metaTitle": "DM automatizacija",
+    "eyebrow": "DM automatizacija",
+    "title": "Komentar postaje razgovor",
+    "subtitle": "Kad neko komentariše ključnu reč, Sova javno odgovori, pošalje privatnu poruku sa linkom i broji klikove.",
+    "new": "Novi tok",
+    "waiting": {
+      "title": "Čeka odobrenje Mete",
+      "text": "Tokove možete da pripremite odmah. Uključuju se kad Meta odobri Sovi dozvole za poruke i komentare."
+    },
+    "hero": {
+      "eyebrow": "Prvi DM tok",
+      "title": "Pretvorite komentar u prodaju",
+      "text": "Izaberite Instagram ili Facebook nalog, zadajte ključnu reč (npr. CENA) i poruku. Sova odgovara na svaki takav komentar i šalje link osobi u poruke.",
+      "steps": {
+        "keyword": "Ključna reč",
+        "message": "Privatna poruka",
+        "link": "Link i podsetnik"
+      },
+      "cta": "Napravi prvi tok"
+    },
+    "noAccounts": "Povežite Instagram ili Facebook nalog da biste napravili tok.",
+    "connect": "Mreže",
+    "status": {
+      "title": "Tokovi",
+      "active": "Aktivni",
+      "paused": "Isključeni",
+      "problems": "Problemi"
+    },
+    "list": {
+      "title": "Vaši tokovi",
+      "hint": "Svaka ključna reč vodi kroz svoj tok.",
+      "emptyTitle": "Još nemate DM tok",
+      "emptyText": "Kad neko komentariše vašu ključnu reč, Sova odgovori na komentar i pošalje mu poruku sa linkom. Podešava se za dva minuta.",
+      "error": "Poslednja greška: {error}",
+      "toggle": "Uključi tok {name}",
+      "edit": "Izmeni tok {name}",
+      "delete": "Obriši tok {name}",
+      "confirmDelete": "Da obrišem tok i njegove kontakte?"
+    },
+    "totals": {
+      "title": "Ukupan rezultat",
+      "hint": "Od komentara do klika na link.",
+      "matches": "Pogodaka",
+      "dms": "Poslatih poruka",
+      "clicks": "Klikova"
+    },
+    "contacts": {
+      "title": "Kontakti",
+      "hint": "Ljudi koji su prošli kroz tokove.",
+      "account": "Nalog",
+      "flow": "Tok",
+      "stage": "Faza",
+      "when": "Kada",
+      "unknown": "Bez imena",
+      "empty": "Još nema kontakata. Kad neko komentariše ključnu reč, pojaviće se ovde."
+    },
+    "stages": {
+      "matched": "Komentarisao",
+      "dm_sent": "Dobio poruku",
+      "clicked": "Kliknuo link",
+      "followed_up": "Dobio podsetnik",
+      "failed": "Nije poslato"
+    },
+    "editor": {
+      "newTitle": "Novi DM tok",
+      "editTitle": "Izmena toka",
+      "description": "Ključna reč u komentaru pokreće javni odgovor i privatnu poruku sa linkom.",
+      "account": "Nalog",
+      "noMessaging": "Ovaj nalog još nema dozvolu za poruke. Tok možete da sačuvate, a uključujete ga posle ponovnog povezivanja.",
+      "name": "Ime toka",
+      "namePlaceholder": "Npr. Cena za letnju akciju",
+      "keywords": "Ključne reči",
+      "removeKeyword": "Ukloni reč {keyword}",
+      "keywordsPlaceholder": "Upišite reč i pritisnite Enter",
+      "keywordsHint": "Velika i mala slova, kvačice i ćirilica se ne razlikuju: CENA, cena i цена su ista reč.",
+      "publicReplies": "Javni odgovor na komentar",
+      "publicReply": "Varijanta {n}",
+      "publicReplyPlaceholder": "Npr. Poslali smo vam detalje u poruke!",
+      "addVariant": "Dodaj varijantu",
+      "publicRepliesHint": "Sova bira jednu od varijanti, da odgovori ne izgledaju isto. Prazno = bez javnog odgovora.",
+      "message": "Privatna poruka",
+      "messagePlaceholder": "Npr. Zdravo! Evo cena i termina za letnju akciju.",
+      "link": "Link u poruci",
+      "linkLabel": "Tekst ispred linka",
+      "linkLabelPlaceholder": "Npr. Rezervišite ovde",
+      "linkHint": "Sova menja link svojim, da broji klikove, i vodi osobu na vaš link.",
+      "followUp": "Podsetnik (opciono)",
+      "followUpPlaceholder": "Npr. Da li ste stigli da pogledate ponudu?",
+      "followUpHours": "Posle",
+      "hours": "{n, plural, one {# sat} few {# sata} other {# sati}}",
+      "followUpHint": "Podsetnik ide samo ako je osoba odgovorila na poruku, a nije kliknula link. Meta ne dozvoljava drugu poruku bez odgovora.",
+      "active": "Tok je uključen",
+      "activeHint": "Isključen tok ne odgovara na komentare.",
+      "activeWaiting": "Uključuje se kad Meta odobri dozvole za poruke.",
+      "cancel": "Otkaži",
+      "saving": "Čuvam…",
+      "save": "Sačuvaj tok"
+    }
   }
 }

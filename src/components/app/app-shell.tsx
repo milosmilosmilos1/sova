@@ -8,6 +8,7 @@ import {
   Images,
   Inbox,
   Lightbulb,
+  MessageCircleReply,
   LogOut,
   Settings,
   Share2,
@@ -139,6 +140,10 @@ export function AppShell({
               <NavLink href="/app/inbox">
                 <Inbox aria-hidden />
                 Inbox
+              </NavLink>
+              <NavLink href="/app/automations">
+                <MessageCircleReply aria-hidden />
+                DM automatizacija
               </NavLink>
               <NavLink href="/app/posts">
                 <FileText aria-hidden />

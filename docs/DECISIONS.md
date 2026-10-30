@@ -890,3 +890,16 @@ Odluka (faza 9 iz D-108):
 - Razgovor se čuva po korisniku i brendu (`studio_messages`, migracija 037), najviše 200 poruka. „Obriši razgovor” briše poruke, a objave ostaju.
 
 Razlog: zahtev vlasnika (D-108). Razgovor skraćuje put od ideje do nacrta, a ispravke se traže rečima umesto kroz formu sa deset polja.
+
+## D-117 · 30.10.2026 · usvojeno · Inbox i DM automatizacija iza prekidača `inbox`
+
+Odluka (faza 10 iz D-108):
+
+- Inbox (`/app/inbox`) ima kartice Poruke, Komentari, Recenzije i Predlozi. Predlozi su dosadašnji „Inbox predloga”, pa stari linkovi rade. Poruke su Instagram i Messenger razgovori kroz stranicu, komentari su sa poslednjih objava Instagram naloga i stranice, a recenzije su preporuke stranice i recenzije Google poslovnog profila.
+- Sinhronizacija je pozadinski posao na 10 minuta (`inbox-sync`) i dugme „Osveži Inbox”. Razgovor se prepoznaje po nalogu, vrsti i ID-ju sa mreže, a poruka po ID-ju, pa nema duplikata. Nova dolazna poruka otvara razgovor i označava ga kao nepročitan. Komentar samog naloga (npr. prvi komentar objave) ne ulazi u Inbox. Webhook za sada nije potreban.
+- Odgovor ide kroz mrežu: javni odgovor na komentar, poruka u razgovoru (Meta prima poruku samo 24 h posle poslednje poruke osobe, i to se kaže korisniku), komentar na preporuku stranice i odgovor vlasnika na Google recenziju. Sova predlaže odgovor u glasu brenda za 1 token (`inbox_reply`); korisnik ga menja i šalje sam.
+- DM automatizacija (`/app/automations`): tok ima nalog (Instagram ili Facebook), do 10 ključnih reči, do tri varijante javnog odgovora, privatnu poruku, link sa tekstom i podsetnik. Ključna reč se poredi bez obzira na velika slova, kvačice i ćirilicu, i mora da stoji kao cela reč. Na nov komentar sa ključnom reči Sova javno odgovori, pošalje privatni odgovor na komentar (`recipient.comment_id`, do 7 dana posle komentara) i link koji broji klik (`/r/{token}`). Jedna osoba dobija poruku od jednog toka najviše jednom, a tok vidi samo komentare nastale posle njega. Podsetnik ide samo osobi koja je odgovorila, a nije kliknula, jer Meta ne dozvoljava drugu poruku bez odgovora. Rezultat (pogoci, poruke, klikovi) se računa iz kontakata, bez brojača koji mogu da se raziđu.
+- Prekidač `inbox`: dok Meta ne odobri `pages_manage_engagement`, `pages_messaging` i `instagram_manage_messages` (App Review), Inbox i tokovi su vidljivi, ali isključeni: kartice mreža to objašnjavaju, tok se čuva isključen i ne može da se uključi, a posao ne radi. Prekidač može da se uključi za sve ili samo za radne prostore iz `feature_flags.rollout.workspaces` (vlasnik proba na svom nalogu u razvojnom režimu Meta aplikacije). Dok je uključen, prijava na Metu traži i ove dozvole; sa konfiguracijom prijave (`META_LOGIN_CONFIG_ID`) dozvole se dodaju u Meta podešavanjima.
+- Svaka vrsta se čita samo ako nalog ima dozvolu (scope sa mreže), a odgovor samo ako ima dozvolu za slanje. Nalog bez nje dobija poruku da ga treba povezati ponovo.
+
+Razlog: zahtev vlasnika (D-108). Inbox na jednom mestu štedi otvaranje aplikacija, a tok „komentar → poruka sa linkom” je najjednostavnija prodaja sa mreža. Prekidač drži sve spremno do odobrenja Mete, bez polovične funkcije za korisnike.

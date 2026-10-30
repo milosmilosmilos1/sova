@@ -9,7 +9,8 @@ import { ADMIN_ROLES, EDIT_ROLES, requireMembership } from '@/lib/auth/workspace
 import { createPkce } from '@/lib/crypto/pkce'
 import { currentKeyVersion, decryptSecret, encryptSecret, sha256Hex, toPgBytea } from '@/lib/crypto/tokens'
 import { env } from '@/lib/env'
-import { isFeatureEnabled } from '@/lib/flags'
+import { INBOX_FLAG, isFeatureEnabled, isFeatureEnabledFor } from '@/lib/flags'
+import { META_INBOX_SCOPES } from '@/integrations/social/meta/inbox'
 import { enqueueHistoryImport } from '@/lib/jobs/enqueue'
 import { logger } from '@/lib/logger'
 import type { ActivateAccountsInput } from '@/lib/schemas/social'
@@ -124,7 +125,17 @@ export async function beginSocialConnect(
     redirect_to: redirectTo && redirectTo.startsWith('/') ? redirectTo : '/app/accounts',
   })
   if (error) throw mapDbError(error)
-  return provider.getAuthUrl({ state, redirectUri: callbackUrl(key), codeChallenge: pkce?.challenge })
+  // Inbox i DM automatizacija (D-117): dozvole za poruke i komentare samo dok je prekidač uključen
+  const extraScopes =
+    key === 'meta' && (await isFeatureEnabledFor(INBOX_FLAG, brand.workspace_id))
+      ? META_INBOX_SCOPES
+      : undefined
+  return provider.getAuthUrl({
+    state,
+    redirectUri: callbackUrl(key),
+    codeChallenge: pkce?.challenge,
+    extraScopes,
+  })
 }
 
 export interface ConnectCallbackResult {

@@ -63,10 +63,13 @@ export function InboxClient({
   brandId,
   brandName,
   canEdit,
+  embedded = false,
 }: {
   brandId: string
   brandName: string
   canEdit: boolean
+  /** kartica „Predlozi” u Inbox-u (D-117): bez naslova strane */
+  embedded?: boolean
 }) {
   const qc = useQueryClient()
   const router = useRouter()
@@ -94,9 +97,13 @@ export function InboxClient({
   const counts = list.data?.counts
 
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
+    <div className={embedded ? 'max-w-3xl space-y-6' : 'mx-auto max-w-3xl space-y-6'}>
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Inbox predloga</h1>
+        {embedded ? (
+          <h2 className="text-lg font-semibold">Predlozi sadržaja</h2>
+        ) : (
+          <h1 className="text-2xl font-semibold tracking-tight">Inbox predloga</h1>
+        )}
         <p className="text-sm text-muted-foreground">
           {brandName}: ideje iz bloga, promena na sajtu, praznika i rezultata. Prihvatanjem nastaje nacrt koji
           doterujete pre objave.

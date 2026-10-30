@@ -206,7 +206,13 @@ export interface SocialProvider {
   readonly platforms: readonly SocialPlatform[]
   /** OAuth uz PKCE (X ga traži): tok čuva šifrovan `code_verifier` u `oauth_states` */
   readonly usesPkce?: boolean
-  getAuthUrl(ctx: { state: string; redirectUri: string; codeChallenge?: string }): string
+  getAuthUrl(ctx: {
+    state: string
+    redirectUri: string
+    codeChallenge?: string
+    /** dodatne dozvole (Meta: Inbox i poruke, D-117) kad prijava ne ide kroz konfiguraciju */
+    extraScopes?: readonly string[]
+  }): string
   exchangeCode(
     code: string,
     ctx: { redirectUri: string; codeVerifier?: string },

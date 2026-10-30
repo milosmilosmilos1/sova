@@ -43,7 +43,7 @@ create type media_kind as enum ('image','video');
 create type ai_generation_type as enum ('text','rewrite','translate','hashtags','repurpose','variants',
   'image_from_photo','image_from_prompt','visual_template','vision_describe','unsplash_rank',
   'strategy','insights','brand_profile','photo_style','embedding','quality_check','canva_design','canva_export',
-  'studio_chat');                                   -- studio_chat: migracija 037, D-116
+  'studio_chat', 'inbox_reply');                    -- studio_chat: migracija 037 (D-116), inbox_reply: 038 (D-117)
 create type ai_generation_status as enum ('queued','running','succeeded','failed','canceled');
 create type token_grant_source as enum ('signup','subscription','topup','admin','refund');
 create type token_reservation_status as enum ('reserved','confirmed','released','expired');
@@ -1356,6 +1356,63 @@ create table studio_messages (
   created_at timestamptz not null default now()
 );
 -- RLS: korisnik čita samo svoj razgovor za brend kome ima pristup; piše service role; najviše 200 poruka po razgovoru
+
+-- Inbox i DM automatizacija (migracija 038, D-117)
+create table inbox_threads (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  brand_id uuid not null references brands(id) on delete cascade,
+  social_account_id uuid not null references social_accounts(id) on delete cascade,
+  platform social_platform not null,
+  kind text not null,                               -- message | comment | review
+  external_id text not null,                        -- razgovor, komentar ili recenzija na mreži
+  author_external_id text, author_name text, author_handle text,
+  post_external_id text, post_permalink text, post_excerpt text,  -- objava ispod koje je komentar
+  rating smallint,                                  -- 1–5 za recenzije sa ocenom
+  preview text not null default '',
+  last_message_at timestamptz not null, last_inbound_at timestamptz,
+  unread boolean not null default true,
+  status text not null default 'open',              -- open | done
+  created_at timestamptz, updated_at timestamptz,
+  unique (social_account_id, kind, external_id)
+);
+create table inbox_messages (
+  id uuid primary key default gen_random_uuid(),
+  thread_id uuid not null references inbox_threads(id) on delete cascade,
+  brand_id uuid not null references brands(id) on delete cascade,
+  external_id text,                                 -- jedinstven po razgovoru (thread_id, external_id)
+  direction text not null,                          -- in | out
+  author_name text, body text not null, sent_at timestamptz not null,
+  source text not null default 'sync',              -- sync | reply | automation
+  sent_by uuid references profiles(id) on delete set null,
+  created_at timestamptz
+);
+create table dm_automations (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  brand_id uuid not null references brands(id) on delete cascade,
+  social_account_id uuid not null references social_accounts(id) on delete cascade,  -- Instagram ili Facebook
+  name text not null, keywords text[] not null,     -- 1–10 ključnih reči
+  public_replies text[] not null default '{}',      -- do 3 varijante javnog odgovora
+  dm_message text not null, link_url text, link_label text,
+  follow_up text, follow_up_hours smallint not null default 4,  -- 1–23
+  active boolean not null default false, last_error text,
+  created_by uuid references profiles(id) on delete set null,
+  created_at timestamptz, updated_at timestamptz
+);
+create table dm_contacts (
+  id uuid primary key default gen_random_uuid(),
+  automation_id uuid not null references dm_automations(id) on delete cascade,
+  brand_id uuid not null references brands(id) on delete cascade,
+  external_user_id text not null, username text,
+  comment_external_id text not null, comment_text text,
+  stage text not null default 'matched',            -- matched | dm_sent | clicked | followed_up | failed
+  click_token text not null unique,                 -- link /r/{click_token}
+  error text, dm_sent_at timestamptz, clicked_at timestamptz, followed_up_at timestamptz,
+  created_at timestamptz,
+  unique (automation_id, external_user_id)          -- jedna poruka po osobi i toku
+);
+-- RLS: sve četiri tabele čitaju članovi sa pristupom brendu; piše service role (API i posao inbox-sync)
 create table autopilot_runs (
   id uuid primary key default gen_random_uuid(),
   brand_id uuid not null references brands(id) on delete cascade,
