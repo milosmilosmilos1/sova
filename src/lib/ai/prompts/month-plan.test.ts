@@ -35,6 +35,7 @@ describe('mesečni plan: upit', () => {
       topics: ['Letnji servis'],
       pillars: ['Edukacija'],
       recent: ['Tri znaka da klima traži servis'],
+      planned: ['Kako radi inverter klima'],
       notes: 'Akcija na čišćenje do 15. novembra',
       website: 'https://klima.test',
     })
@@ -44,6 +45,8 @@ describe('mesečni plan: upit', () => {
     expect(prompt).toContain('- Letnji servis')
     expect(prompt).toContain('2026-11-11: Dan primirja')
     expect(prompt).toContain('- Tri znaka da klima traži servis')
+    expect(prompt).toContain('TEME VEĆ U OVOM PLANU ZA RANIJE MESECE')
+    expect(prompt).toContain('- Kako radi inverter klima')
     expect(prompt).toContain('Akcija na čišćenje do 15. novembra')
     expect(prompt).toContain('Karusel: saveti, koraci')
     expect(prompt).not.toContain('Link:')

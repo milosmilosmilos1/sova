@@ -930,3 +930,16 @@ Odluka:
 - Brisanje objave iz liste: sa odobravanja se prvo vraća u nacrte, zakazana i odobrena se prvo otkazuje, a briše vlasnik ili administrator (urednik samo otkazuje). Objavljena objava se ne briše iz Sove.
 
 Razlog: zahtev vlasnika da ceo mesec sadržaja nastane bez smišljanja tema, uz kontrolu pre trošenja tokena, i da u svakoj listi može da se označi i obriše više stavki odjednom.
+
+## D-120 · 30.10.2026 · usvojeno · Plan za više meseci unapred
+
+Odluka:
+
+- Mesečni plan (D-119) može da pokrije jedan, dva ili tri meseca. Korisnik bira početak (od sutra ili od prvog u sledećem mesecu) i „Koliko meseci unapred”; period traje do kraja poslednjeg izabranog meseca. Procena broja objava i cene se računa u pregledaču za ceo period.
+- Teme se biraju mesec po mesec: jedan poziv modela po kalendarskom mesecu (3 tokena po mesecu), svaki mesec u svom koraku pozadinskog posla. Upit za kasniji mesec nosi teme koje su već izabrane za ranije mesece istog plana, da se ne ponavljaju. Ponovljen korak ne bira teme dvaput za isti mesec.
+- Najviše 60 termina po kalendarskom mesecu (do 180 u planu za tri meseca).
+- Ako jedan mesec ne uspe, ostali meseci su spremni, a plan pokazuje koji mesec fali; plaća se samo mesec koji je uspeo. Plan bez ijedne teme je neuspeo.
+- Nov plan zamenjuje svaki plan čiji se period preklapa sa njegovim, osim plana iz kog su već napravljeni nacrti.
+- Lista plana od više meseci ima naslov za svaki mesec, a nedelje se broje u okviru meseca. „Generiši sve” pravi nacrte za ceo period jednim klikom.
+
+Razlog: vlasnik traži da objave može da napravi za mesec unapred ili više. Tri meseca je kvartal, uobičajen horizont plana sadržaja; teme za dalje mesece brzo zastarevaju (sezona, akcije, novosti), a duži plan se lako doda kasnije.

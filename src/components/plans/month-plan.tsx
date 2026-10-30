@@ -32,13 +32,13 @@ import { Textarea } from '@/components/ui/textarea'
 import { CONTENT_LOCALES } from '@/config/locales'
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { PLATFORM_FORMATS, POST_FORMATS, type PostFormat } from '@/config/post-formats'
-import { buildSlots, PER_WEEK_OPTIONS } from '@/lib/plans/slots'
+import { buildSlots, MONTH_OPTIONS, monthEnd, PER_WEEK_OPTIONS, slotMonths } from '@/lib/plans/slots'
 import { cn } from '@/lib/utils'
 
 /**
- * Mesečni plan (D-119): izbor meseca, broja objava i mreža (sve vrste su uključene), Sova bira teme
- * za sve termine, vi izbacite šta ne želite ili promenite temu i termin, a „Generiši sve” pravi sve
- * nacrte u pozadini. Strana se sama osvežava dok Sova radi.
+ * Mesečni plan (D-119): izbor početka, broja meseci (do tri, D-120), broja objava i mreža (sve vrste
+ * su uključene), Sova bira teme za sve termine, vi izbacite šta ne želite ili promenite temu i
+ * termin, a „Generiši sve” pravi sve nacrte u pozadini. Strana se sama osvežava dok Sova radi.
  */
 type Status = 'planning' | 'ready' | 'generating' | 'done' | 'failed'
 type ItemStatus = 'planned' | 'generating' | 'done' | 'failed'
@@ -68,6 +68,7 @@ interface Plan {
   status: Status
   settings: {
     kind: 'current' | 'next'
+    months?: number
     perWeek: number
     platforms: SocialPlatform[]
     formats: PostFormat[]
@@ -104,6 +105,13 @@ const FORMAT_ICON: Record<PostFormat, typeof ImageIcon> = {
 
 function daysBetween(a: string, b: string): number {
   return Math.round((Date.parse(`${b}T12:00:00Z`) - Date.parse(`${a}T12:00:00Z`)) / 86_400_000) + 1
+}
+
+/** Broj kalendarskih meseci od `start` do `end` (oba uključena). */
+function monthsBetween(start: string, end: string): number {
+  const [ys, ms] = start.split('-').map(Number) as [number, number]
+  const [ye, me] = end.split('-').map(Number) as [number, number]
+  return (ye - ys) * 12 + (me - ms) + 1
 }
 
 function weekStart(date: string): string {
@@ -209,15 +217,21 @@ function SetupCard({
   const [kind, setKind] = useState<'current' | 'next'>(
     current && daysBetween(current.start, current.end) >= 7 ? 'current' : 'next',
   )
+  const [months, setMonths] = useState(1)
   const [perWeek, setPerWeek] = useState(5)
   const [platforms, setPlatforms] = useState<SocialPlatform[]>(options.platforms)
   const [formats, setFormats] = useState<PostFormat[]>([...POST_FORMATS])
   const [contentLocale, setContentLocale] = useState(options.locale)
   const [notes, setNotes] = useState('')
   const period = options.months.find((m) => m.kind === kind) ?? options.months[0]
-  const estimate = period
-    ? buildSlots({ start: period.start, end: period.end, perWeek, formats, platforms }).length
-    : 0
+  const periodEnd = period ? monthEnd(period.month, months) : null
+  const slots =
+    period && periodEnd
+      ? buildSlots({ start: period.start, end: periodEnd, perWeek, formats, platforms })
+      : []
+  const estimate = slots.length
+  // plan se plaća po mesecu u kom ima termina, isto kao na serveru
+  const planCost = options.prices.plan * slotMonths(slots).length
   const usable = POST_FORMATS.filter((f) => platforms.some((p) => PLATFORM_FORMATS[p].includes(f)))
 
   const create = useMutation({
@@ -227,6 +241,7 @@ function SetupCard({
         json: {
           brandId,
           kind,
+          months,
           perWeek,
           platforms,
           formats,
@@ -275,15 +290,37 @@ function SetupCard({
               </span>
               <span className="block text-xs text-muted-foreground">
                 {m.kind === 'current'
-                  ? t('setup.rest', {
-                      from: dayMonth.format(new Date(`${m.start}T12:00:00Z`)),
-                      to: dayMonth.format(new Date(`${m.end}T12:00:00Z`)),
-                    })
+                  ? t('setup.rest', { from: dayMonth.format(new Date(`${m.start}T12:00:00Z`)) })
                   : t('setup.whole')}
               </span>
             </button>
           ))}
         </div>
+      </fieldset>
+
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">{t('setup.months')}</legend>
+        <div className="flex flex-wrap gap-2">
+          {MONTH_OPTIONS.map((n) => (
+            <button
+              key={n}
+              type="button"
+              aria-pressed={months === n}
+              onClick={() => setMonths(n)}
+              className={chip(months === n)}
+            >
+              {t('setup.monthsValue', { count: n })}
+            </button>
+          ))}
+        </div>
+        {period && periodEnd ? (
+          <p className="text-xs text-muted-foreground">
+            {t('setup.monthsHint', {
+              from: dayMonth.format(new Date(`${period.start}T12:00:00Z`)),
+              to: dayMonth.format(new Date(`${periodEnd}T12:00:00Z`)),
+            })}
+          </p>
+        ) : null}
       </fieldset>
 
       <fieldset className="space-y-2">
@@ -390,7 +427,7 @@ function SetupCard({
         <p className="text-sm">
           {t('setup.estimate', {
             count: estimate,
-            plan: options.prices.plan,
+            plan: planCost,
             posts: estimate * options.prices.post,
           })}{' '}
           <span className="text-muted-foreground">{t('setup.balance', { count: options.balance })}</span>
@@ -466,6 +503,25 @@ function PlanBoard({
 
   const weeks = new Map<string, Item[]>()
   for (const i of plan.items) weeks.set(weekStart(i.date), [...(weeks.get(weekStart(i.date)) ?? []), i])
+  // plan za više meseci: naslov meseca iznad njegovih nedelja, nedelje se broje u okviru meseca
+  const monthCount = monthsBetween(plan.periodStart, plan.periodEnd)
+  const groups: Array<{ start: string; items: Item[]; month: string | null; n: number }> = []
+  for (const [start, items] of weeks) {
+    const month = items[0]!.date.slice(0, 7)
+    const prev = groups.at(-1)
+    const sameMonth = prev && prev.items[0]!.date.slice(0, 7) === month
+    groups.push({
+      start,
+      items,
+      month: monthCount > 1 && !sameMonth ? month : null,
+      n: monthCount > 1 && !sameMonth ? 1 : (prev?.n ?? 0) + 1,
+    })
+  }
+  const plannedMonths = new Set(plan.items.map((i) => i.date.slice(0, 7))).size
+  const title =
+    monthCount > 1
+      ? `${monthName.format(new Date(`${plan.periodStart}T12:00:00Z`))} – ${monthName.format(new Date(`${plan.periodEnd}T12:00:00Z`))}`
+      : monthName.format(new Date(`${plan.month}T12:00:00Z`))
   const total = plan.items.length
   const finished = plan.counts.done + plan.counts.failed
   const formatsCount = POST_FORMATS.map(
@@ -479,10 +535,11 @@ function PlanBoard({
           <div>
             <p className="flex items-center gap-2 text-lg font-semibold capitalize">
               <CalendarRange className="size-5 text-primary" aria-hidden />
-              {monthName.format(new Date(`${plan.month}T12:00:00Z`))}
+              {title}
             </p>
             <p className="text-sm text-muted-foreground">
-              {t('board.summary', {
+              {/* dok Sova bira teme, broj objava još ne postoji */}
+              {t(total ? 'board.summary' : 'board.period', {
                 count: total,
                 from: short.format(new Date(`${plan.periodStart}T12:00:00Z`)),
                 to: short.format(new Date(`${plan.periodEnd}T12:00:00Z`)),
@@ -547,7 +604,9 @@ function PlanBoard({
         {plan.status === 'planning' ? (
           <p role="status" className="flex items-center gap-2 rounded-lg bg-primary/5 px-3 py-2 text-sm">
             <LoaderCircle className="size-4 animate-spin" aria-hidden />
-            {t('board.planning')}
+            {monthCount > 1
+              ? t('board.planningMonths', { done: plannedMonths, total: monthCount })
+              : t('board.planning')}
           </p>
         ) : null}
         {plan.status === 'generating' ? (
@@ -568,6 +627,11 @@ function PlanBoard({
         {plan.status === 'failed' && !total ? (
           <p className="rounded-lg border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive">
             {t('board.failed', { error: plan.error ?? '' })}
+          </p>
+        ) : null}
+        {plan.error && total && plan.status !== 'planning' && plan.status !== 'generating' ? (
+          <p className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
+            {t('board.partial', { error: plan.error })}
           </p>
         ) : null}
         {plan.counts.done && plan.status !== 'generating' ? (
@@ -613,11 +677,16 @@ function PlanBoard({
               </Button>
             ) : null}
           </header>
-          {[...weeks.entries()].map(([start, items], w) => (
+          {groups.map(({ start, items, month, n }) => (
             <div key={start}>
+              {month ? (
+                <p className="border-b px-4 pt-4 pb-2 text-sm font-semibold capitalize">
+                  {monthName.format(new Date(`${month}-01T12:00:00Z`))}
+                </p>
+              ) : null}
               <p className="bg-muted/40 px-4 py-1.5 text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                 {t('board.week', {
-                  n: w + 1,
+                  n,
                   range: [...new Set([items[0]!.date, items[items.length - 1]!.date])]
                     .map((d) => short.format(new Date(`${d}T12:00:00Z`)))
                     .join(' – '),

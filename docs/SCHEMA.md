@@ -1433,12 +1433,12 @@ create table month_plans (
   id uuid primary key default gen_random_uuid(),
   workspace_id uuid not null references workspaces(id) on delete cascade,
   brand_id uuid not null references brands(id) on delete cascade,
-  month date not null,                              -- prvi dan meseca
+  month date not null,                              -- prvi dan prvog meseca plana (plan traje do tri meseca)
   period_start date not null, period_end date not null,   -- tekući mesec počinje od sutra
   status text not null default 'planning',          -- planning | ready | generating | done | failed
-  settings jsonb not null default '{}',             -- kind, perWeek, platforms, formats, locale, notes, mode, slots[]
-  error text,
-  tokens_charged integer not null default 0,        -- plan (3) i nacrti (po 2)
+  settings jsonb not null default '{}',             -- kind, months (1–3, D-120), perWeek, platforms, formats, locale, notes, mode, slots[]
+  error text,                                       -- i mesec za koji teme nisu izabrane (plan ostaje spreman)
+  tokens_charged integer not null default 0,        -- plan (3 po mesecu) i nacrti (po 2)
   created_by uuid references profiles(id) on delete set null,
   created_at timestamptz, updated_at timestamptz
 );

@@ -6,9 +6,11 @@ import { addDays, DEFAULT_BEST_TIMES, weekdayOf, type BestTimes } from '@/lib/st
  * Termini mesečnog plana (D-119): koliko objava nedeljno, u koje dane, u koje vreme i koje vrste.
  * Raspored je pravilan i predvidiv (Sova bira teme, ne termine): dani po šablonu za broj objava,
  * vreme iz najboljih termina mreže, a vrste se smenjuju tako da karusel i slika dolaze najčešće.
- * Svaki termin ide na mreže koje primaju njegovu vrstu.
+ * Svaki termin ide na mreže koje primaju njegovu vrstu. Plan može da pokrije do tri meseca (D-120).
  */
 export const PER_WEEK_OPTIONS = [3, 5, 7, 10, 14] as const
+export const MONTH_OPTIONS = [1, 2, 3] as const
+/** najviše termina u jednom kalendarskom mesecu (jedan poziv modela bira teme za jedan mesec) */
 export const MAX_SLOTS = 60
 
 /** Dani u nedelji (0 = nedelja) za prvu objavu dana i redosled dana za drugu. */
@@ -41,23 +43,30 @@ export interface PlanPeriod {
   end: string
 }
 
-function lastDayOfMonth(monthStart: string): string {
-  const [y, m] = monthStart.split('-').map(Number) as [number, number]
-  const d = new Date(Date.UTC(y, m, 0))
-  return d.toISOString().slice(0, 10)
+/** Poslednji dan meseca koji je `count - 1` meseci posle `month` (prvi dan meseca, YYYY-MM-01). */
+export function monthEnd(month: string, count = 1): string {
+  const [y, m] = month.split('-').map(Number) as [number, number]
+  return new Date(Date.UTC(y, m - 1 + count, 0)).toISOString().slice(0, 10)
 }
 
-/** Period plana: ostatak ovog meseca (od sutra) ili ceo sledeći mesec; `today` je datum u zoni brenda. */
-export function planPeriod(kind: 'current' | 'next', today: string): PlanPeriod | null {
+/**
+ * Period plana: od sutra (ostatak ovog meseca) ili od prvog u sledećem mesecu, pa do kraja
+ * `months`-tog meseca; `today` je datum u zoni brenda. Poslednji dan meseca nema ostatka.
+ */
+export function planPeriod(kind: 'current' | 'next', today: string, months = 1): PlanPeriod | null {
   const [y, m] = today.split('-').map(Number) as [number, number]
   if (kind === 'next') {
     const next = new Date(Date.UTC(y, m, 1)).toISOString().slice(0, 10)
-    return { month: next, start: next, end: lastDayOfMonth(next) }
+    return { month: next, start: next, end: monthEnd(next, months) }
   }
   const month = `${today.slice(0, 7)}-01`
   const start = addDays(today, 1)
-  const end = lastDayOfMonth(month)
-  return start > end ? null : { month, start, end }
+  return start > monthEnd(month) ? null : { month, start, end: monthEnd(month, months) }
+}
+
+/** Kalendarski meseci (YYYY-MM) kroz koje termini prolaze, redom. */
+export function slotMonths(slots: readonly Pick<PlanSlot, 'date'>[]): string[] {
+  return [...new Set(slots.map((s) => s.date.slice(0, 7)))]
 }
 
 /** Koliko objava ide u dan (1 ili 2) po broju objava nedeljno. */
@@ -102,11 +111,14 @@ export function buildSlots(input: {
   if (!rotation.length || !input.platforms.length) return []
   const main = input.platforms.includes('instagram') ? 'instagram' : input.platforms[0]!
   const out: PlanSlot[] = []
+  const perMonth = new Map<string, number>()
   let turn = 0
-  for (let date = input.start; date <= input.end && out.length < MAX_SLOTS; date = addDays(date, 1)) {
+  for (let date = input.start; date <= input.end; date = addDays(date, 1)) {
     const weekday = weekdayOf(date)
-    const count = postsOnDay(weekday, input.perWeek)
-    for (let k = 0; k < count && out.length < MAX_SLOTS; k++) {
+    const month = date.slice(0, 7)
+    const count = Math.min(postsOnDay(weekday, input.perWeek), MAX_SLOTS - (perMonth.get(month) ?? 0))
+    if (count > 0) perMonth.set(month, (perMonth.get(month) ?? 0) + count)
+    for (let k = 0; k < count; k++) {
       const format = rotation[turn % rotation.length]!
       turn++
       const platforms = input.platforms.filter((p) => PLATFORM_FORMATS[p].includes(format))

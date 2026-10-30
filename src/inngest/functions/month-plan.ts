@@ -1,11 +1,19 @@
 import { inngest } from '@/inngest/client'
 import { events } from '@/inngest/events'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import { finishPlan, pendingItems, runPlanItem, runPlanning } from '@/services/plans/runner'
+import {
+  finishPlan,
+  finishPlanning,
+  pendingItems,
+  planningMonths,
+  runPlanItem,
+  runPlanningMonth,
+} from '@/services/plans/runner'
 
 /**
- * Mesečni plan (D-119): teme za sve termine (jedan poziv Gemini-ja), pa posle „Generiši sve” svaki
- * nacrt kao poseban korak, jedan brend u isto vreme. Greška jedne stavke ne zaustavlja ostale.
+ * Mesečni plan (D-119): teme za sve termine, jedan korak (i jedan poziv Gemini-ja) po mesecu
+ * (D-120), pa posle „Generiši sve” svaki nacrt kao poseban korak, jedan brend u isto vreme.
+ * Greška jednog meseca ili jedne stavke ne zaustavlja ostale.
  */
 export const monthPlanCreate = inngest.createFunction(
   {
@@ -21,7 +29,12 @@ export const monthPlanCreate = inngest.createFunction(
         .eq('status', 'planning')
     },
   },
-  async ({ event, step }) => step.run('plan', () => runPlanning(event.data.planId)),
+  async ({ event, step }) => {
+    const months = await step.run('months', () => planningMonths(event.data.planId))
+    for (const month of months)
+      await step.run(`plan-${month}`, () => runPlanningMonth(event.data.planId, month))
+    return step.run('ready', () => finishPlanning(event.data.planId))
+  },
 )
 
 export const monthPlanGenerate = inngest.createFunction(

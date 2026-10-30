@@ -21,7 +21,14 @@ import { resetMemoryRateLimit } from '@/lib/ratelimit'
 import { configureFontLoader } from '@/lib/visuals/fonts'
 import { finishPlan, pendingItems, runPlanItem, runPlanning } from '@/services/plans/runner'
 
-import { defaultTextOutput, enqueueReply, geminiServer, resetGeminiMock, type MockReply } from './gemini-mock'
+import {
+  calls,
+  defaultTextOutput,
+  enqueueReply,
+  geminiServer,
+  resetGeminiMock,
+  type MockReply,
+} from './gemini-mock'
 import { admin, call, createTestUser, deleteTestUser, type TestUser } from './helpers'
 import { pexelsHandlers, unsplashHandlers } from './visuals-mock'
 
@@ -92,6 +99,44 @@ async function planReply(id: string): Promise<MockReply> {
     },
   }
 }
+
+/** Gemini za plan od više meseci: jedan odgovor po mesecu, termini se broje u okviru meseca (D-120). */
+async function planRepliesByMonth(id: string): Promise<MockReply[]> {
+  const { data } = await admin.from('month_plans').select('settings').eq('id', id).single()
+  const slots = (data!.settings as { slots: Array<{ date: string }> }).slots
+  const months = [...new Set(slots.map((s) => s.date.slice(0, 7)))]
+  return months.map((m) => ({
+    kind: 'text',
+    json: {
+      items: slots
+        .filter((s) => s.date.startsWith(m))
+        .map((_, i) => ({
+          slot: i,
+          topic: `Tema ${m} broj ${i + 1}`,
+          brief: 'Šta objava kaže i za koga.',
+          goal: 'education',
+          pillar: 'Edukacija',
+          cta: null,
+        })),
+    },
+  }))
+}
+
+const MONTH_NAMES = [
+  'januar',
+  'februar',
+  'mart',
+  'april',
+  'maj',
+  'jun',
+  'jul',
+  'avgust',
+  'septembar',
+  'oktobar',
+  'novembar',
+  'decembar',
+]
+let twoMonthPlanId = ''
 
 /** Pravljenje svih nacrta onako kako ga radi pozadinski posao. */
 async function generateAll(id: string): Promise<{ done: number; failed: number }> {
@@ -325,6 +370,72 @@ describe('mesečni plan', () => {
     // prethodni plan za isti mesec ostaje jer iz njega već postoje nacrti
     const { data: kept } = await admin.from('month_plans').select('id').eq('id', planId)
     expect(kept).toHaveLength(1)
+  })
+
+  it('plan za dva meseca: teme mesec po mesec, drugi mesec zna teme prvog, 3 tokena po mesecu (D-120)', async () => {
+    const r = await call<Plan>(plansPost, '/api/plans', {
+      token: user.token,
+      body: { brandId, kind: 'next', months: 2, perWeek: 3, formats: ['carousel', 'text'] },
+    })
+    expect(r.status).toBe(202)
+    twoMonthPlanId = r.json.data!.id
+    const { periodStart, periodEnd } = r.json.data!
+    expect(periodStart.slice(8)).toBe('01')
+    expect(periodEnd.slice(0, 7)).not.toBe(periodStart.slice(0, 7))
+    const replies = await planRepliesByMonth(twoMonthPlanId)
+    expect(replies).toHaveLength(2)
+    enqueueReply(...replies)
+    expect(await runPlanning(twoMonthPlanId)).toBe('ready')
+    const plan = (
+      await call<Plan>(planGet, `/api/plans/${twoMonthPlanId}`, {
+        token: user.token,
+        params: { id: twoMonthPlanId },
+      })
+    ).json.data!
+    expect(new Set(plan.items.map((i) => i.date.slice(0, 7)))).toEqual(
+      new Set([periodStart.slice(0, 7), periodEnd.slice(0, 7)]),
+    )
+    const later = calls.filter((c) => JSON.stringify(c.body).includes('TEME VEĆ U OVOM PLANU'))
+    expect(later).toHaveLength(1)
+    expect(JSON.stringify(later[0]!.body)).toContain(plan.items[0]!.topic)
+    const { data: row } = await admin
+      .from('month_plans')
+      .select('tokens_charged, error, settings')
+      .eq('id', twoMonthPlanId)
+      .single()
+    expect(row).toMatchObject({ tokens_charged: 6, error: null, settings: { months: 2 } })
+  })
+
+  it('mesec koji ne uspe ne ruši plan: drugi mesec je spreman, a greška kaže koji mesec fali', async () => {
+    const r = await call<Plan>(plansPost, '/api/plans', {
+      token: user.token,
+      body: { brandId, kind: 'next', months: 2, perWeek: 3, formats: ['text'] },
+    })
+    const id = r.json.data!.id
+    const [first] = await planRepliesByMonth(id)
+    enqueueReply(first!, { kind: 'status', status: 400 })
+    expect(await runPlanning(id)).toBe('ready')
+    const { data: row } = await admin
+      .from('month_plans')
+      .select('status, error, tokens_charged, period_start, period_end')
+      .eq('id', id)
+      .single()
+    const [y, m] = row!.period_end.split('-').map(Number) as [number, number]
+    expect(row!.error).toContain(`${MONTH_NAMES[m - 1]} ${y}.:`)
+    expect(row!.tokens_charged).toBe(3)
+    const { data: items } = await admin.from('month_plan_items').select('scheduled_for').eq('plan_id', id)
+    expect(items!.length).toBeGreaterThan(0)
+    // prethodni plan za iste dane bez nacrta je zamenjen novim
+    const { data: replaced } = await admin.from('month_plans').select('id').eq('id', twoMonthPlanId)
+    expect(replaced).toHaveLength(0)
+    expect(
+      (
+        await call(plansPost, '/api/plans', {
+          token: user.token,
+          body: { brandId, kind: 'next', months: 4 },
+        })
+      ).status,
+    ).toBe(400)
   })
 })
 

@@ -50,6 +50,8 @@ export interface MonthPlanPromptInput {
   pillars: string[]
   /** naslovi skorašnjih objava, da se teme ne ponavljaju */
   recent: string[]
+  /** teme koje je Sova već izabrala za ranije mesece istog plana (D-120) */
+  planned?: string[]
   /** šta je vlasniku važno ovog meseca (opciono) */
   notes: string | null
   /** sajt brenda za objave sa linkom */
@@ -96,6 +98,10 @@ export function buildMonthPlanPrompt(input: MonthPlanPromptInput): string {
     ...dataBlock(
       'SKORAŠNJE OBJAVE (ne ponavljaj ove teme)',
       input.recent.map((r) => `- ${r}`),
+    ),
+    ...dataBlock(
+      'TEME VEĆ U OVOM PLANU ZA RANIJE MESECE (ne ponavljaj ih; nastavi priču novim uglovima)',
+      (input.planned ?? []).map((t) => `- ${t}`),
     ),
     ...dataBlock(
       'PRAZNICI I DANI U MESECU (koristi samo kad imaju smisla za brend)',

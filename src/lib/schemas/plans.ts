@@ -10,6 +10,8 @@ const platformEnum = z.enum(Object.keys(PLATFORMS) as [SocialPlatform, ...Social
 export const planRequestSchema = z.object({
   brandId: z.uuid(),
   kind: z.enum(['current', 'next']).default('next'),
+  /** koliko meseci plan pokriva, od izabranog početka (D-120) */
+  months: z.number().int().min(1).max(3).default(1),
   perWeek: z.number().int().min(1).max(14).default(5),
   platforms: z.array(platformEnum).max(8).default([]),
   formats: z

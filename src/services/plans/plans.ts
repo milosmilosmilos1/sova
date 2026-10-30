@@ -7,7 +7,7 @@ import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import { enqueueMonthPlan, enqueueMonthPlanGenerate } from '@/lib/jobs/enqueue'
-import { buildSlots, planPeriod } from '@/lib/plans/slots'
+import { buildSlots, planPeriod, slotMonths } from '@/lib/plans/slots'
 import type { PlanItemUpdate, PlanRequestInput } from '@/lib/schemas/plans'
 import type { BestTimes } from '@/lib/strategy/plan'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
@@ -22,9 +22,9 @@ import type { Json } from '@/types/database'
 import { pendingItems, planSettings, type ItemRow, type PlanRow, type PlanSettings } from './runner'
 
 /**
- * Mesečni plan (D-119): Sova bira termine, vrste i teme za ceo mesec; korisnik izbaci šta ne želi,
- * promeni temu ili termin, pa „Generiši sve” pravi sve nacrte u pozadini. Plan za isti mesec koji
- * još nije pokrenut zamenjuje se novim; pokrenuti planovi ostaju kao istorija.
+ * Mesečni plan (D-119): Sova bira termine, vrste i teme za ceo mesec ili do tri meseca unapred
+ * (D-120); korisnik izbaci šta ne želi, promeni temu ili termin, pa „Generiši sve” pravi sve nacrte
+ * u pozadini. Plan za iste mesece koji još nije pokrenut zamenjuje se novim; pokrenuti planovi ostaju.
  */
 export interface PlanItemView {
   id: string
@@ -204,7 +204,7 @@ export async function requestPlan(viewer: Viewer, input: PlanRequestInput): Prom
   if (!platforms.length)
     throw new ApiError('VALIDATION', 'Povežite bar jednu mrežu u Mrežama, pa napravite plan.')
   const today = wallClock(new Date().toISOString(), brand.timezone).date
-  const period = planPeriod(input.kind, today)
+  const period = planPeriod(input.kind, today, input.months)
   if (!period) throw new ApiError('VALIDATION', 'Ovaj mesec je završen. Napravite plan za sledeći mesec.')
   const formats = POST_FORMATS.filter((f) => input.formats.includes(f))
   const slots = buildSlots({
@@ -220,23 +220,26 @@ export async function requestPlan(viewer: Viewer, input: PlanRequestInput): Prom
       'VALIDATION',
       'Izabrane mreže ne primaju izabrane vrste objava. Dodajte vrstu ili mrežu.',
     )
+  // teme se biraju mesec po mesec, pa plan košta cenu plana za svaki mesec
   const prices = await getTokenPrices()
+  const planCost = prices.month_plan * slotMonths(slots).length
   const balance = await getTokenBalance(brand.workspace_id)
-  if (balance.available < prices.month_plan)
+  if (balance.available < planCost)
     throw new ApiError(
       'INSUFFICIENT_TOKENS',
-      `Za plan treba ${prices.month_plan} tokena. Dopunite tokene pa pokušajte ponovo.`,
+      `Za plan treba ${planCost} tokena. Dopunite tokene pa pokušajte ponovo.`,
     )
 
   const admin = createSupabaseAdminClient()
-  // plan za isti mesec zamenjuje se novim, osim plana iz kog su već napravljeni nacrti
+  // plan koji pokriva iste dane zamenjuje se novim, osim plana iz kog su već napravljeni nacrti
   const { data: old } = await admin
     .from('month_plans')
     .select('id, status')
     .eq('brand_id', brand.id)
-    .eq('month', period.month)
+    .lte('period_start', period.end)
+    .gte('period_end', period.start)
   if ((old ?? []).some((o) => o.status === 'generating'))
-    throw new ApiError('CONFLICT', 'Nacrti za ovaj mesec se upravo prave. Sačekajte da se završi.')
+    throw new ApiError('CONFLICT', 'Nacrti za ove mesece se upravo prave. Sačekajte da se završi.')
   const oldIds = (old ?? []).map((o) => o.id)
   if (oldIds.length) {
     const { data: used } = await admin
@@ -253,6 +256,7 @@ export async function requestPlan(viewer: Viewer, input: PlanRequestInput): Prom
   }
   const settings: PlanSettings = {
     kind: input.kind,
+    months: input.months,
     perWeek: input.perWeek,
     platforms,
     formats,
@@ -326,7 +330,7 @@ export async function updatePlanItem(
     const local = wallClock(item.scheduled_for, brand.timezone)
     const date = input.date ?? local.date
     if (date < plan.period_start || date > plan.period_end)
-      throw new ApiError('VALIDATION', 'Datum mora biti u mesecu plana.')
+      throw new ApiError('VALIDATION', 'Datum mora biti u periodu plana.')
     patch.scheduled_for = zonedToUtc(date, input.time ?? local.time, brand.timezone)
   }
   const { error } = await admin.from('month_plan_items').update(patch).eq('id', item.id)

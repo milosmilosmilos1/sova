@@ -18,7 +18,7 @@ import {
 import type { PostGoal } from '@/lib/ai/prompts/post-text'
 import { parseVoice } from '@/lib/brand/voice'
 import { logger } from '@/lib/logger'
-import type { PlanSlot } from '@/lib/plans/slots'
+import { monthEnd, slotMonths, type PlanSlot } from '@/lib/plans/slots'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getTokenPrice } from '@/lib/tokens/prices'
 import { confirmReservation } from '@/lib/tokens/reservation'
@@ -37,7 +37,8 @@ import { systemSchedule, systemSubmitForReview } from '@/services/posts/system'
 import type { Database, Json } from '@/types/database'
 
 /**
- * Mesečni plan u pozadini (D-119). Prvo jedan poziv Gemini-ja bira temu za svaki termin (3 tokena),
+ * Mesečni plan u pozadini (D-119). Prvo Gemini bira temu za svaki termin, jedan poziv po
+ * kalendarskom mesecu (3 tokena po mesecu; plan može da pokrije do tri meseca, D-120),
  * a posle „Generiši sve” svaka stavka postaje gotov nacrt: karusel, slika i priča kao slajdovi u
  * stilu brenda, video sa Pexels-a uz tekst, tekst i link kao tekst (2 tokena po objavi). Nacrt ide
  * na odobravanje ili odmah u zakazivanje, sa terminom iz plana. Na kraju jedno obaveštenje.
@@ -47,6 +48,8 @@ type ItemRow = Database['public']['Tables']['month_plan_items']['Row']
 
 export interface PlanSettings {
   kind: 'current' | 'next'
+  /** koliko meseci plan pokriva (1–3); stariji planovi nemaju polje i pokrivaju jedan */
+  months?: number
   perWeek: number
   platforms: SocialPlatform[]
   formats: PostFormat[]
@@ -115,37 +118,78 @@ async function failPlan(planId: string, message: string): Promise<'failed'> {
   return 'failed'
 }
 
-/** Teme za sve termine plana: jedan poziv Gemini-ja, stavke u bazu, plan spreman za pregled. */
-export async function runPlanning(planId: string): Promise<'ready' | 'failed' | 'skipped'> {
+/** Kalendarski meseci (YYYY-MM) za koje plan još bira teme; prazno kad plan više ne čeka teme. */
+export async function planningMonths(planId: string): Promise<string[]> {
+  const loaded = await loadPlan(planId)
+  if (!loaded || loaded.plan.status !== 'planning') return []
+  return slotMonths(planSettings(loaded.plan).slots ?? [])
+}
+
+/** Mesec bez tema ostaje zapisan u planu; ostali meseci se i dalje prave (D-120). */
+async function noteMonthFailure(planId: string, message: string): Promise<'failed'> {
+  const admin = createSupabaseAdminClient()
+  const { data } = await admin.from('month_plans').select('error').eq('id', planId).single()
+  await admin
+    .from('month_plans')
+    .update({
+      error: [data?.error, message].filter(Boolean).join(' ').slice(0, 500),
+      updated_at: new Date().toISOString(),
+    })
+    .eq('id', planId)
+  return 'failed'
+}
+
+/** Teme za jedan kalendarski mesec plana: jedan poziv Gemini-ja (3 tokena), stavke u bazu. */
+export async function runPlanningMonth(
+  planId: string,
+  month: string,
+): Promise<'done' | 'failed' | 'skipped'> {
   const loaded = await loadPlan(planId)
   if (!loaded || loaded.plan.status !== 'planning') return 'skipped'
   const { plan, brand } = loaded
   const settings = planSettings(plan)
-  const slots = settings.slots ?? []
-  if (!slots.length) return failPlan(planId, 'Plan nema termina.')
+  const all = settings.slots ?? []
+  const chunk = all.map((slot, position) => ({ slot, position })).filter((c) => c.slot.date.startsWith(month))
+  if (!chunk.length) return 'skipped'
   const admin = createSupabaseAdminClient()
+  // ponovljen korak pozadinskog posla ne bira teme dvaput za isti mesec
+  const { count } = await admin
+    .from('month_plan_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('plan_id', plan.id)
+    .in(
+      'position',
+      chunk.map((c) => c.position),
+    )
+  if (count) return 'skipped'
   const locale = toContentLocale(settings.locale ?? brand.content_locale)
-  const label = monthLabel(plan.month, plan.period_start, plan.period_end)
+  const first = `${month}-01`
+  const start = plan.period_start > first ? plan.period_start : first
+  const end = plan.period_end < monthEnd(first) ? plan.period_end : monthEnd(first)
+  const label = monthLabel(first, start, end)
+  const multi = slotMonths(all).length > 1
 
-  const [context, { data: pillars }, { data: recent }, { data: holidays }] = await Promise.all([
-    buildBrandContext(brand, `plan objava za mesec ${label}`, locale),
-    admin.from('content_pillars').select('name').eq('brand_id', brand.id).limit(8),
-    admin
-      .from('posts')
-      .select('title')
-      .eq('brand_id', brand.id)
-      .is('deleted_at', null)
-      .not('title', 'is', null)
-      .order('created_at', { ascending: false })
-      .limit(30),
-    admin
-      .from('holidays')
-      .select('date, name')
-      .in('country', locale.startsWith('sr') ? ['RS', 'GLOBAL'] : ['GLOBAL'])
-      .gte('date', plan.period_start)
-      .lte('date', plan.period_end)
-      .order('date'),
-  ])
+  const [context, { data: pillars }, { data: recent }, { data: holidays }, { data: planned }] =
+    await Promise.all([
+      buildBrandContext(brand, `plan objava za mesec ${label}`, locale),
+      admin.from('content_pillars').select('name').eq('brand_id', brand.id).limit(8),
+      admin
+        .from('posts')
+        .select('title')
+        .eq('brand_id', brand.id)
+        .is('deleted_at', null)
+        .not('title', 'is', null)
+        .order('created_at', { ascending: false })
+        .limit(30),
+      admin
+        .from('holidays')
+        .select('date, name')
+        .in('country', locale.startsWith('sr') ? ['RS', 'GLOBAL'] : ['GLOBAL'])
+        .gte('date', start)
+        .lte('date', end)
+        .order('date'),
+      admin.from('month_plan_items').select('topic').eq('plan_id', plan.id).order('position').limit(180),
+    ])
   const price = await getTokenPrice('month_plan')
   let generation: Awaited<ReturnType<typeof startGeneration>>
   try {
@@ -155,26 +199,28 @@ export async function runPlanning(planId: string): Promise<'ready' | 'failed' | 
       userId: plan.created_by,
       type: 'month_plan',
       tokens: price,
-      input: { planId, month: plan.month, slots: slots.length },
+      input: { planId, month: first, slots: chunk.length },
     })
   } catch (error) {
-    return failPlan(planId, toApiError(error).message)
+    const message = toApiError(error).message
+    return noteMonthFailure(planId, multi ? `${label}: ${message}` : message)
   }
   try {
     const prompt = buildMonthPlanPrompt({
       brand: context,
       locale,
       monthLabel: label,
-      slots: slots.map((s) => ({
-        date: s.date,
-        weekday: WEEKDAYS[new Date(`${s.date}T12:00:00Z`).getUTCDay()]!,
-        format: s.format,
-        platforms: s.platforms,
+      slots: chunk.map(({ slot }) => ({
+        date: slot.date,
+        weekday: WEEKDAYS[new Date(`${slot.date}T12:00:00Z`).getUTCDay()]!,
+        format: slot.format,
+        platforms: slot.platforms,
       })),
       holidays: holidays ?? [],
       topics: parseVoice(brand.voice)?.topics ?? [],
       pillars: [...new Set((pillars ?? []).map((p) => p.name))],
       recent: [...new Set((recent ?? []).map((r) => r.title!).filter(Boolean))],
+      planned: (planned ?? []).map((p) => p.topic),
       notes: settings.notes,
       website: brand.website_url,
     })
@@ -198,20 +244,20 @@ export async function runPlanning(planId: string): Promise<'ready' | 'failed' | 
       throw new AiError('INVALID_RESPONSE', 'Model je vratio JSON koji ne odgovara šemi.', {
         model: outcome.model,
       })
-    const topics = normalizeMonthPlan(parsed.data, slots.length)
+    const topics = normalizeMonthPlan(parsed.data, chunk.length)
     if (!topics.size)
       throw new AiError('INVALID_RESPONSE', 'Model nije predložio nijednu temu.', { model: outcome.model })
-    const rows = slots.flatMap((s, i) => {
+    const rows = chunk.flatMap(({ slot, position }, i) => {
       const t = topics.get(i)
       if (!t) return []
       return [
         {
           plan_id: plan.id,
           brand_id: brand.id,
-          position: i,
-          scheduled_for: zonedToUtc(s.date, s.time, brand.timezone),
-          format: s.format,
-          platforms: s.platforms,
+          position,
+          scheduled_for: zonedToUtc(slot.date, slot.time, brand.timezone),
+          format: slot.format,
+          platforms: slot.platforms,
           topic: t.topic,
           brief: t.brief,
           goal: t.goal,
@@ -245,16 +291,36 @@ export async function runPlanning(planId: string): Promise<'ready' | 'failed' | 
         .from('ai_generations')
         .update({ status: 'succeeded', finished_at: new Date().toISOString() })
         .eq('id', generation.generationId)
-    await admin
-      .from('month_plans')
-      .update({ status: 'ready', error: null, tokens_charged: price, updated_at: new Date().toISOString() })
-      .eq('id', plan.id)
-    return 'ready'
+    await addTokens(plan.id, price)
+    return 'done'
   } catch (error) {
     const api = toApiError(error)
     await failGeneration(generation.generationId, generation.reservationId, api.code, api.message)
-    return failPlan(planId, api.message)
+    return noteMonthFailure(planId, multi ? `${label}: ${api.message}` : api.message)
   }
+}
+
+/** Kraj biranja tema: plan je spreman kad ima bar jednu temu; mesec bez tema ostaje opisan u grešci. */
+export async function finishPlanning(planId: string): Promise<'ready' | 'failed' | 'skipped'> {
+  const loaded = await loadPlan(planId)
+  if (!loaded || loaded.plan.status !== 'planning') return 'skipped'
+  const admin = createSupabaseAdminClient()
+  const { count } = await admin
+    .from('month_plan_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('plan_id', planId)
+  if (!count) return failPlan(planId, loaded.plan.error ?? 'Sova nije izabrala nijednu temu.')
+  await admin
+    .from('month_plans')
+    .update({ status: 'ready', updated_at: new Date().toISOString() })
+    .eq('id', planId)
+  return 'ready'
+}
+
+/** Ceo plan u jednom pozivu (testovi); pozadinski posao radi isto, ali svaki mesec u svom koraku. */
+export async function runPlanning(planId: string): Promise<'ready' | 'failed' | 'skipped'> {
+  for (const month of await planningMonths(planId)) await runPlanningMonth(planId, month)
+  return finishPlanning(planId)
 }
 
 /** Stavke koje „Generiši sve” obrađuje: još neurađene i one koje nisu uspele. */
