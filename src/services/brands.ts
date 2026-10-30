@@ -12,7 +12,7 @@ import type { Database } from '@/types/database'
 export type BrandRow = Database['public']['Tables']['brands']['Row']
 
 const BRAND_COLUMNS =
-  'id, workspace_id, name, website_url, timezone, content_locale, autopilot_level, status, logo_asset_id, report_emails, created_at, updated_at'
+  'id, workspace_id, name, website_url, timezone, content_locale, autopilot_level, status, logo_asset_id, report_emails, created_at, updated_at, setup_completed_at'
 
 export type BrandSummary = Pick<
   BrandRow,
@@ -28,6 +28,7 @@ export type BrandSummary = Pick<
   | 'report_emails'
   | 'created_at'
   | 'updated_at'
+  | 'setup_completed_at'
 >
 
 export async function listBrands(viewer: Viewer, workspaceId: string): Promise<BrandSummary[]> {

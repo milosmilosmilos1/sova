@@ -195,3 +195,18 @@ export async function enqueueFlowRun(runId: string, workspaceId: string): Promis
     )
   }
 }
+
+export async function enqueueDocumentIndex(documentId: string, brandId: string): Promise<void> {
+  try {
+    await inngest.send(events.brandDocumentUploaded.create({ documentId, brandId }))
+  } catch (error) {
+    logger.error('enqueue_document_index_failed', { documentId, error })
+    throw new AiError(
+      'PROVIDER_ERROR',
+      process.env.NODE_ENV === 'development'
+        ? 'Pozadinski servis nije dostupan. Pokrenite `npm run inngest:dev` pa pokušajte ponovo.'
+        : 'Pozadinski servis trenutno nije dostupan. Pokušajte ponovo za minut.',
+      { retryable: true, cause: error },
+    )
+  }
+}

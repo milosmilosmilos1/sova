@@ -825,3 +825,16 @@ Odluka (faza 4 iz D-108):
 - „Napravi video” iz karusela dolazi u fazi 11.
 
 Razlog: zahtev vlasnika (D-108). Jedan potez za čestu odluku (izmeni, odobri, zakaži) skraćuje odobravanje, a sve ostaje u istim pravilima kao editor.
+
+## D-112 · 30.10.2026 · usvojeno · Uvod u sedam koraka, glas brenda i PDF o brendu
+
+Odluka (faza 5 iz D-108):
+
+- Novi radni prostor posle prvog formulara ide na uvod (`/app/setup`) u sedam koraka: jezik objava (i jezik aplikacije kad se uključi `ui_languages`), mreže, analiza (sajt, PDF, ranije objave), brend (glas i teme), boje, stil i kraj. Svaki korak čuva svoje kroz postojeće rute, a korak je u adresi, pa povratak sa Facebook-a (`?pending=`) otvara korak Mreže sa izborom naloga. Uvod može da se preskoči ili prođe ponovo. Početna pokazuje traku „Završite podešavanje” dok `brands.setup_completed_at` nije upisan.
+- Glas brenda (`brands.voice`, migracija 033): šta nudi, kome se obraća, kako zvuči, po čemu je drugačiji, šta nikad ne piše, uobičajen poziv na akciju i do osam glavnih tema. To su reči vlasnika i imaju prednost: prompt ih ispisuje posebnim blokom „GLAS BRENDA” ispred odlomaka sa sajta, u svakom generisanju koje koristi kontekst brenda (tekst objave, karusel, tokovi, strategija, uvidi). Dok vlasnik ne sačuva svoj, ekran nudi predlog iz profila sa sajta, bez AI poziva.
+- „Predloži iz izvora” (2 tokena, kao tekst objave): jedan Gemini poziv čita profil sa sajta, odlomke iz PDF-a i do 15 ranijih objava sa mreža i vraća sva polja i šest tema. Predlog popunjava samo prazna polja i dodaje teme; ništa se ne čuva dok vlasnik ne klikne „Sačuvaj”. Bez ijednog izvora poziv se odbija pre rezervacije tokena.
+- PDF o brendu (`brand_documents`): do 10 MB i deset dokumenata po brendu. Fajl ide pravo u skladište `brand-assets` preko potpisanog URL-a (isti put kao D-082; bucket sada prima `application/pdf`), server proverava zaglavlje `%PDF-` i upisuje red „processing”, a Inngest `brand-document-index` čita tekst (`unpdf`, pdf.js 6, najviše 150 strana i 200.000 znakova), deli ga i pamti u bazi znanja kao `knowledge_chunks` sa `source_type 'manual'`. Odatle ga koriste RAG i predlog glasa. Skeniran PDF bez teksta, zaključan ili oštećen završava kao „Nije pročitano” sa razlogom. Ponovna analiza sajta ne briše odlomke iz PDF-a. Brisanje dokumenta briše fajl, odlomke i red.
+- Kraj uvoda: svaka izabrana tema postaje tok (karusel u stilu brenda, sve povezane mreže, dva dana nedeljno pomereno po toku, vreme bira Sova, poziv na akciju iz glasa). Prve dve teme su uključene, ostale pauzirane. Ekran pre klika pokazuje cenu (2 tokena po nacrtu) i broj nacrta nedeljno. Bez povezane mreže tokovi nastaju pauzirani, jer prolaz bez naloga ne može da napravi nacrt. Tema koju brend već ima kao tok se preskače, pa ponovljen kraj ne pravi duplikate.
+- Uputstvo modelu za srpsku latinicu (`WRITE_IN`) sada traži č, ć, ž, š i đ i kad ih izvori nemaju. Provera predloga uživo pokazala je da model inače prepisuje tekst bez kvačica iz PDF-a; isto važi za karusele.
+
+Razlog: zahtev vlasnika (D-108). Uvod vodi novog korisnika do prvih nacrta u jednom prolazu, a glas brenda daje vlasniku kontrolu nad onim što je analiza pogrešno ili nepotpuno zaključila.

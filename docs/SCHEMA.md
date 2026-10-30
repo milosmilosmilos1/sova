@@ -1150,12 +1150,12 @@ Statusi targeta prate objavu, uz `needs_reauth` (iz `scheduled`/`paused` kad nal
 
 ## 7. Storage
 
-| Bucket         | Javno | Putanja                                                            | Ko piše                                                                              | Napomena                                                                                                                      |
-| -------------- | ----- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
-| `brand-assets` | ne    | `ws/{workspace_id}/brand/{brand_id}/logo/...`, `/fonts/...`        | service                                                                              | logo, sanitizovan SVG                                                                                                         |
-| `uploads`      | ne    | `ws/{workspace_id}/brand/{brand_id}/uploads/{asset_id}.{ext}`      | korisnik kroz potpisan upload URL (politika proverava `has_brand_access` iz putanje) | 20 MB slika, video po mreži                                                                                                   |
-| `generated`    | ne    | `ws/{workspace_id}/brand/{brand_id}/generated/{asset_id}.{ext}`    | service                                                                              | Gemini, Satori, Canva export, Unsplash se NE kopira (hotlink), osim kad ide u objavu (tad se čuva kopija koju mreža preuzima) |
-| `exports`      | ne    | `ws/{workspace_id}/reports/...`, `users/{user_id}/export-{id}.zip` | service                                                                              | potpisan URL 24 h                                                                                                             |
+| Bucket         | Javno | Putanja                                                                            | Ko piše                                                                              | Napomena                                                                                                                      |
+| -------------- | ----- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------- |
+| `brand-assets` | ne    | `ws/{workspace_id}/brand/{brand_id}/logo/...`, `/fonts/...`, `/documents/{id}.pdf` | service; PDF korisnik kroz potpisan upload URL koji izdaje server (D-112)            | logo, sanitizovan SVG, PDF o brendu do 10 MB (bucket prima `application/pdf` od migracije 033)                                |
+| `uploads`      | ne    | `ws/{workspace_id}/brand/{brand_id}/uploads/{asset_id}.{ext}`                      | korisnik kroz potpisan upload URL (politika proverava `has_brand_access` iz putanje) | 20 MB slika, video po mreži                                                                                                   |
+| `generated`    | ne    | `ws/{workspace_id}/brand/{brand_id}/generated/{asset_id}.{ext}`                    | service                                                                              | Gemini, Satori, Canva export, Unsplash se NE kopira (hotlink), osim kad ide u objavu (tad se čuva kopija koju mreža preuzima) |
+| `exports`      | ne    | `ws/{workspace_id}/reports/...`, `users/{user_id}/export-{id}.zip`                 | service                                                                              | potpisan URL 24 h                                                                                                             |
 
 Storage politike: `(storage.foldername(name))[2]::uuid` je `workspace_id` → `is_workspace_member`; za `uploads` insert traži `can_edit`. Isporuka klijentu i mrežama samo potpisanim URL-ovima (1 h za pregled, 24 h za objavu). Za TikTok `PULL_FROM_URL` potpisan Supabase URL nije na našem domenu, pa TikTok ide kroz `FILE_UPLOAD` ili proxy rutu `/api/media/public/[signed]` na našem domenu (odluka u fazi 8b).
 
@@ -1286,6 +1286,22 @@ create table content_flow_runs (
 );
 alter table posts add column flow_id uuid references content_flows(id) on delete set null;
 alter table posts add column design jsonb;          -- kontekst za „Generiši ponovo”: tema, format, stil, slajdovi, fotografije, jezik, mreže (migracija 032, D-111)
+
+-- glas brenda, uvod i PDF o brendu (migracija 033, D-112)
+alter table brands add column voice jsonb not null default '{}';   -- offer, audience, tone, usp, avoid, cta, topics[] (do 8), updated_at, updated_by
+alter table brands add column setup_completed_at timestamptz;        -- kraj ili preskok uvoda u sedam koraka
+create table brand_documents (
+  id uuid primary key default gen_random_uuid(),     -- isti kao uploadId iz potpisanog URL-a
+  brand_id uuid not null references brands(id) on delete cascade,
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  name text not null, storage_path text not null,   -- brand-assets: ws/{ws}/brand/{brand}/documents/{id}.pdf
+  size_bytes integer not null, pages integer, chars integer not null default 0, chunks integer not null default 0,
+  status text not null default 'processing',        -- processing | ready | failed
+  error text, uploaded_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now(), deleted_at timestamptz
+);
+-- RLS: čitaju članovi sa pristupom brendu, piše samo service role; odlomci su knowledge_chunks
+-- sa source_type 'manual' i source_id = id dokumenta (ponovna analiza sajta ih ne dira)
 create table autopilot_runs (
   id uuid primary key default gen_random_uuid(),
   brand_id uuid not null references brands(id) on delete cascade,

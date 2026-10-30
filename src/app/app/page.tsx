@@ -12,6 +12,7 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 import type { ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -20,7 +21,7 @@ import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { AUTOPILOT_LEVELS, type AutopilotLevel } from '@/lib/autopilot/rules'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
-import { getCurrentWorkspace } from '@/lib/auth/workspace'
+import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
 import { getOverview } from '@/services/analytics/overview'
 import { getCurrentProfileRow } from '@/services/brand-brain/profile'
 import { listBrands } from '@/services/brands'
@@ -113,6 +114,10 @@ export default async function AppHomePage({ searchParams }: PageProps<'/app'>) {
     { done: upcoming.length > 0, label: 'Prva zakazana objava', href: '/app/posts/new' as const },
   ]
   const stepsLeft = steps.filter((s) => !s.done).length
+  const setupBanner =
+    currentBrand && !currentBrand.setup_completed_at && EDIT_ROLES.includes(current.role)
+      ? await getTranslations('setup.banner')
+      : null
 
   return (
     <div className="space-y-6">
@@ -135,6 +140,21 @@ export default async function AppHomePage({ searchParams }: PageProps<'/app'>) {
           </Button>
         </div>
       </div>
+      {setupBanner && currentBrand ? (
+        <Card className="border-primary/40 bg-primary/5">
+          <CardContent className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="font-medium">{setupBanner('title')}</p>
+              <p className="text-sm text-muted-foreground">
+                {setupBanner('text', { brand: currentBrand.name })}
+              </p>
+            </div>
+            <Button nativeButton={false} render={<Link href="/app/setup" />}>
+              {setupBanner('cta')} <ArrowRight />
+            </Button>
+          </CardContent>
+        </Card>
+      ) : null}
       {sp.password === 'changed' ? (
         <p
           role="status"

@@ -74,6 +74,10 @@ export const events = {
   flowRunRequested: eventType('flow/run.requested', {
     schema: z.object({ runId: uuid, workspaceId: uuid }),
   }),
+  // D-112: PDF o brendu, čitanje teksta i upis u bazu znanja
+  brandDocumentUploaded: eventType('brand/document.uploaded', {
+    schema: z.object({ documentId: uuid, brandId: uuid }),
+  }),
 
   // Faza 12
   billingWebhookReceived: eventType('billing/webhook.received', {

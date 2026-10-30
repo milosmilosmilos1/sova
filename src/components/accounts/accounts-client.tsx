@@ -83,7 +83,7 @@ const EMPTY_NOTICE: Record<string, string> = {
 }
 
 /** Mreže na ekranu za povezivanje, redom; Facebook i Instagram dele Meta tok (jedna prijava za obe). */
-const CONNECT_TILES: Array<{ platform: AccountView['platform']; provider: string; hint?: string }> = [
+export const CONNECT_TILES: Array<{ platform: AccountView['platform']; provider: string; hint?: string }> = [
   { platform: 'facebook', provider: 'meta' },
   { platform: 'instagram', provider: 'meta', hint: 'prijava preko Facebook-a' },
   { platform: 'linkedin', provider: 'linkedin' },

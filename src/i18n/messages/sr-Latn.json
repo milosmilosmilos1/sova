@@ -432,5 +432,189 @@
       "done": "Sačuvano.",
       "scheduled": "Zakazano za {when}."
     }
+  },
+  "setup": {
+    "metaTitle": "Uvod",
+    "stepsLabel": "Koraci uvoda",
+    "title": "Podesimo Sovu za {brand}",
+    "subtitle": "Sedam kratkih koraka. Sve možete promeniti i kasnije.",
+    "stepOf": "Korak {n} od {total}",
+    "skipAll": "Preskoči uvod",
+    "skipConfirm": "Preskočiti uvod? Sve možete podesiti kasnije u Brendu i Tokovima.",
+    "back": "Nazad",
+    "next": "Dalje",
+    "saveNext": "Sačuvaj i dalje",
+    "skipStep": "Preskoči korak",
+    "viewOnly": "Vaša uloga može samo da gleda. Uvod prolazi vlasnik ili urednik.",
+    "completed": "Uvod je završen {date}. Možete ga proći ponovo, tokovi se neće duplirati.",
+    "steps": {
+      "welcome": "Dobrodošli",
+      "welcomeHint": "Jezik objava",
+      "networks": "Mreže",
+      "networksHint": "Gde Sova objavljuje",
+      "analysis": "Analiza",
+      "analysisHint": "Sajt, PDF i objave",
+      "brand": "Brend",
+      "brandHint": "Glas i teme",
+      "colors": "Boje",
+      "colorsHint": "Boje na slajdovima",
+      "style": "Stil",
+      "styleHint": "Izgled objava",
+      "done": "Gotovo",
+      "doneHint": "Teme postaju tokovi"
+    },
+    "welcome": {
+      "title": "Dobrodošli u Sovu",
+      "text": "Sova piše i dizajnira objave za vaš brend, a vi ih odobravate pre objave. Za početak izaberite jezik.",
+      "uiLocaleHint": "Meni, dugmad i poruke u aplikaciji.",
+      "contentLocaleHint": "Na ovom jeziku Sova piše objave. Za jednu objavu ili tok možete izabrati i drugi."
+    },
+    "networks": {
+      "title": "Povežite mreže",
+      "text": "Sova objavljuje samo tamo gde dozvolite. Lozinku unosite na stranici mreže, Sova je ne vidi.",
+      "instagramHint": "Prijava preko Facebook-a",
+      "connect": "Poveži",
+      "connected": "Povezano: {count}",
+      "soon": "Uskoro",
+      "off": "Privremeno isključeno",
+      "adminOnly": "Mreže povezuje vlasnik ili administrator radnog prostora.",
+      "pickTitle": "Izaberite naloge",
+      "pickText": "Mreža je vratila ove naloge. Štiklirajte one na koje Sova sme da objavljuje.",
+      "pickButton": "Poveži izabrane ({count})",
+      "picking": "Povezujem…",
+      "pick": "Izaberi {name}",
+      "readOnly": "bez prava objavljivanja",
+      "list": "Povezani nalozi",
+      "none": "Još nema povezanih mreža. Možete i kasnije, iz menija Mreže.",
+      "denied": "Povezivanje je otkazano na mreži.",
+      "empty": "Mreža nije vratila nijedan nalog. Instagram mora biti poslovni nalog povezan sa Facebook stranicom.",
+      "later": "Povezaću kasnije"
+    },
+    "analysis": {
+      "title": "Neka Sova upozna brend",
+      "text": "Sova čita sajt, dokumente o brendu i ranije objave. Tako piše u vašem stilu i ne izmišlja činjenice.",
+      "site": "Sajt",
+      "siteHint": "Prva analiza je besplatna i traje minut ili dva.",
+      "siteUrl": "Adresa sajta",
+      "analyze": "Analiziraj sajt",
+      "analyzeAgain": "Analiziraj ponovo",
+      "running": "Analiza u toku…",
+      "pages": "{fetched} od {found} strana",
+      "succeeded": "Sajt je pročitan i profil brenda je spreman.",
+      "failed": "Analiza nije uspela: {error}",
+      "done": "Sajt je već analiziran. Novu analizu pokrećete samo ako se sajt promenio.",
+      "noSite": "Nemam sajt",
+      "noSiteText": "Može i bez sajta: dodajte PDF o brendu ili u sledećem koraku opišite brend svojim rečima.",
+      "verifyEmail": "Potvrdite email da biste pokrenuli analizu.",
+      "posts": "Uvezenih objava sa mreža: {count}. Iz njih Sova uči kako pišete.",
+      "postsNone": "Kad povežete mrežu, Sova uveze ranije objave i uči iz njih kako pišete.",
+      "phases": {
+        "queued": "U redu za obradu",
+        "prepare": "Čitam sajt",
+        "discover": "Tražim stranice",
+        "fetch": "Preuzimam stranice",
+        "visual": "Izvlačim logo, boje i fontove",
+        "photo_style": "Gledam fotografije",
+        "profile": "Sastavljam profil brenda",
+        "embed": "Pamtim sadržaj sajta",
+        "finish": "Gotovo"
+      }
+    },
+    "brand": {
+      "title": "Kako vaš brend govori",
+      "text": "Ove reči imaju prednost nad onim što je Sova zaključila sa sajta. Teme na dnu postaju tokovi automatizacije."
+    },
+    "colors": {
+      "title": "Boje brenda",
+      "text": "Boje za slajdove i objave. Ako je sajt analiziran, ovde su već njegove boje."
+    },
+    "style": {
+      "title": "Izgled objava",
+      "text": "Izaberite stil i odakle dolaze fotografije. Za svaku objavu i tok stil možete promeniti."
+    },
+    "done": {
+      "title": "Teme postaju tokovi",
+      "text": "Svaka tema je jedan tok. Sova dva puta nedeljno pravi nacrt karusela i šalje ga na odobravanje, a bez vas se ništa ne objavljuje.",
+      "cost": "Jedan nacrt košta {price, plural, one {# token} few {# tokena} other {# tokena}}. Uključenih tokova: {active}, to je oko {perWeek, plural, one {# nacrt} few {# nacrta} other {# nacrta}} nedeljno.",
+      "noTopics": "Nema tema. Dodajte ih u koraku Brend ili napravite tok kasnije.",
+      "noAccounts": "Mreža još nije povezana, pa tokovi nastaju pauzirani. Uključite ih kad povežete nalog.",
+      "toggle": "Tok „{topic}” je uključen",
+      "schedule": "{days} · vreme bira Sova",
+      "finish": "Završi i napravi tokove",
+      "finishNoFlows": "Završi bez tokova",
+      "finishing": "Završavam…",
+      "summary": {
+        "language": "Jezik objava",
+        "accounts": "Povezane mreže",
+        "site": "Sajt",
+        "siteDone": "pročitan",
+        "siteNone": "nije analiziran",
+        "documents": "Dokumenti",
+        "style": "Stil"
+      }
+    },
+    "banner": {
+      "title": "Završite podešavanje",
+      "text": "Još par koraka i Sova pravi objave za {brand}.",
+      "cta": "Nastavi uvod"
+    }
+  },
+  "voice": {
+    "title": "Glas brenda",
+    "description": "Vaše reči o brendu. Sova ih koristi u svakoj objavi i imaju prednost nad analizom sajta.",
+    "fromProfile": "Predlog iz analize sajta. Proverite ga i sačuvajte.",
+    "savedAt": "Sačuvano {date}",
+    "saved": "Sačuvano.",
+    "save": "Sačuvaj glas",
+    "saving": "Čuvam…",
+    "fields": {
+      "offer": "Šta nudite",
+      "offerPlaceholder": "Npr. ugradnja i servis klima uređaja u Beogradu, za stanove i lokale.",
+      "audience": "Kome se obraćate",
+      "audiencePlaceholder": "Npr. vlasnici stanova i malih lokala koji žele brzu ugradnju bez prljavštine.",
+      "tone": "Kako zvučite",
+      "tonePlaceholder": "Npr. opušteno i stručno, bez žargona, sa malo humora.",
+      "usp": "Po čemu ste drugačiji",
+      "uspPlaceholder": "Npr. ugradnja za jedan dan, garancija dve godine, čistimo za sobom.",
+      "avoid": "Šta nikad ne pišete",
+      "avoidPlaceholder": "Npr. bez pominjanja konkurencije, bez cena u objavama, bez reči „najjeftiniji”.",
+      "cta": "Uobičajen poziv na akciju",
+      "ctaPlaceholder": "Npr. Pozovite 060 123 4567 ili nam pišite u poruke."
+    },
+    "topics": {
+      "label": "Glavne teme",
+      "hint": "Do {max} tema. O ovome Sova redovno piše.",
+      "placeholder": "Npr. Saveti za održavanje klime pre leta",
+      "add": "Dodaj",
+      "remove": "Ukloni temu {topic}",
+      "full": "Dodali ste {max} tema, koliko najviše može."
+    },
+    "draft": {
+      "button": "Predloži iz izvora ({price, plural, one {# token} few {# tokena} other {# tokena}})",
+      "running": "Pišem predlog…",
+      "hint": "Sova čita analizu sajta, dokumente i ranije objave. Popunjava samo prazna polja i dodaje teme.",
+      "noSources": "Za predlog treba bar jedan izvor: analiza sajta, PDF ili mreža sa objavama.",
+      "done": "Predlog je ubačen. Proverite ga pa sačuvajte."
+    },
+    "count": "{count}/{max}"
+  },
+  "documents": {
+    "title": "Dokumenti o brendu",
+    "description": "PDF sa opisom firme, cenovnikom ili pravilima komunikacije. Sova ga čita i koristi u objavama.",
+    "choose": "Izaberite PDF",
+    "drop": "ili ga prevucite ovde",
+    "limits": "Do 10 MB, najviše {max} dokumenata po brendu.",
+    "uploading": "Otpremam… {percent}%",
+    "notPdf": "Izaberite PDF fajl.",
+    "tooLarge": "PDF može imati najviše 10 MB.",
+    "status": {
+      "processing": "Čitam dokument…",
+      "ready": "Pročitano: {pages, plural, one {# strana} few {# strane} other {# strana}}",
+      "failed": "Nije pročitano"
+    },
+    "delete": "Obriši",
+    "confirmDelete": "Obrisati „{name}”? Sova ga više neće koristiti.",
+    "empty": "Još nema dokumenata.",
+    "verifyEmail": "Potvrdite email da biste dodali dokument."
   }
 }

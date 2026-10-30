@@ -105,6 +105,19 @@ export async function uploadMediaFile(
   })
 }
 
+/** PDF o brendu (D-112): isti put kao medij, potpisan URL pa provera na serveru; vraća red dokumenta. */
+export async function uploadBrandDocument<T>(
+  file: File,
+  opts: { brandId: string; onProgress?: (fraction: number) => void; signal?: AbortSignal },
+): Promise<T> {
+  const target = await post<{ uploadId: string; signedUrl: string }>(
+    `/api/brands/${opts.brandId}/documents/upload-url`,
+    { name: file.name, sizeBytes: file.size },
+  )
+  await put(target.signedUrl, file, 'application/pdf', opts.onProgress, opts.signal)
+  return post<T>(`/api/brands/${opts.brandId}/documents`, { uploadId: target.uploadId, name: file.name })
+}
+
 /** 75 500 ms → „1:16”. */
 export function formatDuration(ms: number | null | undefined): string {
   if (!ms) return ''

@@ -32,6 +32,15 @@ export interface BrandContext {
   hashtags?: string[]
   /** RAG: odlomci sa sajta relevantni za temu */
   knowledge?: string[]
+  /** glas brenda (D-112): reči vlasnika, imaju prednost nad profilom sa sajta */
+  voice?: {
+    offer?: string
+    audience?: string
+    tone?: string
+    usp?: string
+    avoid?: string
+    cta?: string
+  } | null
 }
 
 export interface PostTextInput {
@@ -163,7 +172,7 @@ export function brandPromptLines(b: BrandContext): string[] {
   const brandLines = [
     `Naziv brenda: ${b.name}`,
     b.description ? `Opis: ${b.description}` : null,
-    b.tone ? `Ton komunikacije: ${b.tone}` : 'Ton komunikacije: prijateljski i jasan',
+    b.tone ? `Ton komunikacije: ${b.tone}` : b.voice?.tone ? null : 'Ton komunikacije: prijateljski i jasan',
     `Obraćanje publici: ${b.address === 'ti' ? 'ti (neformalno)' : 'vi (persiranje)'}`,
     `Emoji: ${b.emoji ? 'umereno, gde prirodno pristaje' : 'bez emoji-ja'}`,
     b.forbiddenWords?.length ? `Zabranjene reči: ${b.forbiddenWords.join(', ')}` : null,
@@ -182,6 +191,19 @@ export function brandPromptLines(b: BrandContext): string[] {
     b.hashtags?.length ? `Hashtagovi brenda (koristi kad odgovaraju temi): ${b.hashtags.join(' ')}` : null,
   ].filter(Boolean)
 
+  const v = b.voice
+  const voiceLines = [
+    v?.offer ? `Šta brend nudi: ${v.offer}` : null,
+    v?.audience ? `Kome se obraća: ${v.audience}` : null,
+    v?.tone ? `Kako zvuči: ${v.tone}` : null,
+    v?.usp ? `Po čemu je drugačiji: ${v.usp}` : null,
+    v?.avoid ? `Šta nikad ne piše: ${v.avoid}` : null,
+    v?.cta ? `Uobičajen poziv na akciju, kad zadatak ne traži drugi: ${v.cta}` : null,
+  ].filter(Boolean) as string[]
+  const voiceBlock = voiceLines.length
+    ? ['', 'GLAS BRENDA (reči vlasnika; imaju prednost nad opisom i odlomcima sa sajta)', ...voiceLines]
+    : []
+
   const knowledgeLines = b.knowledge?.length
     ? [
         '',
@@ -192,7 +214,7 @@ export function brandPromptLines(b: BrandContext): string[] {
       ]
     : []
 
-  return ['BREND', ...(brandLines as string[]), ...knowledgeLines]
+  return ['BREND', ...(brandLines as string[]), ...voiceBlock, ...knowledgeLines]
 }
 
 export function buildPostTextPrompt(input: PostTextInput): string {

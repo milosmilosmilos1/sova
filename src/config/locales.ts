@@ -21,9 +21,9 @@ export function toContentLocale(value: unknown): ContentLocale {
 /** Jezici koji se pišu ćirilicom: kontrola kvaliteta proverava pismo. */
 export const CYRILLIC_LOCALES: ReadonlySet<ContentLocale> = new Set(['sr-Cyrl', 'uk'])
 
-/** Uputstvo modelu na jeziku objave. */
+/** Uputstvo modelu na jeziku objave; latinica traži kvačice i kad ih izvori (PDF, stare objave) nemaju. */
 export const WRITE_IN: Record<ContentLocale, string> = {
-  'sr-Latn': 'Piši na srpskom jeziku, latinicom.',
+  'sr-Latn': 'Piši na srpskom jeziku, latinicom, sa slovima č, ć, ž, š i đ, i kad ih izvori nemaju.',
   'sr-Cyrl': 'Piši na srpskom jeziku, ćirilicom.',
   en: 'Write in English.',
   uk: 'Пиши українською мовою.',

@@ -267,6 +267,18 @@ isOneToOne: true
       referencedColumns: ["id"]
     }
                   ]
+                },"brand_documents": {
+                  Row: {
+                    "brand_id": string,"chars": number,"chunks": number,"created_at": string,"deleted_at": string | null,"error": string | null,"id": string,"name": string,"pages": number | null,"size_bytes": number,"status": string,"storage_path": string,"uploaded_by": string | null,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "brand_id": string,"chars"?: number,"chunks"?: number,"created_at"?: string,"deleted_at"?: string | null,"error"?: string | null,"id"?: string,"name": string,"pages"?: number | null,"size_bytes": number,"status"?: string,"storage_path": string,"uploaded_by"?: string | null,"workspace_id": string
+                  }
+                  Update: {
+                    "brand_id"?: string,"chars"?: number,"chunks"?: number,"created_at"?: string,"deleted_at"?: string | null,"error"?: string | null,"id"?: string,"name"?: string,"pages"?: number | null,"size_bytes"?: number,"status"?: string,"storage_path"?: string,"uploaded_by"?: string | null,"workspace_id"?: string
+                  }
+                  Relationships: []
                 },"brand_profiles": {
                   Row: {
                     "brand_id": string,"crawl_id": string | null,"created_at": string,"created_by": string | null,"data": NonNullable<Json>,"id": string,"is_current": boolean,"locked_fields": (string)[],"version": number
@@ -321,14 +333,14 @@ isOneToOne: false
                   ]
                 },"brands": {
                   Row: {
-                    "autopilot_approval_deadline_hours": number,"autopilot_level": number,"autopilot_level3_confirmed_at": string | null,"autopilot_token_budget": number | null,"autopilot_unapproved_action": string,"content_locale": string,"created_at": string,"created_by": string | null,"design": Json,"deleted_at": string | null,"feed_hash": string | null,"id": string,"last_site_check_at": string | null,"logo_asset_id": string | null,"name": string,"paused_at": string | null,"paused_by": string | null,"report_emails": string[],"settings": NonNullable<Json>,"sitemap_hash": string | null,"status": Database["public"]['Enums']["brand_status"],"timezone": string,"updated_at": string,"website_url": string | null,"workspace_id": string
+                    "autopilot_approval_deadline_hours": number,"autopilot_level": number,"autopilot_level3_confirmed_at": string | null,"autopilot_token_budget": number | null,"autopilot_unapproved_action": string,"content_locale": string,"created_at": string,"created_by": string | null,"design": Json,"deleted_at": string | null,"feed_hash": string | null,"id": string,"last_site_check_at": string | null,"logo_asset_id": string | null,"name": string,"paused_at": string | null,"paused_by": string | null,"report_emails": string[],"settings": NonNullable<Json>,"sitemap_hash": string | null,"status": Database["public"]['Enums']["brand_status"],"timezone": string,"updated_at": string,"setup_completed_at": string | null,"voice": Json,"website_url": string | null,"workspace_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "autopilot_approval_deadline_hours"?: number,"autopilot_level"?: number,"autopilot_level3_confirmed_at"?: string | null,"autopilot_token_budget"?: number | null,"autopilot_unapproved_action"?: string,"content_locale"?: string,"created_at"?: string,"created_by"?: string | null,"design"?: Json,"deleted_at"?: string | null,"feed_hash"?: string | null,"id"?: string,"last_site_check_at"?: string | null,"logo_asset_id"?: string | null,"name": string,"paused_at"?: string | null,"paused_by"?: string | null,"report_emails"?: string[],"settings"?: NonNullable<Json>,"sitemap_hash"?: string | null,"status"?: Database["public"]['Enums']["brand_status"],"timezone"?: string,"updated_at"?: string,"website_url"?: string | null,"workspace_id": string
+                    "autopilot_approval_deadline_hours"?: number,"autopilot_level"?: number,"autopilot_level3_confirmed_at"?: string | null,"autopilot_token_budget"?: number | null,"autopilot_unapproved_action"?: string,"content_locale"?: string,"created_at"?: string,"created_by"?: string | null,"design"?: Json,"deleted_at"?: string | null,"feed_hash"?: string | null,"id"?: string,"last_site_check_at"?: string | null,"logo_asset_id"?: string | null,"name": string,"paused_at"?: string | null,"paused_by"?: string | null,"report_emails"?: string[],"settings"?: NonNullable<Json>,"sitemap_hash"?: string | null,"status"?: Database["public"]['Enums']["brand_status"],"timezone"?: string,"updated_at"?: string,"setup_completed_at"?: string | null,"voice"?: Json,"website_url"?: string | null,"workspace_id": string
                   }
                   Update: {
-                    "autopilot_approval_deadline_hours"?: number,"autopilot_level"?: number,"autopilot_level3_confirmed_at"?: string | null,"autopilot_token_budget"?: number | null,"autopilot_unapproved_action"?: string,"content_locale"?: string,"created_at"?: string,"created_by"?: string | null,"design"?: Json,"deleted_at"?: string | null,"feed_hash"?: string | null,"id"?: string,"last_site_check_at"?: string | null,"logo_asset_id"?: string | null,"name"?: string,"paused_at"?: string | null,"paused_by"?: string | null,"report_emails"?: string[],"settings"?: NonNullable<Json>,"sitemap_hash"?: string | null,"status"?: Database["public"]['Enums']["brand_status"],"timezone"?: string,"updated_at"?: string,"website_url"?: string | null,"workspace_id"?: string
+                    "autopilot_approval_deadline_hours"?: number,"autopilot_level"?: number,"autopilot_level3_confirmed_at"?: string | null,"autopilot_token_budget"?: number | null,"autopilot_unapproved_action"?: string,"content_locale"?: string,"created_at"?: string,"created_by"?: string | null,"design"?: Json,"deleted_at"?: string | null,"feed_hash"?: string | null,"id"?: string,"last_site_check_at"?: string | null,"logo_asset_id"?: string | null,"name"?: string,"paused_at"?: string | null,"paused_by"?: string | null,"report_emails"?: string[],"settings"?: NonNullable<Json>,"sitemap_hash"?: string | null,"status"?: Database["public"]['Enums']["brand_status"],"timezone"?: string,"updated_at"?: string,"setup_completed_at"?: string | null,"voice"?: Json,"website_url"?: string | null,"workspace_id"?: string
                   }
                   Relationships: [
                     {

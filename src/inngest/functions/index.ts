@@ -5,6 +5,7 @@ import { analyticsInsightsWeekly } from './analytics-insights-weekly'
 import { autopilotBrandWeek, autopilotDaily, autopilotDeadlines, autopilotWeekly } from './autopilot'
 import { billingDaily, billingProcessEvent } from './billing'
 import { brandAnalyze } from './brand-analyze'
+import { brandDocumentIndex } from './brand-document-index'
 import { brandSiteCheck } from './brand-site-check'
 import { canvaExportVideo } from './canva-export-video'
 import { flowRun, flowsTick } from './flows'
@@ -26,6 +27,7 @@ export const functions = [
   aiGenerateStrategy,
   canvaExportVideo,
   brandAnalyze,
+  brandDocumentIndex,
   brandSiteCheck,
   socialHistoryImport,
   socialTokenRefresh,

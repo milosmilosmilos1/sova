@@ -432,5 +432,189 @@
       "done": "Saved.",
       "scheduled": "Scheduled for {when}."
     }
+  },
+  "setup": {
+    "metaTitle": "Setup",
+    "stepsLabel": "Setup steps",
+    "title": "Let's set up Sova for {brand}",
+    "subtitle": "Seven short steps. You can change everything later.",
+    "stepOf": "Step {n} of {total}",
+    "skipAll": "Skip setup",
+    "skipConfirm": "Skip setup? You can set everything up later under Brand and Flows.",
+    "back": "Back",
+    "next": "Next",
+    "saveNext": "Save and continue",
+    "skipStep": "Skip this step",
+    "viewOnly": "Your role can only view. The owner or an editor goes through setup.",
+    "completed": "Setup was finished on {date}. You can go through it again; flows won't be duplicated.",
+    "steps": {
+      "welcome": "Welcome",
+      "welcomeHint": "Post language",
+      "networks": "Networks",
+      "networksHint": "Where Sova posts",
+      "analysis": "Analysis",
+      "analysisHint": "Website, PDF and posts",
+      "brand": "Brand",
+      "brandHint": "Voice and topics",
+      "colors": "Colors",
+      "colorsHint": "Colors on slides",
+      "style": "Style",
+      "styleHint": "How posts look",
+      "done": "Done",
+      "doneHint": "Topics become flows"
+    },
+    "welcome": {
+      "title": "Welcome to Sova",
+      "text": "Sova writes and designs posts for your brand, and you approve them before they go out. First, pick a language.",
+      "uiLocaleHint": "Menus, buttons and messages in the app.",
+      "contentLocaleHint": "Sova writes posts in this language. You can pick another one for a single post or flow."
+    },
+    "networks": {
+      "title": "Connect your networks",
+      "text": "Sova only posts where you allow it. You enter your password on the network's own page; Sova never sees it.",
+      "instagramHint": "Log in through Facebook",
+      "connect": "Connect",
+      "connected": "Connected: {count}",
+      "soon": "Coming soon",
+      "off": "Temporarily off",
+      "adminOnly": "Networks are connected by the workspace owner or an admin.",
+      "pickTitle": "Choose accounts",
+      "pickText": "The network returned these accounts. Tick the ones Sova may post to.",
+      "pickButton": "Connect selected ({count})",
+      "picking": "Connecting…",
+      "pick": "Select {name}",
+      "readOnly": "no permission to post",
+      "list": "Connected accounts",
+      "none": "No networks connected yet. You can also do this later from the Networks menu.",
+      "denied": "Connecting was canceled on the network.",
+      "empty": "The network returned no accounts. Instagram has to be a business account linked to a Facebook page.",
+      "later": "I'll connect later"
+    },
+    "analysis": {
+      "title": "Let Sova get to know your brand",
+      "text": "Sova reads your website, brand documents and earlier posts. That way it writes in your style and doesn't make up facts.",
+      "site": "Website",
+      "siteHint": "The first analysis is free and takes a minute or two.",
+      "siteUrl": "Website address",
+      "analyze": "Analyze website",
+      "analyzeAgain": "Analyze again",
+      "running": "Analysis in progress…",
+      "pages": "{fetched} of {found} pages",
+      "succeeded": "The website has been read and the brand profile is ready.",
+      "failed": "The analysis failed: {error}",
+      "done": "The website has already been analyzed. Only run a new analysis if the site has changed.",
+      "noSite": "I don't have a website",
+      "noSiteText": "That's fine: add a PDF about your brand, or describe the brand in your own words in the next step.",
+      "verifyEmail": "Confirm your email to start the analysis.",
+      "posts": "Posts imported from networks: {count}. Sova learns from them how you write.",
+      "postsNone": "Once you connect a network, Sova imports earlier posts and learns from them how you write.",
+      "phases": {
+        "queued": "Waiting in line",
+        "prepare": "Reading the website",
+        "discover": "Finding pages",
+        "fetch": "Downloading pages",
+        "visual": "Getting the logo, colors and fonts",
+        "photo_style": "Looking at photos",
+        "profile": "Building the brand profile",
+        "embed": "Memorizing the website content",
+        "finish": "Done"
+      }
+    },
+    "brand": {
+      "title": "How your brand speaks",
+      "text": "These words take priority over what Sova concluded from the website. The topics at the bottom become automation flows."
+    },
+    "colors": {
+      "title": "Brand colors",
+      "text": "Colors for slides and posts. If the website was analyzed, its colors are already here."
+    },
+    "style": {
+      "title": "How posts look",
+      "text": "Pick a style and where photos come from. You can change the style for every post and flow."
+    },
+    "done": {
+      "title": "Topics become flows",
+      "text": "Each topic is one flow. Twice a week Sova makes a carousel draft and sends it for approval, and nothing is posted without you.",
+      "cost": "One draft costs {price, plural, one {# token} other {# tokens}}. Flows switched on: {active}, which is about {perWeek, plural, one {# draft} other {# drafts}} a week.",
+      "noTopics": "No topics yet. Add them in the Brand step or create a flow later.",
+      "noAccounts": "No network is connected yet, so flows are created paused. Switch them on once you connect an account.",
+      "toggle": "Flow “{topic}” is on",
+      "schedule": "{days} · Sova picks the time",
+      "finish": "Finish and create flows",
+      "finishNoFlows": "Finish without flows",
+      "finishing": "Finishing…",
+      "summary": {
+        "language": "Post language",
+        "accounts": "Connected networks",
+        "site": "Website",
+        "siteDone": "read",
+        "siteNone": "not analyzed",
+        "documents": "Documents",
+        "style": "Style"
+      }
+    },
+    "banner": {
+      "title": "Finish setting up",
+      "text": "A few more steps and Sova starts making posts for {brand}.",
+      "cta": "Continue setup"
+    }
+  },
+  "voice": {
+    "title": "Brand voice",
+    "description": "Your own words about the brand. Sova uses them in every post, and they take priority over the website analysis.",
+    "fromProfile": "Suggested from the website analysis. Check it and save.",
+    "savedAt": "Saved {date}",
+    "saved": "Saved.",
+    "save": "Save voice",
+    "saving": "Saving…",
+    "fields": {
+      "offer": "What you offer",
+      "offerPlaceholder": "E.g. air conditioner installation and service in Belgrade, for flats and shops.",
+      "audience": "Who you talk to",
+      "audiencePlaceholder": "E.g. flat and small shop owners who want a quick, clean installation.",
+      "tone": "How you sound",
+      "tonePlaceholder": "E.g. relaxed and expert, no jargon, a bit of humor.",
+      "usp": "What makes you different",
+      "uspPlaceholder": "E.g. installation in one day, two-year warranty, we clean up after ourselves.",
+      "avoid": "What you never write",
+      "avoidPlaceholder": "E.g. no mentions of competitors, no prices in posts, never the word “cheapest”.",
+      "cta": "Usual call to action",
+      "ctaPlaceholder": "E.g. Call 060 123 4567 or send us a message."
+    },
+    "topics": {
+      "label": "Main topics",
+      "hint": "Up to {max} topics. Sova writes about these regularly.",
+      "placeholder": "E.g. Tips for servicing your AC before summer",
+      "add": "Add",
+      "remove": "Remove topic {topic}",
+      "full": "You've added {max} topics, the most allowed."
+    },
+    "draft": {
+      "button": "Suggest from sources ({price, plural, one {# token} other {# tokens}})",
+      "running": "Writing a suggestion…",
+      "hint": "Sova reads the website analysis, documents and earlier posts. It only fills empty fields and adds topics.",
+      "noSources": "A suggestion needs at least one source: a website analysis, a PDF or a network with posts.",
+      "done": "The suggestion is in. Check it, then save."
+    },
+    "count": "{count}/{max}"
+  },
+  "documents": {
+    "title": "Brand documents",
+    "description": "A PDF with a company description, price list or communication rules. Sova reads it and uses it in posts.",
+    "choose": "Choose a PDF",
+    "drop": "or drag it here",
+    "limits": "Up to 10 MB, at most {max} documents per brand.",
+    "uploading": "Uploading… {percent}%",
+    "notPdf": "Choose a PDF file.",
+    "tooLarge": "A PDF can be at most 10 MB.",
+    "status": {
+      "processing": "Reading the document…",
+      "ready": "Read: {pages, plural, one {# page} other {# pages}}",
+      "failed": "Not read"
+    },
+    "delete": "Delete",
+    "confirmDelete": "Delete “{name}”? Sova will stop using it.",
+    "empty": "No documents yet.",
+    "verifyEmail": "Confirm your email to add a document."
   }
 }

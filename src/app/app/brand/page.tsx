@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 
 import { BrandBrainClient } from '@/components/brand/brand-brain-client'
+import { VoiceCard } from '@/components/brand/voice-card'
 import { DesignCard } from '@/components/design/design-card'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
@@ -19,6 +20,11 @@ export default async function BrandPage() {
   const canEdit = EDIT_ROLES.includes(current.role)
   return (
     <div className="space-y-6">
+      <VoiceCard
+        brandId={brand.id}
+        canEdit={canEdit}
+        emailVerified={Boolean(viewer.profile.emailVerifiedAt)}
+      />
       <DesignCard brandId={brand.id} canEdit={canEdit} />
       <BrandBrainClient
         brandId={brand.id}

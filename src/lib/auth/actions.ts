@@ -272,7 +272,8 @@ export async function createWorkspaceAction(_prev: FormState, formData: FormData
     .update({ onboarding_completed_at: new Date().toISOString() })
     .eq('id', viewer.user.id)
     .is('onboarding_completed_at', null)
-  redirect('/app')
+  // novi brend prolazi uvod u sedam koraka (D-112)
+  redirect('/app/setup')
 }
 
 export async function switchWorkspaceAction(formData: FormData): Promise<void> {
