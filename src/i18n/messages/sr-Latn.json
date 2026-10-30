@@ -8,7 +8,8 @@
     "loading": "Učitavanje…",
     "save": "Sačuvaj",
     "cancel": "Otkaži",
-    "errorId": "ID greške za podršku: {id}"
+    "errorId": "ID greške za podršku: {id}",
+    "error": "Greška."
   },
   "nav": {
     "login": "Prijava",
@@ -49,5 +50,157 @@
     "sr-Cyrl": "Srpski, ćirilica",
     "en": "Engleski",
     "uk": "Ukrajinski"
+  },
+  "design": {
+    "title": "Dizajn objava",
+    "description": "Stil, boje i fotografije za objave, karusele i priče. Važi za Studio i tokove automatizacije.",
+    "groups": {
+      "all": "Svi stilovi",
+      "type": "Bez fotografije",
+      "photo": "Sa fotografijom"
+    },
+    "format": {
+      "label": "Pregled za",
+      "carousel": "Karusel",
+      "post": "Objava",
+      "story": "Priča"
+    },
+    "size": {
+      "label": "Format objave i karusela",
+      "portrait": "Uspravno 4:5",
+      "square": "Kvadrat 1:1"
+    },
+    "photoSource": {
+      "label": "Fotografije u objavama",
+      "none": "Bez fotografija",
+      "noneHint": "Čist tipografski dizajn.",
+      "stock": "Besplatne fotografije",
+      "stockHint": "Unsplash i Pexels, bez troška.",
+      "gallery": "Moja galerija",
+      "galleryHint": "Fotografije koje ste dodali u biblioteku."
+    },
+    "slides": {
+      "label": "Slajdova u karuselu",
+      "hint": "Od {min} do {max}."
+    },
+    "colors": {
+      "label": "Boje brenda",
+      "fromProfile": "Iz profila brenda",
+      "custom": "Vaše boje",
+      "primary": "Primarna",
+      "secondary": "Sekundarna",
+      "background": "Pozadina",
+      "text": "Glavni tekst",
+      "muted": "Sporedni tekst",
+      "contrast": "Tekst je slabo čitljiv na ovoj pozadini. Slajd će sam izabrati čitljiviju boju."
+    },
+    "handle": {
+      "label": "Nalog na slajdovima",
+      "placeholder": "@vasbrend",
+      "hint": "Prazno: nalog sa povezanog Instagrama."
+    },
+    "preview": {
+      "label": "Pregled uživo",
+      "cover": "Naslovni",
+      "point": "Sadržaj",
+      "cta": "Poziv na akciju"
+    },
+    "save": "Sačuvaj dizajn",
+    "saving": "Čuvam…",
+    "saved": "Sačuvano.",
+    "reset": "Vrati podrazumevano",
+    "selected": "Izabrano",
+    "choose": "Izaberite stil",
+    "error": "Greška.",
+    "styles": {
+      "headline": {
+        "name": "Naslov i podnaslov",
+        "desc": "Naslov i podnaslov sa akcentnom trakom na svetloj podlozi."
+      },
+      "bold": {
+        "name": "Snažna poruka",
+        "desc": "Jedna snažna rečenica preko pune boje brenda."
+      },
+      "editorial": {
+        "name": "Uredništvo",
+        "desc": "Časopisni raspored: uramljena fotografija i naslov sa mnogo belog prostora."
+      },
+      "cover": {
+        "name": "Naslovnica",
+        "desc": "Fotografija preko celog kadra sa trakom naslova pri dnu."
+      },
+      "poster": {
+        "name": "Poster",
+        "desc": "Fotografija preko celog kadra, tamni preliv i krupan naslov pri dnu."
+      },
+      "cards": {
+        "name": "Kartice",
+        "desc": "Sadržaj u preglednim karticama na tonu boje brenda."
+      },
+      "linen": {
+        "name": "Lan",
+        "desc": "Topao uredački stil sa organskim detaljima."
+      },
+      "social": {
+        "name": "Društvena kartica",
+        "desc": "Izgleda kao objava na mreži: profil, tekst i fotografija."
+      },
+      "prism": {
+        "name": "Prizma",
+        "desc": "Premium i minimalan, sa prelivima boja brenda."
+      },
+      "popcard": {
+        "name": "Pop kartica",
+        "desc": "Razigran stil sa debelim okvirom i zaobljenim karticama."
+      },
+      "note": {
+        "name": "Beleška",
+        "desc": "Stranica iz notesa: linije, rukom pisan naslov i zalepljena fotografija."
+      },
+      "snap": {
+        "name": "Snimak",
+        "desc": "Fotografija preko celog slajda i natpis kao nalepnica."
+      },
+      "meme": {
+        "name": "Mim",
+        "desc": "Fotografija i krupan beli natpis sa crnom ivicom."
+      },
+      "film": {
+        "name": "Film",
+        "desc": "Kadar 35 mm filma: perforacija, fotografija u kadru i mono oznake."
+      },
+      "pamphlet": {
+        "name": "Pamflet",
+        "desc": "Letterpress plakat: zrnast papir, gusta slova i crveni akcenti."
+      },
+      "quote": {
+        "name": "Citat",
+        "desc": "Citat ili izjava sa potpisom."
+      },
+      "stat": {
+        "name": "Statistika",
+        "desc": "Jedan upečatljiv broj sa kratkim objašnjenjem."
+      },
+      "list": {
+        "name": "Lista",
+        "desc": "Numerisani slajdovi, za savete i liste."
+      },
+      "duotone": {
+        "name": "Duoton",
+        "desc": "Fotografija sa jakim tonom boje brenda."
+      },
+      "framed": {
+        "name": "Uramljeno",
+        "desc": "Uramljena fotografija sa trakom naslova u boji brenda."
+      },
+      "event": {
+        "name": "Događaj",
+        "desc": "Naziv događaja, datum i mesto, za najave."
+      },
+      "mono": {
+        "name": "Minimal mono",
+        "desc": "Mnogo belog prostora, suptilan i premium ton, bez fotografije."
+      }
+    }
   }
 }

@@ -157,6 +157,7 @@ create table brands (
   feed_hash text,
   settings jsonb not null default '{}',        -- UTM podrazumevano, zabranjene reči, hashtag setovi
   report_emails citext[] not null default '{}' check (cardinality(report_emails) <= 5),  -- klijent dobija mesečni PDF (migracija 024)
+  design jsonb not null default '{}',            -- dizajn objava: stil, format, fotografije, slajdovi, boje, nalog (migracija 030, D-109)
   created_by uuid references profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),

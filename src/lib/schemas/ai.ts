@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { POST_FORMATS } from '@/config/post-formats'
 import { contentLocaleSchema, postGoalSchema } from '@/lib/ai/prompts/post-text'
+import { PHOTO_SOURCES, POST_SIZES, SLIDES_MAX, STYLE_IDS } from '@/lib/visuals/design/catalog'
 
 const platformEnum = z.enum(Object.keys(PLATFORMS) as [SocialPlatform, ...SocialPlatform[]])
 
@@ -47,6 +48,12 @@ export const composeSchema = z.object({
   source: z.enum(['auto', 'unsplash', 'pexels', 'template']).default('auto'),
   mediaAssetIds: z.array(z.uuid()).max(10).optional(),
   linkUrl: z.url().max(2048).optional(),
+  /** slajdovi u stilu brenda za objavu, karusel i priču (D-108); false = gola fotografija kao do sada */
+  design: z.boolean().default(true),
+  styleId: z.enum(STYLE_IDS).optional(),
+  slides: z.number().int().min(1).max(SLIDES_MAX).optional(),
+  photoSource: z.enum(PHOTO_SOURCES).optional(),
+  size: z.enum(POST_SIZES).optional(),
 })
 export type ComposeInput = z.infer<typeof composeSchema>
 

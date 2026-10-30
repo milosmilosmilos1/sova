@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 
 import { BrandBrainClient } from '@/components/brand/brand-brain-client'
+import { DesignCard } from '@/components/design/design-card'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
@@ -15,13 +16,17 @@ export default async function BrandPage() {
   if (!current) redirect('/app/onboarding')
   const brand = await getCurrentBrand(viewer, current.workspaceId)
   if (!brand) redirect('/app/settings')
+  const canEdit = EDIT_ROLES.includes(current.role)
   return (
-    <BrandBrainClient
-      brandId={brand.id}
-      brandName={brand.name}
-      websiteUrl={brand.website_url}
-      canEdit={EDIT_ROLES.includes(current.role)}
-      emailVerified={Boolean(viewer.profile.emailVerifiedAt)}
-    />
+    <div className="space-y-6">
+      <DesignCard brandId={brand.id} canEdit={canEdit} />
+      <BrandBrainClient
+        brandId={brand.id}
+        brandName={brand.name}
+        websiteUrl={brand.website_url}
+        canEdit={canEdit}
+        emailVerified={Boolean(viewer.profile.emailVerifiedAt)}
+      />
+    </div>
   )
 }

@@ -342,7 +342,11 @@ export class MetaProvider implements SocialProvider {
   /** Priča nema opis ni link, pa se proverava samo medij; uspravan odnos Meta sama uklapa. */
   private storyProblems(input: NormalizedPost): ValidationResult {
     const problems: string[] = []
-    if (input.media.length !== 1) problems.push('Priča mora imati tačno jednu sliku ili jedan video.')
+    // više slajdova priče se objavljuje redom, kao niz priča; video ide samo pojedinačno (D-108)
+    if (input.media.length < 1 || input.media.length > 10)
+      problems.push('Priča ima od jedne do deset slika, ili jedan video.')
+    else if (input.media.length > 1 && input.media.some(isVideo))
+      problems.push('Video u priči ide sam, bez drugih slajdova.')
     const m = input.media[0]
     if (m && isVideo(m)) {
       if (!VIDEO_MIME.has(m.mimeType)) problems.push('Meta prihvata video u formatu MP4 ili MOV.')
@@ -452,6 +456,7 @@ export class MetaProvider implements SocialProvider {
     const m = input.media[0]
     if (!m) throw new ProviderError('CONTENT_REJECTED', { userMessage: 'Priča mora imati sliku ili video.' })
     const id = account.externalId
+    if (input.media.length > 1) return this.publishStorySequence(g, input.media, account)
     if (account.platform === 'instagram') {
       const r = await g.post<{ id: string }>(
         `${id}/media`,
@@ -481,6 +486,28 @@ export class MetaProvider implements SocialProvider {
     const story = await g.post<{ post_id?: string }>(`${id}/photo_stories`, { photo_id: photo.id })
     const postId = story.post_id ?? photo.id
     return { externalId: postId, permalink: `https://www.facebook.com/${postId}`, pending: null }
+  }
+
+  /** Više slika priče jedna za drugom; rezultat je poslednja priča u nizu (D-108). */
+  private async publishStorySequence(
+    g: GraphClient,
+    media: NormalizedMedia[],
+    account: AccountRef,
+  ): Promise<PublishResult> {
+    const id = account.externalId
+    let last: PublishResult | null = null
+    for (const m of media) {
+      if (account.platform === 'instagram') {
+        const r = await g.post<{ id: string }>(`${id}/media`, { media_type: 'STORIES', image_url: m.url })
+        last = await this.finishContainer(g, id, r.id, null)
+      } else {
+        const photo = await g.post<{ id: string }>(`${id}/photos`, { url: m.url, published: false })
+        const story = await g.post<{ post_id?: string }>(`${id}/photo_stories`, { photo_id: photo.id })
+        const postId = story.post_id ?? photo.id
+        last = { externalId: postId, permalink: `https://www.facebook.com/${postId}`, pending: null }
+      }
+    }
+    return last!
   }
 
   /**

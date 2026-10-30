@@ -60,6 +60,8 @@ function compose(body: Record<string, unknown>, key = `compose-${Date.now()}-${s
       brandId,
       platforms: ['facebook', 'instagram'],
       topic: 'Servis klima uređaja u Beogradu, dolazak na adresu',
+      // ovi testovi proveravaju objavu sa golom fotografijom; dizajn ima svoje testove (D-108)
+      design: false,
       ...body,
     },
     headers: { 'idempotency-key': key },

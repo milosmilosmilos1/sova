@@ -8,7 +8,8 @@
     "loading": "Loading…",
     "save": "Save",
     "cancel": "Cancel",
-    "errorId": "Error ID for support: {id}"
+    "errorId": "Error ID for support: {id}",
+    "error": "Error."
   },
   "nav": {
     "login": "Log in",
@@ -49,5 +50,157 @@
     "sr-Cyrl": "Serbian (Cyrillic)",
     "en": "English",
     "uk": "Ukrainian"
+  },
+  "design": {
+    "title": "Post design",
+    "description": "Style, colours and photos for posts, carousels and stories. Used by the Studio and automation flows.",
+    "groups": {
+      "all": "All styles",
+      "type": "Without photo",
+      "photo": "With photo"
+    },
+    "format": {
+      "label": "Preview as",
+      "carousel": "Carousel",
+      "post": "Post",
+      "story": "Story"
+    },
+    "size": {
+      "label": "Post and carousel format",
+      "portrait": "Portrait 4:5",
+      "square": "Square 1:1"
+    },
+    "photoSource": {
+      "label": "Photos in posts",
+      "none": "No photos",
+      "noneHint": "Clean typographic design.",
+      "stock": "Free photos",
+      "stockHint": "Unsplash and Pexels, no cost.",
+      "gallery": "My gallery",
+      "galleryHint": "Photos you added to the library."
+    },
+    "slides": {
+      "label": "Slides per carousel",
+      "hint": "From {min} to {max}."
+    },
+    "colors": {
+      "label": "Brand colours",
+      "fromProfile": "From brand profile",
+      "custom": "Your colours",
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "background": "Background",
+      "text": "Main text",
+      "muted": "Secondary text",
+      "contrast": "Text is hard to read on this background. Slides will pick a more readable colour automatically."
+    },
+    "handle": {
+      "label": "Handle on slides",
+      "placeholder": "@yourbrand",
+      "hint": "Empty: the handle from your connected Instagram."
+    },
+    "preview": {
+      "label": "Live preview",
+      "cover": "Cover",
+      "point": "Content",
+      "cta": "Call to action"
+    },
+    "save": "Save design",
+    "saving": "Saving…",
+    "saved": "Saved.",
+    "reset": "Reset to defaults",
+    "selected": "Selected",
+    "choose": "Choose a style",
+    "error": "Error.",
+    "styles": {
+      "headline": {
+        "name": "Headline + Subtext",
+        "desc": "Headline and subtext with an accent bar on a light background."
+      },
+      "bold": {
+        "name": "Bold Statement",
+        "desc": "One strong sentence over a full brand colour."
+      },
+      "editorial": {
+        "name": "Editorial",
+        "desc": "Magazine layout: a framed photo and a headline with plenty of white space."
+      },
+      "cover": {
+        "name": "Cover",
+        "desc": "Full-bleed photo with a headline band at the bottom."
+      },
+      "poster": {
+        "name": "Poster",
+        "desc": "Full-bleed photo, a dark gradient and a big headline at the bottom."
+      },
+      "cards": {
+        "name": "Cards",
+        "desc": "Content in clean cards on a tint of the brand colour."
+      },
+      "linen": {
+        "name": "Linen",
+        "desc": "Warm editorial style with organic details."
+      },
+      "social": {
+        "name": "Social",
+        "desc": "Looks like a social post: profile, text and photo."
+      },
+      "prism": {
+        "name": "Prism",
+        "desc": "Premium and minimal, with brand colour gradients."
+      },
+      "popcard": {
+        "name": "Pop Card",
+        "desc": "Playful style with a thick outline and rounded cards."
+      },
+      "note": {
+        "name": "Note",
+        "desc": "A notebook page: ruled lines, a handwritten title and a taped photo."
+      },
+      "snap": {
+        "name": "Snap",
+        "desc": "A photo across the slide with a sticker-style caption."
+      },
+      "meme": {
+        "name": "Meme",
+        "desc": "A photo with a big white caption and a black outline."
+      },
+      "film": {
+        "name": "Film",
+        "desc": "A 35 mm film frame: perforations, a framed photo and mono labels."
+      },
+      "pamphlet": {
+        "name": "Pamphlet",
+        "desc": "Letterpress poster: grainy paper, dense type and red accents."
+      },
+      "quote": {
+        "name": "Quote Card",
+        "desc": "A quote or statement with attribution."
+      },
+      "stat": {
+        "name": "Stat Highlight",
+        "desc": "One striking number with a short explanation."
+      },
+      "list": {
+        "name": "List Slide",
+        "desc": "Numbered slides for tips and lists."
+      },
+      "duotone": {
+        "name": "Duotone",
+        "desc": "A photo with a strong brand colour tone."
+      },
+      "framed": {
+        "name": "Framed",
+        "desc": "A framed photo with a headline strip in the brand colour."
+      },
+      "event": {
+        "name": "Event Promo",
+        "desc": "Event name, date and venue for announcements."
+      },
+      "mono": {
+        "name": "Minimal Mono",
+        "desc": "Lots of white space, a subtle premium tone, no photo."
+      }
+    }
   }
 }

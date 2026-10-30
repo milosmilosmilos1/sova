@@ -1,7 +1,10 @@
 'use client'
 
 import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
+
+import { previewUrl, StylePicker } from '@/components/design/style-picker'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -19,6 +22,15 @@ import {
   type PostFormatChoice,
 } from '@/config/post-formats'
 import type { ApiResponse } from '@/lib/api/response'
+import {
+  PHOTO_SOURCES,
+  SLIDES_MAX,
+  SLIDES_MIN,
+  type PhotoSource,
+  type PostSize,
+  type StyleId,
+} from '@/lib/visuals/design/catalog'
+import type { DesignColors } from '@/lib/visuals/design/types'
 import { uploadMediaFile } from '@/lib/media/client-upload'
 
 /**
@@ -1506,6 +1518,15 @@ interface ComposeView {
   targets: number
   notes: string[]
   tokensCharged: number
+  styleId?: string
+}
+
+interface BrandDesignView {
+  styleId: StyleId
+  size: PostSize
+  photoSource: PhotoSource
+  slides: number
+  colors: DesignColors
 }
 
 /**
@@ -1535,13 +1556,31 @@ function ComposePanel({
   const [cta, setCta] = useState('')
   const [hashtags, setHashtags] = useState(true)
   const [linkUrl, setLinkUrl] = useState('')
+  // dizajn u stilu brenda (D-108): stil, broj slajdova i izvor fotografija; podrazumevano iz dizajna brenda
+  const td = useTranslations('design')
+  const design = useQuery({
+    queryKey: ['design', brandId],
+    queryFn: () => api<BrandDesignView>(`/api/brands/${brandId}/design`),
+  })
+  const [look, setLook] = useState<'design' | 'photo'>('design')
+  const [styleChoice, setStyleChoice] = useState<StyleId | null>(null)
+  const [slidesChoice, setSlidesChoice] = useState<number | null>(null)
+  const [photoChoice, setPhotoChoice] = useState<PhotoSource | null>(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const styleId = styleChoice ?? design.data?.styleId ?? 'headline'
+  const slides = slidesChoice ?? design.data?.slides ?? 5
+  const photoSource = photoChoice ?? design.data?.photoSource ?? 'stock'
+  const size = design.data?.size ?? 'portrait'
 
   const allowed = formatsForPlatforms(platforms)
   // vrsta koja ne ide na novo izabrane mreže vraća se na „AI bira”
   const chosen: PostFormatChoice = format !== 'auto' && !allowed.includes(format) ? 'auto' : format
   const needsVisual = chosen === 'auto' || mediaNeed(chosen).kind !== 'none'
+  const designable = chosen === 'auto' || chosen === 'image' || chosen === 'carousel' || chosen === 'story'
+  const designed = look === 'design' && designable && (chosen !== 'auto' || allowed.includes('image'))
   const textPrice = prices?.text ?? 2
-  const cost = textPrice + (needsVisual && source === 'template' ? (prices?.visual_template ?? 2) : 0)
+  const cost =
+    textPrice + (!designed && needsVisual && source === 'template' ? (prices?.visual_template ?? 2) : 0)
   const wantsVideo = chosen === 'video' || (chosen === 'auto' && allowed.includes('video'))
 
   const run = useMutation({
@@ -1560,6 +1599,14 @@ function ComposePanel({
           format: chosen,
           source,
           linkUrl: chosen === 'link' && linkUrl.trim() ? linkUrl.trim() : undefined,
+          design: designed,
+          ...(designed
+            ? {
+                styleId,
+                photoSource,
+                slides: chosen === 'carousel' || chosen === 'auto' ? slides : undefined,
+              }
+            : {}),
         },
       }),
     onSettled: onDone,
@@ -1625,7 +1672,7 @@ function ComposePanel({
               ))}
             </select>
           </div>
-          {needsVisual ? (
+          {needsVisual && !designed ? (
             <div className="space-y-1.5">
               <Label htmlFor="compose-source">Fotografija ili video</Label>
               <select
@@ -1657,12 +1704,116 @@ function ComposePanel({
           </div>
         </div>
 
+        {designable ? (
+          <section className="space-y-3 rounded-lg border p-3">
+            <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Izgled">
+              <span className="text-sm font-medium">Izgled</span>
+              {(['design', 'photo'] as const).map((v) => (
+                <button
+                  key={v}
+                  type="button"
+                  role="radio"
+                  aria-checked={look === v}
+                  onClick={() => setLook(v)}
+                  className={`rounded-md border px-3 py-1.5 text-sm ${look === v ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted/50'}`}
+                >
+                  {v === 'design' ? 'Dizajn u stilu brenda' : 'Samo fotografija'}
+                </button>
+              ))}
+            </div>
+            {designed ? (
+              <>
+                <div className="flex flex-wrap items-center gap-3">
+                  {/* eslint-disable-next-line @next/next/no-img-element -- dinamički pregled stila */}
+                  <img
+                    src={previewUrl({
+                      brandId,
+                      styleId,
+                      format: chosen === 'story' ? 'story' : size,
+                      colors: design.data?.colors,
+                      photo: photoSource !== 'none',
+                    })}
+                    alt={td(`styles.${styleId}.name`)}
+                    className={`w-20 rounded-md border object-cover ${chosen === 'story' ? 'aspect-[9/16]' : size === 'square' ? 'aspect-square' : 'aspect-[4/5]'}`}
+                  />
+                  <div className="min-w-0 flex-1 space-y-0.5">
+                    <p className="text-sm font-medium">{td(`styles.${styleId}.name`)}</p>
+                    <p className="text-xs text-muted-foreground">{td(`styles.${styleId}.desc`)}</p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setPickerOpen((o) => !o)}
+                    aria-expanded={pickerOpen}
+                  >
+                    {pickerOpen ? 'Zatvori stilove' : 'Promeni stil'}
+                  </Button>
+                </div>
+                {pickerOpen ? (
+                  <StylePicker
+                    brandId={brandId}
+                    value={styleId}
+                    onChange={(id) => {
+                      setStyleChoice(id)
+                      setPickerOpen(false)
+                    }}
+                    size={size}
+                    colors={design.data?.colors}
+                    photo={photoSource !== 'none'}
+                    initialFormat={chosen === 'story' ? 'story' : chosen === 'image' ? 'post' : 'carousel'}
+                  />
+                ) : null}
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {chosen === 'carousel' || chosen === 'auto' ? (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="compose-slides">{td('slides.label')}</Label>
+                      <Input
+                        id="compose-slides"
+                        type="number"
+                        min={SLIDES_MIN}
+                        max={SLIDES_MAX}
+                        value={slides}
+                        onChange={(e) =>
+                          setSlidesChoice(
+                            Math.min(SLIDES_MAX, Math.max(SLIDES_MIN, Number(e.target.value) || SLIDES_MIN)),
+                          )
+                        }
+                      />
+                    </div>
+                  ) : null}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="compose-photo-source">{td('photoSource.label')}</Label>
+                    <select
+                      id="compose-photo-source"
+                      value={photoSource}
+                      onChange={(e) => setPhotoChoice(e.target.value as PhotoSource)}
+                      className={selectClass}
+                    >
+                      {PHOTO_SOURCES.map((p) => (
+                        <option key={p} value={p}>
+                          {td(`photoSource.${p}`)}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Slajdove piše Gemini, a crta ih izabrani stil u bojama brenda. Za slajdove se ne plaća, samo
+                  tekst.
+                </p>
+              </>
+            ) : null}
+          </section>
+        ) : null}
+
         <p className="text-xs text-muted-foreground">
-          {chosen === 'auto'
-            ? allowed.length
-              ? `AI bira vrstu koja najbolje nosi temu, među: ${allowed.map((f) => FORMAT_LABEL[f]).join(', ')}.`
-              : 'Izabrane mreže nemaju zajedničku vrstu objave. Napravite posebne objave.'
-            : FORMAT_HINT[chosen]}
+          {chosen === 'auto' && designed
+            ? 'AI bira između jedne objave i karusela, po tome koliko tema ima da kaže.'
+            : chosen === 'auto'
+              ? allowed.length
+                ? `AI bira vrstu koja najbolje nosi temu, među: ${allowed.map((f) => FORMAT_LABEL[f]).join(', ')}.`
+                : 'Izabrane mreže nemaju zajedničku vrstu objave. Napravite posebne objave.'
+              : FORMAT_HINT[chosen]}
           {wantsVideo && !sources.pexels && source !== 'template' && source !== 'unsplash'
             ? ' Pexels još nije uključen, pa video dodajte iz Canve ili biblioteke.'
             : ''}

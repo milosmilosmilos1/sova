@@ -10,6 +10,7 @@ import type { ComposeInput } from '@/lib/schemas/ai'
 import { generatePostText } from '@/services/ai/text'
 import { generateTemplateVisual } from '@/services/autopilot/content'
 import { getBrand } from '@/services/brands'
+import { composeDesigned, designedFormatFor } from '@/services/design/compose-designed'
 import { getAsset, signedUrl, type MediaAssetRow } from '@/services/media'
 import { createPost } from '@/services/posts/posts'
 import { listSocialAccounts } from '@/services/social/accounts'
@@ -32,6 +33,9 @@ export interface ComposeResult {
   targets: number
   notes: string[]
   tokensCharged: number
+  /** dizajnirana objava (D-108): stil i tekst slajdova */
+  styleId?: string
+  slides?: Array<{ kind: string; title: string; body?: string | null }>
 }
 
 type Picked = { asset: MediaAssetRow; attribution: string | null }
@@ -60,6 +64,11 @@ export async function composePost(
       'VALIDATION',
       'Ova vrsta objave ne ide na sve izabrane mreže. Promenite vrstu ili mreže.',
     )
+
+  // karusel, objava i priča dobijaju slajdove u stilu brenda (D-108), osim kad korisnik da svoj medij
+  const dFormat =
+    input.design && !input.mediaAssetIds?.length ? designedFormatFor(input.format, allowed) : null
+  if (dFormat) return composeDesigned(viewer, brand, input, dFormat, meta)
 
   const notes: string[] = []
   const text = await generatePostText(

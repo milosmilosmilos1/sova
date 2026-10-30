@@ -444,7 +444,36 @@ describe('Priče (D-107)', () => {
     expect(t.external_post_id).toMatch(/^story-/)
   })
 
-  it('provera: priča ima tačno jedan medij, a video u priči traje od 3 do 60 sekundi', async () => {
+  it('priča od više slika: Instagram i Facebook objavljuju svaku sliku redom (D-108)', async () => {
+    const a = await jpeg(120, 40, 40)
+    const b = await jpeg(40, 120, 40)
+    const c = await jpeg(40, 40, 120)
+    const media = [{ mediaAssetId: a }, { mediaAssetId: b, sortOrder: 1 }, { mediaAssetId: c, sortOrder: 2 }]
+    const ig = await scheduled({
+      masterText: 'Tri slajda priče',
+      targets: [{ socialAccountId: igId, options: story }],
+      media,
+    })
+    expect((await runPublishTarget(ig.job, ctx)).outcome).toBe('published')
+    const containers = metaState.publishes.filter((p) => p.path === 'ig-1/media')
+    expect(containers).toHaveLength(3)
+    expect(containers.every((p) => p.body.media_type === 'STORIES')).toBe(true)
+    expect(metaState.publishes.filter((p) => p.path === 'ig-1/media_publish')).toHaveLength(3)
+    expect((await target(ig.job.targetId)).status).toBe('published')
+
+    const fb = await scheduled({
+      masterText: 'Tri slajda priče',
+      targets: [{ socialAccountId: fbId, options: story }],
+      media,
+    })
+    expect((await runPublishTarget(fb.job, ctx)).outcome).toBe('published')
+    expect(metaState.publishes.filter((p) => p.path === 'page-1/photo_stories')).toHaveLength(3)
+    const t = await target(fb.job.targetId)
+    expect(t.status).toBe('published')
+    expect(t.external_post_id).toMatch(/^story-/)
+  })
+
+  it('provera: priča ima do deset slika ili jedan video, a video u priči traje od 3 do 60 sekundi', async () => {
     const a = await jpeg(10, 10, 10)
     const b = await jpeg(20, 20, 20)
     expect(
@@ -453,7 +482,15 @@ describe('Priče (D-107)', () => {
         targets: [{ socialAccountId: igId, options: story }],
         media: [{ mediaAssetId: a }, { mediaAssetId: b, sortOrder: 1 }],
       }),
-    ).toContain('Priča mora imati tačno jednu sliku ili jedan video.')
+    ).toBe('')
+    const short = await video(1080, 1920, 10_000)
+    expect(
+      await problemsOf({
+        masterText: 'Slika i video',
+        targets: [{ socialAccountId: igId, options: story }],
+        media: [{ mediaAssetId: a }, { mediaAssetId: short, sortOrder: 1 }],
+      }),
+    ).toContain('Video u priči ide sam, bez drugih slajdova.')
     const long = await video(1080, 1920, 90_000)
     expect(
       await problemsOf({

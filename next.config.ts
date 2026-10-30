@@ -32,7 +32,7 @@ const nextConfig: NextConfig = {
   serverExternalPackages: ['@resvg/resvg-js', 'sharp'],
   // Inter se čita sa diska u runtime-u (Satori šabloni, PDF izveštaj, D-094): eksplicitno u trace API ruta.
   outputFileTracingIncludes: {
-    '/api/**/*': ['src/lib/visuals/fonts/**/*'],
+    '/api/**/*': ['src/lib/visuals/fonts/**/*', 'src/lib/visuals/design/sample/**/*'],
   },
   turbopack: {
     rules: {

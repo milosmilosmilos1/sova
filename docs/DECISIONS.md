@@ -782,3 +782,17 @@ Plan po fazama. Svaka faza ima testove, commit i zapis u PROGRESS:
 Novi ekrani se odmah pišu na sva tri jezika (next-intl), a postojeći se prevode u fazi 12. Do tada je izbor jezika u meniju iza prekidača `ui_languages`, da korisnik ne dobije pola ekrana na jednom jeziku, a pola na drugom. Izgled prati Sovin dizajn (D-091) i ne kopira Moonyu: preuzimaju se funkcije, ne izgled ni tekstovi.
 
 Razlog: zahtev vlasnika. AI fotografije ne, zbog troška (D-104).
+
+## D-109 · 30.10.2026 · usvojeno · Stilovi objava: 22 stila, slajdovi iz jednog poziva, dizajn brenda
+
+Odluka (faza 2 iz D-108):
+
+- Postoje 22 stila objave (`src/lib/visuals/design`): 12 tipografskih (naslov i podnaslov, snažna poruka, citat, statistika, lista, minimal mono, kartice, lan, prizma, pop kartica, beleška, pamflet) i 10 sa fotografijom (poster, uredništvo, naslovnica, duoton, uramljeno, događaj, društvena kartica, snimak, mim, film). Spisak su vlasnikovi primeri iz njegove ranije aplikacije i iz Moonye. Izgled je naš, pisan od nule u Satori-ju.
+- Isti stil crta tri vrste slajda (naslovni, sadržaj, poziv na akciju) u tri formata: uspravno 4:5 (1080×1350), kvadrat 1:1 i priča 9:16. Svaki stil sa fotografijom ima izgled i bez nje (preliv u bojama brenda), da objava ne padne kad pretraga ništa ne nađe.
+- Fotografije za slajdove su samo besplatne: Unsplash pa Pexels, ili galerija brenda. AI fotografija nema (D-108). Stil kaže gde mu treba fotografija (nigde, samo naslovni slajd, svi slajdovi), pa se ne preuzima više nego što treba: najviše četiri fotografije po karuselu, koje se ponavljaju redom.
+- Dizajn brenda je nova kolona `brands.design` (migracija 030): stil, format, izvor fotografija, broj slajdova (3 do 10, podrazumevano 5), pet boja i nalog na slajdovima. Čuva se samo ono što je korisnik izabrao. Ostalo dolazi iz profila brenda (paleta i fontovi sa sajta) i sa povezanog naloga (Instagram, pa TikTok, X i Facebook). Boja teksta na slajdu se sama menja kad nije čitljiva na pozadini (kontrast 4,5:1).
+- Tekst slajdova piše Gemini u jednom pozivu, zajedno sa opisom objave, kratkim opisom za X, heštegovima i pojmovima za pretragu fotografija. Naplata je ista kao za tekst objave, 2 tokena. Slajdovi i fotografije su besplatni. Kad korisnik izabere „AI bira”, model sam odlučuje da li tema traži jednu objavu ili karusel.
+- „Nova objava” u Studiju podrazumevano pravi dizajn u stilu brenda za objavu, karusel i priču. „Samo fotografija” radi kao do sada (D-107). Kartica „Dizajn objava” je na strani brenda, sa biračem stilova i pregledom uživo (`GET /api/visuals/preview`, JPEG u bojama koje korisnik upravo menja).
+- Priča može imati više slika: Instagram i Facebook ih objavljuju redom, kao niz priča. Video u priči ide sam.
+
+Razlog: zahtev vlasnika (D-108). Jedan poziv za sve tekstove drži trošak na jednom tekstu po objavi, a stil crta Sova bez troška.

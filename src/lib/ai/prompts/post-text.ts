@@ -158,21 +158,8 @@ export function buildPostTextSystemPrompt(): string {
   ].join(' ')
 }
 
-export function buildPostTextPrompt(input: PostTextInput): string {
-  const b = input.brand
-  const platformLines = input.platforms.map((p) => {
-    const c = PLATFORMS[p]
-    const hashtags =
-      input.includeHashtags && c.hashtagsMax > 0
-        ? `${c.hashtagsRecommended} hashtagova (najviše ${c.hashtagsMax})`
-        : 'bez hashtagova'
-    return `- ${c.label} (${p}): najviše ${c.textMax} karaktera za hook+body+cta zajedno, ${hashtags}.${
-      p === 'x' ? ' Kratko i udarno; URL se broji kao 23 karaktera.' : ''
-    }${p === 'linkedin' ? ' Profesionalan ton, dozvoljen duži tekst.' : ''}${
-      p === 'instagram' ? ' Hook u prvom redu, emoji po pravilima brenda, hashtagovi na kraju.' : ''
-    }${p === 'google_business' ? ' Lokalna objava sa jasnim pozivom na akciju, bez hashtagova.' : ''}`
-  })
-
+/** Opis brenda i odlomci sa sajta za prompt (tekst objave, slajdovi karusela). */
+export function brandPromptLines(b: BrandContext): string[] {
   const brandLines = [
     `Naziv brenda: ${b.name}`,
     b.description ? `Opis: ${b.description}` : null,
@@ -205,12 +192,28 @@ export function buildPostTextPrompt(input: PostTextInput): string {
       ]
     : []
 
+  return ['BREND', ...(brandLines as string[]), ...knowledgeLines]
+}
+
+export function buildPostTextPrompt(input: PostTextInput): string {
+  const b = input.brand
+  const platformLines = input.platforms.map((p) => {
+    const c = PLATFORMS[p]
+    const hashtags =
+      input.includeHashtags && c.hashtagsMax > 0
+        ? `${c.hashtagsRecommended} hashtagova (najviše ${c.hashtagsMax})`
+        : 'bez hashtagova'
+    return `- ${c.label} (${p}): najviše ${c.textMax} karaktera za hook+body+cta zajedno, ${hashtags}.${
+      p === 'x' ? ' Kratko i udarno; URL se broji kao 23 karaktera.' : ''
+    }${p === 'linkedin' ? ' Profesionalan ton, dozvoljen duži tekst.' : ''}${
+      p === 'instagram' ? ' Hook u prvom redu, emoji po pravilima brenda, hashtagovi na kraju.' : ''
+    }${p === 'google_business' ? ' Lokalna objava sa jasnim pozivom na akciju, bez hashtagova.' : ''}`
+  })
+
   return [
     LOCALE_INSTRUCTION[b.locale],
     '',
-    'BREND',
-    ...brandLines,
-    ...knowledgeLines,
+    ...brandPromptLines(b),
     '',
     'ZADATAK',
     ...(input.publishDate
