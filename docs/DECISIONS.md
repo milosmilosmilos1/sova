@@ -903,3 +903,15 @@ Odluka (faza 10 iz D-108):
 - Svaka vrsta se čita samo ako nalog ima dozvolu (scope sa mreže), a odgovor samo ako ima dozvolu za slanje. Nalog bez nje dobija poruku da ga treba povezati ponovo.
 
 Razlog: zahtev vlasnika (D-108). Inbox na jednom mestu štedi otvaranje aplikacija, a tok „komentar → poruka sa linkom” je najjednostavnija prodaja sa mreža. Prekidač drži sve spremno do odobrenja Mete, bez polovične funkcije za korisnike.
+
+## D-118 · 30.10.2026 · usvojeno · Video iz karusela u pregledaču, instalacija na telefon i obaveštenja
+
+Odluka (faza 11 iz D-108):
+
+- „Napravi video” u Odobravanju (i u Studiju, isti panel) pravi kratak video od slajdova karusela u pregledaču korisnika: WebCodecs i Mediabunny, H.264 u MP4, 30 fps, bez zvuka, blago uvećanje i pretapanje. Format je uspravan 9:16 (slajd na zamućenoj pozadini iste slike, za Reels, TikTok, Shorts i priče) ili 4:5. Video se otprema u biblioteku i postaje nov nacrt sa istim opisom i nalozima koji primaju video (Google profil ne prima); priča postaje obična video objava. Karusel ostaje. Nacrt iz odobravanja ide u isti red bez novog obaveštenja. Server ne kodira ništa, pa video ne košta tokene; pregledač bez WebCodecs-a dobija poruku da otvori Sovu u Chrome-u, Edge-u ili novijem Safariju.
+- Sova se instalira na telefon kao aplikacija (manifest, ikonice, početna strana Odobravanje, prečice Inbox i Studio). Service worker (`/sw.js`) samo prikazuje obaveštenja i otvara pravu stranu na dodir; strane se ne keširaju. Kartica „Odobravajte sa telefona” na početnoj ima dugme za instalaciju gde pregledač to dozvoljava, uputstvo za iPhone i Android i link.
+- Obaveštenja na telefonu (Web Push, VAPID): pretplata po uređaju (`push_subscriptions`, migracija 039), kanal `push` u podešavanjima obaveštenja. Na telefon idu samo obaveštenja koja to traže (`pushDefault`): objava čeka odobrenje (i nacrti iz tokova), objava nije uspela, nalog traži ponovno povezivanje, ručno objavljivanje, tok nije uspeo, rok za odobrenje, objava kasni. Pretplata koju servis odbije sa 404 ili 410 se briše.
+- Adresa pretplate mora biti servis za obaveštenja pregledača (Google, Mozilla, Apple, Microsoft), jer server na nju šalje zahteve: tako pretplata ne može da natera server da zove unutrašnje adrese.
+- Ključevi `VAPID_PUBLIC_KEY` i `VAPID_PRIVATE_KEY` su opcioni. Bez njih Sova ne nudi obaveštenja na uređaju, a instalacija i video rade.
+
+Razlog: zahtev vlasnika (D-108). Odluka o nacrtu traje nekoliko sekundi i najčešće se donosi sa telefona; video od gotovih slajdova daje Reels bez novog troška.

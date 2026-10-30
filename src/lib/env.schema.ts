@@ -64,6 +64,11 @@ export function buildServerEnvSchema(mode: EnvMode) {
     CANVA_CLIENT_SECRET: prodOnly(z.string().min(10)),
     FIRECRAWL_API_KEY: z.string().optional(),
 
+    // Obaveštenja na telefonu (D-118, Web Push); bez ključeva Sova ne nudi obaveštenja na uređaju
+    VAPID_PUBLIC_KEY: z.string().min(40).optional(),
+    VAPID_PRIVATE_KEY: z.string().min(20).optional(),
+    VAPID_SUBJECT: z.string().default('mailto:podrska@sovaai.rs'),
+
     // Mreže (sve opcione dok odgovarajući feature flag nije uključen)
     META_APP_ID: z.string().optional(),
     META_APP_SECRET: z.string().optional(),

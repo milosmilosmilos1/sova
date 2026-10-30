@@ -138,6 +138,8 @@ Za punu produkciju:
 7. **Kraj pregleda**: kad su svi ključevi uneti, obrišite `SOVA_PREVIEW` u Netlify-ju i pustite nov deploy; server tada opet traži sve ključeve.
 8. **Domen sovaai.rs** kasnije: Netlify → Domain management → Add a domain, DNS kod SuperHosting-a, zatim `NEXT_PUBLIC_APP_URL=https://sovaai.rs` i nov deploy. Do tada sajt nosi `noindex` i ne ulazi u pretragu.
 
+**Obaveštenja na telefonu (D-118)**: napravite par ključeva (`npx web-push generate-vapid-keys`) i dodajte `VAPID_PUBLIC_KEY` i `VAPID_PRIVATE_KEY` u Netlify (privatni ključ kao tajnu), pa nov deploy. Bez njih kartica na početnoj nudi samo instalaciju.
+
 **Inbox i DM automatizacija (D-117)** su iza prekidača `inbox`. Za probu na jednom radnom prostoru pre odobrenja Mete: `insert into feature_flags (key, enabled, description, rollout) values ('inbox', false, 'Inbox i DM automatizacija', '{"workspaces": ["<id radnog prostora>"]}') on conflict (key) do update set rollout = excluded.rollout;`, zatim u Meta konfiguraciji prijave dodati `pages_manage_engagement`, `pages_messaging` i `instagram_manage_messages` i ponovo povezati nalog. Za sve korisnike: posle App Review-a `update feature_flags set enabled = true where key = 'inbox';`. Posao `inbox-sync` traži Inngest sinhronizaciju posle deploy-a.
 
 Build počinje proverom env-a (`npm run check:env`, D-103). Ako fali obavezna promenljiva, build pada sa njenim imenom u logu, a živi sajt ostaje na prethodnom deploy-u. Kad prođe, log pokazuje koji servisi su podešeni.

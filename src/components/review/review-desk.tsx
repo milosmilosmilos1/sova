@@ -1,13 +1,14 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { ChevronLeft, ChevronRight, Download, FileText, Pencil, RefreshCw, Search } from 'lucide-react'
+import { ChevronLeft, ChevronRight, Download, FileText, Film, Pencil, RefreshCw, Search } from 'lucide-react'
 import Link from 'next/link'
 import { useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { api } from '@/components/shared/api-client'
 import { ErrorBox } from '@/components/shared/error-box'
+import { VideoDialog } from '@/components/review/video-dialog'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -37,6 +38,7 @@ interface Item {
 interface Detail {
   post: {
     id: string
+    brandId: string
     title: string | null
     status: string
     version: number
@@ -313,6 +315,7 @@ function DetailForm({
   const initial = wallClock(post.scheduledFor ?? detail.suggestedAt, timeZone)
   const [when, setWhen] = useState(`${initial.date}T${initial.time}`)
   const [notice, setNotice] = useState<string | null>(null)
+  const [videoOpen, setVideoOpen] = useState(false)
   const canApprove = post.actions.includes('approve') || post.actions.includes('schedule')
   const editable = ['draft', 'in_review', 'approved', 'rejected', 'canceled', 'failed'].includes(post.status)
   const media = post.media.filter((m) => m.url)
@@ -452,7 +455,21 @@ function DetailForm({
                   {t('actions.download')}
                 </Button>
               ) : null}
+              {media.length >= 2 && media.every((m) => !m.mimeType?.startsWith('video')) ? (
+                <Button size="sm" variant="outline" onClick={() => setVideoOpen(true)}>
+                  <Film aria-hidden />
+                  {t('actions.makeVideo')}
+                </Button>
+              ) : null}
             </div>
+            <VideoDialog
+              open={videoOpen}
+              onOpenChange={setVideoOpen}
+              postId={post.id}
+              brandId={post.brandId}
+              slides={media.map((m) => m.url!)}
+              onCreated={onChanged}
+            />
           </CardContent>
         </Card>
       </section>

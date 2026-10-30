@@ -7,6 +7,7 @@ import {
   NOTIFICATION_TYPES,
   type NotificationChannel,
   type NotificationType,
+  type NotificationTypeDef,
 } from '@/config/notifications'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
@@ -17,6 +18,7 @@ import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError } from '@/lib/supabase/errors'
 import { NoticeEmail } from '@/emails/notice'
+import { sendPushToUsers } from '@/services/push'
 import type { Json } from '@/types/database'
 
 /**
@@ -36,6 +38,8 @@ export interface NotifyInput {
   link?: string | null
   /** nadjačava podrazumevano slanje emaila za tip (korisnikova podešavanja i dalje važe) */
   email?: boolean
+  /** nadjačava slanje na telefon (D-118) */
+  push?: boolean
 }
 
 interface PrefRow {
@@ -114,6 +118,16 @@ export async function notifyUsers(input: NotifyInput): Promise<number> {
         }
       }
     }
+  }
+  const def = NOTIFICATION_TYPES[input.type] as NotificationTypeDef
+  if (input.push ?? def.pushDefault ?? false) {
+    const pushIds = ids.filter((id) => !disabled.get(id)?.has('push'))
+    await sendPushToUsers(pushIds, {
+      title: input.title,
+      body: input.body ?? '',
+      url: input.link ?? '/app',
+      tag: input.type,
+    }).catch((error) => logger.warn('notification_push_failed', { type: input.type, error }))
   }
   return inApp.length
 }

@@ -36,7 +36,11 @@ async function loadPost(postId: string) {
 }
 
 /** Nacrt → na odobrenje, red u `approvals` i obaveštenje odobravaocima. */
-export async function systemSubmitForReview(postId: string, note: string): Promise<void> {
+export async function systemSubmitForReview(
+  postId: string,
+  note: string,
+  options: { notify?: boolean } = {},
+): Promise<void> {
   const post = await loadPost(postId)
   const version = await systemTransition(postId, 'in_review', note)
   const admin = createSupabaseAdminClient()
@@ -48,6 +52,8 @@ export async function systemSubmitForReview(postId: string, note: string): Promi
     requested_by: null,
     post_version: version,
   })
+  // video iz karusela (D-118) ide u isti red bez novog obaveštenja: napravio ga je onaj ko odlučuje
+  if (options.notify === false) return
   const approvers = await usersWithRoles(post.workspace_id, post.brand_id, ['owner', 'admin', 'approver'])
   await notifyUsers({
     userIds: approvers,

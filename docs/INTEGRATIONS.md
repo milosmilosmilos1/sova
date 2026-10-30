@@ -155,6 +155,13 @@ Brand Brain (faza 6):
 
 Studio kao razgovor (D-116): jedan `generateContent` po poruci, `responseJsonSchema` iz `studioDecisionSchema` (radnja, odgovor, brif ili izmena, predlozi), do četiri priložene fotografije smanjene na 768 px JPEG, temperatura 0,6, `thinkingLevel: low`, oznaka `studio-chat` u logu. Nova objava ide kroz postojeći poziv za slajdove. Link iz poruke čita crawler (`fetchPage`, SSRF zaštita, 8 s, 2 MB), a naziv, opis i cena proizvoda dolaze iz schema.org `Product` u JSON-LD-u.
 
+## 13b. Web Push (obaveštenja na telefonu, D-118)
+
+- **Biblioteka**: `web-push` 3.6 (VAPID, šifrovanje poruke po RFC 8291), slanje `POST` na adresu pretplate sa `TTL: 86400` i `urgency: normal`. Odgovor 201 je uspeh, 404 i 410 znače da pretplata ne postoji (briše se).
+- **Ključevi**: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY` (par se pravi sa `npx web-push generate-vapid-keys`), `VAPID_SUBJECT` (podrazumevano `mailto:podrska@sovaai.rs`). Javni ključ ide pregledaču kroz `GET /api/push`.
+- **Pregledači**: Chrome, Edge, Firefox i Safari 16 na macOS-u; iPhone i iPad od iOS 16.4 samo kad je Sova dodata na početni ekran.
+- **Video iz karusela** ne koristi spoljni servis: WebCodecs `VideoEncoder` (H.264) kroz Mediabunny `CanvasSource` i `Mp4OutputFormat({ fastStart: 'in-memory' })`, u pregledaču korisnika.
+
 ## 13a. Stripe (naplata, faza 12, D-090)
 
 - **SDK i verzija**: stripe-node 23.0.0 (zakucan), `apiVersion: 2026-09-30.endive`, fetch HTTP klijent. Od basil verzije period pretplate je na stavci (`items.data[].current_period_*`), a pretplata fakture u `invoice.parent.subscription_details.subscription`; endive odbija `payment_method_types` u Checkout-u.

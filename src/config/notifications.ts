@@ -7,6 +7,8 @@ export interface NotificationTypeDef {
   description: string
   /** da li se email šalje kad korisnik nije ništa podesio */
   emailDefault: boolean
+  /** da li ide i na telefon, uređajima sa uključenim obaveštenjima (D-118) */
+  pushDefault?: boolean
 }
 
 export const NOTIFICATION_TYPES = {
@@ -14,6 +16,7 @@ export const NOTIFICATION_TYPES = {
     label: 'Objava čeka odobrenje',
     description: 'Urednik je poslao objavu na odobravanje.',
     emailDefault: true,
+    pushDefault: true,
   },
   post_approved: { label: 'Objava odobrena', description: 'Vaša objava je odobrena.', emailDefault: true },
   post_rejected: {
@@ -35,16 +38,19 @@ export const NOTIFICATION_TYPES = {
     label: 'Objava nije uspela',
     description: 'Mreža je odbila objavu ili su pokušaji potrošeni.',
     emailDefault: true,
+    pushDefault: true,
   },
   post_needs_reauth: {
     label: 'Nalog traži ponovno povezivanje',
     description: 'Objava čeka jer je veza sa mrežom istekla.',
     emailDefault: true,
+    pushDefault: true,
   },
   post_assisted_pending: {
     label: 'Ručno objavljivanje',
     description: 'Objava čeka da je neko ručno postavi na mrežu.',
     emailDefault: true,
+    pushDefault: true,
   },
   workspace_ownership: {
     label: 'Vlasništvo radnog prostora',
@@ -85,11 +91,13 @@ export const NOTIFICATION_TYPES = {
     label: 'Tok automatizacije nije uspeo',
     description: 'Tok nije napravio nacrt: nema tokena, nema mreže za format ili servis nije odgovorio.',
     emailDefault: false,
+    pushDefault: true,
   },
   autopilot_deadline: {
     label: 'Rok za odobrenje',
     description: 'Autopilot objava čeka odobrenje ili je zakazana posle roka.',
     emailDefault: true,
+    pushDefault: true,
   },
   autopilot_skipped: {
     label: 'Autopilot objava preskočena',
@@ -120,6 +128,7 @@ export const NOTIFICATION_TYPES = {
     label: 'Objava kasni',
     description: 'Zakazana objava kasni više od 15 minuta.',
     emailDefault: true,
+    pushDefault: true,
   },
   billing_payment_failed: {
     label: 'Plaćanje nije uspelo',
@@ -140,7 +149,7 @@ export const NOTIFICATION_TYPES = {
 
 export type NotificationType = keyof typeof NOTIFICATION_TYPES
 export const NOTIFICATION_TYPE_KEYS = Object.keys(NOTIFICATION_TYPES) as NotificationType[]
-export const NOTIFICATION_CHANNELS = ['in_app', 'email'] as const
+export const NOTIFICATION_CHANNELS = ['in_app', 'email', 'push'] as const
 export type NotificationChannel = (typeof NOTIFICATION_CHANNELS)[number]
 
 export function isNotificationType(value: string): value is NotificationType {

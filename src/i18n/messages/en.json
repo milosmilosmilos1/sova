@@ -438,7 +438,8 @@
       "saving": "Saving…",
       "confirmSkip": "Skip this draft? You can restore it from the post editor.",
       "confirmPublish": "Publish now to the selected networks?",
-      "confirmRegenerate": "Create new copy and new slides? It uses {tokens} tokens."
+      "confirmRegenerate": "Create new copy and new slides? It uses {tokens} tokens.",
+      "makeVideo": "Make a video"
     },
     "panel": {
       "decision": "Decision",
@@ -455,6 +456,35 @@
       "noApprove": "Your role can edit the copy; the owner, an admin or an approver approves it.",
       "done": "Saved.",
       "scheduled": "Scheduled for {when}."
+    },
+    "video": {
+      "title": "Video from slides",
+      "description": "Sova turns {slides, plural, one {# slide} other {# slides}} into a short video in your browser and saves it as a new draft. The carousel stays as it is and no tokens are used.",
+      "unsupported": "This browser cannot make videos. Open Sova in Chrome, Edge or a recent Safari.",
+      "preview": "Video preview",
+      "created": "The video is saved as a new draft.",
+      "createdReview": "The video is saved as a new draft and waits for a decision in Approvals.",
+      "download": "Download video",
+      "open": "Open draft",
+      "format": "Format",
+      "formats": {
+        "reel": {
+          "label": "Vertical 9:16",
+          "hint": "Reels, TikTok, Shorts and stories"
+        },
+        "feed": {
+          "label": "Post 4:5",
+          "hint": "Feed video, like the carousel"
+        }
+      },
+      "seconds": "Slide duration",
+      "secondsValue": "{n} s",
+      "fade": "Fade between slides",
+      "length": "The video is about {seconds} s long.",
+      "rendering": "Making the video… {percent}%",
+      "uploading": "Saving the video to the library…",
+      "cancel": "Close",
+      "make": "Make video"
     }
   },
   "setup": {
@@ -1366,6 +1396,30 @@
       "cancel": "Cancel",
       "saving": "Saving…",
       "save": "Save flow"
+    }
+  },
+  "install": {
+    "title": "Approve from your phone",
+    "hide": "Hide card",
+    "text": "Install Sova on your phone and decide on drafts on the go. When a flow makes a draft, you get a notification. Creating posts stays on the computer.",
+    "installed": "Sova is installed on this device. Turn on notifications to get drafts that wait for a decision.",
+    "steps": {
+      "open": "Open the link below in your phone’s browser.",
+      "android": "Android: menu ⋮, then “Install app” or “Add to Home screen”.",
+      "ios": "iPhone: the Share button, then “Add to Home Screen”.",
+      "notify": "Open Sova from the home screen and turn on notifications."
+    },
+    "install": "Install app",
+    "copy": "Copy link",
+    "copied": "Link copied",
+    "push": {
+      "on": "Turn on notifications",
+      "off": "Turn off notifications",
+      "test": "Send a test",
+      "notConfigured": "Device notifications are not set up on the server yet.",
+      "denied": "The browser blocked notifications. Allow them in the site settings and try again.",
+      "sent": "Sent to {count, plural, one {# device} other {# devices}}.",
+      "sentNone": "No device received the notification."
     }
   }
 }

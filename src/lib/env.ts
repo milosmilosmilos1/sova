@@ -27,6 +27,7 @@ export const configured = {
   turnstile: Boolean(env.TURNSTILE_SECRET_KEY && env.NEXT_PUBLIC_TURNSTILE_SITE_KEY),
   unsplash: Boolean(env.UNSPLASH_ACCESS_KEY),
   pexels: Boolean(env.PEXELS_API_KEY),
+  push: Boolean(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY),
   canva: Boolean(env.CANVA_CLIENT_ID && env.CANVA_CLIENT_SECRET),
   google: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
   meta: Boolean(env.META_APP_ID && env.META_APP_SECRET),

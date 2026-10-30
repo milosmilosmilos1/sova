@@ -27,6 +27,7 @@ import { SovaLogo } from '@/components/brand/sova-logo'
 import { AuthSync } from '@/components/app/auth-sync'
 import { AutoSubmitSelect } from '@/components/app/auto-submit-select'
 import { GuideWidget } from '@/components/app/guide-widget'
+import { ServiceWorkerRegister } from '@/components/app/service-worker'
 import { NotificationsBell } from '@/components/app/notifications-bell'
 import { CurrentPathInput, NavGroup, NavLink } from '@/components/app/nav-link'
 import { LocaleSwitcher } from '@/components/shared/locale-switcher'
@@ -243,6 +244,7 @@ export function AppShell({
       {currentBrand && !viewer.impersonation ? (
         <GuideWidget brandId={currentBrand.id} supportEmail={company.supportEmail} />
       ) : null}
+      <ServiceWorkerRegister />
     </>
   )
 }

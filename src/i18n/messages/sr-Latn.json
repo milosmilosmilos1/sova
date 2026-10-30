@@ -438,7 +438,8 @@
       "saving": "Čuvam…",
       "confirmSkip": "Preskočiti ovaj nacrt? Možete ga vratiti iz editora objave.",
       "confirmPublish": "Objaviti odmah na izabrane mreže?",
-      "confirmRegenerate": "Napraviti nov tekst i nove slajdove? Troši {tokens} tokena."
+      "confirmRegenerate": "Napraviti nov tekst i nove slajdove? Troši {tokens} tokena.",
+      "makeVideo": "Napravi video"
     },
     "panel": {
       "decision": "Odluka",
@@ -455,6 +456,35 @@
       "noApprove": "Vaša uloga menja tekst, a odobrava vlasnik, administrator ili odobravalac.",
       "done": "Sačuvano.",
       "scheduled": "Zakazano za {when}."
+    },
+    "video": {
+      "title": "Video od slajdova",
+      "description": "Sova od {slides, plural, one {# slajda} other {# slajdova}} pravi kratak video u vašem pregledaču i čuva ga kao nov nacrt. Karusel ostaje kakav je, a tokeni se ne troše.",
+      "unsupported": "Ovaj pregledač ne pravi video. Otvorite Sovu u Chrome-u, Edge-u ili novijem Safariju.",
+      "preview": "Pregled videa",
+      "created": "Video je sačuvan kao nov nacrt.",
+      "createdReview": "Video je sačuvan kao nov nacrt i čeka odluku u Odobravanju.",
+      "download": "Preuzmi video",
+      "open": "Otvori nacrt",
+      "format": "Format",
+      "formats": {
+        "reel": {
+          "label": "Uspravan 9:16",
+          "hint": "Reels, TikTok, Shorts i priče"
+        },
+        "feed": {
+          "label": "Objava 4:5",
+          "hint": "Video u feedu, kao karusel"
+        }
+      },
+      "seconds": "Trajanje slajda",
+      "secondsValue": "{n} s",
+      "fade": "Pretapanje između slajdova",
+      "length": "Video traje oko {seconds} s.",
+      "rendering": "Pravim video… {percent} %",
+      "uploading": "Čuvam video u biblioteci…",
+      "cancel": "Zatvori",
+      "make": "Napravi video"
     }
   },
   "setup": {
@@ -1366,6 +1396,30 @@
       "cancel": "Otkaži",
       "saving": "Čuvam…",
       "save": "Sačuvaj tok"
+    }
+  },
+  "install": {
+    "title": "Odobravajte sa telefona",
+    "hide": "Skloni karticu",
+    "text": "Instalirajte Sovu na telefon i odlučujte o nacrtima u hodu. Kad tok napravi nacrt, stiže vam obaveštenje. Pravljenje objava ostaje na računaru.",
+    "installed": "Sova je instalirana na ovom uređaju. Uključite obaveštenja da vam stignu nacrti koji čekaju odluku.",
+    "steps": {
+      "open": "Otvorite link ispod u pregledaču na telefonu.",
+      "android": "Android: meni ⋮ pa „Instaliraj aplikaciju” ili „Dodaj na početni ekran”.",
+      "ios": "iPhone: dugme Podeli pa „Dodaj na početni ekran”.",
+      "notify": "Otvorite Sovu sa početnog ekrana i uključite obaveštenja."
+    },
+    "install": "Instaliraj aplikaciju",
+    "copy": "Kopiraj link",
+    "copied": "Link je kopiran",
+    "push": {
+      "on": "Uključi obaveštenja",
+      "off": "Isključi obaveštenja",
+      "test": "Pošalji probno",
+      "notConfigured": "Obaveštenja na uređaju još nisu podešena na serveru.",
+      "denied": "Pregledač je odbio obaveštenja. Dozvolite ih u podešavanjima sajta pa pokušajte ponovo.",
+      "sent": "Poslato na {count, plural, one {# uređaj} few {# uređaja} other {# uređaja}}.",
+      "sentNone": "Nijedan uređaj nije primio obaveštenje."
     }
   }
 }

@@ -29,6 +29,7 @@ const services = {
   unsplash: ['UNSPLASH_ACCESS_KEY'],
   pexels: ['PEXELS_API_KEY'],
   canva: ['CANVA_CLIENT_ID', 'CANVA_CLIENT_SECRET'],
+  push: ['VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY'],
 }
 const ready = Object.keys(services).filter((name) => services[name].every((key) => process.env[key]))
 const waiting = Object.keys(services).filter((name) => !ready.includes(name))

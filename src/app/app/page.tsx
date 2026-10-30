@@ -18,6 +18,7 @@ import { redirect } from 'next/navigation'
 import { getFormatter, getTranslations } from 'next-intl/server'
 import type { ReactNode } from 'react'
 
+import { InstallCard } from '@/components/app/install-card'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
@@ -635,6 +636,8 @@ export default async function AppHomePage({ searchParams }: PageProps<'/app'>) {
           </div>
         </Section>
       ) : null}
+
+      <InstallCard />
 
       {brands.length > 1 ? (
         <p className="text-xs text-muted-foreground">

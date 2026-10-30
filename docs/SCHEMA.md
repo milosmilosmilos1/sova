@@ -1413,6 +1413,19 @@ create table dm_contacts (
   unique (automation_id, external_user_id)          -- jedna poruka po osobi i toku
 );
 -- RLS: sve četiri tabele čitaju članovi sa pristupom brendu; piše service role (API i posao inbox-sync)
+
+-- Obaveštenja na telefonu (migracija 039, D-118)
+alter type notification_channel add value 'push';
+create table push_subscriptions (
+  id uuid primary key default gen_random_uuid(),
+  user_id uuid not null references profiles(id) on delete cascade,
+  endpoint text not null unique,                    -- samo servisi pregledača (Google, Mozilla, Apple, Microsoft)
+  p256dh text not null, auth text not null,         -- ključevi pretplate za šifrovanje poruke
+  user_agent text,
+  created_at timestamptz not null default now(),
+  last_sent_at timestamptz
+);
+-- RLS: korisnik vidi samo svoje pretplate; upis i brisanje kroz API (service role)
 create table autopilot_runs (
   id uuid primary key default gen_random_uuid(),
   brand_id uuid not null references brands(id) on delete cascade,
