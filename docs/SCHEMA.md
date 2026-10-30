@@ -1335,7 +1335,7 @@ create table feature_requests (
   votes integer not null default 0,
   created_at timestamptz not null default now(), updated_at timestamptz not null default now()
 );
-create table feature_votes (request_id uuid references feature_requests(id) on delete cascade, user_id uuid references profiles(id) on delete cascade, primary key (request_id, user_id));
+create table feature_votes (request_id uuid references feature_requests(id) on delete cascade, user_id uuid references profiles(id) on delete cascade, active boolean not null default true, created_at timestamptz, updated_at timestamptz, primary key (request_id, user_id));  -- glas se uključuje i isključuje istim redom, bez brisanja
 -- RLS: ideje čitaju svi ulogovani, prijavu problema samo autor; svoje glasove korisnik vidi sam
 -- toggle_feature_vote(p_request_id, p_user_id) → {voted, votes}: security definer, samo service role
 create table autopilot_runs (

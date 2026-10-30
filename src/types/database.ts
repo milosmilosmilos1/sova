@@ -597,14 +597,14 @@ isOneToOne: false
                   Relationships: []
                 },"feature_votes": {
                   Row: {
-                    "created_at": string,"request_id": string,"user_id": string
+                    "active": boolean,"created_at": string,"request_id": string,"updated_at": string,"user_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "created_at"?: string,"request_id": string,"user_id": string
+                    "active"?: boolean,"created_at"?: string,"request_id": string,"updated_at"?: string,"user_id": string
                   }
                   Update: {
-                    "created_at"?: string,"request_id"?: string,"user_id"?: string
+                    "active"?: boolean,"created_at"?: string,"request_id"?: string,"updated_at"?: string,"user_id"?: string
                   }
                   Relationships: []
                 },"gallery_categories": {

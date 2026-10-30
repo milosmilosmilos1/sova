@@ -67,6 +67,7 @@ export async function listIdeas(
       .from('feature_votes')
       .select('request_id')
       .eq('user_id', viewer.user.id)
+      .eq('active', true)
       .in('request_id', ids)
     for (const v of votes ?? []) voted.add(v.request_id)
   }

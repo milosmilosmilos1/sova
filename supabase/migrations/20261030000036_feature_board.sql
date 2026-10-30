@@ -14,10 +14,13 @@ create table public.feature_requests (
 );
 create index feature_requests_list on public.feature_requests (kind, created_at desc);
 
+-- glas se uključuje i isključuje istim redom (bez brisanja), pa ostaje i trag kad je dat
 create table public.feature_votes (
   request_id uuid not null references public.feature_requests(id) on delete cascade deferrable initially deferred,
   user_id uuid not null references public.profiles(id) on delete cascade deferrable initially deferred,
+  active boolean not null default true,
   created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
   primary key (request_id, user_id)
 );
 
@@ -43,17 +46,13 @@ begin
   if not found then
     raise exception 'feature request not found' using errcode = 'P0002';
   end if;
-  delete from public.feature_votes where request_id = p_request_id and user_id = p_user_id;
-  if found then
-    update public.feature_requests set votes = greatest(votes - 1, 0) where id = p_request_id
-      returning votes into v_votes;
-    v_voted := false;
-  else
-    insert into public.feature_votes (request_id, user_id) values (p_request_id, p_user_id);
-    update public.feature_requests set votes = votes + 1 where id = p_request_id
-      returning votes into v_votes;
-    v_voted := true;
-  end if;
+  insert into public.feature_votes as v (request_id, user_id) values (p_request_id, p_user_id)
+    on conflict (request_id, user_id) do update set active = not v.active, updated_at = now()
+    returning v.active into v_voted;
+  update public.feature_requests
+     set votes = greatest(votes + case when v_voted then 1 else -1 end, 0)
+   where id = p_request_id
+   returning votes into v_votes;
   return jsonb_build_object('voted', v_voted, 'votes', v_votes);
 end;
 $$;
