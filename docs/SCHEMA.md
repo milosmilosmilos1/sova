@@ -1256,6 +1256,35 @@ Faza 10b (24.10.2026), bez promene šeme:
 Faza 10c (24.10.2026), migracija `20261024000016_autopilot.sql`:
 
 ```sql
+
+-- tokovi automatizacije (migracija 031, D-110)
+create table content_flows (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  brand_id uuid not null references brands(id) on delete cascade,
+  name text not null, topic text not null, cta text,
+  cta_mode text not null default 'none',          -- none | dm
+  format text not null default 'carousel',        -- carousel | single | story
+  style_id text, slides smallint, photo_source text, locale text,  -- null = iz dizajna i jezika brenda
+  auto_accounts boolean not null default true, account_ids uuid[] not null default '{}',
+  days smallint[] not null default '{1,3,5}',     -- 0 = nedelja … 6 = subota
+  time_local time not null default '10:00', auto_time boolean not null default false,
+  collaborators text[] not null default '{}',     -- do tri Instagram naloga
+  active boolean not null default true, next_run_at timestamptz, last_run_at timestamptz,
+  created_by uuid references profiles(id) on delete set null,
+  created_at timestamptz not null default now(), updated_at timestamptz not null default now(), deleted_at timestamptz
+);
+create table content_flow_runs (
+  id uuid primary key default gen_random_uuid(),
+  flow_id uuid not null references content_flows(id) on delete cascade,
+  brand_id uuid not null, workspace_id uuid not null,
+  slot_at timestamptz not null, trigger text not null default 'schedule',   -- schedule | manual
+  status text not null default 'queued', step text,  -- copy | images | check | done
+  post_id uuid references posts(id) on delete set null, tokens integer not null default 0, error text,
+  triggered_by uuid, created_at timestamptz not null default now(), finished_at timestamptz,
+  unique (flow_id, slot_at)
+);
+alter table posts add column flow_id uuid references content_flows(id) on delete set null;
 create table autopilot_runs (
   id uuid primary key default gen_random_uuid(),
   brand_id uuid not null references brands(id) on delete cascade,

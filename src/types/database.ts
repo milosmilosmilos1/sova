@@ -429,6 +429,82 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"content_flow_runs": {
+                  Row: {
+                    "brand_id": string,"created_at": string,"error": string | null,"finished_at": string | null,"flow_id": string,"id": string,"post_id": string | null,"slot_at": string,"status": string,"step": string | null,"tokens": number,"trigger": string,"triggered_by": string | null,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "brand_id": string,"created_at"?: string,"error"?: string | null,"finished_at"?: string | null,"flow_id": string,"id"?: string,"post_id"?: string | null,"slot_at": string,"status"?: string,"step"?: string | null,"tokens"?: number,"trigger"?: string,"triggered_by"?: string | null,"workspace_id": string
+                  }
+                  Update: {
+                    "brand_id"?: string,"created_at"?: string,"error"?: string | null,"finished_at"?: string | null,"flow_id"?: string,"id"?: string,"post_id"?: string | null,"slot_at"?: string,"status"?: string,"step"?: string | null,"tokens"?: number,"trigger"?: string,"triggered_by"?: string | null,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "content_flow_runs_brand_id_fkey"
+      columns: ["brand_id"]
+isOneToOne: false
+      referencedRelation: "brands"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "content_flow_runs_flow_id_fkey"
+      columns: ["flow_id"]
+isOneToOne: false
+      referencedRelation: "content_flows"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "content_flow_runs_post_id_fkey"
+      columns: ["post_id"]
+isOneToOne: false
+      referencedRelation: "posts"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "content_flow_runs_triggered_by_fkey"
+      columns: ["triggered_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "content_flow_runs_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
+                },"content_flows": {
+                  Row: {
+                    "account_ids": (string)[],"active": boolean,"auto_accounts": boolean,"auto_time": boolean,"brand_id": string,"collaborators": (string)[],"created_at": string,"created_by": string | null,"cta": string | null,"cta_mode": string,"days": (number)[],"deleted_at": string | null,"format": string,"id": string,"last_run_at": string | null,"locale": string | null,"name": string,"next_run_at": string | null,"photo_source": string | null,"slides": number | null,"style_id": string | null,"time_local": string,"topic": string,"updated_at": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "account_ids"?: (string)[],"active"?: boolean,"auto_accounts"?: boolean,"auto_time"?: boolean,"brand_id": string,"collaborators"?: (string)[],"created_at"?: string,"created_by"?: string | null,"cta"?: string | null,"cta_mode"?: string,"days"?: (number)[],"deleted_at"?: string | null,"format"?: string,"id"?: string,"last_run_at"?: string | null,"locale"?: string | null,"name": string,"next_run_at"?: string | null,"photo_source"?: string | null,"slides"?: number | null,"style_id"?: string | null,"time_local"?: string,"topic": string,"updated_at"?: string,"workspace_id": string
+                  }
+                  Update: {
+                    "account_ids"?: (string)[],"active"?: boolean,"auto_accounts"?: boolean,"auto_time"?: boolean,"brand_id"?: string,"collaborators"?: (string)[],"created_at"?: string,"created_by"?: string | null,"cta"?: string | null,"cta_mode"?: string,"days"?: (number)[],"deleted_at"?: string | null,"format"?: string,"id"?: string,"last_run_at"?: string | null,"locale"?: string | null,"name"?: string,"next_run_at"?: string | null,"photo_source"?: string | null,"slides"?: number | null,"style_id"?: string | null,"time_local"?: string,"topic"?: string,"updated_at"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "content_flows_brand_id_fkey"
+      columns: ["brand_id"]
+isOneToOne: false
+      referencedRelation: "brands"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "content_flows_created_by_fkey"
+      columns: ["created_by"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "content_flows_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"content_pillars": {
                   Row: {
                     "brand_id": string,"color": string | null,"description": string | null,"id": string,"is_active": boolean,"name": string,"share_percent": number | null,"sort_order": number,"strategy_id": string | null
@@ -1073,14 +1149,14 @@ isOneToOne: false
                   ]
                 },"posts": {
                   Row: {
-                    "approved_at": string | null,"approved_by": string | null,"brand_id": string,"campaign_id": string | null,"created_at": string,"created_by": string | null,"deleted_at": string | null,"evergreen_interval_days": number | null,"first_comment": string | null,"id": string,"is_evergreen": boolean,"language": string | null,"link_url": string | null,"locked_at": string | null,"master_text": string,"parent_post_id": string | null,"pillar_id": string | null,"qa_report": Json | null,"scheduled_for": string | null,"similarity_warning": Json | null,"source": Database["public"]['Enums']["post_source"],"status": Database["public"]['Enums']["post_status"],"strategy_id": string | null,"submitted_at": string | null,"suggestion_id": string | null,"title": string | null,"updated_at": string,"utm": Json | null,"version": number,"workspace_id": string
+                    "approved_at": string | null,"approved_by": string | null,"brand_id": string,"campaign_id": string | null,"created_at": string,"created_by": string | null,"deleted_at": string | null,"evergreen_interval_days": number | null,"first_comment": string | null,"flow_id": string | null,"id": string,"is_evergreen": boolean,"language": string | null,"link_url": string | null,"locked_at": string | null,"master_text": string,"parent_post_id": string | null,"pillar_id": string | null,"qa_report": Json | null,"scheduled_for": string | null,"similarity_warning": Json | null,"source": Database["public"]['Enums']["post_source"],"status": Database["public"]['Enums']["post_status"],"strategy_id": string | null,"submitted_at": string | null,"suggestion_id": string | null,"title": string | null,"updated_at": string,"utm": Json | null,"version": number,"workspace_id": string
                   }
                   ComputedFields: never
                   Insert: {
-                    "approved_at"?: string | null,"approved_by"?: string | null,"brand_id": string,"campaign_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"evergreen_interval_days"?: number | null,"first_comment"?: string | null,"id"?: string,"is_evergreen"?: boolean,"language"?: string | null,"link_url"?: string | null,"locked_at"?: string | null,"master_text"?: string,"parent_post_id"?: string | null,"pillar_id"?: string | null,"qa_report"?: Json | null,"scheduled_for"?: string | null,"similarity_warning"?: Json | null,"source"?: Database["public"]['Enums']["post_source"],"status"?: Database["public"]['Enums']["post_status"],"strategy_id"?: string | null,"submitted_at"?: string | null,"suggestion_id"?: string | null,"title"?: string | null,"updated_at"?: string,"utm"?: Json | null,"version"?: number,"workspace_id": string
+                    "approved_at"?: string | null,"approved_by"?: string | null,"brand_id": string,"campaign_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"evergreen_interval_days"?: number | null,"first_comment"?: string | null,"flow_id"?: string | null,"id"?: string,"is_evergreen"?: boolean,"language"?: string | null,"link_url"?: string | null,"locked_at"?: string | null,"master_text"?: string,"parent_post_id"?: string | null,"pillar_id"?: string | null,"qa_report"?: Json | null,"scheduled_for"?: string | null,"similarity_warning"?: Json | null,"source"?: Database["public"]['Enums']["post_source"],"status"?: Database["public"]['Enums']["post_status"],"strategy_id"?: string | null,"submitted_at"?: string | null,"suggestion_id"?: string | null,"title"?: string | null,"updated_at"?: string,"utm"?: Json | null,"version"?: number,"workspace_id": string
                   }
                   Update: {
-                    "approved_at"?: string | null,"approved_by"?: string | null,"brand_id"?: string,"campaign_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"evergreen_interval_days"?: number | null,"first_comment"?: string | null,"id"?: string,"is_evergreen"?: boolean,"language"?: string | null,"link_url"?: string | null,"locked_at"?: string | null,"master_text"?: string,"parent_post_id"?: string | null,"pillar_id"?: string | null,"qa_report"?: Json | null,"scheduled_for"?: string | null,"similarity_warning"?: Json | null,"source"?: Database["public"]['Enums']["post_source"],"status"?: Database["public"]['Enums']["post_status"],"strategy_id"?: string | null,"submitted_at"?: string | null,"suggestion_id"?: string | null,"title"?: string | null,"updated_at"?: string,"utm"?: Json | null,"version"?: number,"workspace_id"?: string
+                    "approved_at"?: string | null,"approved_by"?: string | null,"brand_id"?: string,"campaign_id"?: string | null,"created_at"?: string,"created_by"?: string | null,"deleted_at"?: string | null,"evergreen_interval_days"?: number | null,"first_comment"?: string | null,"flow_id"?: string | null,"id"?: string,"is_evergreen"?: boolean,"language"?: string | null,"link_url"?: string | null,"locked_at"?: string | null,"master_text"?: string,"parent_post_id"?: string | null,"pillar_id"?: string | null,"qa_report"?: Json | null,"scheduled_for"?: string | null,"similarity_warning"?: Json | null,"source"?: Database["public"]['Enums']["post_source"],"status"?: Database["public"]['Enums']["post_status"],"strategy_id"?: string | null,"submitted_at"?: string | null,"suggestion_id"?: string | null,"title"?: string | null,"updated_at"?: string,"utm"?: Json | null,"version"?: number,"workspace_id"?: string
                   }
                   Relationships: [
                     {

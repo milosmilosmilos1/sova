@@ -509,3 +509,29 @@ describe('Priče (D-107)', () => {
     ).toBe('')
   })
 })
+
+describe('Instagram saradnici (D-108)', () => {
+  it('kontejner objave nosi do tri saradnika; karusel ih nosi na kontejneru karusela', async () => {
+    const img = await jpeg(90, 30, 160)
+    const single = await scheduled({
+      masterText: 'Zajednička objava',
+      targets: [{ socialAccountId: igId, options: { collaborators: ['partner.one', 'drugi_brend'] } }],
+      media: [{ mediaAssetId: img }],
+    })
+    expect((await runPublishTarget(single.job, ctx)).outcome).toBe('published')
+    const container = metaState.publishes.find((p) => p.path === 'ig-1/media')!
+    expect(JSON.parse(container.body.collaborators!)).toEqual(['partner.one', 'drugi_brend'])
+
+    metaState.publishes = []
+    const b = await jpeg(30, 160, 90)
+    const carousel = await scheduled({
+      masterText: 'Zajednički karusel',
+      targets: [{ socialAccountId: igId, options: { collaborators: ['partner.one'] } }],
+      media: [{ mediaAssetId: img }, { mediaAssetId: b, sortOrder: 1 }],
+    })
+    expect((await runPublishTarget(carousel.job, ctx)).outcome).toBe('published')
+    const parts = metaState.publishes.filter((p) => p.path === 'ig-1/media')
+    expect(parts.slice(0, 2).every((p) => !p.body.collaborators)).toBe(true)
+    expect(parts[2]!.body).toMatchObject({ media_type: 'CAROUSEL', collaborators: '["partner.one"]' })
+  })
+})

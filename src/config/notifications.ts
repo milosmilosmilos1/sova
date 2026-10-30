@@ -81,6 +81,11 @@ export const NOTIFICATION_TYPES = {
     description: 'Nacrt nije prošao kontrolu kvaliteta i čeka doradu.',
     emailDefault: false,
   },
+  flow_failed: {
+    label: 'Tok automatizacije nije uspeo',
+    description: 'Tok nije napravio nacrt: nema tokena, nema mreže za format ili servis nije odgovorio.',
+    emailDefault: false,
+  },
   autopilot_deadline: {
     label: 'Rok za odobrenje',
     description: 'Autopilot objava čeka odobrenje ili je zakazana posle roka.',

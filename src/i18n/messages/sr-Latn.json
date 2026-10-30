@@ -202,5 +202,153 @@
         "desc": "Mnogo belog prostora, suptilan i premium ton, bez fotografije."
       }
     }
+  },
+  "flows": {
+    "title": "Automatizuj objave",
+    "subtitle": "Tokovi pripremaju nacrte po vašem rasporedu. Svaki nacrt ide na odobravanje pre objave.",
+    "new": "Nova automatizacija",
+    "empty": {
+      "title": "Još nemate tokove",
+      "text": "Tok je jedna tema sa formatom, stilom i danima pripreme. Sova tada sama pravi nacrte i šalje ih na odobravanje.",
+      "cta": "Napravite prvi tok"
+    },
+    "stats": {
+      "total": "Tokova",
+      "active": "Aktivnih",
+      "paused": "Pauziranih",
+      "problems": "Sa problemom"
+    },
+    "next": {
+      "label": "Sledeći nacrt",
+      "none": "Nijedan tok nije zakazan.",
+      "open": "Otvori tok"
+    },
+    "status": {
+      "active": "Aktivan",
+      "paused": "Pauziran",
+      "failed": "Problem"
+    },
+    "columns": {
+      "format": "Format",
+      "schedule": "Raspored pripreme",
+      "next": "Sledeći nacrt"
+    },
+    "format": {
+      "carousel": "Karusel · {slides} slajdova",
+      "single": "Objava",
+      "story": "Priča"
+    },
+    "scheduleSummary": "{days} · oko {time}",
+    "days": {
+      "0": "Ned",
+      "1": "Pon",
+      "2": "Uto",
+      "3": "Sre",
+      "4": "Čet",
+      "5": "Pet",
+      "6": "Sub"
+    },
+    "pausedNext": "pauzirano",
+    "actions": {
+      "generate": "Generiši odmah",
+      "edit": "Uredi",
+      "delete": "Obriši",
+      "confirmDelete": "Obrisati tok „{name}”? Nacrti koje je napravio ostaju.",
+      "toggle": "Tok je aktivan"
+    },
+    "search": "Pretraži tokove…",
+    "filter": {
+      "all": "Svi",
+      "active": "Aktivni",
+      "paused": "Pauzirani"
+    },
+    "lastRunFailed": "Poslednji prolaz nije uspeo: {error}",
+    "progress": {
+      "badge": "Sova radi",
+      "title": "Sova priprema nacrt",
+      "text": "Pravim objavu iz toka „{name}”. Obično traje manje od minuta.",
+      "steps": {
+        "copy": "Pišem tekst",
+        "images": "Pravim slajdove",
+        "check": "Proveravam sadržaj",
+        "done": "Nacrt je spreman"
+      },
+      "hint": "Možete zatvoriti prozor. Priprema se nastavlja, a nacrt stiže na odobravanje.",
+      "failed": "Nacrt nije napravljen.",
+      "open": "Otvori nacrt",
+      "close": "Nastavi u aplikaciji"
+    },
+    "wizard": {
+      "newTitle": "Nova automatizacija",
+      "editTitle": "Uredi automatizaciju",
+      "stepOf": "Korak {n} od 3",
+      "steps": {
+        "topic": "Tema",
+        "topicHint": "O čemu Sova piše",
+        "style": "Format i stil",
+        "styleHint": "Format, stil i fotografije",
+        "schedule": "Raspored",
+        "scheduleHint": "Kada se priprema nacrt"
+      },
+      "topicIntro": "Jedna tema po toku. Sova koristi vaš brend i analitiku.",
+      "name": "Naziv toka",
+      "namePlaceholder": "Npr. SEO edukacija bez žargona",
+      "topic": "Tema",
+      "topicPlaceholder": "Npr. objašnjenje jednog SEO pojma kroz jednostavno poređenje ili listu od 3 do 4 tačke",
+      "cta": "Cilj (poziv na akciju)",
+      "ctaPlaceholder": "Npr. Javite se u poruke",
+      "ctaMode": "Poziv na akciju na kraju objave",
+      "ctaNone": "Bez DM-a",
+      "ctaNoneHint": "Poziv vodi na link u biju, sajt ili praćenje profila.",
+      "ctaDm": "DM automatizacija",
+      "ctaDmHint": "Uskoro: poruka sa linkom svakome ko komentariše ključnu reč.",
+      "format": "Format",
+      "formats": {
+        "carousel": "Karusel",
+        "carouselHint": "Više slajdova",
+        "single": "Objava",
+        "singleHint": "Jedan slajd",
+        "story": "Priča",
+        "storyHint": "Uspravni slajdovi"
+      },
+      "style": "Stil",
+      "styleBrand": "Stil brenda",
+      "styleOwn": "Poseban stil za ovaj tok",
+      "slides": "Slajdova",
+      "photos": "Fotografije",
+      "photosBrand": "Kao u dizajnu brenda",
+      "colorsHint": "Boje i nalog na slajdovima dolaze iz dizajna brenda.",
+      "colorsLink": "Prilagodi dizajn brenda",
+      "language": "Jezik objava",
+      "languageBrand": "Jezik brenda",
+      "networks": "Mreže za ovaj tok",
+      "networksHint": "Svaki nacrt dobija iste mreže u odobravanju i kalendaru.",
+      "autoAccounts": "Automatski uključi povezane mreže",
+      "autoAccountsHint": "Nalog koji povežete kasnije ulazi u sledeće nacrte kad prima format.",
+      "noAccounts": "Nema povezanih mreža. Povežite nalog na strani Mreže.",
+      "unsupported": "ne prima ovaj format",
+      "daysLabel": "Kojim danima pripremamo?",
+      "daysHint": "Izaberite bar jedan dan. Sova tada pravi nacrt i šalje ga na odobravanje.",
+      "perWeek": "Otprilike {n} nacrta nedeljno.",
+      "time": "Vreme pripreme",
+      "autoTime": "Sova bira vreme",
+      "autoTimeHint": "Stabilan termin između 07:00 i 21:45, da tokovi ne kreću u isti minut.",
+      "timezone": "Vremenska zona: {tz}",
+      "summary": "Raspored: {days}, {time}. Gotov nacrt stiže na odobravanje.",
+      "autoTimeShort": "vreme bira Sova",
+      "alwaysReview": "Uvek ide na odobravanje",
+      "collaborators": "Instagram saradnici",
+      "collaboratorsHint": "Do tri profila. Kad prihvate poziv, objava se pojavi i kod njih.",
+      "collaboratorPlaceholder": "@nalog",
+      "addCollaborator": "Dodaj",
+      "removeCollaborator": "Ukloni {name}",
+      "active": "Tok je aktivan",
+      "back": "Nazad",
+      "next": "Dalje",
+      "cancel": "Otkaži",
+      "save": "Sačuvaj automatizaciju",
+      "saving": "Čuvam…",
+      "backToList": "Automatizuj objave"
+    }
   }
 }

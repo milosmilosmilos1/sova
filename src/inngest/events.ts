@@ -70,6 +70,11 @@ export const events = {
     schema: z.object({ brandId: uuid, weekStart: z.iso.date().nullable(), triggeredBy: uuid.nullable() }),
   }),
 
+  // D-108: tok automatizacije, jedan prolaz (termin ili „Generiši odmah”)
+  flowRunRequested: eventType('flow/run.requested', {
+    schema: z.object({ runId: uuid, workspaceId: uuid }),
+  }),
+
   // Faza 12
   billingWebhookReceived: eventType('billing/webhook.received', {
     schema: z.object({ paymentEventId: uuid, provider: z.enum(['stripe', 'paddle']) }),

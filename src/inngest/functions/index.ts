@@ -7,6 +7,7 @@ import { billingDaily, billingProcessEvent } from './billing'
 import { brandAnalyze } from './brand-analyze'
 import { brandSiteCheck } from './brand-site-check'
 import { canvaExportVideo } from './canva-export-video'
+import { flowRun, flowsTick } from './flows'
 import { mediaIncomingCleanup } from './media-incoming-cleanup'
 import { ping } from './ping'
 import { postMetrics } from './post-metrics'
@@ -37,6 +38,8 @@ export const functions = [
   autopilotBrandWeek,
   autopilotDeadlines,
   autopilotDaily,
+  flowsTick,
+  flowRun,
   mediaIncomingCleanup,
   billingProcessEvent,
   billingDaily,

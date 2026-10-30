@@ -61,6 +61,16 @@ const STORY_VIDEO_MIN_MS = 3_000
 const STORY_VIDEO_MAX_MS = 60_000
 const isStory = (input: NormalizedPost) => input.options?.format === 'story'
 
+/** Saradnici na Instagram objavi: niz korisničkih imena kao JSON (Graph API), najviše tri. */
+function igCollaborators(options: NormalizedPost['options']): string | undefined {
+  const raw = options?.collaborators
+  if (!Array.isArray(raw)) return undefined
+  const names = raw
+    .filter((x): x is string => typeof x === 'string' && /^[A-Za-z0-9._]{1,30}$/.test(x))
+    .slice(0, 3)
+  return names.length ? JSON.stringify(names) : undefined
+}
+
 /** Facebook Reel: uspravan video (9:16, bar 540×960) od 3 do 90 s; ostalo ide kao običan video (D-089). */
 export function isFacebookReel(m: NormalizedMedia): boolean {
   if (!m.width || !m.height || !m.durationMs) return false
@@ -706,6 +716,8 @@ export class MetaProvider implements SocialProvider {
       throw new ProviderError('CONTENT_REJECTED', { userMessage: 'Instagram objava mora imati sliku.' })
     const firstComment = input.firstComment?.trim() || null
     const aiFlag = input.isAiGenerated ? true : undefined
+    // saradnici (do tri Instagram naloga) dobijaju poziv da objava bude i na njihovom profilu (D-108)
+    const collaborators = igCollaborators(input.options)
     if (input.media.length === 1) {
       const m = input.media[0]!
       if (isVideo(m)) {
@@ -716,6 +728,7 @@ export class MetaProvider implements SocialProvider {
           caption: input.text,
           share_to_feed: true,
           is_ai_generated: aiFlag,
+          collaborators,
         })
         return {
           externalId: null,
@@ -728,6 +741,7 @@ export class MetaProvider implements SocialProvider {
         caption: input.text,
         alt_text: m.alt ?? undefined,
         is_ai_generated: aiFlag,
+        collaborators,
       })
       return this.finishContainer(g, ig, r.id, firstComment)
     }
@@ -746,6 +760,7 @@ export class MetaProvider implements SocialProvider {
       children: children.join(','),
       caption: input.text,
       ...(aiFlag ? { is_ai_generated: true } : {}),
+      ...(collaborators ? { collaborators } : {}),
     }
     // karusel sa videom se pravi tek kad Instagram obradi svaki deo
     if (input.media.some(isVideo))

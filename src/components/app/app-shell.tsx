@@ -14,6 +14,7 @@ import {
   Target,
   TrendingUp,
   Users,
+  Workflow,
 } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
@@ -118,6 +119,10 @@ export function AppShell({
               <NavLink href="/app" exact>
                 <Home aria-hidden />
                 Početna
+              </NavLink>
+              <NavLink href="/app/flows">
+                <Workflow aria-hidden />
+                Automatizuj objave
               </NavLink>
               <NavLink href="/app/inbox">
                 <Inbox aria-hidden />

@@ -94,7 +94,7 @@ async function loadBrand(brandId: string): Promise<BrandRow | null> {
   return data
 }
 
-async function notifyRoles(
+export async function notifyRoles(
   brand: BrandRow,
   roles: Array<'owner' | 'admin' | 'editor' | 'approver'>,
   input: Omit<Parameters<typeof notifyUsers>[0], 'userIds' | 'workspaceId' | 'brandId'>,
@@ -430,7 +430,7 @@ async function planWeek(runId: string, strategyId: string, weekStart: string): P
   return ids
 }
 
-async function recentTexts(brandId: string, excludePostId: string): Promise<string[]> {
+export async function recentTexts(brandId: string, excludePostId: string): Promise<string[]> {
   const admin = createSupabaseAdminClient()
   const since = new Date(Date.now() - 90 * 86_400_000).toISOString()
   const [{ data: posts }, { data: history }] = await Promise.all([

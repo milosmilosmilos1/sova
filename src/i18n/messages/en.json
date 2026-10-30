@@ -202,5 +202,153 @@
         "desc": "Lots of white space, a subtle premium tone, no photo."
       }
     }
+  },
+  "flows": {
+    "title": "Automate posts",
+    "subtitle": "Flows prepare drafts on your schedule. Every draft goes to approval before it is published.",
+    "new": "New automation",
+    "empty": {
+      "title": "No flows yet",
+      "text": "A flow is one topic with a format, a style and preparation days. Sova then creates drafts and sends them for approval.",
+      "cta": "Create your first flow"
+    },
+    "stats": {
+      "total": "Flows",
+      "active": "Active",
+      "paused": "Paused",
+      "problems": "With problems"
+    },
+    "next": {
+      "label": "Next draft",
+      "none": "No flow is scheduled.",
+      "open": "Open flow"
+    },
+    "status": {
+      "active": "Active",
+      "paused": "Paused",
+      "failed": "Problem"
+    },
+    "columns": {
+      "format": "Format",
+      "schedule": "Preparation schedule",
+      "next": "Next draft"
+    },
+    "format": {
+      "carousel": "Carousel · {slides} slides",
+      "single": "Post",
+      "story": "Story"
+    },
+    "scheduleSummary": "{days} · around {time}",
+    "days": {
+      "0": "Sun",
+      "1": "Mon",
+      "2": "Tue",
+      "3": "Wed",
+      "4": "Thu",
+      "5": "Fri",
+      "6": "Sat"
+    },
+    "pausedNext": "paused",
+    "actions": {
+      "generate": "Generate now",
+      "edit": "Edit",
+      "delete": "Delete",
+      "confirmDelete": "Delete the flow “{name}”? Drafts it created will stay.",
+      "toggle": "Flow is active"
+    },
+    "search": "Search flows…",
+    "filter": {
+      "all": "All",
+      "active": "Active",
+      "paused": "Paused"
+    },
+    "lastRunFailed": "The last run failed: {error}",
+    "progress": {
+      "badge": "Sova is working",
+      "title": "Sova is preparing a draft",
+      "text": "Creating a post from the flow “{name}”. It usually takes less than a minute.",
+      "steps": {
+        "copy": "Writing the copy",
+        "images": "Creating slides",
+        "check": "Checking the content",
+        "done": "Draft is ready"
+      },
+      "hint": "You can close this window. Preparation continues and the draft will arrive in approvals.",
+      "failed": "The draft was not created.",
+      "open": "Open draft",
+      "close": "Continue in the app"
+    },
+    "wizard": {
+      "newTitle": "New automation",
+      "editTitle": "Edit automation",
+      "stepOf": "Step {n} of 3",
+      "steps": {
+        "topic": "Topic",
+        "topicHint": "What Sova writes about",
+        "style": "Format and style",
+        "styleHint": "Format, style and photos",
+        "schedule": "Schedule",
+        "scheduleHint": "When the draft is prepared"
+      },
+      "topicIntro": "One topic per flow. Sova uses your brand and analytics.",
+      "name": "Flow name",
+      "namePlaceholder": "E.g. SEO explained without jargon",
+      "topic": "Topic",
+      "topicPlaceholder": "E.g. explaining one SEO term through a simple comparison or a list of 3 to 4 points",
+      "cta": "Goal (call to action)",
+      "ctaPlaceholder": "E.g. Send us a message",
+      "ctaMode": "Call to action at the end of the post",
+      "ctaNone": "No DM",
+      "ctaNoneHint": "The call leads to the link in bio, the website or following the profile.",
+      "ctaDm": "DM automation",
+      "ctaDmHint": "Coming soon: a message with a link to everyone who comments a keyword.",
+      "format": "Format",
+      "formats": {
+        "carousel": "Carousel",
+        "carouselHint": "Several slides",
+        "single": "Post",
+        "singleHint": "One slide",
+        "story": "Story",
+        "storyHint": "Vertical slides"
+      },
+      "style": "Style",
+      "styleBrand": "Brand style",
+      "styleOwn": "Separate style for this flow",
+      "slides": "Slides",
+      "photos": "Photos",
+      "photosBrand": "As in the brand design",
+      "colorsHint": "Colours and the handle on slides come from the brand design.",
+      "colorsLink": "Adjust the brand design",
+      "language": "Post language",
+      "languageBrand": "Brand language",
+      "networks": "Networks for this flow",
+      "networksHint": "Every draft gets the same networks in approvals and the calendar.",
+      "autoAccounts": "Include connected networks automatically",
+      "autoAccountsHint": "An account you connect later joins the next drafts when it supports the format.",
+      "noAccounts": "No connected networks. Connect an account on the Networks page.",
+      "unsupported": "does not support this format",
+      "daysLabel": "Which days do we prepare?",
+      "daysHint": "Choose at least one day. Sova then creates a draft and sends it for approval.",
+      "perWeek": "About {n} drafts a week.",
+      "time": "Preparation time",
+      "autoTime": "Let Sova pick the time",
+      "autoTimeHint": "A stable slot between 07:00 and 21:45, so flows do not start in the same minute.",
+      "timezone": "Time zone: {tz}",
+      "summary": "Schedule: {days}, {time}. The finished draft goes to approval.",
+      "autoTimeShort": "time picked by Sova",
+      "alwaysReview": "Always goes to approval",
+      "collaborators": "Instagram collaborators",
+      "collaboratorsHint": "Up to three profiles. When they accept, the post also appears on their profile.",
+      "collaboratorPlaceholder": "@handle",
+      "addCollaborator": "Add",
+      "removeCollaborator": "Remove {name}",
+      "active": "Flow is active",
+      "back": "Back",
+      "next": "Next",
+      "cancel": "Cancel",
+      "save": "Save automation",
+      "saving": "Saving…",
+      "backToList": "Automate posts"
+    }
   }
 }

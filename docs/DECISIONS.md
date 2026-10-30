@@ -796,3 +796,19 @@ Odluka (faza 2 iz D-108):
 - Priča može imati više slika: Instagram i Facebook ih objavljuju redom, kao niz priča. Video u priči ide sam.
 
 Razlog: zahtev vlasnika (D-108). Jedan poziv za sve tekstove drži trošak na jednom tekstu po objavi, a stil crta Sova bez troška.
+
+## D-110 · 30.10.2026 · usvojeno · Tokovi automatizacije: tema, stil i dani pripreme; nacrt uvek na odobravanje
+
+Odluka (faza 3 iz D-108):
+
+- Tok je jedna tema sa formatom (karusel, objava ili priča), stilom, brojem slajdova, izvorom fotografija, jezikom i rasporedom pripreme: dani u nedelji i vreme u zoni brenda. Prazna polja znače „kao u dizajnu brenda” (D-109), pa promena dizajna važi za sve tokove koji nemaju svoj izbor. Brend ima najviše 50 tokova.
+- Vreme u rasporedu je vreme pripreme, ne objave. Tada Sova piše tekst (2 tokena), crta slajdove (bez troška) i šalje nacrt na odobravanje. Nacrt iz toka uvek ide na odobravanje, a vreme objave bira korisnik pri odobravanju. Kontrola kvaliteta Autopilota (D-065) samo se beleži uz nacrt i ne zaustavlja ga.
+- „Sova bira vreme” daje svakom toku stalan termin između 07:00 i 21:45 na četvrt sata, izveden iz ID-ja toka, da tokovi istog brenda ne kreću u isti minut.
+- Mreže: „automatski uključi povezane mreže” znači sve aktivne naloge koji primaju format, i one povezane kasnije. Inače idu izabrani nalozi. Nalog čija mreža ne prima format (npr. priča na LinkedIn-u) se preskače. Bez ijednog takvog naloga prolaz pada, uz obaveštenje `flow_failed`.
+- Instagram saradnici (do tri naloga) idu u `post_targets.options.collaborators`. Provider ih šalje kao `collaborators` na kontejneru objave, Reela i karusela, a priča ih nema.
+- Migracija 031: `content_flows` (tokovi), `content_flow_runs` (prolazi, jedan po toku i terminu, `unique (flow_id, slot_at)`) i `posts.flow_id`. Čita se kroz RLS (pristup brendu), a upisuje kroz service role posle provere uloge.
+- Inngest: `flows-tick` (cron na 15 min) upisuje prolaze tokova kojima je došao termin i računa sledeći termin od sada. Posle zastoja ne kreće zaostatak. `flow-run` radi jedan prolaz u tri koraka (tekst, slajdovi, nacrt), najviše dva u isto vreme po radnom prostoru. „Generiši odmah” pravi ručni prolaz. Ako za isti tok već postoji prolaz na čekanju ili u toku, vraća se taj, da dvostruki klik ne potroši tokene dvaput. Prozor napretka čita korak prolaza (`step`) na dve sekunde.
+- Poziv na akciju „DM automatizacija” je u šemi (`cta_mode`), ali je u izgledu isključen dok ne bude faze 10 (Meta dozvole za poruke).
+- Postojeći Autopilot (nedeljni nacrti iz strategije, nivoi, budžet) ostaje kakav jeste. Tokovi su poseban, jednostavniji put. Spajanje dve stvari je pitanje za kasnije, kad vlasnik vidi kako se koriste.
+
+Razlog: zahtev vlasnika (D-108). Vreme pripreme umesto vremena objave čuva odobravanje kao jedino mesto gde se objava pušta u svet.

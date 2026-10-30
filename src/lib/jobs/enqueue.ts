@@ -179,3 +179,19 @@ export async function enqueueAutopilotWeek(
 export async function enqueueBillingEvent(paymentEventId: string): Promise<void> {
   await inngest.send(events.billingWebhookReceived.create({ paymentEventId, provider: 'stripe' }))
 }
+
+/** Prolaz toka automatizacije (D-108): termin iz crona ili „Generiši odmah”. */
+export async function enqueueFlowRun(runId: string, workspaceId: string): Promise<void> {
+  try {
+    await inngest.send(events.flowRunRequested.create({ runId, workspaceId }))
+  } catch (error) {
+    logger.error('enqueue_flow_run_failed', { runId, error })
+    throw new AiError(
+      'PROVIDER_ERROR',
+      process.env.NODE_ENV === 'development'
+        ? 'Pozadinski servis nije dostupan. Pokrenite `npm run inngest:dev` pa pokušajte ponovo.'
+        : 'Pozadinski servis trenutno nije dostupan. Pokušajte ponovo za minut.',
+      { retryable: true, cause: error },
+    )
+  }
+}
