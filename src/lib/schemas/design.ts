@@ -8,6 +8,8 @@ import {
   SLIDES_MIN,
   STYLE_IDS,
 } from '@/lib/visuals/design/catalog'
+import { FONT_NAME } from '@/lib/visuals/design/font-choices'
+import { LOOK_IDS } from '@/lib/visuals/design/looks'
 
 /** Dizajn brenda i pregled stilova (D-108). */
 export const hexColorSchema = z
@@ -25,6 +27,24 @@ export const designColorsSchema = z.object({
 })
 export type DesignColorsInput = z.infer<typeof designColorsSchema>
 
+/** Google font (D-123): ime ide u URL Google Fonts-a, pa samo slova, brojevi i razmak. */
+export const fontNameSchema = z.string().trim().regex(FONT_NAME, { error: 'Nepoznat font.' })
+export const fontPairSchema = z.object({ headings: fontNameSchema, body: fontNameSchema })
+
+/** Boje i fontovi sa poslednje posete sajtu (D-123), da se sajt ne otvara pri svakom izboru. */
+export const siteVisualSchema = z.object({
+  url: z.string().max(2000),
+  at: z.string().max(40),
+  source: z.enum(['site', 'profile']),
+  primary: hexColorSchema,
+  secondary: hexColorSchema,
+  accent: hexColorSchema,
+  light: hexColorSchema,
+  dark: hexColorSchema,
+  headings: fontNameSchema,
+  body: fontNameSchema,
+})
+
 /** Ono što je sačuvano u `brands.design`; polje koje fali uzima vrednost iz profila brenda. */
 export const storedDesignSchema = z
   .object({
@@ -36,6 +56,11 @@ export const storedDesignSchema = z
     handle: z.string().trim().max(40).nullable(),
     /** sopstveni logo (D-113); bez njega slajdovi uzimaju logo sa sajta */
     logoAssetId: z.uuid(),
+    /** font koji je brend izabrao (D-123): važi u svakom stilu, umesto fonta sa sajta i fonta stila */
+    fonts: fontPairSchema,
+    /** izabrani izgled (D-123): jedan od tri predloga sa sajta ili sopstveni */
+    look: z.enum(LOOK_IDS),
+    siteVisual: siteVisualSchema,
   })
   .partial()
 export type StoredDesign = z.infer<typeof storedDesignSchema>
@@ -59,6 +84,10 @@ export const updateDesignSchema = z
       .optional(),
     /** sopstveni logo iz biblioteke (D-113); null vraća logo sa sajta */
     logoAssetId: z.uuid().nullable().optional(),
+    /** izabrani font (D-123); null vraća fontove sa sajta */
+    fonts: fontPairSchema.nullable().optional(),
+    /** izabrani izgled (D-123); null briše oznaku izbora */
+    look: z.enum(LOOK_IDS).nullable().optional(),
     /** vraća sve na podrazumevano iz profila brenda */
     reset: z.boolean().optional(),
   })
@@ -76,6 +105,8 @@ export const previewSchema = z.object({
   title: z.string().trim().min(1).max(160).optional(),
   body: z.string().trim().max(300).optional(),
   withPhoto: z.boolean().default(true),
+  /** font koji korisnik upravo bira (D-123); važi za naslov i tekst kao izabran font brenda */
+  font: fontNameSchema.optional(),
 })
 export type PreviewInput = z.infer<typeof previewSchema>
 
@@ -96,6 +127,7 @@ export const previewQuerySchema = z
       .regex(/^[0-9a-fA-F]{6}(-[0-9a-fA-F]{6}){4}$/)
       .optional(),
     photo: z.enum(['0', '1']).default('1'),
+    f: fontNameSchema.optional(),
   })
   .transform((q): PreviewInput => {
     const [primary, secondary, background, text, muted] = (q.c?.split('-') ?? []).map(
@@ -110,5 +142,6 @@ export const previewQuerySchema = z
         ? { primary: primary!, secondary: secondary!, background: background!, text: text!, muted: muted! }
         : undefined,
       withPhoto: q.photo === '1',
+      font: q.f,
     }
   })

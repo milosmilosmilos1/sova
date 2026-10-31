@@ -4,14 +4,13 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
-import { ColorsEditor } from '@/components/design/colors-editor'
 import type { DesignView } from '@/components/design/design-card'
-import { previewUrl, StylePicker } from '@/components/design/style-picker'
+import { LookPicker, type LookChoice } from '@/components/design/look-picker'
+import { StylePicker } from '@/components/design/style-picker'
 import { api } from '@/components/shared/api-client'
 import { ErrorBox } from '@/components/shared/error-box'
 import { Label } from '@/components/ui/label'
 import { PHOTO_SOURCES, POST_SIZES, type PostSize } from '@/lib/visuals/design/catalog'
-import { cn } from '@/lib/utils'
 
 import { StepFooter } from './step-footer'
 import { optionClass } from './step-welcome'
@@ -31,32 +30,17 @@ function Loading({ error }: { error: unknown }) {
   return error ? <ErrorBox error={error} /> : <div className="h-80 animate-pulse rounded-lg bg-muted" />
 }
 
-/** Korak 5: boje brenda sa pregledom tri slajda uživo. */
-export function StepColors(props: StepProps) {
-  const t = useTranslations('setup.colors')
-  const query = useDesign(props.brandId)
-  return (
-    <div className="space-y-6">
-      <div className="space-y-1">
-        <h2 className="text-xl font-semibold tracking-tight">{t('title')}</h2>
-        <p className="text-sm text-muted-foreground">{t('text')}</p>
-      </div>
-      {query.data && query.isFetchedAfterMount ? (
-        <ColorsForm key={props.brandId} {...props} initial={query.data} />
-      ) : (
-        <Loading error={query.error} />
-      )}
-    </div>
-  )
-}
-
-function ColorsForm({ brandId, canEdit, onBack, onNext, initial }: StepProps & { initial: DesignView }) {
+/**
+ * Korak 5: izgled objava (D-123). Sova je sajt upravo analizirala, pa odmah predlaže tri izgleda od
+ * njegovih boja i fontova; četvrti korisnik sastavlja od tri boje i fonta.
+ */
+export function StepColors({ brandId, canEdit, onBack, onNext }: StepProps) {
   const t = useTranslations('setup')
-  const td = useTranslations('design')
   const qc = useQueryClient()
-  const [colors, setColors] = useState(initial.colors)
+  const [choice, setChoice] = useState<LookChoice | null>(null)
   const save = useMutation({
-    mutationFn: () => api<DesignView>(`/api/brands/${brandId}/design`, { method: 'PATCH', json: { colors } }),
+    mutationFn: (body: LookChoice) =>
+      api<DesignView>(`/api/brands/${brandId}/design`, { method: 'PATCH', json: body }),
     onSuccess: (data) => {
       qc.setQueryData(['design', brandId], data)
       onNext()
@@ -64,40 +48,17 @@ function ColorsForm({ brandId, canEdit, onBack, onNext, initial }: StepProps & {
   })
   return (
     <div className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
-        <ColorsEditor value={colors} onChange={setColors} disabled={!canEdit || save.isPending} />
-        <div className="grid grid-cols-3 gap-2">
-          {(['cover', 'point', 'cta'] as const).map((kind) => (
-            <figure key={kind} className="space-y-1">
-              {/* eslint-disable-next-line @next/next/no-img-element -- dinamički pregled sa API-ja */}
-              <img
-                src={previewUrl({
-                  brandId,
-                  styleId: initial.styleId,
-                  format: initial.size,
-                  kind,
-                  colors,
-                  photo: initial.photoSource !== 'none',
-                })}
-                alt={td(`preview.${kind}`)}
-                className={cn(
-                  'w-full rounded-lg border object-cover',
-                  initial.size === 'square' ? 'aspect-square' : 'aspect-[4/5]',
-                )}
-              />
-              <figcaption className="text-center text-xs text-muted-foreground">
-                {td(`preview.${kind}`)}
-              </figcaption>
-            </figure>
-          ))}
-        </div>
+      <div className="space-y-1">
+        <h2 className="text-xl font-semibold tracking-tight">{t('colors.title')}</h2>
+        <p className="text-sm text-muted-foreground">{t('colors.text')}</p>
       </div>
+      <LookPicker brandId={brandId} canEdit={canEdit} onChoice={setChoice} />
       <ErrorBox error={save.error} />
       <StepFooter
         onBack={onBack}
         onSkip={onNext}
-        onNext={() => (canEdit ? save.mutate() : onNext())}
-        nextLabel={canEdit ? t('saveNext') : undefined}
+        onNext={() => (canEdit && choice ? save.mutate(choice) : onNext())}
+        nextLabel={canEdit && choice ? t('saveNext') : undefined}
         pending={save.isPending}
       />
     </div>

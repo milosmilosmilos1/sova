@@ -90,6 +90,7 @@ interface Page {
     timezone: string
     locale: string
     canSchedule: boolean
+    brandLook: boolean
   }
 }
 
@@ -218,7 +219,8 @@ function SetupCard({
     current && daysBetween(current.start, current.end) >= 7 ? 'current' : 'next',
   )
   const [months, setMonths] = useState(1)
-  const [look, setLook] = useState<'vivid' | 'brand'>('vivid')
+  // izabran izgled brenda (D-123) je podrazumevan; bez njega plan je šaren
+  const [look, setLook] = useState<'vivid' | 'brand'>(options.brandLook ? 'brand' : 'vivid')
   const [perWeek, setPerWeek] = useState(5)
   const [platforms, setPlatforms] = useState<SocialPlatform[]>(options.platforms)
   const [formats, setFormats] = useState<PostFormat[]>([...POST_FORMATS])
@@ -341,6 +343,13 @@ function SetupCard({
             </button>
           ))}
         </div>
+        {look === 'brand' ? (
+          <p className="text-xs text-muted-foreground">
+            <Link href="/app/brand/visual" className="text-primary hover:underline">
+              {t('setup.looks.change')}
+            </Link>
+          </p>
+        ) : null}
       </fieldset>
 
       <fieldset className="space-y-2">

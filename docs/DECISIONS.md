@@ -968,3 +968,15 @@ Odluka:
 - „Generiši ponovo” piše nov tekst i crta nove slajdove sa istim fotografijama: zahtev čeka korisnik i mora da stane u 30 sekundi. Objava bez fotografija dobija nove.
 
 Razlog: na produkciji karusel sa fotografijom na svakom slajdu (Pola-pola, Događaj) nije stao u 30 sekundi, posao je posle dva pokušaja pao i plan je stao, a tekst je naplaćen pri svakom pokušaju. Karuseli sa pet fotografija koji su prošli trajali su 25–27 sekundi, na samoj granici.
+
+## D-123 · 31.10.2026 · usvojeno · Izgled brenda: tri predloga sa sajta i sopstveni izgled
+
+Odluka:
+
+- Kartica „Izgled objava” na strani Vizuelni identitet i peti korak uvoda nude četiri izgleda. Tri pravi Sova: poseti početnu stranu sajta brenda (CSS, `theme-color`, logo, fontovi; isti alat kao analiza brenda, `readVisual`) i od nađenih boja i fontova sastavi Svetao (boje sajta na svetloj podlozi, stil Pola-pola), Taman (tamna podloga preko fotografije, stil Poster) i Punu boju (glavna boja brenda kao podloga, stil Blokovi). Četvrti sastavlja korisnik: primarna, sekundarna i tercijalna boja i font iz spiska Google fontova sa ćirilicom. Tercijalna boja je podloga, a boju teksta Sova bira sama da bude čitljiva (4,5:1).
+- Svaki izgled se vidi kao klasična objava (naslovni slajd sa fotografijom), slajd karusela i priča 9:16, preko istog pregleda kao birač stilova (`GET /api/visuals/preview`, novi parametar `f` za font).
+- Izgled je stil, pet boja i font. Izbor se čuva u dizajnu brenda (`brands.design.look`, `fonts`, `styleId`, `colors`) i važi za plan, Studio, tokove i „Generiši ponovo”. Izabran font važi u svakom stilu, i u onima koji imaju svoj font (npr. Oswald u Magazinu); veličina naslova se tada prilagođava širini slova novog fonta. Svoj font zadržavaju samo stilovi kojima je font deo izgleda: mono, beleška, film, mim i pamflet.
+- Poslednja poseta sajtu se pamti (`brands.design.siteVisual`) i važi mesec dana; birač sam poseti sajt koji još nije posećen, a „Ponovo pogledaj sajt” radi to na zahtev. Sajt koji ne može da se otvori (Cloudflare, pad) daje poruku, a predlozi ostaju iz poslednje posete ili iz analize brenda. Treća boja sa sajta ide poslednja u predloge, jer je često iz šablona sajta (zelena „uspeh”, plavi link), a ne boja brenda.
+- Vaš izbor se pravi u stilu Okvir, u kom se vide sve tri boje; sačuvan sopstveni izgled zadržava stil izabran posle njega u kartici Stilovi. Kad brend ima izabran izgled, nov mesečni plan podrazumevano koristi „Izgled brenda” umesto „Šareno”.
+
+Razlog: vlasnik traži da vizuali ne budu nasumično različiti, nego da Sova ponudi tri izgleda sa sajta i četvrti po izboru korisnika, uvek prikazan kroz klasičnu objavu i još dve vrste sadržaja.

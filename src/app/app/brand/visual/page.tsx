@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 
 import { BrandAccountHeader } from '@/components/brand/brand-account-header'
-import { DesignVisualCard } from '@/components/design/design-card'
+import { DesignLookCard, DesignVisualCard } from '@/components/design/design-card'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
@@ -13,7 +13,10 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('visual') }
 }
 
-/** Brend i nalog, kartica Vizuelni identitet (D-113): boje, logo, fotografije i format. */
+/**
+ * Brend i nalog, kartica Vizuelni identitet (D-113): izgled objava sa tri predloga sa sajta i
+ * sopstvenim izgledom (D-123), pa pojedinačne boje, logo, fotografije i format.
+ */
 export default async function BrandVisualPage() {
   const viewer = await getViewer()
   if (!viewer) redirect('/login?next=/app/brand/visual')
@@ -24,6 +27,7 @@ export default async function BrandVisualPage() {
   return (
     <div className="space-y-6">
       <BrandAccountHeader />
+      <DesignLookCard brandId={brand.id} canEdit={EDIT_ROLES.includes(current.role)} />
       <DesignVisualCard brandId={brand.id} canEdit={EDIT_ROLES.includes(current.role)} />
     </div>
   )

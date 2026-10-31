@@ -60,6 +60,8 @@ export interface StyleDef {
   /** kategorija u biraču: tipografski ili sa fotografijom */
   group: 'type' | 'photo'
   fonts: { headings: FontChoice; body: FontChoice }
+  /** font je deo izgleda stila (mono, rukopis, mim): izabrani font brenda ga ne menja (D-123) */
+  ownFonts?: true
   /** gde stil koristi fotografiju: nigde, svuda ako postoji, samo na naslovnom slajdu, na svim */
   photo: PhotoUse
   /** obrada fotografije pre rendera (sharp), npr. crno-belo za duoton i pamflet */

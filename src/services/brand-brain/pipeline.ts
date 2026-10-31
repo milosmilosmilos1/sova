@@ -3,7 +3,6 @@ import 'server-only'
 import { createHash, randomUUID } from 'node:crypto'
 
 import { fileTypeFromBuffer } from 'file-type'
-import { Vibrant } from 'node-vibrant/node'
 import robotsParser from 'robots-parser'
 import sharp from 'sharp'
 
@@ -30,13 +29,14 @@ import { composeProfile } from '@/lib/brand/compose'
 import { buildHeuristicProfile, type HeuristicPage, type HeuristicVisual } from '@/lib/brand/heuristic'
 import type { BrandProfile, Field, FieldPath, PhotoStyle } from '@/lib/brand/profile-schema'
 import { canonicalPageKey } from '@/lib/crawler/classify'
-import { buildPalette, parseCssColors, type ColorWeight, type Palette } from '@/lib/crawler/colors'
+import { buildPalette, type Palette } from '@/lib/crawler/colors'
 import { getCrawlDeps } from '@/lib/crawler/deps'
 import { discoverUrls } from '@/lib/crawler/discover'
 import { fetchPage, isFailure, type PageFailure } from '@/lib/crawler/fetch-page'
 import { extractFonts, type FontInfo } from '@/lib/crawler/fonts'
-import { fetchLogo, type LogoResult } from '@/lib/crawler/logo'
+import type { LogoResult } from '@/lib/crawler/logo'
 import { loadRobots } from '@/lib/crawler/robots'
+import { readVisual } from '@/lib/crawler/visual'
 import type { DiscoveredUrl, ExtractedPage, FeedItem, ImageRef, LogoCandidate } from '@/lib/crawler/types'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
@@ -530,50 +530,8 @@ async function stepVisual(job: AnalysisJob, prepared: PrepareResult): Promise<Vi
     return { logo: null, palette: buildPalette({ css: [], logo: [] }), fonts: extractFonts([], '') }
   }
   await setCrawlProgress(job.crawlId, { phase: 'visual' })
-  const deps = getCrawlDeps()
-  const home = prepared.home
-  const cssColors: ColorWeight[] = parseCssColors(home.inlineCss, 1.5, 'inline')
-  let allCss = home.inlineCss
-  const sheets = home.stylesheets
-    .filter((u) => !/fonts\.googleapis\.com|fonts\.gstatic\.com/.test(u))
-    .slice(0, 3)
-  for (const sheetUrl of sheets) {
-    try {
-      const res = await deps.fetch(sheetUrl, {
-        timeoutMs: 8_000,
-        maxBytes: 768 * 1024,
-        headers: { accept: 'text/css,*/*;q=0.1' },
-      })
-      if (!res.ok || res.contentType.includes('text/html')) continue
-      const css = res.body.toString('utf8')
-      allCss += `\n${css}`
-      cssColors.push(...parseCssColors(css, 1, sheetUrl))
-    } catch {
-      continue
-    }
-  }
-
-  let logoInfo: VisualStep['logo'] = null
-  const logoColors: ColorWeight[] = []
-  const logo = await fetchLogo(home.logoCandidates, deps)
-  if (logo) {
-    try {
-      const palette = await Vibrant.from(logo.png).getPalette()
-      for (const [name, swatch] of Object.entries(palette)) {
-        if (!swatch) continue
-        const weight =
-          Math.max(1, Math.log2(1 + swatch.population)) *
-          (name === 'Vibrant' ? 2 : name === 'DarkVibrant' || name === 'LightVibrant' ? 1.3 : 0.6)
-        logoColors.push({ hex: swatch.hex, weight, source: 'logo' })
-      }
-    } catch (error) {
-      logger.warn('logo_palette_failed', { crawlId: job.crawlId, error })
-    }
-    logoInfo = await storeLogo(job, logo)
-  }
-
-  const palette = buildPalette({ css: cssColors, logo: logoColors, themeColor: home.themeColor })
-  const fonts = extractFonts(home.stylesheets, allCss)
+  const { palette, fonts, logo } = await readVisual(prepared.home, getCrawlDeps())
+  const logoInfo = logo ? await storeLogo(job, logo) : null
   return { logo: logoInfo, palette, fonts }
 }
 

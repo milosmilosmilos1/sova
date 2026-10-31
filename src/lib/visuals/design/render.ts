@@ -4,8 +4,9 @@ import sharp from 'sharp'
 
 import { BUNDLED_FAMILY, loadFonts } from '../fonts'
 import { toDataUri } from '../render'
+import { fontWidth } from './font-choices'
 import { cleanSlideText, getStyle } from './index'
-import { mix } from './kit'
+import { mix, withWidthScale } from './kit'
 import {
   DESIGN_SIZES,
   type DesignColors,
@@ -26,6 +27,8 @@ export interface SlideRenderInput {
   format: DesignFormat
   colors: DesignColors
   brandFonts: { headings: string; body: string }
+  /** font je brend izabrao sam (D-123): važi u svakom stilu osim onih čiji je font deo izgleda */
+  lockFonts?: boolean
   brandName: string
   handle: string | null
   logo: string | null
@@ -51,9 +54,10 @@ function family(choice: FontChoice, brand: string): string {
 export async function renderSlide(input: SlideRenderInput): Promise<SlideRenderResult> {
   const style = getStyle(input.styleId)
   const size = DESIGN_SIZES[input.format]
+  const lock = Boolean(input.lockFonts && !style.ownFonts)
   const want = {
-    headings: family(style.fonts.headings, input.brandFonts.headings),
-    body: family(style.fonts.body, input.brandFonts.body),
+    headings: lock ? input.brandFonts.headings : family(style.fonts.headings, input.brandFonts.headings),
+    body: lock ? input.brandFonts.body : family(style.fonts.body, input.brandFonts.body),
   }
   const loaded = await loadFonts([want.headings, want.body])
   const fonts = {
@@ -72,7 +76,13 @@ export async function renderSlide(input: SlideRenderInput): Promise<SlideRenderR
     index: input.index,
     total: input.total,
   }
-  const tree = style.render(cleanSlideText(input.slide), ctx)
+  // stil sa sopstvenim fontom (npr. uski Oswald) je veličinu naslova podesio za taj font
+  const designed = style.fonts.headings
+  const scale =
+    lock && designed !== 'brand' && fonts.headings !== designed
+      ? Math.min(1.6, Math.max(0.8, fontWidth(fonts.headings) / fontWidth(designed)))
+      : 1
+  const tree = withWidthScale(scale, () => style.render(cleanSlideText(input.slide), ctx))
   const svg = await satori(tree as unknown as Parameters<typeof satori>[0], {
     width: size.width,
     height: size.height,

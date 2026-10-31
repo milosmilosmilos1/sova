@@ -16,6 +16,7 @@ import {
   type StyleId,
 } from '@/lib/visuals/design/catalog'
 import { contrast, mix, readable } from '@/lib/visuals/design/kit'
+import type { LookId } from '@/lib/visuals/design/looks'
 import type { DesignColors } from '@/lib/visuals/design/types'
 import { prepareLogoForTemplate } from '@/lib/visuals/render'
 import { getCurrentProfileRow } from '@/services/brand-brain/profile'
@@ -35,6 +36,10 @@ export interface ResolvedDesign {
   slides: number
   colors: DesignColors
   fonts: { headings: string; body: string }
+  /** font je izabrao korisnik (D-123), pa važi i u stilovima koji imaju svoj font */
+  fontsLocked: boolean
+  /** izabrani izgled (D-123); `null` dok korisnik ne izabere */
+  look: LookId | null
   handle: string | null
   brandName: string
   logoAssetId: string | null
@@ -108,7 +113,9 @@ export async function resolveDesign(
     photoSource: stored.photoSource ?? 'stock',
     slides: stored.slides ?? SLIDES_DEFAULT,
     colors: stored.colors ?? fromProfile?.colors ?? FALLBACK_COLORS,
-    fonts: fromProfile?.fonts ?? { headings: 'Inter', body: 'Inter' },
+    fonts: stored.fonts ?? fromProfile?.fonts ?? { headings: 'Inter', body: 'Inter' },
+    fontsLocked: Boolean(stored.fonts),
+    look: stored.look ?? null,
     handle: handle ? (handle.startsWith('@') ? handle : `@${handle}`) : null,
     brandName: brand.name,
     logoAssetId: stored.logoAssetId ?? profileLogo ?? brand.logo_asset_id ?? null,
@@ -129,7 +136,13 @@ export async function updateDesign(
 ): Promise<ResolvedDesign> {
   const brand = await getBrand(viewer, brandId)
   await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
-  const next: StoredDesign = input.reset ? {} : { ...storedDesign(brand) }
+  const stored = storedDesign(brand)
+  // poslednja poseta sajtu nije podešavanje, pa ostaje i posle vraćanja na podrazumevano
+  const next: StoredDesign = input.reset
+    ? stored.siteVisual
+      ? { siteVisual: stored.siteVisual }
+      : {}
+    : { ...stored }
   if (input.styleId !== undefined) next.styleId = input.styleId
   if (input.size !== undefined) next.size = input.size
   if (input.photoSource !== undefined) next.photoSource = input.photoSource
@@ -153,6 +166,14 @@ export async function updateDesign(
     const h = input.handle?.replace(/^@/, '').trim()
     if (h) next.handle = `@${h}`
     else delete next.handle
+  }
+  if (input.fonts !== undefined) {
+    if (input.fonts) next.fonts = input.fonts
+    else delete next.fonts
+  }
+  if (input.look !== undefined) {
+    if (input.look) next.look = input.look
+    else delete next.look
   }
   // upis kroz service role posle provere uloge, kao ostala podešavanja brenda
   const { data, error } = await createSupabaseAdminClient()

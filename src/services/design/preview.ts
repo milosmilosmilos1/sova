@@ -106,6 +106,9 @@ export async function renderPreview(viewer: Viewer, input: PreviewInput): Promis
   const brand = await getBrand(viewer, input.brandId)
   const design = await resolveDesign(brand)
   const colors = input.colors ?? design.colors
+  // font koji korisnik upravo bira (D-123) važi kao izabran font brenda
+  const fonts = input.font ? { headings: input.font, body: input.font } : design.fonts
+  const lockFonts = Boolean(input.font) || design.fontsLocked
   const locale = toContentLocale(brand.content_locale)
   const base = SAMPLES[locale][input.kind]
   const slide: Slide = input.title ? { ...base, title: input.title, body: input.body ?? base.body } : base
@@ -119,7 +122,8 @@ export async function renderPreview(viewer: Viewer, input: PreviewInput): Promis
         input.format,
         input.kind,
         colors,
-        design.fonts,
+        fonts,
+        lockFonts,
         design.handle,
         brand.name,
         design.logoAssetId,
@@ -138,7 +142,8 @@ export async function renderPreview(viewer: Viewer, input: PreviewInput): Promis
     slide,
     format: input.format,
     colors,
-    brandFonts: design.fonts,
+    brandFonts: fonts,
+    lockFonts,
     brandName: brand.name,
     handle: design.handle,
     logo: await logoDataUri(design.logoAssetId),

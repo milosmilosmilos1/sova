@@ -17,6 +17,7 @@ import { getTokenBalance } from '@/lib/tokens/reservation'
 import { wallClock, zonedToUtc } from '@/lib/zoned-time'
 import { assertDailyQuota } from '@/services/ai/generations'
 import { getBrand, type BrandRow } from '@/services/brands'
+import { storedDesign } from '@/services/design/brand-design'
 import type { Json } from '@/types/database'
 
 import { pendingItems, planSettings, type ItemRow, type PlanRow, type PlanSettings } from './runner'
@@ -67,6 +68,8 @@ export interface PlanPageView {
     timezone: string
     locale: string
     canSchedule: boolean
+    /** brend je izabrao izgled (D-123): nov plan podrazumevano pravi objave u njemu */
+    brandLook: boolean
   }
 }
 
@@ -170,6 +173,7 @@ export async function getPlanPage(viewer: Viewer, brandId: string): Promise<Plan
       timezone: brand.timezone,
       locale: brand.content_locale,
       canSchedule: ADMIN_ROLES.includes(membership.role),
+      brandLook: Boolean(storedDesign(brand).look),
     },
   }
 }

@@ -245,6 +245,47 @@
       "remove": "Vrati logo sa sajta",
       "hint": "PNG sa providnom pozadinom izgleda najbolje. Do 20 MB.",
       "notImage": "Izaberite sliku: PNG, JPG ili WebP."
+    },
+    "looks": {
+      "title": "Izgled objava",
+      "description": "Sova je posetila vaš sajt i od njegovih boja i fontova napravila tri izgleda. Četvrti sastavljate sami. Izabrani izgled važi za sve objave: plan, Studio i tokove.",
+      "visiting": "Sova gleda vaš sajt…",
+      "revisit": "Ponovo pogledaj sajt",
+      "fromSite": "Boje i fontovi sa sajta {site}",
+      "fromProfile": "Boje iz analize brenda, jer sajt još nije posećen",
+      "noSite": "Brend nema sajt, pa nema predloga. Sastavite svoj izgled od tri boje i fonta.",
+      "options": {
+        "site-1": {
+          "name": "Svetao",
+          "hint": "Boje sajta na svetloj podlozi, fotografija na vrhu."
+        },
+        "site-2": {
+          "name": "Taman",
+          "hint": "Tamna podloga preko fotografije i jak naglasak."
+        },
+        "site-3": {
+          "name": "Puna boja",
+          "hint": "Glavna boja brenda kao podloga, odvažni oblici."
+        },
+        "custom": {
+          "name": "Vaš izbor",
+          "hint": "Tri boje i font po vašem ukusu."
+        }
+      },
+      "kinds": {
+        "post": "Objava",
+        "carousel": "Karusel",
+        "story": "Priča"
+      },
+      "primary": "Primarna",
+      "secondary": "Sekundarna",
+      "tertiary": "Tercijalna (podloga)",
+      "tertiaryHint": "Tercijalna boja je podloga slajda. Boju teksta Sova bira sama, da bude čitljiva.",
+      "font": "Font",
+      "fontFromSite": "{font} (sa sajta)",
+      "save": "Sačuvaj izgled",
+      "saved": "Izgled je sačuvan i važi za sve nove objave.",
+      "pick": "Izaberite jedan od četiri izgleda."
     }
   },
   "flows": {
@@ -534,8 +575,8 @@
       "analysisHint": "Sajt, PDF i objave",
       "brand": "Brend",
       "brandHint": "Glas i teme",
-      "colors": "Boje",
-      "colorsHint": "Boje na slajdovima",
+      "colors": "Izgled",
+      "colorsHint": "Boje i font sa sajta",
       "style": "Stil",
       "styleHint": "Izgled objava",
       "done": "Gotovo",
@@ -603,8 +644,8 @@
       "text": "Ove reči imaju prednost nad onim što je Sova zaključila sa sajta. Teme na dnu postaju tokovi automatizacije."
     },
     "colors": {
-      "title": "Boje brenda",
-      "text": "Boje za slajdove i objave. Ako je sajt analiziran, ovde su već njegove boje."
+      "title": "Izgled objava",
+      "text": "Sova je pogledala vaš sajt i predlaže tri izgleda. Izaberite jedan ili sastavite svoj od tri boje i fonta."
     },
     "style": {
       "title": "Izgled objava",
@@ -1481,8 +1522,9 @@
       "looks": {
         "vivid": "Šareno",
         "vividHint": "Svaka objava u drugom stilu i bojama, uvek sa fotografijama koje se ne ponavljaju.",
-        "brand": "Moj stil",
-        "brandHint": "Stil i boje iz dizajna brenda, kao u „Novoj objavi”."
+        "brand": "Izgled brenda",
+        "brandHint": "Izgled koji ste izabrali za brend: isti stil, boje i font u svakoj objavi.",
+        "change": "Izgled menjate u kartici Vizuelni identitet."
       },
       "perWeek": "Objava nedeljno",
       "perWeekValue": "{n} nedeljno",

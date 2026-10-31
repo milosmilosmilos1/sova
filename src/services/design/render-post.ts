@@ -256,6 +256,7 @@ export async function renderDesignRange(
         format: input.format,
         colors,
         brandFonts: input.design.fonts,
+        lockFonts: input.design.fontsLocked,
         brandName: input.design.brandName,
         handle: input.design.handle,
         logo,

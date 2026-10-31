@@ -245,6 +245,47 @@
       "remove": "Use the website logo",
       "hint": "A PNG with a transparent background looks best. Up to 20 MB.",
       "notImage": "Choose an image: PNG, JPG or WebP."
+    },
+    "looks": {
+      "title": "Post look",
+      "description": "Sova visited your website and built three looks from its colours and fonts. You put together the fourth yourself. The chosen look applies to every post: the plan, Studio and flows.",
+      "visiting": "Sova is looking at your website…",
+      "revisit": "Look at the website again",
+      "fromSite": "Colours and fonts from {site}",
+      "fromProfile": "Colours from the brand analysis, the website has not been visited yet",
+      "noSite": "The brand has no website, so there are no suggestions. Build your own look from three colours and a font.",
+      "options": {
+        "site-1": {
+          "name": "Light",
+          "hint": "Website colours on a light background, photo on top."
+        },
+        "site-2": {
+          "name": "Dark",
+          "hint": "A dark layer over the photo and a strong accent."
+        },
+        "site-3": {
+          "name": "Full colour",
+          "hint": "The main brand colour as the background, bold shapes."
+        },
+        "custom": {
+          "name": "Your choice",
+          "hint": "Three colours and a font you pick."
+        }
+      },
+      "kinds": {
+        "post": "Post",
+        "carousel": "Carousel",
+        "story": "Story"
+      },
+      "primary": "Primary",
+      "secondary": "Secondary",
+      "tertiary": "Tertiary (background)",
+      "tertiaryHint": "The tertiary colour is the slide background. Sova picks the text colour itself so it stays readable.",
+      "font": "Font",
+      "fontFromSite": "{font} (from the website)",
+      "save": "Save look",
+      "saved": "The look is saved and applies to all new posts.",
+      "pick": "Choose one of the four looks."
     }
   },
   "flows": {
@@ -534,8 +575,8 @@
       "analysisHint": "Website, PDF and posts",
       "brand": "Brand",
       "brandHint": "Voice and topics",
-      "colors": "Colors",
-      "colorsHint": "Colors on slides",
+      "colors": "Look",
+      "colorsHint": "Colours and font from your site",
       "style": "Style",
       "styleHint": "How posts look",
       "done": "Done",
@@ -603,8 +644,8 @@
       "text": "These words take priority over what Sova concluded from the website. The topics at the bottom become automation flows."
     },
     "colors": {
-      "title": "Brand colors",
-      "text": "Colors for slides and posts. If the website was analyzed, its colors are already here."
+      "title": "Post look",
+      "text": "Sova looked at your website and suggests three looks. Pick one or build your own from three colours and a font."
     },
     "style": {
       "title": "How posts look",
@@ -1481,8 +1522,9 @@
       "looks": {
         "vivid": "Colourful",
         "vividHint": "Each post in a different style and colours, always with photos that never repeat.",
-        "brand": "My style",
-        "brandHint": "The style and colours from your brand design, as in “New post”."
+        "brand": "Brand look",
+        "brandHint": "The look you chose for the brand: the same style, colours and font in every post.",
+        "change": "Change the look in the Visual identity tab."
       },
       "perWeek": "Posts per week",
       "perWeekValue": "{n} per week",

@@ -18,6 +18,8 @@ export function previewUrl(input: {
   kind?: 'cover' | 'point' | 'cta'
   colors?: DesignColors | null
   photo?: boolean
+  /** font koji korisnik upravo bira (D-123) */
+  font?: string | null
   /** menja adresu kad se promeni nešto što server čita sam (npr. logo), da pregledač ne vrati staru sliku */
   v?: string | null
 }): string {
@@ -29,6 +31,7 @@ export function previewUrl(input: {
     photo: input.photo === false ? '0' : '1',
   })
   if (input.v) q.set('v', input.v)
+  if (input.font) q.set('f', input.font)
   if (input.colors)
     q.set(
       'c',

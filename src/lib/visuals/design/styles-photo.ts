@@ -763,6 +763,7 @@ const meme: StyleDef = {
   id: 'meme',
   group: 'photo',
   fonts: { headings: 'Oswald', body: 'Oswald' },
+  ownFonts: true,
   photo: 'all',
   render(slide, ctx) {
     const s = sc(ctx)
@@ -824,6 +825,7 @@ const film: StyleDef = {
   id: 'film',
   group: 'photo',
   fonts: { headings: 'JetBrains Mono', body: 'JetBrains Mono' },
+  ownFonts: true,
   photo: 'all',
   render(slide, ctx) {
     const s = sc(ctx)

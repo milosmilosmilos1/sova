@@ -488,6 +488,7 @@ const mono: StyleDef = {
   id: 'mono',
   group: 'type',
   fonts: { headings: 'Inter', body: 'JetBrains Mono' },
+  ownFonts: true,
   photo: 'none',
   render(slide, ctx) {
     const s = sc(ctx)
@@ -886,6 +887,7 @@ const note: StyleDef = {
   id: 'note',
   group: 'type',
   fonts: { headings: 'Caveat', body: 'brand' },
+  ownFonts: true,
   photo: 'cover',
   render(slide, ctx) {
     const s = sc(ctx)
@@ -1021,6 +1023,7 @@ const pamphlet: StyleDef = {
   id: 'pamphlet',
   group: 'type',
   fonts: { headings: 'Oswald', body: 'JetBrains Mono' },
+  ownFonts: true,
   photo: 'cover',
   photoTreatment: 'grayscale',
   render(slide, ctx) {

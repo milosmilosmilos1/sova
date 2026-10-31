@@ -25,6 +25,7 @@ import type { DesignColors } from '@/lib/visuals/design/types'
 import { cn } from '@/lib/utils'
 
 import { ColorsEditor } from './colors-editor'
+import { LookPicker, type LookChoice } from './look-picker'
 import { previewUrl, StylePicker } from './style-picker'
 
 export interface DesignView {
@@ -138,8 +139,15 @@ export function DesignVisualCard({ brandId, canEdit }: { brandId: string; canEdi
   const query = useDesign(brandId)
   return (
     <DesignShell title={t('visual.title')} description={t('visual.description')} query={query}>
-      {/* obrazac se puni podacima pri prikazu; drugi brend dobija novi obrazac (key), bez efekta */}
-      {(data) => <VisualEditor key={brandId} brandId={brandId} canEdit={canEdit} initial={data} />}
+      {/* obrazac se puni podacima pri prikazu; drugi brend ili izabran izgled (D-123) daje novi obrazac */}
+      {(data) => (
+        <VisualEditor
+          key={`${brandId}:${JSON.stringify([data.colors, data.styleId])}`}
+          brandId={brandId}
+          canEdit={canEdit}
+          initial={data}
+        />
+      )}
     </DesignShell>
   )
 }
@@ -444,5 +452,56 @@ function StylesEditor({
         disabled={disabled}
       />
     </div>
+  )
+}
+
+/**
+ * Izgled objava (D-123): tri predloga sa sajta i sopstveni izgled; izbor menja stil, boje i font
+ * brenda odjednom, pa važi za plan, Studio i tokove.
+ */
+export function DesignLookCard({ brandId, canEdit }: { brandId: string; canEdit: boolean }) {
+  const t = useTranslations('design.looks')
+  const td = useTranslations('design')
+  const qc = useQueryClient()
+  const [choice, setChoice] = useState<LookChoice | null>(null)
+  const [savedAt, setSavedAt] = useState(0)
+  const save = useSaveDesign(brandId, () => {
+    setSavedAt(Date.now())
+    setChoice(null)
+    void qc.invalidateQueries({ queryKey: ['looks', brandId] })
+  })
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="text-lg">{t('title')}</CardTitle>
+        <CardDescription>{t('description')}</CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <LookPicker
+          brandId={brandId}
+          canEdit={canEdit}
+          onChoice={(next) => {
+            setChoice(next)
+            setSavedAt(0)
+          }}
+        />
+        <ErrorBox error={save.error} />
+        <div className="flex flex-wrap items-center gap-3">
+          <Button
+            disabled={!canEdit || !choice || save.isPending}
+            onClick={() => choice && save.mutate({ ...choice })}
+          >
+            {save.isPending ? td('saving') : t('save')}
+          </Button>
+          {savedAt && !save.isPending && !save.error ? (
+            <span role="status" className="text-sm text-muted-foreground">
+              {t('saved')}
+            </span>
+          ) : !choice && canEdit ? (
+            <span className="text-sm text-muted-foreground">{t('pick')}</span>
+          ) : null}
+        </div>
+      </CardContent>
+    </Card>
   )
 }

@@ -35,6 +35,21 @@ export const px = (n: number) => `${Math.round(n)}px`
 /** Razmera prema širini 1080 (priča i kvadrat imaju istu širinu). */
 export const sc = (ctx: DesignContext) => ctx.size.width / 1080
 
+let widthScale = 1
+
+/**
+ * Crtanje stila kad font brenda zameni font za koji je stil podesio širinu slova (D-123): `fit`
+ * tada množi procenu širine. Crtanje stabla je sinhrono, pa podešavanje važi samo za taj poziv.
+ */
+export function withWidthScale<T>(scale: number, draw: () => T): T {
+  widthScale = scale
+  try {
+    return draw()
+  } finally {
+    widthScale = 1
+  }
+}
+
 /**
  * Najveća veličina fonta pri kojoj tekst staje u zadati prostor. Širina slova je procena po vrsti
  * fonta (uži za kondenzovan, širi za mono), a broj redova se računa po rečima.
@@ -44,7 +59,7 @@ export function fit(
   opts: { max: number; min: number; width: number; height: number; lineHeight?: number; charWidth?: number },
 ): number {
   const lineHeight = opts.lineHeight ?? 1.1
-  const charWidth = opts.charWidth ?? 0.56
+  const charWidth = (opts.charWidth ?? 0.56) * widthScale
   const words = value.split(/\s+/).filter(Boolean)
   for (let size = opts.max; size > opts.min; size -= 2) {
     const perLine = Math.max(1, Math.floor(opts.width / (size * charWidth)))
