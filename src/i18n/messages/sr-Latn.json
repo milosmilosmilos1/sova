@@ -248,27 +248,39 @@
     },
     "looks": {
       "title": "Izgled objava",
-      "description": "Sova je posetila vaš sajt i od njegovih boja i fontova napravila tri izgleda. Četvrti sastavljate sami. Izabrani izgled važi za sve objave: plan, Studio i tokove.",
+      "description": "Sova je posetila vaš sajt i od njegovih boja i fontova napravila tri svetle i tri tamne teme. Sedmu sastavljate sami. Izabrana tema važi za sve objave: plan, Studio i tokove.",
       "visiting": "Sova gleda vaš sajt…",
       "revisit": "Ponovo pogledaj sajt",
       "fromSite": "Boje i fontovi sa sajta {site}",
       "fromProfile": "Boje iz analize brenda, jer sajt još nije posećen",
       "noSite": "Brend nema sajt, pa nema predloga. Sastavite svoj izgled od tri boje i fonta.",
       "options": {
-        "site-1": {
-          "name": "Svetao",
-          "hint": "Boje sajta na svetloj podlozi, fotografija na vrhu."
+        "light-1": {
+          "name": "Svetla klasična",
+          "hint": "Fotografija na vrhu, boje sajta na svetloj podlozi."
         },
-        "site-2": {
-          "name": "Taman",
-          "hint": "Tamna podloga preko fotografije i jak naglasak."
+        "light-2": {
+          "name": "Svetla razigrana",
+          "hint": "Bela kartica sa trakama i krugovi u bojama brenda."
         },
-        "site-3": {
-          "name": "Puna boja",
-          "hint": "Glavna boja brenda kao podloga, odvažni oblici."
+        "light-3": {
+          "name": "Svetla meka",
+          "hint": "Nežna nijansa boje brenda i meki prelivi."
+        },
+        "dark-1": {
+          "name": "Tamna sa fotografijom",
+          "hint": "Fotografija preko celog slajda pod tamnim velom."
+        },
+        "dark-2": {
+          "name": "Tamna u boji brenda",
+          "hint": "Tamna boja brenda kao podloga, odvažni oblici."
+        },
+        "dark-3": {
+          "name": "Tamna klasična",
+          "hint": "Fotografija na vrhu, tamna podloga ispod."
         },
         "custom": {
-          "name": "Vaš izbor",
+          "name": "Vaša tema",
           "hint": "Tri boje i font po vašem ukusu."
         }
       },
@@ -283,9 +295,12 @@
       "tertiaryHint": "Tercijalna boja je podloga slajda. Boju teksta Sova bira sama, da bude čitljiva.",
       "font": "Font",
       "fontFromSite": "{font} (sa sajta)",
-      "save": "Sačuvaj izgled",
-      "saved": "Izgled je sačuvan i važi za sve nove objave.",
-      "pick": "Izaberite jedan od četiri izgleda."
+      "save": "Sačuvaj temu",
+      "saved": "Tema je sačuvana i važi za sve nove objave.",
+      "pick": "Izaberite jednu od sedam tema.",
+      "lightGroup": "Svetle teme",
+      "darkGroup": "Tamne teme",
+      "customGroup": "Po vašem izboru"
     }
   },
   "flows": {
@@ -645,7 +660,7 @@
     },
     "colors": {
       "title": "Izgled objava",
-      "text": "Sova je pogledala vaš sajt i predlaže tri izgleda. Izaberite jedan ili sastavite svoj od tri boje i fonta."
+      "text": "Sova je pogledala vaš sajt i predlaže tri svetle i tri tamne teme. Izaberite jednu ili sastavite svoju od tri boje i fonta."
     },
     "style": {
       "title": "Izgled objava",

@@ -9,7 +9,7 @@ import {
   STYLE_IDS,
 } from '@/lib/visuals/design/catalog'
 import { FONT_NAME } from '@/lib/visuals/design/font-choices'
-import { LOOK_IDS } from '@/lib/visuals/design/looks'
+import { LEGACY_LOOK_IDS, LOOK_IDS } from '@/lib/visuals/design/looks'
 
 /** Dizajn brenda i pregled stilova (D-108). */
 export const hexColorSchema = z
@@ -58,8 +58,8 @@ export const storedDesignSchema = z
     logoAssetId: z.uuid(),
     /** font koji je brend izabrao (D-123): važi u svakom stilu, umesto fonta sa sajta i fonta stila */
     fonts: fontPairSchema,
-    /** izabrani izgled (D-123): jedan od tri predloga sa sajta ili sopstveni */
-    look: z.enum(LOOK_IDS),
+    /** izabrani izgled (D-123): jedna od šest tema sa sajta ili sopstveni; stare oznake se prevode */
+    look: z.preprocess((v) => (typeof v === 'string' ? (LEGACY_LOOK_IDS[v] ?? v) : v), z.enum(LOOK_IDS)),
     siteVisual: siteVisualSchema,
   })
   .partial()

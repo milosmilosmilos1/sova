@@ -11,7 +11,7 @@ import { resetMemoryRateLimit } from '@/lib/ratelimit'
 import { safeFetch } from '@/lib/ssrf'
 import { configureFontLoader } from '@/lib/visuals/fonts'
 import { LOOK_FONTS } from '@/lib/visuals/design/font-choices'
-import { contrast } from '@/lib/visuals/design/kit'
+import { contrast, luminance } from '@/lib/visuals/design/kit'
 import { resolveDesign } from '@/services/design/brand-design'
 import { renderDesignSlides } from '@/services/design/render-post'
 
@@ -21,8 +21,9 @@ import { admin, call, createTestUser, deleteTestUser, type TestUser } from './he
 
 /**
  * Izgled brenda (D-123): Sova poseti sajt (lažni fixture-site.test: narandžasta #ff6600, teget
- * #003366, naslovi u Playfair Display-u, tekst u Poppins-u), napravi tri predloga, a korisnik bira jedan ili sastavlja
- * svoj. Izabran font važi u svakom stilu, a nov plan podrazumevano uzima izgled brenda.
+ * #003366, naslovi u Playfair Display-u, tekst u Poppins-u), napravi tri svetle i tri tamne teme, a
+ * korisnik bira jednu ili sastavlja svoju. Izabran font važi u svakom stilu, a nov plan
+ * podrazumevano uzima izgled brenda.
  */
 interface LookOption {
   id: string
@@ -88,7 +89,7 @@ const looks = (method: 'GET' | 'POST') =>
   })
 
 describe('izgled brenda sa sajta (D-123)', () => {
-  it('pre posete: predloga nema, birač zna da treba da poseti sajt; sopstveni izgled je u Okviru', async () => {
+  it('pre posete: tema nema, birač zna da treba da poseti sajt; sopstvena tema je u Okviru', async () => {
     const r = await looks('GET')
     expect(r.status).toBe(200)
     expect(r.json.data).toMatchObject({ site: null, visit: true, current: null, siteError: null })
@@ -97,17 +98,19 @@ describe('izgled brenda sa sajta (D-123)', () => {
     expect(r.json.data!.fonts).toEqual(expect.arrayContaining([...LOOK_FONTS]))
   })
 
-  it('poseta sajtu: tri predloga u bojama i fontovima sajta, zapamćeni za sledeći put', async () => {
+  it('poseta sajtu: tri svetle i tri tamne teme u bojama i fontovima sajta, zapamćene za sledeći put', async () => {
     const r = await looks('POST')
     expect(r.status).toBe(200)
     const view = r.json.data!
     expect(view.site?.source).toBe('site')
     expect(view.visit).toBe(false)
     const options = view.site!.options
-    expect(options.map((o) => o.id)).toEqual(['site-1', 'site-2', 'site-3'])
-    expect(new Set(options.map((o) => o.styleId)).size).toBe(3)
-    // boje sa sajta: narandžasta je podloga trećeg, teget ili narandžasta su naglasci
-    expect(options[2]!.colors.background).toBe('#FF6600')
+    expect(options.map((o) => o.id)).toEqual(['light-1', 'light-2', 'light-3', 'dark-1', 'dark-2', 'dark-3'])
+    expect(new Set(options.map((o) => o.styleId)).size).toBe(5)
+    // tri svetle podloge i tri tamne; narandžasta sa sajta je naglasak svetlih tema
+    for (const o of options.slice(0, 3)) expect(luminance(o.colors.background)).toBeGreaterThan(0.6)
+    for (const o of options.slice(3)) expect(luminance(o.colors.background)).toBeLessThan(0.2)
+    expect(options[0]!.colors.primary).toBe('#FF6600')
     expect(options.flatMap((o) => [o.colors.primary, o.colors.secondary])).toContain('#FF6600')
     for (const o of options) {
       expect(contrast(o.colors.text, o.colors.background)).toBeGreaterThanOrEqual(4.5)
@@ -125,9 +128,9 @@ describe('izgled brenda sa sajta (D-123)', () => {
     expect(again.json.data!.visit).toBe(false)
   })
 
-  it('izbor predloga menja stil, boje i font brenda; font važi i u stilu sa svojim fontom', async () => {
+  it('izbor teme menja stil, boje i font brenda; font važi i u stilu sa svojim fontom', async () => {
     const view = (await looks('GET')).json.data!
-    const dark = view.site!.options[1]!
+    const dark = view.site!.options.find((o) => o.id === 'dark-1')!
     const r = await call<{ styleId: string; look: string; fontsLocked: boolean }>(
       designPatch,
       `/api/brands/${brandId}/design`,
@@ -139,8 +142,8 @@ describe('izgled brenda sa sajta (D-123)', () => {
       },
     )
     expect(r.status).toBe(200)
-    expect(r.json.data).toMatchObject({ styleId: dark.styleId, look: 'site-2', fontsLocked: true })
-    expect((await looks('GET')).json.data!.current).toBe('site-2')
+    expect(r.json.data).toMatchObject({ styleId: dark.styleId, look: 'dark-1', fontsLocked: true })
+    expect((await looks('GET')).json.data!.current).toBe('dark-1')
     const { data: brand } = await admin.from('brands').select('*').eq('id', brandId).single()
     const design = await resolveDesign(brand!)
     expect(design.fonts).toEqual({ headings: 'Playfair Display', body: 'Poppins' })
@@ -234,12 +237,12 @@ describe('izgled brenda sa sajta (D-123)', () => {
     expect(Object.keys(data!.design as object)).toEqual(['siteVisual'])
   })
 
-  it('sajt koji ne može da se otvori: poruka, a predlozi iz poslednje posete ostaju', async () => {
+  it('sajt koji ne može da se otvori: poruka, a teme iz poslednje posete ostaju', async () => {
     await admin.from('brands').update({ website_url: 'https://down-site.test' }).eq('id', brandId)
     const r = await looks('POST')
     expect(r.status).toBe(200)
     expect(r.json.data!.siteError).toMatch(/nije mogao da se otvori/)
-    expect(r.json.data!.site?.options).toHaveLength(3)
+    expect(r.json.data!.site?.options).toHaveLength(6)
     await admin.from('brands').update({ website_url: null }).eq('id', brandId)
     const none = await looks('POST')
     expect(none.status).toBe(400)

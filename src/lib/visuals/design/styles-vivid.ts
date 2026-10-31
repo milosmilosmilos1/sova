@@ -670,13 +670,15 @@ const aurora: StyleDef = {
     const dark = isDark(t.bg)
     const inner = W(ctx, p) - 112 * s
     const phH = Hd * byFormat(ctx, { portrait: 0.3, square: 0.24, story: 0.34 })
+    // na svetloj podlozi prelivi su blaži (svetla meka tema, D-123), na tamnoj pune jačine
+    const strength = dark ? 0.95 : 0.6
     const glow = (x: number, y: number, color: string, reach: number) =>
       shape({
         left: 0,
         top: 0,
         width: px(Wd),
         height: px(Hd),
-        backgroundImage: `radial-gradient(circle at ${x}% ${y}%, ${alpha(color, 0.95)} 0%, ${alpha(color, 0)} ${reach}%)`,
+        backgroundImage: `radial-gradient(circle at ${x}% ${y}%, ${alpha(color, strength)} 0%, ${alpha(color, 0)} ${reach}%)`,
       })
     const titleSize = fit(slide.title, {
       max: (slide.kind === 'point' ? 84 : 98) * s,

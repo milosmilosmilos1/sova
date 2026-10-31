@@ -3,12 +3,23 @@ import { contrast, hexToHsl, hslToHex, luminance, mix, readable } from './kit'
 import type { DesignColors } from './types'
 
 /**
- * Izgled brenda (D-123): Sova poseti sajt i od njegovih boja i fontova napravi tri predloga, a
- * četvrti sastavlja korisnik od tri boje i fonta. Izgled je stil, pet boja i font; izabrani važi
- * za sve objave (plan, Studio, tokovi). Sme u klijentski kod: birač računa boje svog izbora sam.
+ * Izgled brenda (D-123): Sova poseti sajt i od njegovih boja i fontova napravi tri svetle i tri
+ * tamne teme, a sedmu sastavlja korisnik od tri boje i fonta. Izgled je stil, pet boja i font;
+ * izabrani važi za sve objave (plan, Studio, tokovi). Sme u klijentski kod: birač računa boje
+ * sopstvenog izgleda sam.
  */
-export const LOOK_IDS = ['site-1', 'site-2', 'site-3', 'custom'] as const
+export const LIGHT_LOOK_IDS = ['light-1', 'light-2', 'light-3'] as const
+export const DARK_LOOK_IDS = ['dark-1', 'dark-2', 'dark-3'] as const
+export const LOOK_IDS = [...LIGHT_LOOK_IDS, ...DARK_LOOK_IDS, 'custom'] as const
 export type LookId = (typeof LOOK_IDS)[number]
+export type SiteLookId = Exclude<LookId, 'custom'>
+
+/** Oznake iz prve verzije (tri predloga), da sačuvan dizajn ne izgubi izbor. */
+export const LEGACY_LOOK_IDS: Record<string, LookId> = {
+  'site-1': 'light-1',
+  'site-2': 'dark-1',
+  'site-3': 'dark-2',
+}
 
 /** Boje i fontovi sa sajta, kako ih je Sova našla pri poslednjoj poseti. */
 export interface SiteVisual {
@@ -33,22 +44,35 @@ export interface LookOption {
   fonts: { headings: string; body: string }
 }
 
-/** Stil svakog predloga: svetao sa fotografijom na vrhu, taman preko fotografije i odvažan u punoj boji. */
-export const SITE_LOOK_STYLES: Record<Exclude<LookId, 'custom'>, StyleId> = {
-  'site-1': 'split',
-  'site-2': 'poster',
-  'site-3': 'blocks',
+/**
+ * Stil svake teme. Svetle: fotografija na vrhu, bela kartica sa trakama i meki prelivi na nijansi
+ * boje brenda. Tamne: fotografija pod tamnim velom, odvažni oblici na tamnoj boji brenda i
+ * fotografija na vrhu sa tamnim delom ispod.
+ */
+export const SITE_LOOK_STYLES: Record<SiteLookId, StyleId> = {
+  'light-1': 'split',
+  'light-2': 'sticker',
+  'light-3': 'aurora',
+  'dark-1': 'poster',
+  'dark-2': 'blocks',
+  'dark-3': 'split',
 }
 
-/** Stil za sopstveni izgled kad brend još nema svoj: klasična objava sa fotografijom u okviru. */
+/** Stil za sopstveni izgled: klasična objava sa fotografijom u okviru, u kom se vide sve tri boje. */
 export const CUSTOM_LOOK_STYLE: StyleId = 'framed'
 
 const HEX = /^#[0-9a-fA-F]{6}$/
 const hex = (value: string, fallback: string) => (HEX.test(value) ? value.toUpperCase() : fallback)
 
-/** Prva boja koja se dovoljno vidi na podlozi; inače rezerva. */
+/** Prava boja, ne siva, skoro bela ili skoro crna (krem sa sajta nije naglasak). */
+function chromatic(color: string): boolean {
+  const [, s, l] = hexToHsl(color)
+  return s >= 0.2 && l >= 0.12 && l <= 0.88
+}
+
+/** Prva prava boja koja se dovoljno vidi na podlozi; inače rezerva. */
 function visibleOn(bg: string, candidates: string[], min: number, fallback: string): string {
-  return candidates.find((c) => contrast(c, bg) >= min) ?? fallback
+  return candidates.find((c) => chromatic(c) && contrast(c, bg) >= min) ?? fallback
 }
 
 /** Boja brenda sa malo više života kad je sajt sivkast (logo i dugmad su često jedine boje). */
@@ -58,11 +82,24 @@ function lively(color: string, fallbackHue: number): string {
   return hslToHex(s >= 0.05 ? h : fallbackHue, 0.55, Math.min(0.5, Math.max(0.35, l)))
 }
 
+function look(
+  id: SiteLookId,
+  fonts: LookOption['fonts'],
+  colors: Omit<DesignColors, 'muted'>,
+  muted: number,
+): LookOption {
+  return {
+    id,
+    styleId: SITE_LOOK_STYLES[id],
+    fonts,
+    colors: { ...colors, muted: mix(colors.text, colors.background, muted) },
+  }
+}
+
 /**
- * Tri predloga sa sajta. Svetli zadržava boje sajta na beloj (ili svetloj sa sajta) podlozi, tamni
- * stavlja jak naglasak na tamnu podlogu, a treći uzima glavnu boju brenda za podlogu. Tekst je
- * uvek čitljiv (4,5:1), a naglasak vidljiv na svojoj podlozi. Treća boja sa sajta (`accent`) ide
- * poslednja: često je iz šablona sajta (zelena „uspeh”, plavi link), a ne boja brenda.
+ * Šest tema sa sajta. Tekst je uvek čitljiv (4,5:1), a naglasak vidljiv na svojoj podlozi i uvek
+ * prava boja brenda. Treća boja sa sajta (`accent`) ide poslednja: često je iz šablona sajta
+ * (zelena „uspeh”, plavi link), a ne boja brenda.
  */
 export function siteLooks(v: SiteVisual): LookOption[] {
   const primary = lively(hex(v.primary, '#2563EB'), 222)
@@ -70,70 +107,56 @@ export function siteLooks(v: SiteVisual): LookOption[] {
   const accent = hex(v.accent, mix(primary, '#FFFFFF', 0.3))
   const fonts = { headings: v.headings || 'Inter', body: v.body || v.headings || 'Inter' }
   const [hue, sat] = hexToHsl(primary)
-
-  const light = HEX.test(v.light) && luminance(v.light) > 0.8 ? v.light.toUpperCase() : '#FFFFFF'
-  const lightText = readable(light, hex(v.dark, '#111827'))
-  const lightAccent = visibleOn(light, [primary, secondary, accent], 2.2, hslToHex(hue, sat, 0.38))
-
-  const dark = HEX.test(v.dark) && luminance(v.dark) < 0.04 ? v.dark.toUpperCase() : hslToHex(hue, 0.45, 0.1)
-  const darkText = readable(dark, '#F8FAFC')
-  // glavna boja brenda u svetlijoj nijansi, da se vidi na tamnom
+  const brandDark = hslToHex(hue, Math.max(sat, 0.5), 0.36)
   const brandGlow = hslToHex(hue, Math.max(sat, 0.55), 0.62)
-  const glow = visibleOn(dark, [secondary, brandGlow, primary, accent], 3, hslToHex(hue, 0.85, 0.66))
-  const darkSecond = visibleOn(
-    dark,
-    [brandGlow, primary, secondary, accent].filter((c) => c !== glow),
-    2,
-    mix(glow, darkText, 0.5),
-  )
+  const complement = hslToHex(hue + 180, 0.8, 0.55)
 
-  const solid = primary
-  const solidText = readable(solid)
-  const pop = visibleOn(solid, [secondary, light, accent, hslToHex(hue + 180, 0.85, 0.62)], 1.8, solidText)
-  const solidSecond = visibleOn(
-    solid,
-    [light, secondary, accent].filter((c) => c !== pop),
-    1.5,
-    mix(solid, solidText, 0.4),
-  )
+  // svetle podloge: svetla sa sajta (ili bela), bela i nežna nijansa boje brenda
+  const siteLight = HEX.test(v.light) && luminance(v.light) > 0.8 ? v.light.toUpperCase() : '#FFFFFF'
+  const tint = hslToHex(hue, Math.min(0.75, Math.max(sat, 0.45)), 0.94)
+  const ink = hex(v.dark, '#111827')
+  // tamne podloge: tamna sa sajta (ili tamna nijansa brenda) i duboka boja brenda
+  const siteDark =
+    HEX.test(v.dark) && luminance(v.dark) < 0.04 ? v.dark.toUpperCase() : hslToHex(hue, 0.4, 0.09)
+  const deep = luminance(primary) < 0.1 ? primary : hslToHex(hue, Math.max(sat, 0.5), 0.15)
+
+  const onLight = (bg: string) => {
+    const main = visibleOn(bg, [primary, secondary, accent], 2.2, brandDark)
+    const second = visibleOn(
+      bg,
+      [secondary, primary, accent, complement].filter((c) => c !== main),
+      1.6,
+      mix(main, '#FFFFFF', 0.35),
+    )
+    return { primary: main, secondary: second, background: bg, text: readable(bg, ink) }
+  }
+  const onDark = (bg: string) => {
+    const main = visibleOn(bg, [primary, secondary, brandGlow, accent], 3, brandGlow)
+    const second = visibleOn(
+      bg,
+      [secondary, brandGlow, accent, complement].filter((c) => c !== main),
+      2,
+      mix(main, '#FFFFFF', 0.4),
+    )
+    return { primary: main, secondary: second, background: bg, text: readable(bg, '#F8FAFC') }
+  }
+  // tamna boja brenda je podloga, pa naglasak traži svetliju boju ili svetlu sa sajta
+  const onDeep = () => {
+    const text = readable(deep)
+    const main = visibleOn(deep, [secondary, brandGlow, accent, complement], 1.8, siteLight)
+    const second =
+      [siteLight, secondary, accent].find((c) => c !== main && contrast(c, deep) >= 1.5) ??
+      mix(deep, text, 0.4)
+    return { primary: main, secondary: second, background: deep, text }
+  }
 
   return [
-    {
-      id: 'site-1',
-      styleId: SITE_LOOK_STYLES['site-1'],
-      fonts,
-      colors: {
-        primary: lightAccent,
-        secondary: lightAccent === primary ? secondary : primary,
-        background: light,
-        text: lightText,
-        muted: mix(lightText, light, 0.4),
-      },
-    },
-    {
-      id: 'site-2',
-      styleId: SITE_LOOK_STYLES['site-2'],
-      fonts,
-      colors: {
-        primary: glow,
-        secondary: darkSecond,
-        background: dark,
-        text: darkText,
-        muted: mix(darkText, dark, 0.35),
-      },
-    },
-    {
-      id: 'site-3',
-      styleId: SITE_LOOK_STYLES['site-3'],
-      fonts,
-      colors: {
-        primary: pop,
-        secondary: solidSecond,
-        background: solid,
-        text: solidText,
-        muted: mix(solidText, solid, 0.3),
-      },
-    },
+    look('light-1', fonts, onLight(siteLight), 0.4),
+    look('light-2', fonts, onLight('#FFFFFF'), 0.4),
+    look('light-3', fonts, onLight(tint), 0.4),
+    look('dark-1', fonts, onDark(siteDark), 0.35),
+    look('dark-2', fonts, onDeep(), 0.3),
+    look('dark-3', fonts, onDark(siteDark), 0.35),
   ]
 }
 

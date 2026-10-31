@@ -148,9 +148,55 @@ function ColorField({
   )
 }
 
+const cardClass = (active: boolean) =>
+  cn(
+    'min-w-0 space-y-3 rounded-xl border p-3 transition-colors',
+    active ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'bg-card',
+  )
+
+/** Tema sa sajta: naziv, boje i font, pa objava, karusel i priča u toj temi. */
+function OptionCard({
+  brandId,
+  option,
+  selected,
+  disabled,
+  onSelect,
+}: {
+  brandId: string
+  option: LookOption
+  selected: boolean
+  disabled: boolean
+  onSelect: () => void
+}) {
+  const t = useTranslations('design.looks')
+  const name = t(`options.${option.id}.name`)
+  return (
+    <div className={cardClass(selected)}>
+      <button
+        type="button"
+        role="radio"
+        aria-checked={selected}
+        disabled={disabled}
+        onClick={onSelect}
+        className="block w-full space-y-3 text-left disabled:cursor-not-allowed"
+      >
+        <span className="flex items-start justify-between gap-2">
+          <span className="space-y-0.5">
+            <span className="block font-medium">{name}</span>
+            <span className="block text-xs text-muted-foreground">{t(`options.${option.id}.hint`)}</span>
+          </span>
+          {selected ? <Check className="size-5 shrink-0 text-primary" aria-hidden /> : null}
+        </span>
+        <Swatches colors={option.colors} font={option.fonts.headings} />
+        <Previews brandId={brandId} option={option} label={name} />
+      </button>
+    </div>
+  )
+}
+
 /**
- * Izbor izgleda (D-123): tri predloga od boja i fontova sa sajta brenda i četvrti po izboru
- * korisnika (primarna, sekundarna i tercijalna boja i font). Svaki izgled se vidi kao klasična
+ * Izbor izgleda (D-123): tri svetle i tri tamne teme od boja i fontova sa sajta brenda i sedma po
+ * izboru korisnika (primarna, sekundarna i tercijalna boja i font). Svaka tema se vidi kao klasična
  * objava, slajd karusela i priča. Sajt koji Sova još nije posetila poseti se pri prvom otvaranju.
  */
 export function LookPicker({
@@ -265,11 +311,6 @@ function LookOptions({
     setCustom(next)
     choose('custom', next)
   }
-  const card = (active: boolean) =>
-    cn(
-      'min-w-0 space-y-3 rounded-xl border p-3 transition-colors',
-      active ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'bg-card',
-    )
 
   return (
     <div className="space-y-4">
@@ -305,96 +346,107 @@ function LookOptions({
       ) : null}
       <ErrorBox error={visitError} />
 
-      <div role="radiogroup" aria-label={t('title')} className="grid items-start gap-4 lg:grid-cols-2">
-        {options.map((o) => {
-          const name = t(`options.${o.id}.name`)
-          return (
-            <div key={o.id} className={card(selected === o.id)}>
+      <div role="radiogroup" aria-label={t('title')} className="space-y-6">
+        {(
+          [
+            ['lightGroup', options.filter((o) => o.id.startsWith('light-'))],
+            ['darkGroup', options.filter((o) => o.id.startsWith('dark-'))],
+          ] as const
+        ).map(([group, list]) =>
+          list.length ? (
+            <section key={group} className="space-y-3">
+              <h3 className="text-sm font-medium">{t(group)}</h3>
+              <div className="grid items-start gap-4 md:grid-cols-2 xl:grid-cols-3">
+                {list.map((o) => (
+                  <OptionCard
+                    key={o.id}
+                    brandId={brandId}
+                    option={o}
+                    selected={selected === o.id}
+                    disabled={disabled}
+                    onSelect={() => choose(o.id)}
+                  />
+                ))}
+              </div>
+            </section>
+          ) : null,
+        )}
+
+        <section className="space-y-3">
+          <h3 className="text-sm font-medium">{t('customGroup')}</h3>
+          <div
+            className={cn(
+              cardClass(selected === 'custom'),
+              'grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]',
+            )}
+          >
+            <div className="space-y-3">
               <button
                 type="button"
                 role="radio"
-                aria-checked={selected === o.id}
+                aria-checked={selected === 'custom'}
                 disabled={disabled}
-                onClick={() => choose(o.id)}
-                className="block w-full space-y-3 text-left disabled:cursor-not-allowed"
+                onClick={() => choose('custom')}
+                className="flex w-full items-start justify-between gap-2 text-left disabled:cursor-not-allowed"
               >
-                <span className="flex items-start justify-between gap-2">
-                  <span className="space-y-0.5">
-                    <span className="block font-medium">{name}</span>
-                    <span className="block text-xs text-muted-foreground">{t(`options.${o.id}.hint`)}</span>
-                  </span>
-                  {selected === o.id ? <Check className="size-5 shrink-0 text-primary" aria-hidden /> : null}
+                <span className="space-y-0.5">
+                  <span className="block font-medium">{t('options.custom.name')}</span>
+                  <span className="block text-xs text-muted-foreground">{t('options.custom.hint')}</span>
                 </span>
-                <Swatches colors={o.colors} font={o.fonts.headings} />
-                <Previews brandId={brandId} option={o} label={name} />
+                {selected === 'custom' ? (
+                  <Check className="size-5 shrink-0 text-primary" aria-hidden />
+                ) : null}
               </button>
+              <div className="space-y-2">
+                <ColorField
+                  id={`look-primary-${brandId}`}
+                  label={t('primary')}
+                  value={custom.primary}
+                  onChange={(v) => edit({ primary: v })}
+                  disabled={disabled}
+                />
+                <ColorField
+                  id={`look-secondary-${brandId}`}
+                  label={t('secondary')}
+                  value={custom.secondary}
+                  onChange={(v) => edit({ secondary: v })}
+                  disabled={disabled}
+                />
+                <ColorField
+                  id={`look-tertiary-${brandId}`}
+                  label={t('tertiary')}
+                  value={custom.tertiary}
+                  onChange={(v) => edit({ tertiary: v })}
+                  disabled={disabled}
+                />
+                <div className="flex items-center gap-2">
+                  <label htmlFor={`look-font-${brandId}`} className="w-24 shrink-0 text-sm sm:w-36">
+                    {t('font')}
+                  </label>
+                  <select
+                    id={`look-font-${brandId}`}
+                    value={custom.font}
+                    disabled={disabled}
+                    onChange={(e) => edit({ font: e.target.value })}
+                    className="h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-sm"
+                  >
+                    {view.fonts.map((f) => (
+                      <option key={f} value={f}>
+                        {view.site && (f === options[0]?.fonts.headings || f === options[0]?.fonts.body)
+                          ? t('fontFromSite', { font: f })
+                          : f}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <p className="text-xs text-muted-foreground">{t('tertiaryHint')}</p>
+              </div>
             </div>
-          )
-        })}
-
-        <div className={card(selected === 'custom')}>
-          <button
-            type="button"
-            role="radio"
-            aria-checked={selected === 'custom'}
-            disabled={disabled}
-            onClick={() => choose('custom')}
-            className="flex w-full items-start justify-between gap-2 text-left disabled:cursor-not-allowed"
-          >
-            <span className="space-y-0.5">
-              <span className="block font-medium">{t('options.custom.name')}</span>
-              <span className="block text-xs text-muted-foreground">{t('options.custom.hint')}</span>
-            </span>
-            {selected === 'custom' ? <Check className="size-5 shrink-0 text-primary" aria-hidden /> : null}
-          </button>
-          <div className="space-y-2">
-            <ColorField
-              id={`look-primary-${brandId}`}
-              label={t('primary')}
-              value={custom.primary}
-              onChange={(v) => edit({ primary: v })}
-              disabled={disabled}
-            />
-            <ColorField
-              id={`look-secondary-${brandId}`}
-              label={t('secondary')}
-              value={custom.secondary}
-              onChange={(v) => edit({ secondary: v })}
-              disabled={disabled}
-            />
-            <ColorField
-              id={`look-tertiary-${brandId}`}
-              label={t('tertiary')}
-              value={custom.tertiary}
-              onChange={(v) => edit({ tertiary: v })}
-              disabled={disabled}
-            />
-            <div className="flex items-center gap-2">
-              <label htmlFor={`look-font-${brandId}`} className="w-24 shrink-0 text-sm sm:w-36">
-                {t('font')}
-              </label>
-              <select
-                id={`look-font-${brandId}`}
-                value={custom.font}
-                disabled={disabled}
-                onChange={(e) => edit({ font: e.target.value })}
-                className="h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-sm"
-              >
-                {view.fonts.map((f) => (
-                  <option key={f} value={f}>
-                    {view.site && (f === options[0]?.fonts.headings || f === options[0]?.fonts.body)
-                      ? t('fontFromSite', { font: f })
-                      : f}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <p className="text-xs text-muted-foreground">{t('tertiaryHint')}</p>
+            {valid ? (
+              <Previews brandId={brandId} option={customOption} label={t('options.custom.name')} />
+            ) : null}
           </div>
-          {valid ? (
-            <Previews brandId={brandId} option={customOption} label={t('options.custom.name')} />
-          ) : null}
-        </div>
+        </section>
       </div>
     </div>
   )

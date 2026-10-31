@@ -456,8 +456,8 @@ function StylesEditor({
 }
 
 /**
- * Izgled objava (D-123): tri predloga sa sajta i sopstveni izgled; izbor menja stil, boje i font
- * brenda odjednom, pa važi za plan, Studio i tokove.
+ * Izgled objava (D-123): tri svetle i tri tamne teme sa sajta i sopstvena tema; izbor menja stil,
+ * boje i font brenda odjednom, pa važi za plan, Studio i tokove.
  */
 export function DesignLookCard({ brandId, canEdit }: { brandId: string; canEdit: boolean }) {
   const t = useTranslations('design.looks')

@@ -980,3 +980,15 @@ Odluka:
 - Vaš izbor se pravi u stilu Okvir, u kom se vide sve tri boje; sačuvan sopstveni izgled zadržava stil izabran posle njega u kartici Stilovi. Kad brend ima izabran izgled, nov mesečni plan podrazumevano koristi „Izgled brenda” umesto „Šareno”.
 
 Razlog: vlasnik traži da vizuali ne budu nasumično različiti, nego da Sova ponudi tri izgleda sa sajta i četvrti po izboru korisnika, uvek prikazan kroz klasičnu objavu i još dve vrste sadržaja.
+
+## D-124 · 31.10.2026 · usvojeno · Sedam tema: tri svetle, tri tamne i sopstvena
+
+Odluka (menja broj i raspored predloga iz D-123, ostalo važi):
+
+- Od boja i fontova sa sajta Sova sada pravi šest tema: tri svetle (klasična u stilu Pola-pola na svetloj boji sajta, razigrana u Nalepnici na beloj i meka u Aurori na nežnoj nijansi boje brenda) i tri tamne (sa fotografijom u Posteru, u boji brenda u Blokovima na tamnoj boji brenda i klasična u Pola-pola na tamnoj podlozi). Sedmu sastavlja korisnik od tri boje i fonta, kao do sada.
+- Naglasak teme je uvek prava boja brenda koja se vidi na podlozi: skoro bela, skoro crna i siva boja sa sajta (npr. krem) se preskaču, a treća boja sa sajta ide poslednja.
+- Birač prikazuje svetle teme u jednom redu, tamne u drugom i sopstvenu ispod, sa poljima levo i pregledima desno; na manjem ekranu dve teme u redu, na telefonu jedna.
+- Prelivi Aurore su na svetloj podlozi blaži (60 % umesto 95 %), da svetla meka tema bude meka; na tamnoj su iste jačine. Važi i za Auroru u šarenom planu.
+- Oznake tema su `light-1` do `light-3`, `dark-1` do `dark-3` i `custom`; oznake iz prve verzije (`site-1`, `site-2`, `site-3`) se pri čitanju prevode u `light-1`, `dark-1` i `dark-2`.
+
+Razlog: vlasnik traži tri svetle i tri tamne teme i sedmu po izboru korisnika.
