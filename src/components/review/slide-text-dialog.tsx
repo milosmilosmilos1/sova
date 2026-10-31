@@ -1,6 +1,6 @@
 'use client'
 
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { LoaderCircle } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
@@ -149,6 +149,7 @@ function Editor({
   onSaved: (saved: SlideTextSaved) => void
 }) {
   const t = useTranslations('review.slideText')
+  const qc = useQueryClient()
   const video = view.format === 'video'
   const initial = useMemo(() => view.slides.map(toForm), [view])
   const [forms, setForms] = useState(initial)
@@ -177,7 +178,11 @@ function Editor({
       }
       return { version, changed }
     },
-    onSuccess: (r) => onSaved({ ...r, index }),
+    onSuccess: (r) => {
+      // video bez MP4 ide odmah u red za pravljenje, ne posle sledećeg osvežavanja liste
+      if (video) void qc.invalidateQueries({ queryKey: ['theme-videos'] })
+      onSaved({ ...r, index })
+    },
   })
 
   useEffect(() => onStatus({ dirty, busy: save.isPending }), [dirty, save.isPending, onStatus])
