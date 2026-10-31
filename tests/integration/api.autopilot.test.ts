@@ -742,7 +742,7 @@ describe('Autopilot: jezik i vrste objava (D-107)', () => {
     const { data } = await admin
       .from('posts')
       .select(
-        'id, status, master_text, post_targets(platform, options), post_media(sort_order, media_assets(kind, source, width, height))',
+        'id, status, master_text, design, post_targets(platform, options), post_media(sort_order, media_assets(kind, source, width, height))',
       )
       .eq('strategy_id', strategyId)
       .gte('scheduled_for', `${weekStart}T00:00:00Z`)
@@ -758,7 +758,7 @@ describe('Autopilot: jezik i vrste objava (D-107)', () => {
     expect(await view()).toMatchObject({ language: 'en', formats: ['story', 'video'], mix: false })
   })
 
-  it('priče: uspravna fotografija sa Unsplash-a, options.format = story, tekst na engleskom, bez tokena za vizual', async () => {
+  it('priče: uspravan slajd u temi brenda sa fotografijom sa Unsplash-a, options.format = story, tekst na engleskom, bez tokena za vizual', async () => {
     await patch({ level: 1, language: 'en', formats: ['story'], mix: false, tokenBudget: null })
     enqueueReply(uniqueReply(), uniqueReply(), uniqueReply())
     const weekStart = addDays(week0, 28)
@@ -778,8 +778,10 @@ describe('Autopilot: jezik i vrste objava (D-107)', () => {
         media_assets: { kind: string; source: string; width: number; height: number }
       }>
       expect(media).toHaveLength(1)
-      expect(media[0]!.media_assets).toMatchObject({ kind: 'image', source: 'unsplash' })
+      // slajd u temi brenda (D-125), a fotografija u njemu je sa Unsplash-a
+      expect(media[0]!.media_assets).toMatchObject({ kind: 'image', source: 'template' })
       expect(media[0]!.media_assets.height).toBeGreaterThan(media[0]!.media_assets.width)
+      expect(p.design).toMatchObject({ format: 'story' })
     }
   })
 

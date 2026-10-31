@@ -22,6 +22,14 @@ export function getStyle(id: string): StyleDef {
   return BY_ID.get(id) ?? BY_ID.get(DEFAULT_STYLE)!
 }
 
+/**
+ * Stil za objavu sa fotografijama koje je dao korisnik: tipografski stil (bez fotografije) prelazi na
+ * „Poster”, da se fotografija vidi; boje i font ostaju iz teme brenda (D-125).
+ */
+export function styleForPhotos<T extends string>(styleId: T, ownPhotos: boolean): T | 'poster' {
+  return ownPhotos && getStyle(styleId).photo === 'none' ? 'poster' : styleId
+}
+
 /** Da li stil na ovom slajdu crta fotografiju (da se ne preuzima nepotrebno). */
 export function wantsPhoto(style: StyleDef, kind: SlideKind, index: number): boolean {
   if (style.photo === 'none') return false

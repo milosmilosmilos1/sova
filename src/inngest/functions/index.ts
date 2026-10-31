@@ -8,6 +8,7 @@ import { brandAnalyze } from './brand-analyze'
 import { brandDocumentIndex } from './brand-document-index'
 import { brandSiteCheck } from './brand-site-check'
 import { canvaExportVideo } from './canva-export-video'
+import { designHarmonize } from './design-harmonize'
 import { flowRun, flowsTick } from './flows'
 import { inboxSync } from './inbox-sync'
 import { mediaIncomingCleanup } from './media-incoming-cleanup'
@@ -47,6 +48,7 @@ export const functions = [
   inboxSync,
   monthPlanCreate,
   monthPlanGenerate,
+  designHarmonize,
   mediaIncomingCleanup,
   billingProcessEvent,
   billingDaily,

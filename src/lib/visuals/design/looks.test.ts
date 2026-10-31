@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { storedDesignSchema } from '@/lib/schemas/design'
 
 import { fontWidth, LOOK_FONTS } from './font-choices'
+import { styleForPhotos } from './index'
 import { contrast, fit, luminance, withWidthScale } from './kit'
 import { customColors, LOOK_IDS, SITE_LOOK_STYLES, siteLooks, type SiteVisual } from './looks'
 
@@ -112,5 +113,13 @@ describe('sopstveni izgled (D-123)', () => {
     expect(wide).toBeLessThan(narrow)
     // posle crtanja procena je opet obična
     expect(fit('Tri promene koje donose više upita', opts)).toBe(narrow)
+  })
+})
+
+describe('stil za fotografije korisnika (D-125)', () => {
+  it('tipografska tema prelazi na Poster samo kad je korisnik dao fotografije', () => {
+    expect(styleForPhotos('headline', true)).toBe('poster')
+    expect(styleForPhotos('headline', false)).toBe('headline')
+    expect(styleForPhotos('split', true)).toBe('split')
   })
 })

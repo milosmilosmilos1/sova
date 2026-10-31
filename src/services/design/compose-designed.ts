@@ -8,7 +8,7 @@ import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import type { ComposeInput } from '@/lib/schemas/ai'
 import { wallClock } from '@/lib/zoned-time'
-import { getStyle } from '@/lib/visuals/design'
+import { styleForPhotos } from '@/lib/visuals/design'
 import type { StyleId } from '@/lib/visuals/design/catalog'
 import type { Slide } from '@/lib/visuals/design/types'
 import { assertDailyQuota } from '@/services/ai/generations'
@@ -22,7 +22,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import type { Json } from '@/types/database'
 
 import { resolveDesign } from './brand-design'
-import type { PostDesignContext } from './post-design'
+import { themeOf, type PostDesignContext } from './post-design'
 import { captionFor, generateDesignedCopy } from './copy'
 import { renderDesignSlides } from './render-post'
 
@@ -108,7 +108,7 @@ export async function composeDesigned(
           : 'image'
   const baseStyle = input.styleId ?? design.styleId
   // priložena fotografija traži stil koji je crta: tipografski stil bez fotografije prelazi na „Poster”
-  const styleId: StyleId = photoIds.length && getStyle(baseStyle).photo === 'none' ? 'poster' : baseStyle
+  const styleId: StyleId = styleForPhotos(baseStyle, photoIds.length > 0)
   const rendered = await renderDesignSlides({
     workspaceId: brand.workspace_id,
     brandId: brand.id,
@@ -159,6 +159,7 @@ export async function composeDesigned(
     slides: copy.slides.length,
     photoSource: input.photoSource ?? design.photoSource,
     size: input.size ?? design.size,
+    ...themeOf(design),
     locale,
     platforms,
     ...(photoIds.length ? { ownPhotos: true } : {}),

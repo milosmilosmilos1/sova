@@ -301,6 +301,11 @@
       "lightGroup": "Light themes",
       "darkGroup": "Dark themes",
       "customGroup": "Your own"
+    },
+    "harmonize": {
+      "offTheme": "{count, plural, one {# draft waiting is} other {# drafts waiting are}} not in the brand theme. Sova can redraw them in the theme with the same text and photos, at no token cost.",
+      "running": "Sova is redrawing drafts in the brand theme. {count, plural, one {# draft} other {# drafts}} left, this takes a few minutes.",
+      "apply": "Match the theme"
     }
   },
   "flows": {
@@ -412,8 +417,6 @@
         "storyHint": "Vertical slides"
       },
       "style": "Style",
-      "styleBrand": "Brand style",
-      "styleOwn": "Separate style for this flow",
       "slides": "Slides",
       "photos": "Photos",
       "photosBrand": "As in the brand design",
@@ -452,7 +455,9 @@
       "galleryCategory": "Gallery category",
       "galleryAll": "Whole gallery",
       "galleryOption": "{name} ({count})",
-      "galleryHint": "The flow only uses photos from this category. If it is empty, it uses the whole gallery."
+      "galleryHint": "The flow only uses photos from this category. If it is empty, it uses the whole gallery.",
+      "styleTheme": "Flow posts use the brand theme ({style}), like every other post.",
+      "styleChange": "Change theme"
     }
   },
   "review": {
@@ -1533,14 +1538,6 @@
       "months": "How many months ahead",
       "monthsValue": "{count, plural, one {# month} other {# months}}",
       "monthsHint": "The plan covers {from} to {to}, and Sova picks topics for each month separately without repeating them.",
-      "look": "Post look",
-      "looks": {
-        "vivid": "Colourful",
-        "vividHint": "Each post in a different style and colours, always with photos that never repeat.",
-        "brand": "Brand look",
-        "brandHint": "The look you chose for the brand: the same style, colours and font in every post.",
-        "change": "Change the look in the Visual identity tab."
-      },
       "perWeek": "Posts per week",
       "perWeekValue": "{n} per week",
       "networks": "Networks",
@@ -1554,7 +1551,11 @@
       "balance": "Balance: {count, plural, one {# token} other {# tokens}}.",
       "cancel": "Cancel",
       "create": "Make the plan",
-      "replaceConfirm": "A new plan replaces the current plan for the same days, except a plan that already has drafts. Continue?"
+      "replaceConfirm": "A new plan replaces the current plan for the same days, except a plan that already has drafts. Continue?",
+      "theme": "Post theme",
+      "themeChange": "Change theme",
+      "themeHint": "Every post in the plan uses this theme, whether the plan covers one month or three.",
+      "themeNone": "No theme chosen yet, so posts use the brand design. Choose a theme so every post looks like part of one set."
     },
     "board": {
       "summary": "{count, plural, one {# post} other {# posts}} from {from} to {to}",

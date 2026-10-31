@@ -5,7 +5,7 @@ import { getTranslations } from 'next-intl/server'
 import { ReviewDesk } from '@/components/review/review-desk'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
-import { getCurrentWorkspace } from '@/lib/auth/workspace'
+import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
 import { getTokenPrice } from '@/lib/tokens/prices'
 import { getBrand } from '@/services/brands'
 
@@ -21,5 +21,12 @@ export default async function ApprovalsPage() {
   const summary = await getCurrentBrand(viewer, current.workspaceId)
   if (!summary) redirect('/app/settings')
   const brand = await getBrand(viewer, summary.id)
-  return <ReviewDesk brandId={brand.id} timeZone={brand.timezone} textPrice={await getTokenPrice('text')} />
+  return (
+    <ReviewDesk
+      brandId={brand.id}
+      timeZone={brand.timezone}
+      textPrice={await getTokenPrice('text')}
+      canEdit={EDIT_ROLES.includes(current.role)}
+    />
+  )
 }

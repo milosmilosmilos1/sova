@@ -163,6 +163,8 @@ export interface DesignRenderInput {
   photoAssetIds?: string[]
   /** date fotografije idu ukrug kad ih je korisnik sam izabrao; inače slajd bez svoje ostaje u bojama */
   cyclePhotos?: boolean
+  /** kad datih fotografija ima manje nego što stil traži, ostatak se bira po izvoru (D-125) */
+  topUpPhotos?: boolean
   /** oznaka u source_data (npr. ID toka ili objave) */
   origin?: Record<string, string | null>
 }
@@ -182,21 +184,24 @@ export async function pickDesignPhotos(input: DesignRenderInput): Promise<Picked
   const count = needed === 0 ? 0 : style.photo === 'cover' ? 1 : Math.min(needed, 10)
   const notes: string[] = []
   let photos: MediaAssetRow[] = []
+  const pick = (n: number) =>
+    pickPhotos({
+      source: input.photoSource,
+      workspaceId: input.workspaceId,
+      brandId: input.brandId,
+      query: input.query,
+      count: n,
+      crop: input.format === 'story' ? 'portrait' : 'square',
+      uploadedBy: input.uploadedBy,
+      galleryCategoryId: input.galleryCategoryId,
+      topic: input.topic,
+    })
   try {
-    photos =
-      count > 0 && input.photoAssetIds?.length
-        ? await loadPhotos(input.brandId, input.photoAssetIds)
-        : await pickPhotos({
-            source: input.photoSource,
-            workspaceId: input.workspaceId,
-            brandId: input.brandId,
-            query: input.query,
-            count,
-            crop: input.format === 'story' ? 'portrait' : 'square',
-            uploadedBy: input.uploadedBy,
-            galleryCategoryId: input.galleryCategoryId,
-            topic: input.topic,
-          })
+    if (count > 0 && input.photoAssetIds?.length) {
+      photos = (await loadPhotos(input.brandId, input.photoAssetIds)).slice(0, count)
+      if (input.topUpPhotos && photos.length < count)
+        photos = [...photos, ...(await pick(count - photos.length))]
+    } else photos = await pick(count)
   } catch (error) {
     logger.warn('design_photos_failed', { brandId: input.brandId, error })
   }

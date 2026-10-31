@@ -16,6 +16,7 @@ import { resetMemoryRateLimit } from '@/lib/ratelimit'
 import { configureFontLoader } from '@/lib/visuals/fonts'
 import type { StepRunner } from '@/services/autopilot/runner'
 import { claimDueRuns } from '@/services/flows/flows'
+import { resolveDesign } from '@/services/design/brand-design'
 import { runFlow } from '@/services/flows/runner'
 
 import { enqueueReply, geminiServer, resetGeminiMock } from './gemini-mock'
@@ -227,7 +228,7 @@ describe('Tokovi: prolaz', () => {
     expect(view.json.data).toMatchObject({ status: 'queued', step: null })
   })
 
-  it('prolaz pravi nacrt na odobravanju: 4 slajda u stilu, opisi po mreži, saradnici na Instagramu, 2 tokena', async () => {
+  it('prolaz pravi nacrt na odobravanju: 4 slajda u temi brenda, opisi po mreži, saradnici na Instagramu, 2 tokena', async () => {
     const f = (
       await create({
         name: 'Karusel',
@@ -264,9 +265,13 @@ describe('Tokovi: prolaz', () => {
       media_assets: { source: string; width: number; height: number; source_data: { styleId: string } }
     }>
     expect(media).toHaveLength(4)
+    // stil toka iz ranijih verzija (bold) se ne koristi: sve objave su u temi brenda (D-125)
+    const { data: brandRow } = await admin.from('brands').select('*').eq('id', brandId).single()
+    const theme = await resolveDesign(brandRow!)
+    expect(theme.styleId).not.toBe('bold')
     expect(
       media.every(
-        (m) => m.media_assets.source === 'template' && m.media_assets.source_data.styleId === 'bold',
+        (m) => m.media_assets.source === 'template' && m.media_assets.source_data.styleId === theme.styleId,
       ),
     ).toBe(true)
     const targets = post!.post_targets as unknown as Array<{

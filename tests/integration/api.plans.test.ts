@@ -314,13 +314,16 @@ describe('mesečni plan', () => {
       .select('id, status, scheduled_for, design, post_targets(platform), post_media(id)')
       .in('id', ids)
     expect(posts!.every((p) => p.status === 'in_review')).toBe(true)
-    // šaren plan (D-121): dizajnirani nacrti imaju različite stilove i sačuvanu paletu
+    // jedna tema za sve objave (D-125): isti stil, boje i font u svakom dizajniranom nacrtu
     const designed = posts!
-      .map((p) => p.design as { styleId?: string; colors?: { background: string } } | null)
-      .filter((d): d is { styleId: string; colors?: { background: string } } => Boolean(d?.styleId))
+      .map((p) => p.design as { styleId?: string; colors?: { background: string }; fonts?: object } | null)
+      .filter((d): d is { styleId: string; colors?: { background: string }; fonts?: object } =>
+        Boolean(d?.styleId),
+      )
     expect(designed.length).toBeGreaterThanOrEqual(2)
-    expect(new Set(designed.map((d) => d.styleId)).size).toBeGreaterThan(1)
-    expect(designed.every((d) => d.colors?.background)).toBe(true)
+    expect(new Set(designed.map((d) => d.styleId)).size).toBe(1)
+    expect(new Set(designed.map((d) => JSON.stringify([d.colors, d.fonts]))).size).toBe(1)
+    expect(designed.every((d) => d.colors?.background && d.fonts)).toBe(true)
     for (const item of plan.items) {
       const post = posts!.find((p) => p.id === item.postId)!
       expect(Date.parse(post.scheduled_for!)).toBe(Date.parse(item.scheduledFor))

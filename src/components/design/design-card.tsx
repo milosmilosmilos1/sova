@@ -26,6 +26,7 @@ import { cn } from '@/lib/utils'
 
 import { ColorsEditor } from './colors-editor'
 import { LookPicker, type LookChoice } from './look-picker'
+import { ThemeNotice } from './theme-notice'
 import { previewUrl, StylePicker } from './style-picker'
 
 export interface DesignView {
@@ -465,7 +466,10 @@ export function DesignLookCard({ brandId, canEdit }: { brandId: string; canEdit:
   const qc = useQueryClient()
   const [choice, setChoice] = useState<LookChoice | null>(null)
   const [savedAt, setSavedAt] = useState(0)
+  const [harmonizeKey, setHarmonizeKey] = useState(0)
   const save = useSaveDesign(brandId, () => {
+    // jedna tema za sve objave (D-125): nacrti koji čekaju prelaze u novu temu
+    setHarmonizeKey(Date.now())
     setSavedAt(Date.now())
     setChoice(null)
     void qc.invalidateQueries({ queryKey: ['looks', brandId] })
@@ -485,6 +489,7 @@ export function DesignLookCard({ brandId, canEdit }: { brandId: string; canEdit:
             setSavedAt(0)
           }}
         />
+        <ThemeNotice brandId={brandId} canEdit={canEdit} startKey={harmonizeKey} />
         <ErrorBox error={save.error} />
         <div className="flex flex-wrap items-center gap-3">
           <Button

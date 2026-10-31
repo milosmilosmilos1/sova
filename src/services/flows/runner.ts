@@ -8,7 +8,7 @@ import { qaCheck } from '@/lib/autopilot/rules'
 import { logger } from '@/lib/logger'
 import type { FlowFormat } from '@/lib/schemas/flows'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
-import { isStyleId, type PhotoSource } from '@/lib/visuals/design/catalog'
+import type { PhotoSource } from '@/lib/visuals/design/catalog'
 import type { Slide } from '@/lib/visuals/design/types'
 import { wallClock } from '@/lib/zoned-time'
 import { buildBrandContext } from '@/services/ai/text'
@@ -16,7 +16,7 @@ import { notifyRoles, recentTexts, type StepRunner } from '@/services/autopilot/
 import type { BrandRow } from '@/services/brands'
 import { resolveDesign } from '@/services/design/brand-design'
 import { captionFor, generateDesignedCopy, type DesignedCopy } from '@/services/design/copy'
-import type { PostDesignContext } from '@/services/design/post-design'
+import { themeOf, type PostDesignContext } from '@/services/design/post-design'
 import { renderDesignInSteps } from '@/services/design/render-post'
 import { systemSubmitForReview } from '@/services/posts/system'
 import type { Json } from '@/types/database'
@@ -152,9 +152,9 @@ export async function runFlow(runId: string, step: StepRunner): Promise<FlowRunR
     await setRun(runId, { step: 'images', tokens: copy.tokens })
     const look = await step('look', async () => {
       const design = await resolveDesign(brand)
-      const styleId = flow.style_id && isStyleId(flow.style_id) ? flow.style_id : design.styleId
+      // jedna tema za sve objave (D-125): stil toka iz ranijih verzija se više ne koristi
       const photoSource = (flow.photo_source as PhotoSource | null) ?? design.photoSource
-      return { design, styleId, photoSource, size: design.size }
+      return { design, styleId: design.styleId, photoSource, size: design.size }
     })
     // fotografije pa slajdovi po tri, svaki deo u svom koraku (D-122: Netlify daje 30 s po zahtevu)
     const out = await renderDesignInSteps(step, {
@@ -216,6 +216,7 @@ export async function runFlow(runId: string, step: StepRunner): Promise<FlowRunR
             slides: copy.slides.length,
             photoSource: rendered.photoSource,
             size: rendered.size,
+            ...themeOf(look.design),
             locale,
             platforms,
             flowId: flow.id,

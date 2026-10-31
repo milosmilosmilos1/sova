@@ -33,6 +33,9 @@ import { CONTENT_LOCALES } from '@/config/locales'
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { PLATFORM_FORMATS, POST_FORMATS, type PostFormat } from '@/config/post-formats'
 import { buildSlots, MONTH_OPTIONS, monthEnd, PER_WEEK_OPTIONS, slotMonths } from '@/lib/plans/slots'
+import type { StyleId } from '@/lib/visuals/design/catalog'
+import type { LookId } from '@/lib/visuals/design/looks'
+import type { DesignColors } from '@/lib/visuals/design/types'
 import { cn } from '@/lib/utils'
 
 /**
@@ -90,8 +93,36 @@ interface Page {
     timezone: string
     locale: string
     canSchedule: boolean
-    brandLook: boolean
+    theme: { look: LookId | null; styleId: StyleId; colors: DesignColors; font: string }
   }
+}
+
+/**
+ * Tema plana (D-125): sve objave iz plana su u temi brenda, na mesec ili tri meseca; menja se samo
+ * u kartici Vizuelni identitet, da se dizajn ne šara od objave do objave.
+ */
+function PlanTheme({ theme }: { theme: Page['options']['theme'] }) {
+  const t = useTranslations('plan.setup')
+  const td = useTranslations('design')
+  const name = theme.look ? td(`looks.options.${theme.look}.name`) : td(`styles.${theme.styleId}.name`)
+  return (
+    <section className="space-y-2">
+      <h3 className="text-sm font-medium">{t('theme')}</h3>
+      <div className="flex flex-wrap items-center gap-3 rounded-lg border px-3 py-2">
+        <span className="flex -space-x-1" aria-hidden>
+          {[theme.colors.primary, theme.colors.secondary, theme.colors.background].map((c, i) => (
+            <span key={i} className="size-5 rounded-full border border-black/10" style={{ background: c }} />
+          ))}
+        </span>
+        <span className="text-sm font-medium">{name}</span>
+        <span className="text-xs text-muted-foreground">{theme.font}</span>
+        <Link href="/app/brand/visual" className="ml-auto text-sm text-primary hover:underline">
+          {t('themeChange')}
+        </Link>
+      </div>
+      <p className="text-xs text-muted-foreground">{theme.look ? t('themeHint') : t('themeNone')}</p>
+    </section>
+  )
 }
 
 const INTL: Record<string, string> = { 'sr-Latn': 'sr-Latn-RS', en: 'en-GB', uk: 'uk-UA' }
@@ -219,8 +250,6 @@ function SetupCard({
     current && daysBetween(current.start, current.end) >= 7 ? 'current' : 'next',
   )
   const [months, setMonths] = useState(1)
-  // izabran izgled brenda (D-123) je podrazumevan; bez njega plan je šaren
-  const [look, setLook] = useState<'vivid' | 'brand'>(options.brandLook ? 'brand' : 'vivid')
   const [perWeek, setPerWeek] = useState(5)
   const [platforms, setPlatforms] = useState<SocialPlatform[]>(options.platforms)
   const [formats, setFormats] = useState<PostFormat[]>([...POST_FORMATS])
@@ -245,7 +274,6 @@ function SetupCard({
           brandId,
           kind,
           months,
-          look,
           perWeek,
           platforms,
           formats,
@@ -327,30 +355,7 @@ function SetupCard({
         ) : null}
       </fieldset>
 
-      <fieldset className="space-y-2">
-        <legend className="text-sm font-medium">{t('setup.look')}</legend>
-        <div className="grid gap-2 sm:grid-cols-2">
-          {(['vivid', 'brand'] as const).map((l) => (
-            <button
-              key={l}
-              type="button"
-              aria-pressed={look === l}
-              onClick={() => setLook(l)}
-              className={cn(chip(look === l), 'text-left')}
-            >
-              <span className="block font-medium">{t(`setup.looks.${l}`)}</span>
-              <span className="block text-xs text-muted-foreground">{t(`setup.looks.${l}Hint`)}</span>
-            </button>
-          ))}
-        </div>
-        {look === 'brand' ? (
-          <p className="text-xs text-muted-foreground">
-            <Link href="/app/brand/visual" className="text-primary hover:underline">
-              {t('setup.looks.change')}
-            </Link>
-          </p>
-        ) : null}
-      </fieldset>
+      <PlanTheme theme={options.theme} />
 
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">{t('setup.perWeek')}</legend>

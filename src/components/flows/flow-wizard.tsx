@@ -7,7 +7,6 @@ import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
-import { StylePicker } from '@/components/design/style-picker'
 import { api } from '@/components/shared/api-client'
 import { ErrorBox } from '@/components/shared/error-box'
 import { Button } from '@/components/ui/button'
@@ -90,8 +89,6 @@ export function FlowWizard({
   const [topic, setTopic] = useState(flow?.topic ?? '')
   const [cta, setCta] = useState(flow?.cta ?? '')
   const [format, setFormat] = useState<FlowFormat>(flow?.format ?? 'carousel')
-  const [ownStyle, setOwnStyle] = useState(Boolean(flow?.styleId))
-  const [styleId, setStyleId] = useState<StyleId>(flow?.styleId ?? design.styleId)
   const [slides, setSlides] = useState<number>(flow?.slides ?? design.slides)
   const [photoSource, setPhotoSource] = useState<PhotoSource | null>(flow?.photoSource ?? null)
   const [galleryCategoryId, setGalleryCategoryId] = useState<string | null>(flow?.galleryCategoryId ?? null)
@@ -125,7 +122,8 @@ export function FlowWizard({
         cta: cta.trim() || null,
         ctaMode: 'none' as const,
         format,
-        styleId: ownStyle ? styleId : null,
+        // stil je tema brenda (D-125); tok ne čuva svoj
+        styleId: null,
         slides: format === 'single' ? null : slidesValue,
         photoSource,
         galleryCategoryId: fromGallery ? galleryCategoryId : null,
@@ -278,46 +276,15 @@ export function FlowWizard({
                 </div>
               </fieldset>
 
-              <fieldset className="space-y-3">
-                <legend className="text-sm font-medium">{t('style')}</legend>
-                <div className="flex flex-col gap-2 sm:flex-row" role="radiogroup" aria-label={t('style')}>
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={!ownStyle}
-                    className={option(!ownStyle)}
-                    onClick={() => setOwnStyle(false)}
-                  >
-                    <span className="block font-medium">{t('styleBrand')}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {td(`styles.${design.styleId}.name`)}
-                    </span>
-                  </button>
-                  <button
-                    type="button"
-                    role="radio"
-                    aria-checked={ownStyle}
-                    className={option(ownStyle)}
-                    onClick={() => setOwnStyle(true)}
-                  >
-                    <span className="block font-medium">{t('styleOwn')}</span>
-                    <span className="block text-xs text-muted-foreground">
-                      {td(`styles.${styleId}.name`)}
-                    </span>
-                  </button>
-                </div>
-                {ownStyle ? (
-                  <StylePicker
-                    brandId={brandId}
-                    value={styleId}
-                    onChange={setStyleId}
-                    size={design.size}
-                    colors={design.colors}
-                    photo={(photoSource ?? design.photoSource) !== 'none'}
-                    initialFormat={format === 'story' ? 'story' : format === 'single' ? 'post' : 'carousel'}
-                  />
-                ) : null}
-              </fieldset>
+              <section className="space-y-1">
+                <h3 className="text-sm font-medium">{t('style')}</h3>
+                <p className="text-sm">
+                  {t('styleTheme', { style: td(`styles.${design.styleId}.name`) })}{' '}
+                  <Link href="/app/brand/visual" className="text-primary hover:underline">
+                    {t('styleChange')}
+                  </Link>
+                </p>
+              </section>
 
               <div className="grid gap-4 sm:grid-cols-3">
                 {format !== 'single' ? (

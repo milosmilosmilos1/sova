@@ -38,12 +38,13 @@ import { confirmReservation, releaseReservation } from '@/lib/tokens/reservation
 import { STYLE_IDS } from '@/lib/visuals/design/catalog'
 import type { Slide } from '@/lib/visuals/design/types'
 import { wallClock } from '@/lib/zoned-time'
+import { styleForPhotos } from '@/lib/visuals/design'
 import { composePost } from '@/services/ai/compose'
 import { assertDailyQuota, failGeneration, startGeneration } from '@/services/ai/generations'
 import { buildBrandContext } from '@/services/ai/text'
 import { getBrand, type BrandRow } from '@/services/brands'
 import { resolveDesign } from '@/services/design/brand-design'
-import { parsePostDesign, type PostDesignContext } from '@/services/design/post-design'
+import { parsePostDesign, themeOf, type PostDesignContext } from '@/services/design/post-design'
 import { renderDesignSlides } from '@/services/design/render-post'
 import { downloadAsset, getAsset, type MediaAssetRow } from '@/services/media'
 import { getPostView, updatePost, type PostView } from '@/services/posts/posts'
@@ -336,15 +337,17 @@ async function reviseStudioPost(
       const change = revision.slides.find((c) => c.index === i + 1)
       return change ? { ...s, title: change.title, body: change.body } : s
     })
+    // izmena crta objavu u trenutnoj temi brenda (D-125); priložena fotografija ostaje vidljiva
+    const theme = await resolveDesign(brand)
+    const styleId = styleForPhotos(theme.styleId, Boolean(design.ownPhotos))
     const rendered = await renderDesignSlides({
       workspaceId: brand.workspace_id,
       brandId: brand.id,
-      design: await resolveDesign(brand),
-      styleId: design.styleId,
+      design: theme,
+      styleId,
       format: design.format === 'story' ? 'story' : design.size,
       slides: slides as Slide[],
-      photoSource: design.photoSource,
-      colors: design.colors,
+      photoSource: theme.photoSource,
       query: design.topic.slice(0, 100),
       uploadedBy: viewer.user.id,
       // iste fotografije kao do sada; menja se samo tekst
@@ -354,7 +357,13 @@ async function reviseStudioPost(
     })
     media = rendered.assetIds.map((mediaAssetId, sortOrder) => ({ mediaAssetId, sortOrder }))
     title = slides[0]?.title.slice(0, 200)
-    nextDesign = { ...design, copy: { slides, photoAssetIds: rendered.photoIds } }
+    nextDesign = {
+      ...design,
+      styleId,
+      photoSource: theme.photoSource,
+      ...themeOf(theme),
+      copy: { slides, photoAssetIds: rendered.photoIds },
+    }
   }
   const caption = revision.caption
   const updated = await updatePost(viewer, view.id, {

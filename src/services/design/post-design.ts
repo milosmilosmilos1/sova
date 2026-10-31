@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { CONTENT_LOCALES } from '@/config/locales'
 import { PLATFORMS } from '@/config/platforms'
-import { designColorsSchema } from '@/lib/schemas/design'
+import { designColorsSchema, fontPairSchema } from '@/lib/schemas/design'
 import { PHOTO_SOURCES, POST_SIZES, STYLE_IDS } from '@/lib/visuals/design/catalog'
 
 /** Tekst jednog slajda kako ga je napisao Gemini (D-116: Studio menja pojedinačne slajdove). */
@@ -37,8 +37,10 @@ export const postDesignSchema = z.object({
   dmCta: z.boolean().optional(),
   /** fotografije je dao korisnik: „Generiši ponovo” ih zadržava umesto da traži nove */
   ownPhotos: z.boolean().optional(),
-  /** paleta objave iz šarenog plana (D-121); bez nje važe boje brenda */
+  /** boje u kojima je objava nacrtana (D-121, D-125); po njima Sova zna da li je objava u temi brenda */
   colors: designColorsSchema.optional(),
+  /** font u kom je objava nacrtana (D-125) */
+  fonts: fontPairSchema.optional(),
   copy: z
     .object({
       slides: z.array(designSlideSchema).min(1).max(10),
@@ -56,4 +58,15 @@ export function parsePostDesign(value: unknown): PostDesignContext | null {
   const { copy: _copy, ...rest } = value as Record<string, unknown>
   const withoutCopy = postDesignSchema.safeParse(rest)
   return withoutCopy.success ? withoutCopy.data : null
+}
+
+/**
+ * Tema u kojoj se objava crta (D-125): boje i font brenda u trenutku crtanja. Čuva se uz objavu, pa
+ * „Uskladi nacrte” zna koje objave nisu u trenutnoj temi.
+ */
+export function themeOf(design: {
+  colors: PostDesignContext['colors'] & object
+  fonts: { headings: string; body: string }
+}): Pick<PostDesignContext, 'colors' | 'fonts'> {
+  return { colors: design.colors, fonts: design.fonts }
 }

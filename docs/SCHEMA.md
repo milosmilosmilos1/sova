@@ -1288,7 +1288,7 @@ create table content_flow_runs (
 alter table posts add column flow_id uuid references content_flows(id) on delete set null;
 alter table posts add column design jsonb;          -- kontekst za „Generiši ponovo”: tema, format, stil, slajdovi, fotografije, jezik, mreže (migracija 032, D-111)
 -- posts.design.copy {slides, photoAssetIds}: tekst slajdova i fotografije iz njih, za izmenu slajda iz Studija; ownPhotos: fotografije je dao korisnik (D-116)
--- posts.design.colors {primary, secondary, background, text, muted}: paleta objave iz šarenog plana (D-121); bez nje važe boje brenda
+-- posts.design.colors {primary, secondary, background, text, muted} i fonts {headings, body}: tema u kojoj je objava nacrtana (D-121, D-125); po njima „Uskladi sa temom” zna da li je objava u trenutnoj temi brenda
 
 -- glas brenda, uvod i PDF o brendu (migracija 033, D-112)
 alter table brands add column voice jsonb not null default '{}';   -- offer, audience, tone, usp, avoid, cta, topics[] (do 8), updated_at, updated_by

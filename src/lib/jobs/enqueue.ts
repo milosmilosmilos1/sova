@@ -235,3 +235,19 @@ export async function enqueueMonthPlan(planId: string, brandId: string): Promise
 export async function enqueueMonthPlanGenerate(planId: string, brandId: string): Promise<void> {
   await sendPlanEvent(() => inngest.send(events.monthPlanGenerate.create({ planId, brandId })), planId)
 }
+
+/** Uskladi nacrte sa temom brenda (D-125): pozadinski posao po brendu. */
+export async function enqueueHarmonize(brandId: string): Promise<void> {
+  try {
+    await inngest.send(events.designHarmonize.create({ brandId }))
+  } catch (error) {
+    logger.error('enqueue_harmonize_failed', { brandId, error })
+    throw new AiError(
+      'PROVIDER_ERROR',
+      process.env.NODE_ENV === 'development'
+        ? 'Pozadinski servis nije dostupan. Pokrenite `npm run inngest:dev` pa pokušajte ponovo.'
+        : 'Pozadinski servis trenutno nije dostupan. Pokušajte ponovo za minut.',
+      { retryable: true, cause: error },
+    )
+  }
+}

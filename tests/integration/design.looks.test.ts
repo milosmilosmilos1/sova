@@ -160,12 +160,16 @@ describe('izgled brenda sa sajta (D-123)', () => {
       uploadedBy: null,
     })
     expect(rendered.assetIds).toHaveLength(1)
-    // nov plan podrazumevano pravi objave u izgledu brenda
-    const page = await call<{ options: { brandLook: boolean } }>(plansGet, '/api/plans', {
-      token: user.token,
-      query: { brandId },
-    })
-    expect(page.json.data!.options.brandLook).toBe(true)
+    // plan pravi sve objave u temi brenda (D-125)
+    const page = await call<{ options: { theme: { look: string; styleId: string } } }>(
+      plansGet,
+      '/api/plans',
+      {
+        token: user.token,
+        query: { brandId },
+      },
+    )
+    expect(page.json.data!.options.theme).toMatchObject({ look: 'dark-1', styleId: dark.styleId })
   })
 
   it('sopstveni izgled: tri boje i font; pogrešno ime fonta se odbija; pregled prima font', async () => {

@@ -301,6 +301,11 @@
       "lightGroup": "Svetle teme",
       "darkGroup": "Tamne teme",
       "customGroup": "Po vašem izboru"
+    },
+    "harmonize": {
+      "offTheme": "{count, plural, one {# nacrt koji čeka nije} few {# nacrta koja čekaju nisu} other {# nacrta koji čekaju nisu}} u temi brenda. Sova ih može nacrtati u temi, sa istim tekstom i fotografijama, bez tokena.",
+      "running": "Sova crta nacrte u temi brenda. Još {count, plural, one {# nacrt} few {# nacrta} other {# nacrta}}, traje par minuta.",
+      "apply": "Uskladi sa temom"
     }
   },
   "flows": {
@@ -412,8 +417,6 @@
         "storyHint": "Uspravni slajdovi"
       },
       "style": "Stil",
-      "styleBrand": "Stil brenda",
-      "styleOwn": "Poseban stil za ovaj tok",
       "slides": "Slajdova",
       "photos": "Fotografije",
       "photosBrand": "Kao u dizajnu brenda",
@@ -452,7 +455,9 @@
       "galleryCategory": "Kategorija galerije",
       "galleryAll": "Cela galerija",
       "galleryOption": "{name} ({count})",
-      "galleryHint": "Tok uzima fotografije samo iz ove kategorije. Kad je prazna, uzima iz cele galerije."
+      "galleryHint": "Tok uzima fotografije samo iz ove kategorije. Kad je prazna, uzima iz cele galerije.",
+      "styleTheme": "Objave toka su u temi brenda ({style}), kao i sve ostale.",
+      "styleChange": "Promeni temu"
     }
   },
   "review": {
@@ -1533,14 +1538,6 @@
       "months": "Koliko meseci unapred",
       "monthsValue": "{count, plural, one {# mesec} few {# meseca} other {# meseci}}",
       "monthsHint": "Plan pokriva period od {from} do {to}, a Sova bira teme za svaki mesec posebno i ne ponavlja ih.",
-      "look": "Izgled objava",
-      "looks": {
-        "vivid": "Šareno",
-        "vividHint": "Svaka objava u drugom stilu i bojama, uvek sa fotografijama koje se ne ponavljaju.",
-        "brand": "Izgled brenda",
-        "brandHint": "Izgled koji ste izabrali za brend: isti stil, boje i font u svakoj objavi.",
-        "change": "Izgled menjate u kartici Vizuelni identitet."
-      },
       "perWeek": "Objava nedeljno",
       "perWeekValue": "{n} nedeljno",
       "networks": "Mreže",
@@ -1554,7 +1551,11 @@
       "balance": "Na stanju: {count, plural, one {# token} other {# tokena}}.",
       "cancel": "Odustani",
       "create": "Napravi plan",
-      "replaceConfirm": "Nov plan zamenjuje postojeći plan za iste dane, osim plana iz kog su već napravljeni nacrti. Nastaviti?"
+      "replaceConfirm": "Nov plan zamenjuje postojeći plan za iste dane, osim plana iz kog su već napravljeni nacrti. Nastaviti?",
+      "theme": "Tema objava",
+      "themeChange": "Promeni temu",
+      "themeHint": "Sve objave iz plana su u ovoj temi, bilo da plan traje mesec ili tri meseca.",
+      "themeNone": "Tema još nije izabrana, pa su objave u dizajnu brenda. Izaberite temu da sve objave izgledaju kao jedna celina."
     },
     "board": {
       "summary": "{count, plural, one {# objava} few {# objave} other {# objava}} od {from} do {to}",

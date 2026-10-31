@@ -36,6 +36,8 @@ export interface DraftText {
   text: string
   hashtags: string[]
   body: string
+  /** uvod, tekst i poziv na akciju odvojeno: od njih se prave slajdovi u temi brenda (D-125) */
+  parts: { hook: string; body: string; cta: string }
   firstComment: string | null
   altText: string
   generationId: string
@@ -150,6 +152,7 @@ export async function generateDraftText(
         .eq('id', generationId)
     return {
       text: hashtags.length ? `${body}\n\n${hashtags.join(' ')}` : body,
+      parts: { hook: v.hook.trim(), body: v.body.trim(), cta: v.cta.trim() },
       body,
       hashtags,
       firstComment: v.first_comment?.trim() || null,

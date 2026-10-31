@@ -17,7 +17,10 @@ import { getTokenBalance } from '@/lib/tokens/reservation'
 import { wallClock, zonedToUtc } from '@/lib/zoned-time'
 import { assertDailyQuota } from '@/services/ai/generations'
 import { getBrand, type BrandRow } from '@/services/brands'
-import { storedDesign } from '@/services/design/brand-design'
+import type { StyleId } from '@/lib/visuals/design/catalog'
+import type { LookId } from '@/lib/visuals/design/looks'
+import type { DesignColors } from '@/lib/visuals/design/types'
+import { resolveDesign } from '@/services/design/brand-design'
 import type { Json } from '@/types/database'
 
 import { pendingItems, planSettings, type ItemRow, type PlanRow, type PlanSettings } from './runner'
@@ -68,8 +71,13 @@ export interface PlanPageView {
     timezone: string
     locale: string
     canSchedule: boolean
-    /** brend je izabrao izgled (D-123): nov plan podrazumevano pravi objave u njemu */
-    brandLook: boolean
+    /** tema u kojoj plan pravi sve objave (D-125); `look` je `null` dok brend ne izabere temu */
+    theme: {
+      look: LookId | null
+      styleId: StyleId
+      colors: DesignColors
+      font: string
+    }
   }
 }
 
@@ -146,7 +154,7 @@ export async function getPlanPage(viewer: Viewer, brandId: string): Promise<Plan
   const brand = await getBrand(viewer, brandId)
   const membership = await requireMembership(viewer, brand.workspace_id)
   const admin = createSupabaseAdminClient()
-  const [{ data: latest }, platforms, prices, balance] = await Promise.all([
+  const [{ data: latest }, platforms, prices, balance, design] = await Promise.all([
     admin
       .from('month_plans')
       .select('*')
@@ -157,6 +165,7 @@ export async function getPlanPage(viewer: Viewer, brandId: string): Promise<Plan
     activePlatforms(brand.id),
     getTokenPrices(),
     getTokenBalance(brand.workspace_id),
+    resolveDesign(brand),
   ])
   const today = wallClock(new Date().toISOString(), brand.timezone).date
   const months = (['current', 'next'] as const).flatMap((kind) => {
@@ -173,7 +182,12 @@ export async function getPlanPage(viewer: Viewer, brandId: string): Promise<Plan
       timezone: brand.timezone,
       locale: brand.content_locale,
       canSchedule: ADMIN_ROLES.includes(membership.role),
-      brandLook: Boolean(storedDesign(brand).look),
+      theme: {
+        look: design.look,
+        styleId: design.styleId,
+        colors: design.colors,
+        font: design.fonts.headings,
+      },
     },
   }
 }
@@ -261,7 +275,6 @@ export async function requestPlan(viewer: Viewer, input: PlanRequestInput): Prom
   const settings: PlanSettings = {
     kind: input.kind,
     months: input.months,
-    look: input.look,
     perWeek: input.perWeek,
     platforms,
     formats,

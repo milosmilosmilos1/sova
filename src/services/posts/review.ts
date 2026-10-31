@@ -9,12 +9,13 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError } from '@/lib/supabase/errors'
 import type { Slide } from '@/lib/visuals/design/types'
 import { zipStore } from '@/lib/zip'
+import { styleForPhotos } from '@/lib/visuals/design'
 import type { Json } from '@/types/database'
 import { buildBrandContext } from '@/services/ai/text'
 import { getBrand } from '@/services/brands'
 import { resolveDesign } from '@/services/design/brand-design'
 import { captionFor, generateDesignedCopy } from '@/services/design/copy'
-import { parsePostDesign, type PostDesignContext } from '@/services/design/post-design'
+import { parsePostDesign, themeOf, type PostDesignContext } from '@/services/design/post-design'
 import { renderDesignSlides } from '@/services/design/render-post'
 import { downloadAsset, signedUrl } from '@/services/media'
 import { nextFreeSlot } from '@/services/posts/calendar'
@@ -304,16 +305,17 @@ export async function regeneratePost(viewer: Viewer, postId: string, version: nu
     workspaceId: brand.workspace_id,
     brandId: brand.id,
     design,
-    styleId: ctx.styleId,
+    // jedna tema za sve objave (D-125): nova verzija je u trenutnoj temi brenda
+    styleId: styleForPhotos(design.styleId, Boolean(ctx.ownPhotos)),
     format: ctx.format === 'story' ? 'story' : ctx.size,
     slides: copy.slides as Slide[],
-    photoSource: ctx.photoSource,
-    colors: ctx.colors,
+    photoSource: design.photoSource,
     query: (copy.visualQuery || ctx.topic).slice(0, 100),
     uploadedBy: viewer.user.id,
-    // iste fotografije kao do sada; ukrug idu samo one koje je dao korisnik
+    // iste fotografije kao do sada; ukrug idu samo one koje je dao korisnik, ostale se dopunjuju
     photoAssetIds: ctx.copy?.photoAssetIds.length ? ctx.copy.photoAssetIds : undefined,
     cyclePhotos: Boolean(ctx.ownPhotos),
+    topUpPhotos: !ctx.ownPhotos,
     origin: { postId },
   })
   const updated = await updatePost(viewer, postId, {
@@ -331,6 +333,9 @@ export async function regeneratePost(viewer: Viewer, postId: string, version: nu
   })
   const next: PostDesignContext = {
     ...ctx,
+    styleId: styleForPhotos(design.styleId, Boolean(ctx.ownPhotos)),
+    photoSource: design.photoSource,
+    ...themeOf(design),
     slides: copy.slides.length,
     copy: { slides: copy.slides as Slide[], photoAssetIds: rendered.photoIds },
   }

@@ -23,7 +23,6 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getTokenPrice } from '@/lib/tokens/prices'
 import { confirmReservation } from '@/lib/tokens/reservation'
 import type { Slide } from '@/lib/visuals/design/types'
-import { planLook, seedFrom } from '@/lib/visuals/design/variety'
 import { wallClock, zonedToUtc } from '@/lib/zoned-time'
 import { failGeneration, startGeneration } from '@/services/ai/generations'
 import { buildBrandContext } from '@/services/ai/text'
@@ -32,7 +31,7 @@ import { notifyRoles, type StepRunner } from '@/services/autopilot/runner'
 import type { BrandRow } from '@/services/brands'
 import { resolveDesign } from '@/services/design/brand-design'
 import { captionFor, generateDesignedCopy } from '@/services/design/copy'
-import type { PostDesignContext } from '@/services/design/post-design'
+import { themeOf, type PostDesignContext } from '@/services/design/post-design'
 import { renderDesignInSteps, type DesignRenderInput } from '@/services/design/render-post'
 import { systemSchedule, systemSubmitForReview } from '@/services/posts/system'
 import type { Database, Json } from '@/types/database'
@@ -51,8 +50,6 @@ export interface PlanSettings {
   kind: 'current' | 'next'
   /** koliko meseci plan pokriva (1–3); stariji planovi nemaju polje i pokrivaju jedan */
   months?: number
-  /** izgled objava (D-121): šareno (podrazumevano) ili stil i boje iz dizajna brenda */
-  look?: 'vivid' | 'brand'
   perWeek: number
   platforms: SocialPlatform[]
   formats: PostFormat[]
@@ -439,11 +436,10 @@ async function startPlanItem(itemId: string): Promise<StartedItem> {
 
     const designed = DESIGNED[format]
     if (designed) {
+      // jedna tema za sve objave (D-125): stil, boje i font brenda, isti u celom planu
       const look = await resolveDesign(brand)
-      // šaren plan (D-121): svaka objava drugi stil i paleta, uvek sa fotografijama; „Moj stil” ostaje
-      const vivid = settings.look !== 'brand' ? planLook(item.position, seedFrom(plan.id), look.colors) : null
-      const styleId = vivid?.styleId ?? look.styleId
-      const photoSource = vivid && look.photoSource === 'none' ? 'stock' : look.photoSource
+      const styleId = look.styleId
+      const photoSource = look.photoSource
       const story = format === 'story'
       const copy = await generateDesignedCopy({
         workspaceId: brand.workspace_id,
@@ -471,7 +467,6 @@ async function startPlanItem(itemId: string): Promise<StartedItem> {
             format: story ? 'story' : look.size,
             slides: copy.slides as Slide[],
             photoSource,
-            colors: vivid?.colors,
             query: (copy.visualQuery || item.topic).slice(0, 100),
             uploadedBy: null,
             topic: [item.topic, ...copy.slides.map((s) => s.title)].join(' '),
@@ -495,7 +490,7 @@ async function startPlanItem(itemId: string): Promise<StartedItem> {
               slides: copy.slides.length,
               photoSource,
               size: look.size,
-              ...(vivid ? { colors: vivid.colors } : {}),
+              ...themeOf(look),
               locale,
               platforms,
               copy: { slides: copy.slides as Slide[], photoAssetIds: [] },

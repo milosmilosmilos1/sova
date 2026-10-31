@@ -15,8 +15,9 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useLocale, useTranslations } from 'next-intl'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 
+import { ThemeNotice } from '@/components/design/theme-notice'
 import { api } from '@/components/shared/api-client'
 import { BulkBar, SelectAllBox, SelectBox, useSelection } from '@/components/shared/bulk'
 import { ErrorBox } from '@/components/shared/error-box'
@@ -92,10 +93,13 @@ export function ReviewDesk({
   brandId,
   timeZone,
   textPrice,
+  canEdit = false,
 }: {
   brandId: string
   timeZone: string
   textPrice: number
+  /** sme da uskladi nacrte sa temom brenda (D-125) */
+  canEdit?: boolean
 }) {
   const t = useTranslations('review')
   const qc = useQueryClient()
@@ -117,6 +121,11 @@ export function ReviewDesk({
   const items = list.data?.items ?? []
   const current = selected && items.some((i) => i.id === selected) ? selected : (items[0]?.id ?? null)
   const refresh = () => qc.invalidateQueries({ queryKey: ['review', brandId] })
+  // nacrti usklađeni sa temom (D-125) imaju nove slajdove: lista i otvoren nacrt se čitaju ponovo
+  const refreshAfterTheme = useCallback(() => {
+    void qc.invalidateQueries({ queryKey: ['review'] })
+    void qc.invalidateQueries({ queryKey: ['review-detail'] })
+  }, [qc])
   // označavanje više nacrta (D-119): preskakanje ili brisanje svih označenih odjednom
   const tb = useTranslations('bulk')
   const selection = useSelection(items.map((i) => i.id))
@@ -149,6 +158,8 @@ export function ReviewDesk({
           </Button>
         </div>
       </div>
+
+      <ThemeNotice brandId={brandId} canEdit={canEdit} onDone={refreshAfterTheme} />
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-2">
         <div className="flex flex-wrap gap-1" role="tablist" aria-label={t('title')}>

@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { toContentLocale } from '@/config/locales'
 import type { SocialPlatform } from '@/config/platforms'
 import { formatFor, mediaNeed, mixedFormat, PLATFORM_FORMATS, type PostFormat } from '@/config/post-formats'
 import type { PostGoal } from '@/lib/ai/prompts/post-text'
@@ -14,6 +15,7 @@ import {
   type QaReport,
 } from '@/lib/autopilot/rules'
 import { isFeatureEnabled } from '@/lib/flags'
+import { slidesFromText } from '@/lib/visuals/design/from-text'
 import { logger } from '@/lib/logger'
 import {
   addDays,
@@ -28,6 +30,9 @@ import { getTokenPrice } from '@/lib/tokens/prices'
 import { startGeneration } from '@/services/ai/generations'
 import { computeOverview } from '@/services/analytics/overview'
 import { brandContextFor, draftMedia, generateDraftText, headlineFrom } from '@/services/autopilot/content'
+import { resolveDesign } from '@/services/design/brand-design'
+import { themeOf, type PostDesignContext } from '@/services/design/post-design'
+import { renderDesignInSteps, type DesignRenderInput } from '@/services/design/render-post'
 import { autopilotContentPrefs, autopilotSettings, autopilotUsage } from '@/services/autopilot/settings'
 import { notifyUsers, usersWithRoles } from '@/services/notifications'
 import { wallClock, zonedToUtc } from '@/lib/zoned-time'
@@ -463,37 +468,167 @@ function formatSlot(postId: string): number {
   return h
 }
 
-async function draftOne(runId: string, postId: string): Promise<DraftResult> {
+/** Vrste koje Autopilot crta kao slajdove u temi brenda (D-125); tekst, link i video ostaju kakvi su. */
+const THEMED: Partial<Record<PostFormat, 'single' | 'story' | 'carousel'>> = {
+  image: 'single',
+  story: 'story',
+  carousel: 'carousel',
+}
+
+interface DraftText {
+  text: string
+  body: string
+  hashtags: string[]
+  firstComment: string | null
+}
+
+/** Dizajnirani nacrt Autopilota između koraka: tekst je napisan, slajdovi se crtaju u temi. */
+interface ThemedWork {
+  topic: string
+  offer: string | null
+  locale: string | undefined
+  platform: SocialPlatform
+  story: boolean
+  tokens: number
+  text: DraftText
+  render: DesignRenderInput
+  design: PostDesignContext
+}
+
+type DraftStart = { kind: 'result'; result: DraftResult } | { kind: 'themed'; work: ThemedWork }
+
+/**
+ * Kraj nacrta: mediji, kontrola kvaliteta, upis teksta i odobravanje ili zakazivanje (nivo 3).
+ * Isti je za nacrt sa fotografijom, snimkom ili slajdovima u temi brenda.
+ */
+async function completeDraft(input: {
+  runId: string
+  postId: string
+  platform: SocialPlatform
+  topic: string
+  offer: string | null
+  locale: string | undefined
+  tokens: number
+  text: DraftText
+  assetIds: string[]
+  story: boolean
+  link: boolean
+  design: PostDesignContext | null
+}): Promise<DraftResult> {
+  const { runId, postId, tokens } = input
   const admin = createSupabaseAdminClient()
+  const { data: post } = await admin.from('posts').select('*').eq('id', postId).maybeSingle()
+  const { data: run } = await admin.from('autopilot_runs').select('brand_id').eq('id', runId).maybeSingle()
+  if (!post || !run) return { postId, outcome: 'skipped', tokens, message: 'objava ne postoji' }
+  const brand = (await loadBrand(run.brand_id))!
+  const context = await brandContextFor(brand, input.topic, input.locale)
+  if (input.assetIds.length)
+    await admin
+      .from('post_media')
+      .insert(input.assetIds.map((id, i) => ({ post_id: postId, media_asset_id: id, sort_order: i })))
+  if (input.story)
+    await admin
+      .from('post_targets')
+      .update({ options: { format: 'story' } })
+      .eq('post_id', postId)
+  if (input.link && brand.website_url)
+    await admin.from('posts').update({ link_url: brand.website_url }).eq('id', postId)
+  const corpus = [
+    ...(context.facts ?? []),
+    ...(context.services ?? []),
+    ...(context.knowledge ?? []),
+    context.description ?? '',
+    input.topic,
+    input.offer ?? '',
+  ].join('\n')
+  const report: QaReport = qaCheck({
+    platform: input.platform,
+    text: input.text.body,
+    hashtags: input.text.hashtags,
+    locale: context.locale,
+    forbiddenWords: context.forbiddenWords ?? [],
+    factsCorpus: corpus,
+    recentTexts: await recentTexts(brand.id, postId),
+    hasMedia: input.assetIds.length > 0,
+  })
+  const { error: upErr } = await admin
+    .from('posts')
+    .update({
+      master_text: input.text.text,
+      first_comment: input.text.firstComment,
+      source: 'autopilot',
+      qa_report: report as unknown as NonNullable<Json>,
+      ...(input.design ? { design: input.design as unknown as Json } : {}),
+      version: post.version + 1,
+    })
+    .eq('id', postId)
+    .eq('version', post.version)
+  if (upErr) throw upErr
+  if (!report.passed) {
+    const failed = report.checks.filter((c) => !c.ok).map((c) => c.message)
+    await notifyRoles(brand, ['owner', 'admin', 'editor'], {
+      type: 'autopilot_returned',
+      title: 'Autopilot je vratio objavu na doradu',
+      body: `${post.title ?? 'Objava'}: ${failed.join(' ')}`.slice(0, 500),
+      link: `/app/posts/${postId}`,
+      data: { postId, runId },
+      email: false,
+    })
+    return { postId, outcome: 'returned', tokens, message: failed.join(' ') }
+  }
+  const { data: targets } = await admin.from('post_targets').select('social_account_id').eq('post_id', postId)
+  const settings = autopilotSettings(brand)
+  const level3 =
+    brand.autopilot_level === 3 &&
+    brand.autopilot_level3_confirmed_at !== null &&
+    (await isFeatureEnabled('autopilot_level3')) &&
+    (targets ?? []).every((t) => (settings.level3AccountIds ?? []).includes(t.social_account_id))
+  if (level3) {
+    await systemSchedule(postId, 'Autopilot (nivo 3): zakazano posle kontrole kvaliteta')
+    return { postId, outcome: 'scheduled', tokens }
+  }
+  await systemSubmitForReview(postId, 'Autopilot: nacrt poslat na odobrenje')
+  return { postId, outcome: 'submitted', tokens }
+}
+
+/**
+ * Prvi korak nacrta: vrsta, budžet i tekst. Tekst, link i video se tu i završe; objava, priča i
+ * karusel vraćaju posao za slajdove u temi brenda (D-125), koji idu u svojim koracima.
+ */
+async function startDraft(runId: string, postId: string): Promise<DraftStart> {
+  const admin = createSupabaseAdminClient()
+  const done = (result: DraftResult): DraftStart => ({ kind: 'result', result })
   const { data: run } = await admin
     .from('autopilot_runs')
     .select('brand_id, level')
     .eq('id', runId)
     .maybeSingle()
   const { data: post } = await admin.from('posts').select('*').eq('id', postId).maybeSingle()
-  if (!run || !post) return { postId, outcome: 'skipped', tokens: 0, message: 'objava ne postoji' }
+  if (!run || !post) return done({ postId, outcome: 'skipped', tokens: 0, message: 'objava ne postoji' })
   if (post.status !== 'draft' || post.qa_report !== null)
-    return { postId, outcome: 'skipped', tokens: 0, message: `objava je ${post.status}` }
+    return done({ postId, outcome: 'skipped', tokens: 0, message: `objava je ${post.status}` })
   const brand = (await loadBrand(run.brand_id))!
   if (brand.status !== 'active')
-    return { postId, outcome: 'skipped', tokens: 0, message: 'brend je pauziran' }
+    return done({ postId, outcome: 'skipped', tokens: 0, message: 'brend je pauziran' })
   const { data: targets } = await admin
     .from('post_targets')
     .select('id, platform, social_account_id')
     .eq('post_id', postId)
   const platform = targets?.[0]?.platform
-  if (!platform) return { postId, outcome: 'skipped', tokens: 0, message: 'objava nema mrežu' }
+  if (!platform) return done({ postId, outcome: 'skipped', tokens: 0, message: 'objava nema mrežu' })
   // vrsta objave (D-107): dozvoljene u podešavanjima koje mreža prima, AI meša ili uvek prva
   const prefs = autopilotContentPrefs(brand)
   const allowed = PLATFORM_FORMATS[platform].filter((f) => prefs.formats.includes(f))
   const format: PostFormat =
     (prefs.mix ? mixedFormat(allowed, formatSlot(postId)) : allowed[0]) ?? formatFor('image', platform)
+  const themed = THEMED[format]
   const needsMedia = MEDIA_REQUIRED.includes(platform) || mediaNeed(format).kind !== 'none'
   const textPrice = await getTokenPrice('text')
-  const visualPrice = needsMedia ? await getTokenPrice('visual_template') : 0
+  // slajdovi u temi su besplatni; vizual iz šablona se plaća samo kao rezerva bez teme
+  const visualPrice = needsMedia && !themed ? await getTokenPrice('visual_template') : 0
   const usage = await autopilotUsage(brand.id, brand.autopilot_token_budget)
   if (!canSpend(usage.used, usage.budget, textPrice + visualPrice)) {
-    return { postId, outcome: 'budget', tokens: 0, message: 'mesečni budžet je potrošen' }
+    return done({ postId, outcome: 'budget', tokens: 0, message: 'mesečni budžet je potrošen' })
   }
 
   let tokens = 0
@@ -532,6 +667,58 @@ async function draftOne(runId: string, postId: string): Promise<DraftResult> {
       format,
     })
     tokens += text.tokens
+    const draftText: DraftText = {
+      text: text.text,
+      body: text.body,
+      hashtags: text.hashtags,
+      firstComment: text.firstComment,
+    }
+
+    if (themed) {
+      // vizual u temi brenda: isti stil, boje i font kao plan i tokovi (D-125)
+      const look = await resolveDesign(brand)
+      const slides = slidesFromText(text.parts, themed)
+      const query = (text.visualQuery ?? topic).slice(0, 100)
+      return {
+        kind: 'themed',
+        work: {
+          topic,
+          offer: campaign?.offer ?? null,
+          locale: prefs.language,
+          platform,
+          story: themed === 'story',
+          tokens,
+          text: draftText,
+          render: {
+            workspaceId: brand.workspace_id,
+            brandId: brand.id,
+            design: look,
+            styleId: look.styleId,
+            format: themed === 'story' ? 'story' : look.size,
+            slides,
+            photoSource: look.photoSource,
+            query,
+            uploadedBy: null,
+            topic: [topic, ...slides.map((s) => s.title)].join(' ').slice(0, 2000),
+            origin: { autopilotRunId: runId, postId },
+          },
+          design: {
+            topic: topic.slice(0, 2000),
+            cta: campaign?.cta ?? null,
+            format: themed,
+            styleId: look.styleId,
+            slides: slides.length,
+            photoSource: look.photoSource,
+            size: look.size,
+            ...themeOf(look),
+            locale: toContentLocale(context.locale),
+            platforms: [platform],
+            copy: { slides, photoAssetIds: [] },
+          },
+        },
+      }
+    }
+
     const media = await draftMedia(brand, {
       format,
       required: MEDIA_REQUIRED.includes(platform),
@@ -542,76 +729,59 @@ async function draftOne(runId: string, postId: string): Promise<DraftResult> {
       runId,
     })
     tokens += media.tokens
-    const hasMedia = media.assetIds.length > 0
-    if (hasMedia)
-      await admin
-        .from('post_media')
-        .insert(media.assetIds.map((id, i) => ({ post_id: postId, media_asset_id: id, sort_order: i })))
-    if (media.format === 'story')
-      await admin
-        .from('post_targets')
-        .update({ options: { format: 'story' } })
-        .eq('post_id', postId)
-    if (media.format === 'link' && brand.website_url)
-      await admin.from('posts').update({ link_url: brand.website_url }).eq('id', postId)
-    const corpus = [
-      ...(context.facts ?? []),
-      ...(context.services ?? []),
-      ...(context.knowledge ?? []),
-      context.description ?? '',
-      topic,
-      campaign?.offer ?? '',
-    ].join('\n')
-    const report: QaReport = qaCheck({
-      platform,
-      text: text.body,
-      hashtags: text.hashtags,
-      locale: context.locale,
-      forbiddenWords: context.forbiddenWords ?? [],
-      factsCorpus: corpus,
-      recentTexts: await recentTexts(brand.id, postId),
-      hasMedia,
-    })
-    const { error: upErr } = await admin
-      .from('posts')
-      .update({
-        master_text: text.text,
-        first_comment: text.firstComment,
-        source: 'autopilot',
-        qa_report: report as unknown as NonNullable<Json>,
-        version: post.version + 1,
-      })
-      .eq('id', postId)
-      .eq('version', post.version)
-    if (upErr) throw upErr
-    if (!report.passed) {
-      const failed = report.checks.filter((c) => !c.ok).map((c) => c.message)
-      await notifyRoles(brand, ['owner', 'admin', 'editor'], {
-        type: 'autopilot_returned',
-        title: 'Autopilot je vratio objavu na doradu',
-        body: `${post.title ?? 'Objava'}: ${failed.join(' ')}`.slice(0, 500),
-        link: `/app/posts/${postId}`,
-        data: { postId, runId },
-        email: false,
-      })
-      return { postId, outcome: 'returned', tokens, message: failed.join(' ') }
-    }
-    const settings = autopilotSettings(brand)
-    const level3 =
-      brand.autopilot_level === 3 &&
-      brand.autopilot_level3_confirmed_at !== null &&
-      (await isFeatureEnabled('autopilot_level3')) &&
-      (targets ?? []).every((t) => (settings.level3AccountIds ?? []).includes(t.social_account_id))
-    if (level3) {
-      await systemSchedule(postId, 'Autopilot (nivo 3): zakazano posle kontrole kvaliteta')
-      return { postId, outcome: 'scheduled', tokens }
-    }
-    await systemSubmitForReview(postId, 'Autopilot: nacrt poslat na odobrenje')
-    return { postId, outcome: 'submitted', tokens }
+    return done(
+      await completeDraft({
+        runId,
+        postId,
+        platform,
+        topic,
+        offer: campaign?.offer ?? null,
+        locale: prefs.language,
+        tokens,
+        text: draftText,
+        assetIds: media.assetIds,
+        story: media.format === 'story',
+        link: media.format === 'link',
+        design: null,
+      }),
+    )
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     logger.warn('autopilot_draft_failed', { runId, postId, message })
-    return { postId, outcome: 'error', tokens, message }
+    return done({ postId, outcome: 'error', tokens, message })
+  }
+}
+
+/**
+ * Jedan nacrt Autopilota u koracima: tekst, pa za objavu, priču i karusel fotografije i slajdovi u
+ * temi brenda po tri (D-122), pa kontrola kvaliteta i odobravanje. `step` bez Inngest-a izvrši redom.
+ */
+async function draftOne(runId: string, postId: string, step: StepRunner): Promise<DraftResult> {
+  const started = await step('start', () => startDraft(runId, postId))
+  if (started.kind === 'result') return started.result
+  const { work } = started
+  try {
+    const rendered = await renderDesignInSteps(step, work.render)
+    return await step('save', () =>
+      completeDraft({
+        runId,
+        postId,
+        platform: work.platform,
+        topic: work.topic,
+        offer: work.offer,
+        locale: work.locale,
+        tokens: work.tokens,
+        text: work.text,
+        assetIds: rendered.assetIds,
+        story: work.story,
+        link: false,
+        design: { ...work.design, copy: { slides: work.render.slides, photoAssetIds: rendered.photoIds } },
+      }),
+    )
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    logger.warn('autopilot_draft_failed', { runId, postId, message })
+    return { postId, outcome: 'error', tokens: work.tokens, message }
   }
 }
 
@@ -714,7 +884,7 @@ export async function runWeeklyForBrand(
   const postIds = await run('plan', () => planWeek(prep.runId, strategyId, prep.weekStart))
   const results: DraftResult[] = []
   for (const postId of postIds) {
-    const r = await run(`draft-${postId}`, () => draftOne(prep.runId, postId))
+    const r = await draftOne(prep.runId, postId, (name, fn) => run(`draft-${postId}-${name}`, fn))
     results.push(r)
     if (r.outcome === 'budget') break
   }

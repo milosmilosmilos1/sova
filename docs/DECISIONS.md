@@ -992,3 +992,15 @@ Odluka (menja broj i raspored predloga iz D-123, ostalo važi):
 - Oznake tema su `light-1` do `light-3`, `dark-1` do `dark-3` i `custom`; oznake iz prve verzije (`site-1`, `site-2`, `site-3`) se pri čitanju prevode u `light-1`, `dark-1` i `dark-2`.
 
 Razlog: vlasnik traži tri svetle i tri tamne teme i sedmu po izboru korisnika.
+
+## D-125 · 31.10.2026 · usvojeno · Jedna tema za sve objave
+
+Odluka (vlasnik: „kontinuitet u dizajnu ne sme da se gubi, ni na mesec ni na tri meseca, uopšte”):
+
+- Šareni režim plana (D-121: drugi stil i paleta za svaku objavu) je ukinut. Mesečni plan uvek pravi objave u temi brenda (stil, boje i font iz D-123/D-124); u podešavanju plana stoji tema sa linkom „Promeni temu”, bez izbora. I stari planovi sa stavkama koje čekaju prave ih u temi. Smena stilova (`variety.ts`) i šarene palete (`palettes.ts`) su obrisani; šest šarenih stilova ostaje kao stilovi tema.
+- Tokovi uvek crtaju u temi brenda: stil toka iz ranijih verzija (`content_flows.style_id`) se više ne koristi, a u čarobnjaku toka umesto izbora stila stoji tema brenda. Izvor fotografija i kategorija galerije toka ostaju.
+- Autopilot za objavu, priču i karusel više ne stavlja golu fotografiju ili vizual iz šablona: od uvoda, teksta i poziva na akciju koje je već napisao (bez novog poziva modelu) pravi slajdove u temi brenda (`slidesFromText`), u koracima kao plan (D-122). Tekst, link i video ostaju kakvi su. Vizual iz šablona (2 tokena) se za te vrste više ne plaća.
+- „Generiši ponovo” i izmena u Studiju crtaju objavu u trenutnoj temi brenda; nedostajuće fotografije se dopunjuju, a fotografije koje je dao korisnik idu ukrug kao do sada. Studio i dalje prihvata stil koji korisnik izričito traži za jednu objavu.
+- Svaka nacrtana objava pamti stil, boje i font teme (`posts.design.styleId`, `colors`, `fonts`). Nacrti koji čekaju (nacrt, na odobravanju, odbijen), a nisu u temi, prikazuju se kao obaveštenje u Odobravanju i na kartici teme, sa dugmetom „Uskladi sa temom”: pozadinski posao `design-harmonize` ih crta ponovo u temi, sa istim tekstom i fotografijama, bez tokena, svaku u svojim koracima. Posle čuvanja nove teme usklađivanje kreće samo. Zakazane i objavljene objave se ne diraju, a ni nacrt koji je neko izmenio dok je Sova crtala. Objava pre D-116 bez sačuvanog teksta slajdova ne može da se nacrta ponovo; za nju ostaje „Generiši ponovo”.
+
+Razlog: u Odobravanju su se mešali šareni nacrti, stariji nacrti u stilu Naslov i nacrti u temi, pa se feed „šarao”. Vlasnik traži da se to nikad ne dešava.

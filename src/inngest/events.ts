@@ -92,6 +92,11 @@ export const events = {
     }),
   }),
 
+  // jedna tema za sve objave (D-125): nacrti koji nisu u temi crtaju se ponovo
+  designHarmonize: eventType('design/drafts.harmonize', {
+    schema: z.object({ brandId: uuid }),
+  }),
+
   // Faza 12
   billingWebhookReceived: eventType('billing/webhook.received', {
     schema: z.object({ paymentEventId: uuid, provider: z.enum(['stripe', 'paddle']) }),
