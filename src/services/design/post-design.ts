@@ -24,7 +24,7 @@ export const designSlideSchema = z.object({
 export const postDesignSchema = z.object({
   topic: z.string().min(1).max(2000),
   cta: z.string().max(300).nullable(),
-  format: z.enum(['carousel', 'single', 'story']),
+  format: z.enum(['carousel', 'single', 'story', 'video']),
   styleId: z.enum(STYLE_IDS),
   slides: z.number().int().min(1).max(10),
   photoSource: z.enum(PHOTO_SOURCES),
@@ -45,6 +45,20 @@ export const postDesignSchema = z.object({
     .object({
       slides: z.array(designSlideSchema).min(1).max(10),
       photoAssetIds: z.array(z.uuid()).max(10).default([]),
+    })
+    .optional(),
+  /**
+   * Video u temi (D-128): `copy.slides` su kadrovi, snimci idu ispod njih (bez snimka fotografija iz
+   * `copy.photoAssetIds`), a sloj teksta svakog kadra je PNG sa providnošću. Gotov MP4 pravi
+   * pregledač; dok ga nema, nacrt ne može da se zakaže.
+   */
+  video: z
+    .object({
+      clipAssetIds: z.array(z.uuid()).max(4),
+      overlayAssetIds: z.array(z.uuid()).min(1).max(10),
+      seconds: z.array(z.number().min(1).max(10)).min(1).max(10),
+      posterAssetId: z.uuid().nullable(),
+      renderedAssetId: z.uuid().nullable(),
     })
     .optional(),
 })

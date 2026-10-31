@@ -785,23 +785,42 @@ describe('Autopilot: jezik i vrste objava (D-107)', () => {
     }
   })
 
-  it('video: snimak sa Pexels-a za Facebook i Instagram (Reels), bez tokena za vizual', async () => {
+  it('video: video u temi sa snimcima sa Pexels-a i slojem teksta teme, MP4 pravi pregledač (D-128)', async () => {
     await patch({ formats: ['video'], mix: false, language: null })
     enqueueReply(uniqueReply(), uniqueReply(), uniqueReply())
     const weekStart = addDays(week0, 35)
     const r = await runWeeklyForBrand({ brandId, weekStart }, inline)
     expect(r).toMatchObject({ status: 'succeeded', planned: 3, returned: 0 })
+    // tekst se plaća kao i do sada; snimci, slojevi i MP4 iz pregledača ne koštaju tokene
     expect(r.tokens).toBe(2 * 3)
     const posts = await weekPosts(weekStart)
     expect(posts).toHaveLength(3)
+    let withTwoClips = 0
     for (const p of posts) {
-      const media = p.post_media as unknown as Array<{ media_assets: { kind: string; source: string } }>
-      expect(media).toHaveLength(1)
-      expect(media[0]!.media_assets).toMatchObject({ kind: 'video', source: 'pexels' })
+      expect(p.status).toBe('in_review')
+      expect(p.post_media).toHaveLength(0)
+      const design = p.design as {
+        format: string
+        copy: { slides: unknown[]; photoAssetIds: string[] }
+        video: { clipAssetIds: string[]; overlayAssetIds: string[]; seconds: number[]; renderedAssetId: null }
+      }
+      expect(design.format).toBe('video')
+      expect(design.video.overlayAssetIds).toHaveLength(design.copy.slides.length)
+      expect(design.video.seconds).toHaveLength(design.copy.slides.length)
+      expect(design.video.renderedAssetId).toBeNull()
+      const { data: clips } = await admin
+        .from('media_assets')
+        .select('kind, source')
+        .in('id', design.video.clipAssetIds)
+      expect(clips!.every((c) => c.kind === 'video' && c.source === 'pexels')).toBe(true)
+      // snimak se u brendu ne ponavlja (D-121); kad lažni Pexels ostane bez novih, video ide preko fotografija
+      expect(clips!.length + design.copy.photoAssetIds.length).toBeGreaterThan(0)
+      if (clips!.length === 2) withTwoClips++
       expect((p.post_targets as Array<{ options: Record<string, unknown> }>)[0]!.options).not.toHaveProperty(
         'format',
       )
     }
+    expect(withTwoClips).toBeGreaterThan(0)
     // ponovo isto podešavanje kao pre ovog bloka
     await patch({ formats: ['text', 'image'], mix: false })
   })

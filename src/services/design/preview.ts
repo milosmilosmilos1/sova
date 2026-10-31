@@ -4,11 +4,14 @@ import { createHash } from 'node:crypto'
 import { readFile } from 'node:fs/promises'
 import path from 'node:path'
 
+import sharp from 'sharp'
+
 import { toContentLocale, type ContentLocale } from '@/config/locales'
 import type { Viewer } from '@/lib/auth/viewer'
 import type { PreviewInput } from '@/lib/schemas/design'
 import { getStyle, wantsPhoto, type Slide, type SlideKind } from '@/lib/visuals/design'
-import { preparePhoto, renderSlide } from '@/lib/visuals/design/render'
+import { preparePhoto, renderOverlay, renderSlide } from '@/lib/visuals/design/render'
+import { videoStyleFor } from '@/lib/visuals/design/video'
 import { getBrand } from '@/services/brands'
 
 import { logoDataUri, resolveDesign } from './brand-design'
@@ -101,8 +104,31 @@ let samplePhoto: Promise<Buffer> | null = null
 
 const cache = new Map<string, Buffer>()
 const CACHE_MAX = 300
+const PREVIEW_WIDTH = 432
 
-export async function renderPreview(viewer: Viewer, input: PreviewInput): Promise<Buffer> {
+/** Fotografija ispod sloja videa u biraču teme (D-128): primer fotografije isečen na 9:16. */
+let backdrop: Promise<Buffer> | null = null
+function videoBackdrop(): Promise<Buffer> {
+  samplePhoto ??= readFile(SAMPLE_PHOTO)
+  backdrop ??= samplePhoto.then((photo) =>
+    sharp(photo)
+      .resize({ width: PREVIEW_WIDTH, height: Math.round((PREVIEW_WIDTH * 16) / 9), fit: 'cover' })
+      .jpeg({ quality: 80 })
+      .toBuffer(),
+  )
+  return backdrop
+}
+
+export interface PreviewImage {
+  bytes: Buffer
+  mimeType: 'image/jpeg' | 'image/png'
+}
+
+export async function renderPreview(viewer: Viewer, input: PreviewInput): Promise<PreviewImage> {
+  if (input.layer === 'backdrop') {
+    await getBrand(viewer, input.brandId)
+    return { bytes: await videoBackdrop(), mimeType: 'image/jpeg' }
+  }
   const brand = await getBrand(viewer, input.brandId)
   const design = await resolveDesign(brand)
   const colors = input.colors ?? design.colors
@@ -118,6 +144,7 @@ export async function renderPreview(viewer: Viewer, input: PreviewInput): Promis
   const key = createHash('sha1')
     .update(
       JSON.stringify([
+        input.layer,
         input.styleId,
         input.format,
         input.kind,
@@ -133,8 +160,29 @@ export async function renderPreview(viewer: Viewer, input: PreviewInput): Promis
       ]),
     )
     .digest('hex')
+  const mimeType = input.layer === 'overlay' ? 'image/png' : 'image/jpeg'
   const hit = cache.get(key)
-  if (hit) return hit
+  if (hit) return { bytes: hit, mimeType }
+  if (input.layer === 'overlay') {
+    // sloj naslovnog kadra videa u stilu teme; tipografska tema ide preko snimka kao Poster
+    const overlay = await renderOverlay({
+      styleId: videoStyleFor(input.styleId),
+      slide: { ...SAMPLES[locale].cover, ...(input.title ? { title: input.title } : {}) },
+      format: 'story',
+      colors,
+      brandFonts: fonts,
+      lockFonts,
+      brandName: brand.name,
+      handle: design.handle,
+      logo: await logoDataUri(design.logoAssetId),
+      index: 0,
+      total: 1,
+      outputWidth: PREVIEW_WIDTH,
+    })
+    if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value!)
+    cache.set(key, overlay.bytes)
+    return { bytes: overlay.bytes, mimeType }
+  }
   samplePhoto ??= readFile(SAMPLE_PHOTO)
   const photo = usePhoto ? await preparePhoto(await samplePhoto, style, colors) : null
   const result = await renderSlide({
@@ -150,12 +198,12 @@ export async function renderPreview(viewer: Viewer, input: PreviewInput): Promis
     photo,
     index,
     total: 5,
-    outputWidth: 432,
+    outputWidth: PREVIEW_WIDTH,
     format_out: 'jpeg',
   })
   if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value!)
   cache.set(key, result.bytes)
-  return result.bytes
+  return { bytes: result.bytes, mimeType }
 }
 
 export function clearPreviewCacheForTests(): void {

@@ -1025,3 +1025,17 @@ Odluka:
 - `decide` i `schedule` vraćaju novu verziju bez punog prikaza objave, kao `withdraw` i `cancel` iz D-126; posle odobrenja se sadržaj ne proverava ponovo. Rad po šest u isto vreme i ostatak u `rest` važe kao za brisanje.
 
 Razlog: vlasnik traži da nacrte zakaže odjednom umesto jedan po jedan. Na produkciji BelgradeMidnight ima 26 nacrta koji čekaju, svi sa budućim terminom iz plana (2.11–30.12) i povezanim Facebook-om i Instagramom.
+
+## D-128 · 31.10.2026 · usvojeno · Video u temi: snimak sa tekstom teme, montaža u pregledaču
+
+Odluka:
+
+- Video objava iz plana, Autopilota i „Generiši ponovo” je video u temi brenda: 3–5 kadrova od oko 3 sekunde (naslov, do tri poruke, završni poziv na akciju), oko 12 sekundi, 1080×1920, bez zvuka. Tekst kadrova piše isti poziv modelu kao karusel (2 tokena, kao do sada), pa video ne košta više od druge objave. Ispod kadrova idu kratki snimci sa Pexels-a (do dva po videu, 720p, bez ponavljanja u brendu); bez snimaka video ide preko fotografija sa laganim uvećanjem.
+- Sloj teksta svakog kadra crta server u stilu teme (isti font, boje i raspored kao objava, karusel i priča), kao PNG sa providnošću tamo gde stil crta fotografiju. Slajd se nacrta dvaput, sa crnom i sa belom fotografijom, a iz razlike se dobija providnost (`matteFromKeys`), pa radi u svakom stilu, i sa prelivima preko fotografije. Tipografska tema ide preko snimka kao Poster; kadrovi sa tekstom se crtaju kao naslovni slajd teme (u svakom stilu sa fotografijom on ima fotografiju), a poziv na akciju je završni kadar teme.
+- MP4 pravi pregledač u Odobravanju, kao „Napravi video” (D-118): dok je strana otvorena, Sova redom pravi videe koji čekaju (snimak se uvećava, tekst ulazi odozdo i pretapa se sa prethodnim kadrom), otprema ih i kači na nacrt. Server ne kodira video. Pregledač bez WebCodecs-a dobija poruku da otvori Sovu u Chrome-u, Edge-u ili novijem Safariju.
+- Dok MP4 ne postoji, nacrt ne može da se zakaže (Facebook bi objavio samo tekst), pa video iz plana i Autopilota uvek ide na odobravanje, i kad je izabrano „Zakaži odmah” ili nivo 3. Lista i detalj pokazuju sliku prvog kadra (sa kadrom iz snimka) i oznaku „video se pravi”.
+- Nova tema (D-125), „Generiši ponovo” i izmena u Studiju crtaju nove slojeve teksta sa istim snimcima i skidaju gotov MP4, pa ga pregledač pravi ponovo u novoj temi.
+- Izbor teme prikazuje i video: za svaku temu sloj naslovnog kadra preko primera fotografije, sa animacijom.
+- Podaci: `posts.design.format = 'video'` i `posts.design.video` (`clipAssetIds`, `overlayAssetIds`, `seconds`, `posterAssetId`, `renderedAssetId`); rute `GET /api/approvals/videos`, `GET` i `POST /api/approvals/[id]/theme-video`. Bez migracije.
+
+Razlog: vlasnik traži video sa tekstom u izboru teme, urađen i montiran, bez većih troškova. Montaža u pregledaču ne troši ni tokene ni rad servera; jedini rast je skladište (oko 3 MB za MP4 od 12 sekundi, plus snimci i slojevi). Montaža na serveru ili spoljni servis bi to omogućili i bez otvorenog Odobravanja, ali uz trošak.

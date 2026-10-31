@@ -16,6 +16,7 @@ import {
 } from '@/lib/autopilot/rules'
 import { isFeatureEnabled } from '@/lib/flags'
 import { slidesFromText } from '@/lib/visuals/design/from-text'
+import { videoScenes } from '@/lib/visuals/design/video'
 import { logger } from '@/lib/logger'
 import {
   addDays,
@@ -33,6 +34,7 @@ import { brandContextFor, draftMedia, generateDraftText, headlineFrom } from '@/
 import { resolveDesign } from '@/services/design/brand-design'
 import { themeOf, type PostDesignContext } from '@/services/design/post-design'
 import { renderDesignInSteps, type DesignRenderInput } from '@/services/design/render-post'
+import { buildThemeVideoInSteps, videoPostDesign, type ThemeVideoInput } from '@/services/design/video-post'
 import { autopilotContentPrefs, autopilotSettings, autopilotUsage } from '@/services/autopilot/settings'
 import { notifyUsers, usersWithRoles } from '@/services/notifications'
 import { wallClock, zonedToUtc } from '@/lib/zoned-time'
@@ -495,7 +497,22 @@ interface ThemedWork {
   design: PostDesignContext
 }
 
-type DraftStart = { kind: 'result'; result: DraftResult } | { kind: 'themed'; work: ThemedWork }
+/** Video u temi Autopilota između koraka (D-128): kadrovi od teksta, snimci i slojevi idu u koracima. */
+interface VideoDraftWork {
+  topic: string
+  offer: string | null
+  locale: string | undefined
+  platform: SocialPlatform
+  tokens: number
+  text: DraftText
+  video: ThemeVideoInput
+  base: Pick<PostDesignContext, 'topic' | 'cta' | 'locale' | 'platforms'>
+}
+
+type DraftStart =
+  | { kind: 'result'; result: DraftResult }
+  | { kind: 'themed'; work: ThemedWork }
+  | { kind: 'video'; work: VideoDraftWork }
 
 /**
  * Kraj nacrta: mediji, kontrola kvaliteta, upis teksta i odobravanje ili zakazivanje (nivo 3).
@@ -549,7 +566,8 @@ async function completeDraft(input: {
     forbiddenWords: context.forbiddenWords ?? [],
     factsCorpus: corpus,
     recentTexts: await recentTexts(brand.id, postId),
-    hasMedia: input.assetIds.length > 0,
+    // video u temi dobija MP4 u Odobravanju (D-128), pa se računa kao objava sa medijem
+    hasMedia: input.assetIds.length > 0 || input.design?.format === 'video',
   })
   const { error: upErr } = await admin
     .from('posts')
@@ -583,7 +601,8 @@ async function completeDraft(input: {
     brand.autopilot_level3_confirmed_at !== null &&
     (await isFeatureEnabled('autopilot_level3')) &&
     (targets ?? []).every((t) => (settings.level3AccountIds ?? []).includes(t.social_account_id))
-  if (level3) {
+  // video u temi se ne zakazuje sam: MP4 pravi pregledač u Odobravanju (D-128)
+  if (level3 && input.design?.format !== 'video') {
     await systemSchedule(postId, 'Autopilot (nivo 3): zakazano posle kontrole kvaliteta')
     return { postId, outcome: 'scheduled', tokens }
   }
@@ -624,8 +643,8 @@ async function startDraft(runId: string, postId: string): Promise<DraftStart> {
   const themed = THEMED[format]
   const needsMedia = MEDIA_REQUIRED.includes(platform) || mediaNeed(format).kind !== 'none'
   const textPrice = await getTokenPrice('text')
-  // slajdovi u temi su besplatni; vizual iz šablona se plaća samo kao rezerva bez teme
-  const visualPrice = needsMedia && !themed ? await getTokenPrice('visual_template') : 0
+  // slajdovi i video u temi su besplatni; vizual iz šablona se plaća samo kao rezerva bez teme
+  const visualPrice = needsMedia && !themed && format !== 'video' ? await getTokenPrice('visual_template') : 0
   const usage = await autopilotUsage(brand.id, brand.autopilot_token_budget)
   if (!canSpend(usage.used, usage.budget, textPrice + visualPrice)) {
     return done({ postId, outcome: 'budget', tokens: 0, message: 'mesečni budžet je potrošen' })
@@ -672,6 +691,37 @@ async function startDraft(runId: string, postId: string): Promise<DraftStart> {
       body: text.body,
       hashtags: text.hashtags,
       firstComment: text.firstComment,
+    }
+
+    if (format === 'video') {
+      // video u temi (D-128): kadrovi od istog teksta, snimci sa Pexels-a i slojevi teksta teme
+      const look = await resolveDesign(brand)
+      return {
+        kind: 'video',
+        work: {
+          topic,
+          offer: campaign?.offer ?? null,
+          locale: prefs.language,
+          platform,
+          tokens,
+          text: draftText,
+          video: {
+            workspaceId: brand.workspace_id,
+            brandId: brand.id,
+            design: look,
+            scenes: videoScenes(slidesFromText(text.parts, 'carousel')),
+            query: (text.visualQuery ?? topic).slice(0, 100),
+            uploadedBy: null,
+            origin: { autopilotRunId: runId, postId },
+          },
+          base: {
+            topic: topic.slice(0, 2000),
+            cta: campaign?.cta ?? null,
+            locale: toContentLocale(context.locale),
+            platforms: [platform],
+          },
+        },
+      }
     }
 
     if (themed) {
@@ -759,6 +809,7 @@ async function startDraft(runId: string, postId: string): Promise<DraftStart> {
 async function draftOne(runId: string, postId: string, step: StepRunner): Promise<DraftResult> {
   const started = await step('start', () => startDraft(runId, postId))
   if (started.kind === 'result') return started.result
+  if (started.kind === 'video') return draftVideo(runId, postId, started.work, step)
   const { work } = started
   try {
     const rendered = await renderDesignInSteps(step, work.render)
@@ -776,6 +827,38 @@ async function draftOne(runId: string, postId: string, step: StepRunner): Promis
         story: work.story,
         link: false,
         design: { ...work.design, copy: { slides: work.render.slides, photoAssetIds: rendered.photoIds } },
+      }),
+    )
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    logger.warn('autopilot_draft_failed', { runId, postId, message })
+    return { postId, outcome: 'error', tokens: work.tokens, message }
+  }
+}
+
+/** Video u temi Autopilota (D-128): snimci, slojevi i slika u koracima, pa nacrt bez MP4. */
+async function draftVideo(
+  runId: string,
+  postId: string,
+  work: VideoDraftWork,
+  step: StepRunner,
+): Promise<DraftResult> {
+  try {
+    const video = await buildThemeVideoInSteps(step, work.video)
+    return await step('save', () =>
+      completeDraft({
+        runId,
+        postId,
+        platform: work.platform,
+        topic: work.topic,
+        offer: work.offer,
+        locale: work.locale,
+        tokens: work.tokens,
+        text: work.text,
+        assetIds: [],
+        story: false,
+        link: false,
+        design: videoPostDesign(work.base, work.video.design, work.video.scenes, video),
       }),
     )
   } catch (error) {

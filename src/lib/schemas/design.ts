@@ -107,6 +107,8 @@ export const previewSchema = z.object({
   withPhoto: z.boolean().default(true),
   /** font koji korisnik upravo bira (D-123); važi za naslov i tekst kao izabran font brenda */
   font: fontNameSchema.optional(),
+  /** video u temi (D-128): sloj teksta naslovnog kadra (PNG) ili fotografija ispod njega */
+  layer: z.enum(['slide', 'overlay', 'backdrop']).default('slide'),
 })
 export type PreviewInput = z.infer<typeof previewSchema>
 
@@ -128,6 +130,7 @@ export const previewQuerySchema = z
       .optional(),
     photo: z.enum(['0', '1']).default('1'),
     f: fontNameSchema.optional(),
+    layer: z.enum(['slide', 'overlay', 'backdrop']).default('slide'),
   })
   .transform((q): PreviewInput => {
     const [primary, secondary, background, text, muted] = (q.c?.split('-') ?? []).map(
@@ -143,5 +146,6 @@ export const previewQuerySchema = z
         : undefined,
       withPhoto: q.photo === '1',
       font: q.f,
+      layer: q.layer,
     }
   })

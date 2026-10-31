@@ -288,7 +288,8 @@
       "kinds": {
         "post": "Post",
         "carousel": "Carousel",
-        "story": "Story"
+        "story": "Story",
+        "video": "Video"
       },
       "primary": "Primary",
       "secondary": "Secondary",
@@ -571,6 +572,13 @@
       "uploading": "Saving the video to the library…",
       "cancel": "Close",
       "make": "Make video"
+    },
+    "themeVideo": {
+      "making": "Sova is making the theme video: {index} of {total} ({percent}%). Keep this page open until it finishes.",
+      "unsupported": "{count, plural, one {# theme video is} other {# theme videos are}} waiting to be made. Open Approvals in Chrome, Edge or a recent Safari.",
+      "pending": "video in progress",
+      "pendingDetail": "The theme video is being made in your browser while Approvals is open. After that it can be scheduled.",
+      "poster": "First frame of the theme video"
     }
   },
   "setup": {

@@ -210,6 +210,9 @@
   --animate-l-pulse: l-pulse 1.6s ease-in-out infinite;
   --animate-l-pulse-fast: l-pulse 1.2s ease-in-out infinite;
   --animate-l-blink: l-blink 1s step-end infinite;
+  /* pregled videa u temi (D-128): snimak se lagano uvećava, a tekst ulazi odozdo pa se ponavlja */
+  --animate-video-zoom: video-zoom 7s ease-in-out infinite alternate;
+  --animate-video-text: video-text 4.5s ease-out infinite;
 
   @keyframes l-fill {
     from {
@@ -244,6 +247,30 @@
     }
     50% {
       opacity: 0.3;
+    }
+  }
+  @keyframes video-zoom {
+    from {
+      transform: scale(1);
+    }
+    to {
+      transform: scale(1.08);
+    }
+  }
+  @keyframes video-text {
+    0%,
+    8% {
+      opacity: 0;
+      transform: translateY(4%);
+    }
+    22%,
+    90% {
+      opacity: 1;
+      transform: none;
+    }
+    100% {
+      opacity: 0;
+      transform: none;
     }
   }
   @keyframes l-blink {

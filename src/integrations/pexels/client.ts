@@ -238,11 +238,18 @@ export async function getPhoto(id: number): Promise<PexelsPhoto> {
  * MP4 fajlovi od najboljeg ka slabijem, najviše 1080 px po kraćoj strani: veći prelazi limit
  * skladišta, a mrežama ne treba. Pozivalac uzima prvi koji stane u limit.
  */
-export function videoFileCandidates(video: PexelsVideo): PexelsVideoFile[] {
-  return video.files
+/**
+ * MP4 fajlovi snimka za preuzimanje, najveći do 1080 px po kraćoj strani prvi. Sa `prefer` prvo idu
+ * fajlovi do te veličine (video u temi uzima 720p: manje skladišta, a tekst crta sloj teme).
+ */
+export function videoFileCandidates(video: PexelsVideo, prefer?: number): PexelsVideoFile[] {
+  const short = (f: PexelsVideoFile) => Math.min(f.width!, f.height!)
+  const files = video.files
     .filter((f) => f.fileType === 'video/mp4' && f.width && f.height)
-    .filter((f) => Math.min(f.width!, f.height!) <= 1080)
-    .sort((a, b) => Math.min(b.width!, b.height!) - Math.min(a.width!, a.height!))
+    .filter((f) => short(f) <= 1080)
+    .sort((a, b) => short(b) - short(a))
+  if (!prefer) return files
+  return [...files.filter((f) => short(f) <= prefer), ...files.filter((f) => short(f) > prefer).reverse()]
 }
 
 export interface PexelsAttribution {

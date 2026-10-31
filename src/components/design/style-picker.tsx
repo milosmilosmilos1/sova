@@ -22,6 +22,8 @@ export function previewUrl(input: {
   font?: string | null
   /** menja adresu kad se promeni nešto što server čita sam (npr. logo), da pregledač ne vrati staru sliku */
   v?: string | null
+  /** video u temi (D-128): sloj teksta naslovnog kadra ili fotografija ispod njega */
+  layer?: 'overlay' | 'backdrop'
 }): string {
   const q = new URLSearchParams({
     brandId: input.brandId,
@@ -31,6 +33,7 @@ export function previewUrl(input: {
     photo: input.photo === false ? '0' : '1',
   })
   if (input.v) q.set('v', input.v)
+  if (input.layer) q.set('layer', input.layer)
   if (input.font) q.set('f', input.font)
   if (input.colors)
     q.set(

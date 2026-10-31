@@ -22,6 +22,7 @@ import { useCallback, useState } from 'react'
 
 import { ThemeNotice } from '@/components/design/theme-notice'
 import { BulkScheduleDialog } from '@/components/review/bulk-schedule-dialog'
+import { ThemeVideoQueue } from '@/components/review/theme-video-queue'
 import { api, bulkRequest } from '@/components/shared/api-client'
 import { BulkBar, SelectAllBox, SelectBox, useSelection } from '@/components/shared/bulk'
 import { ErrorBox } from '@/components/shared/error-box'
@@ -52,6 +53,7 @@ interface Item {
   platforms: SocialPlatform[]
   scheduledFor: string | null
   createdAt: string
+  videoPending: boolean
 }
 
 interface Detail {
@@ -85,6 +87,7 @@ interface Detail {
   canRegenerate: boolean
   suggestedAt: string
   limits: Record<string, number>
+  video: { pending: boolean; posterUrl: string | null } | null
 }
 
 const INTL: Record<string, string> = { 'sr-Latn': 'sr-Latn-RS', en: 'en-GB', uk: 'uk-UA' }
@@ -187,6 +190,7 @@ export function ReviewDesk({
       </div>
 
       <ThemeNotice brandId={brandId} canEdit={canEdit} onDone={refreshAfterTheme} />
+      <ThemeVideoQueue brandId={brandId} canEdit={canEdit} onDone={refreshAfterTheme} />
 
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-card p-2">
         <div className="flex flex-wrap gap-1" role="tablist" aria-label={t('title')}>
@@ -299,6 +303,7 @@ export function ReviewDesk({
                     <span className="block text-xs text-muted-foreground">
                       {t(`formats.${i.format}`)}
                       {i.slides > 1 ? ` · ${t('slides', { n: i.slides })}` : ''}
+                      {i.videoPending ? ` · ${t('themeVideo.pending')}` : ''}
                     </span>
                     <span className="block text-xs text-muted-foreground">
                       {t(`status.${i.status}` as 'status.draft')}
@@ -533,6 +538,20 @@ function DetailForm({
                     </button>
                   </>
                 ) : null}
+              </div>
+            ) : detail.video?.pending ? (
+              <div className="relative overflow-hidden rounded-xl bg-muted">
+                {detail.video.posterUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element -- potpisan URL slike videa
+                  <img
+                    src={detail.video.posterUrl}
+                    alt={t('themeVideo.poster')}
+                    className="mx-auto max-h-[70vh] w-auto object-contain"
+                  />
+                ) : null}
+                <p className="absolute inset-x-3 top-3 rounded-lg bg-background/90 px-3 py-2 text-center text-xs shadow">
+                  {t('themeVideo.pendingDetail')}
+                </p>
               </div>
             ) : (
               <p className="rounded-xl bg-muted p-10 text-center text-sm text-muted-foreground">

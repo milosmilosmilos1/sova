@@ -23,16 +23,23 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getTokenPrice } from '@/lib/tokens/prices'
 import { confirmReservation } from '@/lib/tokens/reservation'
 import type { Slide } from '@/lib/visuals/design/types'
+import { videoScenes } from '@/lib/visuals/design/video'
 import { wallClock, zonedToUtc } from '@/lib/zoned-time'
 import { failGeneration, startGeneration } from '@/services/ai/generations'
 import { buildBrandContext } from '@/services/ai/text'
-import { draftMedia, generateDraftText, headlineFrom } from '@/services/autopilot/content'
+import { generateDraftText } from '@/services/autopilot/content'
 import { notifyRoles, type StepRunner } from '@/services/autopilot/runner'
 import type { BrandRow } from '@/services/brands'
 import { resolveDesign } from '@/services/design/brand-design'
 import { captionFor, generateDesignedCopy } from '@/services/design/copy'
 import { themeOf, type PostDesignContext } from '@/services/design/post-design'
 import { renderDesignInSteps, type DesignRenderInput } from '@/services/design/render-post'
+import {
+  buildThemeVideoInSteps,
+  VIDEO_COPY_SLIDES,
+  videoPostDesign,
+  type ThemeVideoInput,
+} from '@/services/design/video-post'
 import { systemSchedule, systemSubmitForReview } from '@/services/posts/system'
 import type { Database, Json } from '@/types/database'
 
@@ -371,7 +378,17 @@ interface DesignedWork {
   draft: PlanDraft
 }
 
-type StartedItem = { status: 'done' | 'failed' | 'skipped' } | { status: 'render'; work: DesignedWork }
+/** Video u temi posle prvog koraka (D-128): kadrovi su napisani, snimci i slojevi idu u koracima. */
+interface VideoWork {
+  itemId: string
+  video: ThemeVideoInput
+  draft: PlanDraft
+}
+
+type StartedItem =
+  | { status: 'done' | 'failed' | 'skipped' }
+  | { status: 'render'; work: DesignedWork }
+  | { status: 'video'; work: VideoWork }
 
 /** Slajdovi neuspelog pokušaja ne ostaju u biblioteci; fotografije ostaju, brend ih je dobio. */
 async function dropAttemptSlides(itemId: string): Promise<void> {
@@ -402,8 +419,9 @@ export async function failPlanItem(itemId: string, message: string): Promise<'fa
 }
 
 /**
- * Prvi korak stavke: nalozi, kontekst i tekst. Tekst, link i video se ovde i završe (staju u jedan
- * korak); karusel, slika i priča vraćaju posao za slajdove, koji idu u svojim koracima.
+ * Prvi korak stavke: nalozi, kontekst i tekst. Tekst i link se ovde i završe (staju u jedan korak);
+ * karusel, slika i priča vraćaju posao za slajdove, a video posao za video u temi (D-128), koji idu
+ * u svojim koracima.
  */
 async function startPlanItem(itemId: string): Promise<StartedItem> {
   const admin = createSupabaseAdminClient()
@@ -433,6 +451,53 @@ async function startPlanItem(itemId: string): Promise<StartedItem> {
     const topic = item.brief ? `${item.topic}\n\n${item.brief}` : item.topic
     const publishDate = wallClock(item.scheduled_for, brand.timezone).date
     const context = await buildBrandContext(brand, topic.slice(0, 500), locale)
+
+    if (format === 'video') {
+      // video u temi (D-128): isti tekst kao karusel, kadrovi u temi brenda preko snimka
+      const look = await resolveDesign(brand)
+      const copy = await generateDesignedCopy({
+        workspaceId: brand.workspace_id,
+        brandId: brand.id,
+        userId: null,
+        context,
+        topic,
+        cta: item.cta,
+        format: 'carousel',
+        slides: VIDEO_COPY_SLIDES,
+        platforms,
+        includeHashtags: true,
+        publishDate,
+        origin: { plan: plan.id, item: item.id, video: true },
+      })
+      const scenes = videoScenes(copy.slides as Slide[])
+      return {
+        status: 'video',
+        work: {
+          itemId: item.id,
+          video: {
+            workspaceId: brand.workspace_id,
+            brandId: brand.id,
+            design: look,
+            scenes,
+            query: (copy.visualQuery || item.topic).slice(0, 100),
+            uploadedBy: null,
+            origin: { planId: plan.id, itemId: item.id },
+          },
+          draft: {
+            title: (copy.slides[0]?.title ?? item.topic).slice(0, 200),
+            master: captionFor(copy, 'instagram'),
+            firstComment: copy.firstComment,
+            link: null,
+            texts: Object.fromEntries(platforms.map((p) => [p, captionFor(copy, p)])),
+            accounts,
+            story: false,
+            locale,
+            tokens: copy.tokens,
+            design: null,
+          },
+        },
+      }
+    }
 
     const designed = DESIGNED[format]
     if (designed) {
@@ -515,21 +580,6 @@ async function startPlanItem(itemId: string): Promise<StartedItem> {
       publishDate,
       format,
     })
-    let tokens = text.tokens
-    let assetIds: string[] = []
-    if (format === 'video') {
-      const media = await draftMedia(brand, {
-        format: 'video',
-        required: true,
-        query: (text.visualQuery || item.topic).slice(0, 100),
-        headline: headlineFrom(text.body, item.topic),
-        cta: item.cta,
-        postId: item.id,
-        runId: plan.id,
-      })
-      tokens += media.tokens
-      assetIds = media.assetIds
-    }
     const draft: PlanDraft = {
       title: item.topic.slice(0, 200),
       master: text.text,
@@ -540,9 +590,9 @@ async function startPlanItem(itemId: string): Promise<StartedItem> {
       story: false,
       locale,
       design: null,
-      tokens,
+      tokens: text.tokens,
     }
-    return { status: await savePlanDraft(item.id, draft, assetIds) }
+    return { status: await savePlanDraft(item.id, draft, []) }
   } catch (error) {
     return { status: await failPlanItem(item.id, error instanceof Error ? error.message : String(error)) }
   }
@@ -617,9 +667,10 @@ async function savePlanDraft(
   // Nacrt postoji i stavka je gotova; ako zakazivanje ili slanje na odobravanje ne uspe,
   // nacrt ostaje u Objavama (link sa stavke), a stavka se ne pravi ponovo.
   try {
-    // zakazivanje bez odobravanja traži budući termin; prošao termin ide na odobravanje
+    // zakazivanje bez odobravanja traži budući termin; prošao termin ide na odobravanje, a video
+    // u temi uvek, jer MP4 pravi pregledač u Odobravanju (D-128)
     const future = Date.parse(item.scheduled_for) > Date.now() + 60_000
-    if (planSettings(plan).mode === 'schedule' && future)
+    if (planSettings(plan).mode === 'schedule' && future && draft.design?.format !== 'video')
       await systemSchedule(postId, 'Mesečni plan: zakazano bez odobravanja')
     else await systemSubmitForReview(postId, 'Mesečni plan: nacrt čeka odluku', { notify: false })
   } catch (error) {
@@ -631,14 +682,16 @@ async function savePlanDraft(
 /**
  * Jedna stavka plana postaje nacrt (ili zakazana objava). Karusel, slika i priča idu u koracima
  * (D-122): tekst, fotografije, slajdovi po tri i nacrt, svaki ispod 30 sekundi koliko Netlify daje
- * zahtevu; tekst, link i video staju u prvi korak. `step` je Inngest korak, a bez njega (testovi)
- * se sve izvrši redom. Korak koji ni posle ponovnog pokušaja ne uspe ostavlja stavku u neuspelima.
+ * zahtevu; tekst i link staju u prvi korak, a video u temi ide kroz `runVideoItem` (D-128). `step`
+ * je Inngest korak, a bez njega (testovi) se sve izvrši redom. Korak koji ni posle ponovnog
+ * pokušaja ne uspe ostavlja stavku u neuspelima.
  */
 export async function runPlanItem(
   itemId: string,
   step: StepRunner = (_name, fn) => fn(),
 ): Promise<'done' | 'failed' | 'skipped'> {
   const started = await step('start', () => startPlanItem(itemId))
+  if (started.status === 'video') return runVideoItem(itemId, started.work, step)
   if (started.status !== 'render') return started.status
   const { work } = started
   try {
@@ -654,6 +707,41 @@ export async function runPlanItem(
   } catch (error) {
     const message = error instanceof Error ? error.message : String(error)
     return step('failed', () => failPlanItem(itemId, `Slajdovi nisu napravljeni: ${message}`))
+  }
+}
+
+/** Video u temi iz plana (D-128): snimci, slojevi teksta po tri kadra i slika, pa nacrt bez MP4. */
+async function runVideoItem(
+  itemId: string,
+  work: VideoWork,
+  step: StepRunner,
+): Promise<'done' | 'failed' | 'skipped'> {
+  try {
+    const video = await buildThemeVideoInSteps(step, work.video)
+    const { data: plan } = await createSupabaseAdminClient()
+      .from('month_plan_items')
+      .select('cta, topic, brief')
+      .eq('id', itemId)
+      .maybeSingle()
+    const topic = plan?.brief ? `${plan.topic}\n\n${plan.brief}` : (plan?.topic ?? work.draft.title)
+    const draft: PlanDraft = {
+      ...work.draft,
+      design: videoPostDesign(
+        {
+          topic: topic.slice(0, 2000),
+          cta: plan?.cta ?? null,
+          locale: work.draft.locale,
+          platforms: [...new Set(work.draft.accounts.map((a) => a.platform))],
+        },
+        work.video.design,
+        work.video.scenes,
+        video,
+      ),
+    }
+    return await step('save', () => savePlanDraft(itemId, draft, []))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return step('failed', () => failPlanItem(itemId, `Video nije napravljen: ${message}`))
   }
 }
 

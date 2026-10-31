@@ -111,8 +111,9 @@ async function existing(
 /** Najbolji MP4 koji staje u limit skladišta; veći fajl se preskače bez preuzimanja celog. */
 async function downloadVideo(
   video: PexelsVideo,
+  prefer?: number,
 ): Promise<{ bytes: Buffer; fileId: number; quality: string | null }> {
-  for (const file of videoFileCandidates(video)) {
+  for (const file of videoFileCandidates(video, prefer)) {
     try {
       const res = await safeFetch(file.link, {
         timeoutMs: 40_000,
@@ -158,6 +159,8 @@ export async function storePexelsMedia(input: {
   /** već dobijeno pretragom (automatski izbor): bez još jednog poziva Pexels-u (D-122) */
   photo?: PexelsPhoto
   video?: PexelsVideo
+  /** najveća kraća strana snimka koja se prvo traži (video u temi: 720, D-128) */
+  preferShortSide?: number
 }): Promise<StoredPexels> {
   const found = await existing(input.brandId, input.kind, input.id, input.crop)
   // već sačuvan: atribucija je u redu medija, bez novog poziva Pexels-u (200 zahteva na sat)
@@ -166,7 +169,7 @@ export async function storePexelsMedia(input: {
   if (input.kind === 'video') {
     const video = input.video ?? (await getVideo(input.id))
     const attribution = attributionFor('video', video.user, video.pageUrl)
-    const file = await downloadVideo(video)
+    const file = await downloadVideo(video, input.preferShortSide)
     const asset = await storeServerVideo({
       workspaceId: input.workspaceId,
       brandId: input.brandId,
@@ -183,6 +186,8 @@ export async function storePexelsMedia(input: {
         pageUrl: video.pageUrl,
         fileId: file.fileId,
         quality: file.quality,
+        // kadar iz snimka za sličicu videa u temi dok ga pregledač ne napravi (D-128)
+        image: video.image,
       },
     })
     return { asset, attribution, reused: false }
@@ -240,6 +245,7 @@ export async function pickPexelsVideo(input: {
   query: string
   orientation: PexelsOrientation
   uploadedBy: string | null
+  preferShortSide?: number
 }): Promise<StoredPexels | null> {
   if (!isPexelsConfigured()) return null
   const used = await usedStockIds(input.brandId, 'pexels-video')

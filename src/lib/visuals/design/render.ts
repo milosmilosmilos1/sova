@@ -7,6 +7,7 @@ import { toDataUri } from '../render'
 import { fontWidth } from './font-choices'
 import { cleanSlideText, getStyle } from './index'
 import { mix, withWidthScale } from './kit'
+import { matteFromKeys } from './matte'
 import {
   DESIGN_SIZES,
   type DesignColors,
@@ -102,6 +103,41 @@ export async function renderSlide(input: SlideRenderInput): Promise<SlideRenderR
     width: outWidth,
     height: Math.round((size.height * outWidth) / size.width),
   }
+}
+
+/** Jednobojne „fotografije” za sloj videa (D-128): crna i bela, bez obrade stila. */
+let keyPhotos: Promise<[string, string]> | null = null
+function keys(): Promise<[string, string]> {
+  const solid = (v: number) =>
+    sharp({ create: { width: 8, height: 8, channels: 3, background: { r: v, g: v, b: v } } })
+      .png()
+      .toBuffer()
+      .then((b) => toDataUri(b, 'image/png'))
+  keyPhotos ??= Promise.all([solid(0), solid(255)])
+  return keyPhotos
+}
+
+/**
+ * Sloj teksta za video u temi (D-128): isti slajd sa crnom i sa belom fotografijom, pa PNG sa
+ * providnošću tamo gde stil crta fotografiju. Pregledač ispod njega pušta snimak.
+ */
+export async function renderOverlay(
+  input: Omit<SlideRenderInput, 'photo' | 'format_out'>,
+): Promise<SlideRenderResult> {
+  const [black, white] = await keys()
+  const [onBlack, onWhite] = await Promise.all([
+    renderSlide({ ...input, photo: black, format_out: 'png' }),
+    renderSlide({ ...input, photo: white, format_out: 'png' }),
+  ])
+  const a = await sharp(onBlack.bytes).ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+  const b = await sharp(onWhite.bytes).ensureAlpha().raw().toBuffer()
+  const rgba = matteFromKeys(a.data, b)
+  const bytes = await sharp(Buffer.from(rgba.buffer, rgba.byteOffset, rgba.byteLength), {
+    raw: { width: a.info.width, height: a.info.height, channels: 4 },
+  })
+    .png({ compressionLevel: 9 })
+    .toBuffer()
+  return { bytes, mimeType: 'image/png', width: a.info.width, height: a.info.height }
 }
 
 /**

@@ -46,6 +46,7 @@ import { getBrand, type BrandRow } from '@/services/brands'
 import { resolveDesign } from '@/services/design/brand-design'
 import { parsePostDesign, themeOf, type PostDesignContext } from '@/services/design/post-design'
 import { renderDesignSlides } from '@/services/design/render-post'
+import { buildThemeVideoInSteps, videoPostDesign } from '@/services/design/video-post'
 import { downloadAsset, getAsset, type MediaAssetRow } from '@/services/media'
 import { getPostView, updatePost, type PostView } from '@/services/posts/posts'
 import { listSocialAccounts } from '@/services/social/accounts'
@@ -322,6 +323,14 @@ function xText(caption: string): string | undefined {
   return caption.length <= 280 ? undefined : `${caption.slice(0, 277).trimEnd()}…`
 }
 
+/** Slajdovi (ili kadrovi videa) posle izmene iz Studija: menja se samo tekst navedenih. */
+function revisedSlides(copy: NonNullable<PostDesignContext['copy']>, revision: StudioRevision) {
+  return copy.slides.map((s, i) => {
+    const change = revision.slides.find((c) => c.index === i + 1)
+    return change ? { ...s, title: change.title, body: change.body } : s
+  })
+}
+
 async function reviseStudioPost(
   viewer: Viewer,
   brand: BrandRow,
@@ -332,11 +341,38 @@ async function reviseStudioPost(
   let media: Array<{ mediaAssetId: string; sortOrder: number }> | undefined
   let title: string | undefined
   let nextDesign: PostDesignContext | null = null
-  if (revision.slides.length && design?.copy) {
-    const slides = design.copy.slides.map((s, i) => {
-      const change = revision.slides.find((c) => c.index === i + 1)
-      return change ? { ...s, title: change.title, body: change.body } : s
+  if (revision.slides.length && design?.copy && design.format === 'video' && design.video) {
+    // video u temi (D-128): novi slojevi teksta preko istih snimaka; MP4 pregledač pravi ponovo
+    const slides = revisedSlides(design.copy, revision) as Slide[]
+    const theme = await resolveDesign(brand)
+    const video = await buildThemeVideoInSteps((_name, fn) => fn(), {
+      workspaceId: brand.workspace_id,
+      brandId: brand.id,
+      design: theme,
+      scenes: slides,
+      query: design.topic.slice(0, 100),
+      uploadedBy: viewer.user.id,
+      clipAssetIds: design.video.clipAssetIds,
+      photoAssetIds: design.copy.photoAssetIds,
+      origin: { postId: view.id },
     })
+    media = []
+    title = slides[0]?.title.slice(0, 200)
+    nextDesign = videoPostDesign(
+      {
+        topic: design.topic,
+        cta: design.cta,
+        locale: design.locale,
+        platforms: design.platforms,
+        flowId: design.flowId,
+        dmCta: design.dmCta,
+      },
+      theme,
+      slides,
+      video,
+    )
+  } else if (revision.slides.length && design?.copy) {
+    const slides = revisedSlides(design.copy, revision)
     // izmena crta objavu u trenutnoj temi brenda (D-125); priložena fotografija ostaje vidljiva
     const theme = await resolveDesign(brand)
     const styleId = styleForPhotos(theme.styleId, Boolean(design.ownPhotos))

@@ -148,7 +148,7 @@ async function generateAll(id: string): Promise<{ done: number; failed: number }
     enqueueReply(
       format === 'text'
         ? { kind: 'text', json: defaultTextOutput }
-        : carouselReply(format === 'carousel' ? 5 : 1),
+        : carouselReply(format === 'carousel' ? 5 : format === 'video' ? 4 : 1),
     )
     await runPlanItem(itemId)
   }
@@ -380,6 +380,64 @@ describe('mesečni plan', () => {
     // prethodni plan za isti mesec ostaje jer iz njega već postoje nacrti
     const { data: kept } = await admin.from('month_plans').select('id').eq('id', planId)
     expect(kept).toHaveLength(1)
+  })
+
+  it('video u temi iz plana (D-128): kadrovi i slojevi teme bez MP4, na odobravanju i kad je „zakaži odmah”', async () => {
+    const r = await call<Plan>(plansPost, '/api/plans', {
+      token: user.token,
+      body: { brandId, kind: 'next', perWeek: 3, formats: ['video'], platforms: ['instagram'] },
+    })
+    const videoPlan = r.json.data!.id
+    enqueueReply(await planReply(videoPlan))
+    await runPlanning(videoPlan)
+    const plan = (
+      await call<Plan>(planGet, `/api/plans/${videoPlan}`, { token: user.token, params: { id: videoPlan } })
+    ).json.data!
+    await call(itemsDeletePost, `/api/plans/${videoPlan}/items/delete`, {
+      token: user.token,
+      params: { id: videoPlan },
+      body: { ids: plan.items.slice(1).map((i) => i.id) },
+    })
+    await call(generatePost, `/api/plans/${videoPlan}/generate`, {
+      token: user.token,
+      params: { id: videoPlan },
+      body: { mode: 'schedule' },
+    })
+    expect(await generateAll(videoPlan)).toMatchObject({ done: 1, failed: 0 })
+    const done = (
+      await call<Plan>(planGet, `/api/plans/${videoPlan}`, { token: user.token, params: { id: videoPlan } })
+    ).json.data!
+    const { data: post } = await admin
+      .from('posts')
+      .select('status, design, post_media(media_asset_id)')
+      .eq('id', done.items[0]!.postId!)
+      .single()
+    // MP4 pravi pregledač u Odobravanju, pa video ne ide pravo u zakazane
+    expect(post!.status).toBe('in_review')
+    expect(post!.post_media).toHaveLength(0)
+    const design = post!.design as {
+      format: string
+      styleId: string
+      copy: { slides: Array<{ kind: string }> }
+      video: {
+        clipAssetIds: string[]
+        overlayAssetIds: string[]
+        posterAssetId: string | null
+        renderedAssetId: null
+      }
+    }
+    expect(design.format).toBe('video')
+    expect(design.copy.slides.map((s) => s.kind)).toEqual(['cover', 'cover', 'cover', 'cta'])
+    expect(design.video.overlayAssetIds).toHaveLength(4)
+    expect(design.video.clipAssetIds.length).toBeGreaterThan(0)
+    expect(design.video.posterAssetId).not.toBeNull()
+    expect(design.video.renderedAssetId).toBeNull()
+    const { data: overlays } = await admin
+      .from('media_assets')
+      .select('mime_type, source_data')
+      .in('id', design.video.overlayAssetIds)
+    expect(overlays!.every((o) => o.mime_type === 'image/png')).toBe(true)
+    expect(overlays!.every((o) => (o.source_data as { videoOverlay?: boolean }).videoOverlay)).toBe(true)
   })
 
   it('plan za dva meseca: teme mesec po mesec, drugi mesec zna teme prvog, 3 tokena po mesecu (D-120)', async () => {

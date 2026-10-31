@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Globe, LoaderCircle, RefreshCw } from 'lucide-react'
+import { Check, Globe, LoaderCircle, Play, RefreshCw } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 
@@ -47,7 +47,7 @@ function useSettled<T>(value: T, ms: number): T {
   return settled
 }
 
-/** Klasična objava, slajd karusela i priča: isti izgled u tri vrste sadržaja. */
+/** Klasična objava, slajd karusela, priča i video (D-128): isti izgled u četiri vrste sadržaja. */
 const KINDS = [
   { key: 'post', kind: 'cover', format: 'portrait' },
   { key: 'carousel', kind: 'point', format: 'portrait' },
@@ -64,8 +64,17 @@ function Previews({
   label: string
 }) {
   const t = useTranslations('design.looks')
+  const layer = (layer: 'overlay' | 'backdrop') =>
+    previewUrl({
+      brandId,
+      styleId: option.styleId,
+      format: 'story',
+      colors: option.colors,
+      font: option.fonts.headings,
+      layer,
+    })
   return (
-    <div className="grid grid-cols-[0.8fr_0.8fr_0.5625fr] items-end gap-2">
+    <div className="grid grid-cols-[0.8fr_0.8fr_0.5625fr_0.5625fr] items-end gap-2">
       {KINDS.map((k) => (
         <figure key={k.key} className="space-y-1">
           {/* eslint-disable-next-line @next/next/no-img-element -- dinamički pregled sa API-ja */}
@@ -88,6 +97,29 @@ function Previews({
           <figcaption className="text-center text-xs text-muted-foreground">{t(`kinds.${k.key}`)}</figcaption>
         </figure>
       ))}
+      <figure className="space-y-1">
+        <div className="relative aspect-[9/16] overflow-hidden rounded-md border bg-muted">
+          {/* eslint-disable-next-line @next/next/no-img-element -- dinamički pregled sa API-ja */}
+          <img
+            src={layer('backdrop')}
+            alt=""
+            loading="lazy"
+            className="absolute inset-0 size-full object-cover motion-safe:animate-video-zoom"
+          />
+          {/* eslint-disable-next-line @next/next/no-img-element -- dinamički pregled sa API-ja */}
+          <img
+            src={layer('overlay')}
+            alt={`${label}: ${t('kinds.video')}`}
+            loading="lazy"
+            className="absolute inset-0 size-full motion-safe:animate-video-text"
+          />
+          <Play
+            className="absolute top-1 left-1 size-4 rounded-full bg-black/55 p-0.5 text-white"
+            aria-hidden
+          />
+        </div>
+        <figcaption className="text-center text-xs text-muted-foreground">{t('kinds.video')}</figcaption>
+      </figure>
     </div>
   )
 }

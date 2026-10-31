@@ -19,6 +19,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError } from '@/lib/supabase/errors'
 import { connectKeyFor, providerFor } from '@/integrations/social/registry'
 import type { NormalizedPost } from '@/integrations/social/types'
+import { parsePostDesign } from '@/services/design/post-design'
 import { notifyUsers, usersWithRoles } from '@/services/notifications'
 import { getAsset, signedUrl } from '@/services/media'
 import {
@@ -128,6 +129,9 @@ async function findDuplicateOnAccount(
   return null
 }
 
+export const VIDEO_NOT_READY =
+  'Video još nije napravljen. Otvorite Odobravanje u Chrome-u, Edge-u ili Safariju i Sova će ga napraviti.'
+
 /**
  * Validacija sadržaja po mreži (dužina, hashtagovi, mediji) pre odobrenja ili zakazivanja.
  * `transform` proverava izmenu pre upisa (zamena medija, U9).
@@ -139,6 +143,18 @@ export async function validatePostContent(
 ): Promise<{ ok: boolean; problems: ContentProblem[] }> {
   const loaded = await getPostView(viewer, postId)
   const view = transform ? transform(loaded) : loaded
+  // video u temi (D-128) pravi pregledač; bez gotovog MP4 Facebook bi objavio samo tekst
+  const { data: row } = await createSupabaseAdminClient()
+    .from('posts')
+    .select('design')
+    .eq('id', postId)
+    .maybeSingle()
+  const design = parsePostDesign(row?.design)
+  if (design?.format === 'video' && !design.video?.renderedAssetId)
+    return {
+      ok: false,
+      problems: [{ socialAccountId: '', platform: '', problems: [VIDEO_NOT_READY] }],
+    }
   const problems: ContentProblem[] = []
   if (!view.targets.length) {
     return {

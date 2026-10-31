@@ -288,7 +288,8 @@
       "kinds": {
         "post": "Objava",
         "carousel": "Karusel",
-        "story": "Priča"
+        "story": "Priča",
+        "video": "Video"
       },
       "primary": "Primarna",
       "secondary": "Sekundarna",
@@ -571,6 +572,13 @@
       "uploading": "Čuvam video u biblioteci…",
       "cancel": "Zatvori",
       "make": "Napravi video"
+    },
+    "themeVideo": {
+      "making": "Sova pravi video u temi: {index} od {total} ({percent} %). Ostavite stranu otvorenu dok ne završi.",
+      "unsupported": "{count, plural, one {# video u temi čeka} few {# videa u temi čekaju} other {# videa u temi čeka}} da ga Sova napravi. Otvorite Odobravanje u Chrome-u, Edge-u ili novijem Safariju.",
+      "pending": "video se pravi",
+      "pendingDetail": "Video u temi se pravi u vašem pregledaču dok je Odobravanje otvoreno. Posle toga može da se zakaže.",
+      "poster": "Prvi kadar videa u temi"
     }
   },
   "setup": {

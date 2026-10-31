@@ -15,6 +15,7 @@ import { mapDbError } from '@/lib/supabase/errors'
 import type { Slide } from '@/lib/visuals/design/types'
 import { zipStore } from '@/lib/zip'
 import { styleForPhotos } from '@/lib/visuals/design'
+import { videoScenes } from '@/lib/visuals/design/video'
 import type { Json } from '@/types/database'
 import { buildBrandContext } from '@/services/ai/text'
 import { getBrand } from '@/services/brands'
@@ -22,6 +23,7 @@ import { resolveDesign } from '@/services/design/brand-design'
 import { captionFor, generateDesignedCopy } from '@/services/design/copy'
 import { parsePostDesign, themeOf, type PostDesignContext } from '@/services/design/post-design'
 import { renderDesignSlides } from '@/services/design/render-post'
+import { buildThemeVideoInSteps, VIDEO_COPY_SLIDES, videoPostDesign } from '@/services/design/video-post'
 import { downloadAsset, signedUrl } from '@/services/media'
 import { nextFreeSlot } from '@/services/posts/calendar'
 import { getPostView, loadPost, updatePost, type PostView } from '@/services/posts/posts'
@@ -67,6 +69,14 @@ export interface ReviewItem {
   platforms: SocialPlatform[]
   scheduledFor: string | null
   createdAt: string
+  /** video u temi koji pregledač još nije napravio (D-128) */
+  videoPending: boolean
+}
+
+/** Video u temi iz `posts.design` (D-128): slika za listu i da li MP4 već postoji. */
+interface StoredVideo {
+  posterAssetId?: string | null
+  renderedAssetId?: string | null
 }
 
 function formatOf(media: Array<{ kind: string }>, story: boolean): ReviewFormat {
@@ -84,7 +94,7 @@ export async function listReviewDesk(
   const { data, error } = await viewer.supabase
     .from('posts')
     .select(
-      'id, title, master_text, status, scheduled_for, created_at, flow_id, content_flows(name), post_targets(platform, options), post_media(sort_order, media_assets(kind, bucket, storage_path, mime_type))',
+      'id, title, master_text, status, scheduled_for, created_at, flow_id, content_flows(name), post_targets(platform, options), post_media(sort_order, media_assets(kind, bucket, storage_path, mime_type)), video:design->video, designFormat:design->>format',
     )
     .eq('brand_id', input.brandId)
     .is('deleted_at', null)
@@ -117,34 +127,56 @@ export async function listReviewDesk(
         .filter((m) => m.media_assets)
         .sort((a, b) => a.sort_order - b.sort_order)
       const story = targets.some((t) => t.options?.format === 'story')
+      const video = r.designFormat === 'video' ? ((r.video as StoredVideo | null) ?? {}) : null
       return {
         r,
         targets,
         media,
-        format: formatOf(
-          media.map((m) => m.media_assets!),
-          story,
-        ),
+        video,
+        format: video
+          ? ('video' as const)
+          : formatOf(
+              media.map((m) => m.media_assets!),
+              story,
+            ),
       }
     })
     .filter((x) => !input.format || x.format === input.format)
     .slice(0, 100)
+  // slika videa u temi dok pregledač ne napravi MP4 (D-128)
+  const posterIds = picked.flatMap(({ video, media }) =>
+    video?.posterAssetId && !media.length ? [video.posterAssetId] : [],
+  )
+  const { data: posters } = posterIds.length
+    ? await createSupabaseAdminClient()
+        .from('media_assets')
+        .select('id, bucket, storage_path')
+        .eq('brand_id', input.brandId)
+        .in('id', posterIds)
+    : { data: [] }
+  const posterOf = new Map((posters ?? []).map((a) => [a.id, a]))
   const items = await Promise.all(
-    picked.map(async ({ r, targets, media, format }) => ({
-      id: r.id,
-      title: r.title,
-      status: r.status,
-      format,
-      slides: media.length,
-      thumb: media[0]?.media_assets
-        ? await signedUrl(media[0].media_assets as never).catch(() => null)
-        : null,
-      thumbKind: media[0]?.media_assets?.kind === 'video' ? ('video' as const) : ('image' as const),
-      flowName: (r.content_flows as unknown as { name: string } | null)?.name ?? null,
-      platforms: [...new Set(targets.map((t) => t.platform))],
-      scheduledFor: r.scheduled_for,
-      createdAt: r.created_at,
-    })),
+    picked.map(async ({ r, targets, media, format, video }) => {
+      const poster = !media.length && video?.posterAssetId ? posterOf.get(video.posterAssetId) : undefined
+      return {
+        id: r.id,
+        title: r.title,
+        status: r.status,
+        format,
+        slides: video ? 1 : media.length,
+        thumb: media[0]?.media_assets
+          ? await signedUrl(media[0].media_assets as never).catch(() => null)
+          : poster
+            ? await signedUrl(poster).catch(() => null)
+            : null,
+        thumbKind: media[0]?.media_assets?.kind === 'video' ? ('video' as const) : ('image' as const),
+        videoPending: Boolean(video && !video.renderedAssetId),
+        flowName: (r.content_flows as unknown as { name: string } | null)?.name ?? null,
+        platforms: [...new Set(targets.map((t) => t.platform))],
+        scheduledFor: r.scheduled_for,
+        createdAt: r.created_at,
+      }
+    }),
   )
   return { items, counts }
 }
@@ -156,6 +188,8 @@ export interface ReviewDetail {
   /** predlog termina: sledeći slobodan termin iz reda objava ili sutra u 10:00 po zoni brenda */
   suggestedAt: string
   limits: Record<string, number>
+  /** video u temi (D-128): da li MP4 još čeka pregledač i slika videa do tada */
+  video: { pending: boolean; posterUrl: string | null } | null
 }
 
 export async function getReviewDetail(viewer: Viewer, postId: string): Promise<ReviewDetail> {
@@ -183,16 +217,30 @@ export async function getReviewDetail(viewer: Viewer, postId: string): Promise<R
     const { zonedToUtc } = await import('@/lib/zoned-time')
     suggested = zonedToUtc(date, '10:00', brand.timezone)
   }
+  const design = parsePostDesign(row?.design)
+  let video: ReviewDetail['video'] = null
+  if (design?.format === 'video' && design.video) {
+    const pending = !design.video.renderedAssetId
+    const { data: poster } =
+      pending && design.video.posterAssetId
+        ? await admin
+            .from('media_assets')
+            .select('bucket, storage_path')
+            .eq('id', design.video.posterAssetId)
+            .eq('brand_id', post.brandId)
+            .maybeSingle()
+        : { data: null }
+    video = { pending, posterUrl: poster ? await signedUrl(poster).catch(() => null) : null }
+  }
   return {
     post,
     flowName: (row?.content_flows as unknown as { name: string } | null)?.name ?? null,
-    canRegenerate:
-      Boolean(parsePostDesign(row?.design)) &&
-      ['draft', 'in_review', 'rejected', 'canceled'].includes(post.status),
+    canRegenerate: Boolean(design) && ['draft', 'in_review', 'rejected', 'canceled'].includes(post.status),
     suggestedAt: suggested,
     limits: Object.fromEntries(
       post.targets.map((t) => [t.platform, PLATFORMS[t.platform as SocialPlatform]?.textMax ?? 2200]),
     ),
+    video,
   }
 }
 
@@ -348,6 +396,7 @@ export async function regeneratePost(viewer: Viewer, postId: string, version: nu
       'VALIDATION',
       'Ova objava nije napravljena iz teme, pa nema šta da se generiše ponovo.',
     )
+  if (ctx.format === 'video') return regenerateVideo(viewer, view, brand, ctx)
   const context = await buildBrandContext(brand, ctx.topic, ctx.locale)
   const copy = await generateDesignedCopy({
     workspaceId: brand.workspace_id,
@@ -405,6 +454,77 @@ export async function regeneratePost(viewer: Viewer, postId: string, version: nu
     .from('posts')
     .update({ design: next as unknown as Json })
     .eq('id', postId)
+  return updated
+}
+
+/**
+ * „Generiši ponovo” za video u temi (D-128): nov tekst i novi slojevi teksta u trenutnoj temi, isti
+ * snimci. Gotov MP4 se skida sa objave, pa ga pregledač u Odobravanju pravi ponovo.
+ */
+async function regenerateVideo(
+  viewer: Viewer,
+  view: PostView,
+  brand: Awaited<ReturnType<typeof getBrand>>,
+  ctx: PostDesignContext,
+): Promise<PostView> {
+  const context = await buildBrandContext(brand, ctx.topic, ctx.locale)
+  const copy = await generateDesignedCopy({
+    workspaceId: brand.workspace_id,
+    brandId: brand.id,
+    userId: viewer.user.id,
+    context,
+    topic: ctx.topic,
+    cta: ctx.cta,
+    format: 'carousel',
+    slides: VIDEO_COPY_SLIDES,
+    platforms: ctx.platforms,
+    dmCta: ctx.dmCta,
+    origin: { regenerate: view.id, video: true },
+  })
+  const design = await resolveDesign(brand)
+  const scenes = videoScenes(copy.slides as Slide[])
+  // zahtev čeka korisnik: snimci i fotografije ostaju, crtaju se samo slojevi teksta i slika
+  const video = await buildThemeVideoInSteps((_name, fn) => fn(), {
+    workspaceId: brand.workspace_id,
+    brandId: brand.id,
+    design,
+    scenes,
+    query: (copy.visualQuery || ctx.topic).slice(0, 100),
+    uploadedBy: viewer.user.id,
+    clipAssetIds: ctx.video?.clipAssetIds ?? [],
+    photoAssetIds: ctx.copy?.photoAssetIds ?? [],
+    origin: { postId: view.id },
+  })
+  const updated = await updatePost(viewer, view.id, {
+    version: view.version,
+    title: copy.slides[0]?.title.slice(0, 200) ?? view.title,
+    masterText: captionFor(copy, 'instagram'),
+    firstComment: copy.firstComment,
+    targets: view.targets.map((t) => ({
+      socialAccountId: t.socialAccountId,
+      text: captionFor(copy, t.platform as SocialPlatform),
+      options: t.options,
+    })),
+    media: [],
+    changeSummary: 'Generisano ponovo',
+  })
+  const next = videoPostDesign(
+    {
+      topic: ctx.topic,
+      cta: ctx.cta,
+      locale: ctx.locale,
+      platforms: ctx.platforms,
+      flowId: ctx.flowId,
+      dmCta: ctx.dmCta,
+    },
+    design,
+    scenes,
+    video,
+  )
+  await createSupabaseAdminClient()
+    .from('posts')
+    .update({ design: next as unknown as Json })
+    .eq('id', view.id)
   return updated
 }
 

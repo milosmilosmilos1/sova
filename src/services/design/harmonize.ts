@@ -6,6 +6,7 @@ import { enqueueHarmonize } from '@/lib/jobs/enqueue'
 import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { styleForPhotos } from '@/lib/visuals/design'
+import { videoStyleFor } from '@/lib/visuals/design/video'
 import type { StepRunner } from '@/services/autopilot/runner'
 import { getBrand, type BrandRow } from '@/services/brands'
 import { snapshotVersion } from '@/services/posts/posts'
@@ -14,6 +15,7 @@ import type { Json } from '@/types/database'
 import { resolveDesign, type ResolvedDesign } from './brand-design'
 import { parsePostDesign, themeOf, type PostDesignContext } from './post-design'
 import { renderDesignInSteps, type DesignRenderInput } from './render-post'
+import { buildThemeVideoInSteps, type ThemeVideo } from './video-post'
 
 /**
  * Jedna tema za sve objave (D-125). Nacrti koji čekaju (nacrt, na odobravanju, odbijen) a nisu u temi
@@ -41,8 +43,12 @@ const upper = (c: Record<string, string> | undefined) =>
 
 /** Da li je objava nacrtana u temi: isti stil, boje i font. Objava bez zapamćenih boja nije. */
 export function inTheme(design: PostDesignContext, theme: ResolvedDesign): boolean {
+  const style =
+    design.format === 'video'
+      ? videoStyleFor(theme.styleId)
+      : styleForPhotos(theme.styleId, Boolean(design.ownPhotos))
   return (
-    design.styleId === styleForPhotos(theme.styleId, Boolean(design.ownPhotos)) &&
+    design.styleId === style &&
     upper(design.colors) === upper(theme.colors as unknown as Record<string, string>) &&
     design.fonts?.headings === theme.fonts.headings &&
     design.fonts?.body === theme.fonts.body
@@ -133,6 +139,47 @@ async function prepare(postId: string): Promise<HarmonizeWork | null> {
 }
 
 /** Novi slajdovi umesto starih, uz novu verziju objave; izmenjena objava u međuvremenu se preskače. */
+/**
+ * Video u temi (D-128): novi slojevi teksta i slika u temi, isti snimci; gotov MP4 se skida sa objave,
+ * pa ga pregledač u Odobravanju pravi ponovo u novoj temi.
+ */
+async function saveVideo(
+  postId: string,
+  work: HarmonizeWork,
+  video: ThemeVideo,
+): Promise<'done' | 'skipped'> {
+  const admin = createSupabaseAdminClient()
+  const fresh = [...video.overlayAssetIds, ...(video.posterAssetId ? [video.posterAssetId] : [])]
+  const theme = work.render.design
+  const next: PostDesignContext = {
+    ...work.design,
+    styleId: video.styleId,
+    photoSource: theme.photoSource,
+    ...themeOf(theme),
+    video: {
+      ...work.design.video!,
+      overlayAssetIds: video.overlayAssetIds,
+      seconds: video.seconds,
+      posterAssetId: video.posterAssetId,
+      renderedAssetId: null,
+    },
+  }
+  const { data: updated } = await admin
+    .from('posts')
+    .update({ design: next as unknown as Json, version: work.version + 1 })
+    .eq('id', postId)
+    .eq('version', work.version)
+    .in('status', [...PENDING])
+    .select('id')
+  if (!updated?.length) {
+    await admin.from('media_assets').update({ deleted_at: new Date().toISOString() }).in('id', fresh)
+    return 'skipped'
+  }
+  await admin.from('post_media').delete().eq('post_id', postId)
+  await snapshotVersion(postId, work.version + 1, 'Usklađeno sa temom brenda', null)
+  return 'done'
+}
+
 async function save(
   postId: string,
   work: HarmonizeWork,
@@ -191,6 +238,22 @@ export async function harmonizePost(
 ): Promise<'done' | 'skipped'> {
   const work = await step('prepare', () => prepare(postId))
   if (!work) return 'skipped'
+  if (work.design.format === 'video' && work.design.video) {
+    const video = await buildThemeVideoInSteps(step, {
+      workspaceId: work.render.workspaceId,
+      brandId: work.render.brandId,
+      design: work.render.design,
+      scenes: work.render.slides,
+      query: work.render.query,
+      uploadedBy: null,
+      clipAssetIds: work.design.video.clipAssetIds,
+      photoAssetIds: work.design.copy?.photoAssetIds ?? [],
+      origin: { postId, harmonized: 'theme' },
+    })
+    const result = await step('save', () => saveVideo(postId, work, video))
+    if (result === 'skipped') logger.info('harmonize_post_skipped', { postId })
+    return result
+  }
   const rendered = await renderDesignInSteps(step, work.render)
   const result = await step('save', () => save(postId, work, rendered))
   if (result === 'skipped') logger.info('harmonize_post_skipped', { postId })
