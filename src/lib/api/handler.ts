@@ -4,6 +4,8 @@ import * as Sentry from '@sentry/nextjs'
 import { type NextRequest } from 'next/server'
 import { z } from 'zod'
 
+import { isAppLocale, LOCALE_COOKIE, type AppLocale } from '@/i18n/config'
+import { LOCALE_HEADER } from '@/i18n/paths'
 import { impersonationBlock } from '@/lib/auth/impersonation-core'
 import { getViewerFromRequest, type Viewer } from '@/lib/auth/viewer'
 import { env } from '@/lib/env'
@@ -75,6 +77,14 @@ export function getClientIp(req: NextRequest): string {
   const fwd = req.headers.get('x-forwarded-for')
   if (fwd) return fwd.split(',')[0]!.trim()
   return req.headers.get('x-real-ip') ?? '127.0.0.1'
+}
+
+/** Jezik korisnika za poruke grešaka (D-130): javna strana iz adrese, aplikacija iz kolačića. */
+export function requestLocale(req: NextRequest): AppLocale {
+  const fromUrl = req.headers.get(LOCALE_HEADER)
+  if (isAppLocale(fromUrl)) return fromUrl
+  const fromCookie = req.cookies.get(LOCALE_COOKIE)?.value
+  return isAppLocale(fromCookie) ? fromCookie : 'sr-Latn'
 }
 
 function sameOrigin(req: NextRequest): boolean {
@@ -156,6 +166,7 @@ export function createHandler<TBody = undefined, TQuery = undefined, TParams = u
     const requestId = getRequestId(req)
     const ip = getClientIp(req)
     const log = createLogger({ requestId, method: req.method, path: req.nextUrl.pathname })
+    const locale = requestLocale(req)
 
     try {
       if (
@@ -204,14 +215,18 @@ export function createHandler<TBody = undefined, TQuery = undefined, TParams = u
       if (isApiError(error)) {
         if (error.status >= 500) log.error('api_error', { code: error.code, error })
         else log.info('api_rejected', { code: error.code, status: error.status })
-        return jsonFail(error, requestId)
+        return jsonFail(error, requestId, locale)
       }
       if (error instanceof z.ZodError) {
-        return jsonFail(new ApiError('VALIDATION', undefined, { fields: zodFields(error) }), requestId)
+        return jsonFail(
+          new ApiError('VALIDATION', undefined, { fields: zodFields(error) }),
+          requestId,
+          locale,
+        )
       }
       log.error('unhandled_error', { error })
       Sentry.captureException(error, { tags: { requestId } })
-      return jsonFail(new ApiError('INTERNAL', undefined, { cause: error }), requestId)
+      return jsonFail(new ApiError('INTERNAL', undefined, { cause: error }), requestId, locale)
     }
   }
 }

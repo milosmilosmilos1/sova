@@ -4,6 +4,7 @@ import type { Route } from 'next'
 import { revalidatePath } from 'next/cache'
 import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { getLocale } from 'next-intl/server'
 
 import { isDisposableEmail } from '@/config/disposable-domains'
 import { isApiError } from '@/lib/api/errors'
@@ -18,7 +19,8 @@ import {
 import { getMembership, setCurrentWorkspaceCookie } from '@/lib/auth/workspace'
 import { setCurrentBrandCookie } from '@/lib/auth/brand'
 import { env } from '@/lib/env'
-import { LOCALE_COOKIE } from '@/i18n/config'
+import { LOCALE_COOKIE, type AppLocale } from '@/i18n/config'
+import { translateFields, translateServerText } from '@/i18n/server-text'
 import { actionBlock, type ActionKind } from '@/lib/auth/impersonation-core'
 import { logger } from '@/lib/logger'
 import { cancelScheduledPostsForBrand } from '@/services/posts/publisher'
@@ -41,6 +43,7 @@ import {
   updateProfileSchema,
   updateWorkspaceSchema,
 } from '@/lib/schemas/workspace'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { createSupabaseServerClient } from '@/lib/supabase/server'
 import { createBrand, deleteBrand } from '@/services/brands'
 import {
@@ -67,8 +70,19 @@ function callbackUrl(next?: string): string {
   return next ? `${base}?next=${encodeURIComponent(next)}` : base
 }
 
-function fail(message: string, values?: Record<string, string>, code?: string): FormState {
-  return { ok: false, message, values, code }
+/** Rezultat forme sa porukom i porukama polja na jeziku korisnika (D-130). */
+async function localized(state: FormState): Promise<FormState> {
+  const locale = (await getLocale()) as AppLocale
+  if (locale === 'sr-Latn') return state
+  return {
+    ...state,
+    ...(state.message ? { message: translateServerText(state.message, locale) } : {}),
+    ...(state.fields ? { fields: translateFields(state.fields, locale) } : {}),
+  }
+}
+
+async function fail(message: string, values?: Record<string, string>, code?: string): Promise<FormState> {
+  return localized({ ok: false, message, values, code })
 }
 
 /** Impersonacija (D-070): šta serverska akcija sme dok admin gleda kao korisnik. */
@@ -76,7 +90,7 @@ function impersonationGuard(viewer: Viewer, kind: ActionKind): string | null {
   return viewer.impersonation ? actionBlock(viewer.impersonation.readOnly, kind) : null
 }
 
-function errorState(error: unknown, values?: Record<string, string>): FormState {
+async function errorState(error: unknown, values?: Record<string, string>): Promise<FormState> {
   if (isApiError(error)) return fail(error.message, values, error.code)
   logger.error('action_failed', { error })
   return fail('Došlo je do greške. Pokušajte ponovo.', values)
@@ -88,7 +102,7 @@ function errorState(error: unknown, values?: Record<string, string>): FormState 
 
 export async function signInAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const parsed = parseForm(loginSchema, formData)
-  if (!parsed.success) return parsed.state
+  if (!parsed.success) return localized(parsed.state)
   const { email, password, next } = parsed.data
   const ip = await clientIp()
   const rl = await rateLimit(`login:${ip}:${email}`, { limit: 5, windowSec: 15 * 60 })
@@ -106,7 +120,7 @@ export async function signInAction(_prev: FormState, formData: FormData): Promis
 
 export async function signUpAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const parsed = parseForm(registerSchema, formData)
-  if (!parsed.success) return parsed.state
+  if (!parsed.success) return localized(parsed.state)
   const { fullName, email, password, turnstileToken, next } = parsed.data
   const values = { fullName, email }
   const ip = await clientIp()
@@ -121,12 +135,18 @@ export async function signUpAction(_prev: FormState, formData: FormData): Promis
   }
 
   const supabase = await createSupabaseServerClient()
+  // jezik strane registracije postaje jezik naloga: aplikacija, mejlovi i obaveštenja (D-130)
+  const locale = (await getLocale()) as AppLocale
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
-    options: { data: { full_name: fullName }, emailRedirectTo: callbackUrl(next ?? '/app/onboarding') },
+    options: {
+      data: { full_name: fullName, locale },
+      emailRedirectTo: callbackUrl(next ?? '/app/onboarding'),
+    },
   })
   if (error) return fail(authErrorMessage(error.message), values)
+  if (data.user) await createSupabaseAdminClient().from('profiles').update({ locale }).eq('id', data.user.id)
   if (data.session) go(next ?? '/app/onboarding')
   // Potvrda emaila je obavezna; i za već postojeći email vraćamo isti ekran (bez otkrivanja).
   go(`/verify-email?email=${encodeURIComponent(email)}`)
@@ -134,7 +154,7 @@ export async function signUpAction(_prev: FormState, formData: FormData): Promis
 
 export async function magicLinkAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const parsed = parseForm(magicLinkSchema, formData)
-  if (!parsed.success) return parsed.state
+  if (!parsed.success) return localized(parsed.state)
   const { email, next } = parsed.data
   const ip = await clientIp()
   const rl = await rateLimit(`magic:${ip}`, { limit: 5, windowSec: 15 * 60 })
@@ -148,12 +168,12 @@ export async function magicLinkAction(_prev: FormState, formData: FormData): Pro
   if (error && !error.message.toLowerCase().includes('signups not allowed')) {
     return fail(authErrorMessage(error.message), { email })
   }
-  return {
+  return localized({
     ok: true,
     code: 'check_email',
     values: { email },
     message: 'Ako nalog postoji, poslali smo link za prijavu.',
-  }
+  })
 }
 
 export async function googleSignInAction(formData: FormData): Promise<void> {
@@ -175,7 +195,7 @@ export async function googleSignInAction(formData: FormData): Promise<void> {
 
 export async function forgotPasswordAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const parsed = parseForm(forgotPasswordSchema, formData)
-  if (!parsed.success) return parsed.state
+  if (!parsed.success) return localized(parsed.state)
   const { email } = parsed.data
   const ip = await clientIp()
   const rl = await rateLimit(`forgot:${ip}`, { limit: 5, windowSec: 15 * 60 })
@@ -187,17 +207,17 @@ export async function forgotPasswordAction(_prev: FormState, formData: FormData)
   })
   if (error && error.message.toLowerCase().includes('rate limit'))
     return fail(authErrorMessage(error.message), { email })
-  return {
+  return localized({
     ok: true,
     code: 'check_email',
     values: { email },
     message: 'Ako nalog postoji, poslali smo link za promenu lozinke.',
-  }
+  })
 }
 
 export async function resetPasswordAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const parsed = parseForm(resetPasswordSchema, formData)
-  if (!parsed.success) return parsed.state
+  if (!parsed.success) return localized(parsed.state)
   const supabase = await createSupabaseServerClient()
   const {
     data: { user },
@@ -210,7 +230,7 @@ export async function resetPasswordAction(_prev: FormState, formData: FormData):
 
 export async function resendVerificationAction(_prev: FormState, formData: FormData): Promise<FormState> {
   const parsed = parseForm(resendVerificationSchema, formData)
-  if (!parsed.success) return parsed.state
+  if (!parsed.success) return localized(parsed.state)
   const { email } = parsed.data
   const ip = await clientIp()
   const rl = await rateLimit(`resend:${ip}:${email}`, { limit: 3, windowSec: 60 * 60 })
@@ -224,7 +244,7 @@ export async function resendVerificationAction(_prev: FormState, formData: FormD
   })
   if (error && error.message.toLowerCase().includes('rate limit'))
     return fail(authErrorMessage(error.message), { email })
-  return { ok: true, message: 'Poslali smo novu poruku za potvrdu.', values: { email } }
+  return localized({ ok: true, message: 'Poslali smo novu poruku za potvrdu.', values: { email } })
 }
 
 export async function signOutAction(): Promise<void> {
@@ -258,7 +278,7 @@ export async function createWorkspaceAction(_prev: FormState, formData: FormData
   const blocked = impersonationGuard(viewer, 'forbidden')
   if (blocked) return fail(blocked)
   const parsed = parseForm(createWorkspaceSchema, formData)
-  if (!parsed.success) return parsed.state
+  if (!parsed.success) return localized(parsed.state)
   let result: { workspaceId: string; brandId: string }
   try {
     result = await createWorkspace(viewer, parsed.data)
@@ -305,7 +325,7 @@ export async function updateProfileAction(_prev: FormState, formData: FormData):
   const blocked = impersonationGuard(viewer, 'edit')
   if (blocked) return fail(blocked)
   const parsed = parseForm(updateProfileSchema, formData)
-  if (!parsed.success) return parsed.state
+  if (!parsed.success) return localized(parsed.state)
   const { fullName, locale, timezone } = parsed.data
   const { error } = await viewer.supabase
     .from('profiles')
@@ -315,7 +335,7 @@ export async function updateProfileAction(_prev: FormState, formData: FormData):
   const store = await cookies()
   store.set(LOCALE_COOKIE, locale, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' })
   revalidatePath('/app', 'layout')
-  return { ok: true, message: 'Profil je sačuvan.', values: { fullName, locale, timezone } }
+  return localized({ ok: true, message: 'Profil je sačuvan.', values: { fullName, locale, timezone } })
 }
 
 export async function updateWorkspaceAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -325,14 +345,18 @@ export async function updateWorkspaceAction(_prev: FormState, formData: FormData
   if (blocked) return fail(blocked)
   const workspaceId = formData.get('workspaceId')?.toString() ?? ''
   const parsed = parseForm(updateWorkspaceSchema, formData)
-  if (!parsed.success) return parsed.state
+  if (!parsed.success) return localized(parsed.state)
   try {
     await updateWorkspace(viewer, workspaceId, parsed.data)
   } catch (error) {
     return errorState(error, formValues(formData, ['name', 'type']))
   }
   revalidatePath('/app', 'layout')
-  return { ok: true, message: 'Radni prostor je sačuvan.', values: formValues(formData, ['name', 'type']) }
+  return localized({
+    ok: true,
+    message: 'Radni prostor je sačuvan.',
+    values: formValues(formData, ['name', 'type']),
+  })
 }
 
 export async function inviteMemberAction(_prev: FormState, formData: FormData): Promise<FormState> {
@@ -353,12 +377,12 @@ export async function inviteMemberAction(_prev: FormState, formData: FormData): 
   try {
     const result = await createInvitation(viewer, parsed.data)
     revalidatePath('/app/team')
-    return {
+    return localized({
       ok: true,
       message: result.acceptUrl
         ? `Pozivnica je napravljena. Email servis nije podešen u DEV-u, pa je link ovde: ${result.acceptUrl}`
         : `Pozivnica je poslata na ${parsed.data.email}.`,
-    }
+    })
   } catch (error) {
     return errorState(error, formValues(formData, ['email', 'role']))
   }
@@ -454,7 +478,7 @@ export async function createBrandAction(_prev: FormState, formData: FormData): P
     return errorState(error, formValues(formData, ['name', 'websiteUrl']))
   }
   revalidatePath('/app', 'layout')
-  return { ok: true, message: 'Brend je napravljen.' }
+  return localized({ ok: true, message: 'Brend je napravljen.' })
 }
 
 export async function deleteBrandAction(formData: FormData): Promise<void> {

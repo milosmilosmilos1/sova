@@ -23,7 +23,11 @@
     "networks": "Networks",
     "how": "How it works",
     "pricing": "Pricing",
-    "faq": "FAQ"
+    "faq": "FAQ",
+    "sections": "Sections",
+    "legal": "Legal information",
+    "language": "Language",
+    "menu": "Menu"
   },
   "landing": {
     "metaTitle": "Sova · AI that runs your social media",

@@ -1,12 +1,15 @@
 import type { Metadata } from 'next'
+import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 
 import { AppShell } from '@/components/app/app-shell'
+import { isAppLocale, LOCALE_COOKIE } from '@/i18n/config'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { getCurrentWorkspace, listMemberships } from '@/lib/auth/workspace'
 import { configured, isPreview } from '@/lib/env'
 import { isFeatureEnabled } from '@/lib/flags'
+import { logger } from '@/lib/logger'
 import { listBrands } from '@/services/brands'
 
 export const metadata: Metadata = { robots: { index: false, follow: false } }
@@ -48,6 +51,15 @@ export default async function AppLayout({ children }: LayoutProps<'/app'>) {
   const currentBrand = current ? await getCurrentBrand(viewer, current.workspaceId) : null
   const pending = previewPending()
   const showLocaleSwitcher = await isFeatureEnabled('ui_languages')
+  // jezik izabran na javnom sajtu važi i za mejlove i obaveštenja: profil prati kolačić (D-130)
+  const cookieLocale = (await cookies()).get(LOCALE_COOKIE)?.value
+  if (!viewer.impersonation && isAppLocale(cookieLocale) && cookieLocale !== viewer.profile.locale) {
+    const { error } = await viewer.supabase
+      .from('profiles')
+      .update({ locale: cookieLocale })
+      .eq('id', viewer.user.id)
+    if (error) logger.warn('profile_locale_sync_failed', { error: error.message })
+  }
   const { count: waitingApprovals } = currentBrand
     ? await viewer.supabase
         .from('posts')

@@ -23,7 +23,11 @@
     "networks": "Mreže",
     "how": "Kako radi",
     "pricing": "Cene",
-    "faq": "Pitanja"
+    "faq": "Pitanja",
+    "sections": "Sekcije",
+    "legal": "Pravne informacije",
+    "language": "Jezik",
+    "menu": "Meni"
   },
   "landing": {
     "metaTitle": "Sova · AI koji vodi vaše društvene mreže",

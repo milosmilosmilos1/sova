@@ -1053,3 +1053,17 @@ Odluka:
 - Rute `GET` i `PUT /api/approvals/[id]/slides`, `POST /api/approvals/[id]/slides/preview`. Bez migracije.
 
 Razlog: vlasnik traži da se tekst na slikama i u videu menja bez novog generisanja. Studio je to radio kroz poruku (1 token) i crtao ceo karusel u temi brenda; ovde korisnik piše tačno ono što želi, odmah vidi kako izgleda i ništa ne plaća. Ponovo se crtaju samo izmenjeni slajdovi, pa fotografije i izgled koje je korisnik već video ostaju isti, a čuvanje traje sekundu-dve.
+
+## D-130 · 31.10.2026 · usvojeno · Sajt i aplikacija na engleskom i ukrajinskom, jezik povezan od posete do mejla
+
+Odluka:
+
+- Javni sajt ima tri verzije: srpski bez prefiksa (adrese ostaju iste), engleski pod `/en`, ukrajinski pod `/uk`; kontakt na engleskom i ukrajinskom je `/contact`. Proxy skida prefiks i prepisuje zahtev na istu stranu, a jezik joj šalje u zaglavlju (`x-sova-locale`); strane ostaju u `(public)`, bez `[locale]` segmenta. Aplikacija (`/app`) nema prefiks.
+- Prva poseta srpskoj adresi prati jezik pregledača: region (sr, hr, bs, me, sl, mk) čita srpski, ukrajinski ukrajinski, engleski i nepoznat jezik engleski; bez zaglavlja (pretraživači), botovi i servisi za pregled linkova ostaju na srpskom, da deljen link ima pravi jezik. Posle toga važi kolačić `sova_locale`: poseta `/en` ili `/uk` ga postavlja, a birač jezika (SR · EN · UA u zaglavlju, meniju i podnožju) za srpski šalje `?lang=sr-Latn`.
+- Jezik putuje kroz nalog: registracija upisuje jezik strane u profil (i u `user_metadata.locale` za šablone mejlova), prijava na novom uređaju dobija kolačić iz profila (proxy), a promena jezika na sajtu se pri sledećem ulasku u aplikaciju upisuje u profil, da mejlovi i obaveštenja idu na istom jeziku.
+- SEO: svaka javna strana ima kanonsku adresu i hreflang za sva tri jezika (`x-default` je srpska adresa), mapa sajta ima sve tri verzije, a slika za deljenje je ruta `/og/{jezik}` sa tekstom na jeziku strane (umesto jedne srpske slike).
+- Poruke servera ostaju na srpskom u kodu, a na izlazu (odgovor API-ja i rezultat serverske akcije) prevode se iz rečnika `src/i18n/server/{en,uk}.json`; poruka sa promenljivim delom je šablon sa {0}, {1}, a promenljivi deo se i sam prevodi kad je poznata poruka. Poruka bez prevoda ostaje srpska, pa test proverava da svaka poruka iz koda ima prevod.
+- Engleski je britanski (colour, analyse, datumi en-GB), kao u dosadašnjim prevodima. Cene ostaju u evrima na svim jezicima. Admin panel ostaje na srpskom (interni alat vlasnika).
+- Stari ekrani se prevode po delovima (`src/i18n/messages/parts/{a,b,c,d}`), svaki sa svojim imenskim prostorima; test ne dozvoljava preklapanje sa osnovnim fajlom.
+
+Razlog: vlasnik prodaje i na engleskom i ukrajinskom, pa i sajt i softver moraju da postoje na tim jezicima i da kupac od prve posete do mejla vidi isti jezik. Prefiks u adresi daje svakom jeziku svoju adresu za oglase, deljenje i pretragu, a srpske adrese se ne menjaju.

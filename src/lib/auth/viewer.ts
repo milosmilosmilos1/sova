@@ -5,6 +5,7 @@ import { cookies, headers } from 'next/headers'
 import type { NextRequest } from 'next/server'
 import { cache } from 'react'
 
+import { isAppLocale, type AppLocale } from '@/i18n/config'
 import { IMP_COOKIE, mintImpersonationJwt, verifySessionCookie } from '@/lib/auth/impersonation-core'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
@@ -19,7 +20,7 @@ export interface ViewerProfile {
   email: string
   fullName: string | null
   avatarUrl: string | null
-  locale: 'sr-Latn' | 'en'
+  locale: AppLocale
   timezone: string
   platformRole: PlatformRole
   isBanned: boolean
@@ -54,7 +55,7 @@ function toProfile(row: ProfileRow): ViewerProfile {
     email: row.email,
     fullName: row.full_name,
     avatarUrl: row.avatar_url,
-    locale: row.locale === 'en' ? 'en' : 'sr-Latn',
+    locale: isAppLocale(row.locale) ? row.locale : 'sr-Latn',
     timezone: row.timezone,
     platformRole: row.platform_role,
     isBanned: row.is_banned,

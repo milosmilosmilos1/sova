@@ -1,5 +1,8 @@
 import { NextResponse } from 'next/server'
 
+import type { AppLocale } from '@/i18n/config'
+import { translateFields, translateServerText } from '@/i18n/server-text'
+
 import type { ApiError, ApiErrorCode } from './errors'
 
 export type ApiOk<T> = { ok: true; data: T }
@@ -27,13 +30,15 @@ export function jsonOk<T>(data: T, requestId: string, init: { status?: number; h
   })
 }
 
-export function jsonFail(error: ApiError, requestId: string) {
+/** Greška API-ja; poruka i poruke polja idu na jeziku korisnika (D-130). */
+export function jsonFail(error: ApiError, requestId: string, locale: AppLocale = 'sr-Latn') {
+  const fields = translateFields(error.fields, locale)
   const body: ApiFail = {
     ok: false,
     error: {
       code: error.code,
-      message: error.message,
-      ...(error.fields ? { fields: error.fields } : {}),
+      message: translateServerText(error.message, locale),
+      ...(fields ? { fields } : {}),
       ...(error.details ? { details: error.details } : {}),
       requestId,
     },
