@@ -14,6 +14,7 @@ import {
   Search,
   SkipForward,
   Trash2,
+  Type,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
@@ -22,6 +23,7 @@ import { useCallback, useState } from 'react'
 
 import { ThemeNotice } from '@/components/design/theme-notice'
 import { BulkScheduleDialog } from '@/components/review/bulk-schedule-dialog'
+import { SlideTextDialog, type SlideTextSaved } from '@/components/review/slide-text-dialog'
 import { ThemeVideoQueue } from '@/components/review/theme-video-queue'
 import { api, bulkRequest } from '@/components/shared/api-client'
 import { BulkBar, SelectAllBox, SelectBox, useSelection } from '@/components/shared/bulk'
@@ -88,6 +90,21 @@ interface Detail {
   suggestedAt: string
   limits: Record<string, number>
   video: { pending: boolean; posterUrl: string | null } | null
+  canEditText: boolean
+}
+
+/**
+ * Nesačuvane izmene obrasca koje preživljavaju čuvanje teksta na slikama (D-129): nova verzija nacrta
+ * pravi nov obrazac, a opis, prvi komentar i termin koje je korisnik kucao ne smeju da nestanu.
+ */
+interface Kept {
+  version: number
+  master: string
+  firstComment: string
+  texts: Record<string, string>
+  when: string
+  slide: number
+  notice: string
 }
 
 const INTL: Record<string, string> = { 'sr-Latn': 'sr-Latn-RS', en: 'en-GB', uk: 'uk-UA' }
@@ -393,6 +410,7 @@ export function DetailPanes({
     queryKey: ['review-detail', postId],
     queryFn: () => api<Detail>(`/api/approvals/${postId}`),
   })
+  const [kept, setKept] = useState<Kept | null>(null)
   if (!query.data)
     return (
       <div className="lg:col-span-2">
@@ -410,6 +428,8 @@ export function DetailPanes({
       detail={query.data}
       timeZone={timeZone}
       textPrice={textPrice}
+      kept={kept?.version === query.data.post.version ? kept : null}
+      onKeep={setKept}
       onChanged={() => {
         void query.refetch()
         onChanged()
@@ -423,28 +443,49 @@ function DetailForm({
   detail,
   timeZone,
   textPrice,
+  kept,
+  onKeep,
   onChanged,
   t,
 }: {
   detail: Detail
   timeZone: string
   textPrice: number
+  kept: Kept | null
+  onKeep: (kept: Kept) => void
   onChanged: () => void
   t: ReturnType<typeof useTranslations<'review'>>
 }) {
   const locale = useLocale()
   const { post } = detail
-  const [slide, setSlide] = useState(0)
+  const [slide, setSlide] = useState(kept?.slide ?? 0)
   const [netTab, setNetTab] = useState<string>('base')
-  const [master, setMaster] = useState(post.masterText)
-  const [firstComment, setFirstComment] = useState(post.firstComment ?? '')
+  const [master, setMaster] = useState(kept?.master ?? post.masterText)
+  const [firstComment, setFirstComment] = useState(kept?.firstComment ?? post.firstComment ?? '')
   const [texts, setTexts] = useState<Record<string, string>>(
-    Object.fromEntries(post.targets.map((tg) => [tg.socialAccountId, tg.usesMaster ? '' : tg.text])),
+    kept?.texts ??
+      Object.fromEntries(post.targets.map((tg) => [tg.socialAccountId, tg.usesMaster ? '' : tg.text])),
   )
   const initial = wallClock(post.scheduledFor ?? detail.suggestedAt, timeZone)
-  const [when, setWhen] = useState(`${initial.date}T${initial.time}`)
-  const [notice, setNotice] = useState<string | null>(null)
+  const [when, setWhen] = useState(kept?.when ?? `${initial.date}T${initial.time}`)
+  const [notice, setNotice] = useState<string | null>(kept?.notice ?? null)
   const [videoOpen, setVideoOpen] = useState(false)
+  const [textOpen, setTextOpen] = useState(false)
+  const textSaved = (saved: SlideTextSaved) => {
+    setTextOpen(false)
+    if (!saved.changed) return setNotice(t('slideText.unchanged'))
+    onKeep({
+      version: saved.version,
+      master,
+      firstComment,
+      texts,
+      when,
+      // video nema slajdove dok se ne napravi ponovo
+      slide: detail.video ? 0 : saved.index,
+      notice: t(detail.video ? 'slideText.savedVideo' : 'slideText.saved'),
+    })
+    onChanged()
+  }
   const canApprove = post.actions.includes('approve') || post.actions.includes('schedule')
   const editable = ['draft', 'in_review', 'approved', 'rejected', 'canceled', 'failed'].includes(post.status)
   const media = post.media.filter((m) => m.url)
@@ -598,6 +639,12 @@ function DetailForm({
                   {t('actions.download')}
                 </Button>
               ) : null}
+              {detail.canEditText ? (
+                <Button size="sm" variant="outline" onClick={() => setTextOpen(true)}>
+                  <Type aria-hidden />
+                  {t(detail.video ? 'actions.videoText' : 'actions.slideText')}
+                </Button>
+              ) : null}
               {media.length >= 2 && media.every((m) => !m.mimeType?.startsWith('video')) ? (
                 <Button size="sm" variant="outline" onClick={() => setVideoOpen(true)}>
                   <Film aria-hidden />
@@ -605,6 +652,15 @@ function DetailForm({
                 </Button>
               ) : null}
             </div>
+            {detail.canEditText ? (
+              <SlideTextDialog
+                open={textOpen}
+                onOpenChange={setTextOpen}
+                postId={post.id}
+                video={Boolean(detail.video)}
+                onSaved={textSaved}
+              />
+            ) : null}
             <VideoDialog
               open={videoOpen}
               onOpenChange={setVideoOpen}

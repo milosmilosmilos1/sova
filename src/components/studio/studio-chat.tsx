@@ -15,10 +15,11 @@ import {
 } from 'lucide-react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { SovaMark } from '@/components/brand/sova-logo'
 import { DetailPanes } from '@/components/review/review-desk'
+import { ThemeVideoQueue } from '@/components/review/theme-video-queue'
 import { api } from '@/components/shared/api-client'
 import { ErrorBox } from '@/components/shared/error-box'
 import { Button } from '@/components/ui/button'
@@ -119,6 +120,8 @@ export function StudioChat({
   // objava desno: izabrana iz razgovora, inače poslednja koju je razgovor napravio
   const [selected, setSelected] = useState<string | null | undefined>(undefined)
   const postId = selected === undefined ? (thread.data?.lastPostId ?? null) : selected
+  // video u temi izmenjen ovde (tekst, izmena iz razgovora) pregledač pravi odmah, ne tek u Odobravanju
+  const videoMade = useCallback(() => void qc.invalidateQueries({ queryKey: ['review-detail'] }), [qc])
 
   const [text, setText] = useState('')
   const [photos, setPhotos] = useState<Photo[]>([])
@@ -625,6 +628,7 @@ export function StudioChat({
         <section ref={resultRef} aria-label={t('result.label')} className="min-w-0 space-y-3">
           {postId && thread.data ? (
             <div className={cn('space-y-3 transition-opacity', send.isPending && 'opacity-60')}>
+              <ThemeVideoQueue brandId={brandId} canEdit={canEdit} onDone={videoMade} />
               <DetailPanes
                 key={postId}
                 postId={postId}

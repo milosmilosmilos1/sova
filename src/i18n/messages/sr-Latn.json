@@ -526,7 +526,9 @@
       "confirmSkip": "Preskočiti ovaj nacrt? Možete ga vratiti iz editora objave.",
       "confirmPublish": "Objaviti odmah na izabrane mreže?",
       "confirmRegenerate": "Napraviti nov tekst i nove slajdove? Troši {tokens} tokena.",
-      "makeVideo": "Napravi video"
+      "makeVideo": "Napravi video",
+      "slideText": "Tekst na slikama",
+      "videoText": "Tekst u videu"
     },
     "panel": {
       "decision": "Odluka",
@@ -579,6 +581,47 @@
       "pending": "video se pravi",
       "pendingDetail": "Video u temi se pravi u vašem pregledaču dok je Odobravanje otvoreno. Posle toga može da se zakaže.",
       "poster": "Prvi kadar videa u temi"
+    },
+    "slideText": {
+      "title": "Tekst na slikama",
+      "titleVideo": "Tekst u videu",
+      "description": "Menjate samo reči. Fotografije i izgled ostaju isti, a Sova ponovo nacrta samo slajdove koje promenite. Ne troši tokene.",
+      "descriptionVideo": "Menjate tekst kadrova. Snimci i izgled ostaju isti. Posle čuvanja Sova ponovo pravi video dok je Odobravanje otvoreno. Ne troši tokene.",
+      "slide": "Slajd {n}",
+      "slideOf": "Slajd {n} od {total}",
+      "scene": "Kadar {n}",
+      "sceneOf": "Kadar {n} od {total}",
+      "changed": "izmenjen",
+      "kinds": {
+        "cover": "Naslovni slajd",
+        "point": "Slajd sa porukom",
+        "cta": "Poziv na akciju"
+      },
+      "sceneKinds": {
+        "first": "Prvi kadar",
+        "text": "Kadar sa porukom",
+        "cta": "Završni kadar"
+      },
+      "fields": {
+        "kicker": "Natpis iznad naslova",
+        "title": "Naslov",
+        "body": "Tekst",
+        "stat": "Istaknut broj",
+        "items": "Nabrajanje"
+      },
+      "itemsHint": "Jedna stavka po redu, najviše {max}.",
+      "titleRequired": "Naslov ne može da bude prazan.",
+      "preview": "Pregled slajda {n}",
+      "previewScene": "Pregled kadra {n}",
+      "previewing": "Osvežavam pregled…",
+      "save": "Sačuvaj izmene",
+      "saving": "Crtam slajdove…",
+      "savingVideo": "Crtam kadrove…",
+      "cancel": "Otkaži",
+      "discard": "Odbaciti izmene teksta na slikama?",
+      "saved": "Tekst na slikama je sačuvan.",
+      "savedVideo": "Tekst u videu je sačuvan. Video se pravi ponovo dok je Odobravanje otvoreno.",
+      "unchanged": "Tekst se nije promenio."
     }
   },
   "setup": {

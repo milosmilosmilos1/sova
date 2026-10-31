@@ -1039,3 +1039,17 @@ Odluka:
 - Podaci: `posts.design.format = 'video'` i `posts.design.video` (`clipAssetIds`, `overlayAssetIds`, `seconds`, `posterAssetId`, `renderedAssetId`); rute `GET /api/approvals/videos`, `GET` i `POST /api/approvals/[id]/theme-video`. Bez migracije.
 
 Razlog: vlasnik traži video sa tekstom u izboru teme, urađen i montiran, bez većih troškova. Montaža u pregledaču ne troši ni tokene ni rad servera; jedini rast je skladište (oko 3 MB za MP4 od 12 sekundi, plus snimci i slojevi). Montaža na serveru ili spoljni servis bi to omogućili i bez otvorenog Odobravanja, ali uz trošak.
+
+## D-129 · 31.10.2026 · usvojeno · Tekst na slikama: korisnik sam menja reči na slajdovima i u videu
+
+Odluka:
+
+- U Odobravanju i u Studiju, pored „Uredi objavu”, stoji dugme „Tekst na slikama” (za video „Tekst u videu”). Prozor ima polja za svaki slajd ili kadar i pregled uživo: server crta taj slajd sa tekstom koji se kuca, u temi objave i sa istom fotografijom (JPEG širok 540 px), kad korisnik zastane u kucanju. Obrazac pokazuje samo delove koje stil na tom slajdu zaista crta: server uporedi raspored sa delom i bez njega (`drawnFields`), pa Poster, recimo, ne nudi nabrajanje koje ne crta.
+- Čuvanje ne troši tokene i ne zove model. Crtaju se ponovo samo izmenjeni slajdovi, u temi u kojoj je objava nacrtana (stil, boje i font iz objave) i sa istim fotografijama; ostali slajdovi ostaju isti fajlovi. Za razliku od izmene u Studiju (D-125), izgled se ne prebacuje u trenutnu temu brenda; za to je „Uskladi sa temom”. Objava koja ne pamti temu (starija od D-125) ili čije su slike menjane ručno crta se cela, kao kod usklađivanja.
+- Video: novi slojevi teksta samo za izmenjene kadrove, trajanje kadra se računa ponovo, a slika videa ako je izmenjen prvi kadar. Gotov MP4 se skida i pregledač ga pravi ponovo (D-128), pa je pravljenje videa sada i u Studiju, ne samo u Odobravanju.
+- Nacrt koji čeka odluku i dalje čeka i ostaje u kartici „Čekaju”; odobrena objava se vraća u nacrt, jer je odobren stari tekst; zakazana i objavljena se ne menjaju dok se ne vrate u nacrt. Nova verzija ide u istoriju („Izmenjen tekst na slikama”). Naslov objave prati prvi slajd samo ako je bio isti kao on.
+- Zahtev crta koliko stigne za 15 sekundi, po tri slajda, a ostatak pregledač šalje sam, sa novom verzijom (kao D-126): na Netlify-u slajd sa fotografijom traje oko dve sekunde, a zahtev se prekida posle 30. Do tada sačuvani su samo nacrtani slajdovi, sa novim tekstom.
+- Nesačuvane izmene opisa, prvog komentara i termina ostaju u obrascu posle čuvanja teksta.
+- Rute `GET` i `PUT /api/approvals/[id]/slides`, `POST /api/approvals/[id]/slides/preview`. Bez migracije.
+
+Razlog: vlasnik traži da se tekst na slikama i u videu menja bez novog generisanja. Studio je to radio kroz poruku (1 token) i crtao ceo karusel u temi brenda; ovde korisnik piše tačno ono što želi, odmah vidi kako izgleda i ništa ne plaća. Ponovo se crtaju samo izmenjeni slajdovi, pa fotografije i izgled koje je korisnik već video ostaju isti, a čuvanje traje sekundu-dve.

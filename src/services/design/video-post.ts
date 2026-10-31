@@ -88,7 +88,8 @@ async function pickVideoPhotos(input: ThemeVideoInput): Promise<string[]> {
   }
 }
 
-function sceneRender(input: ThemeVideoInput, styleId: StyleId, scene: Slide, logo: string | null) {
+/** Ulaz za crtanje kadra u stilu teme (sloj, slika videa i pregled izmene teksta, D-129). */
+export function sceneRender(input: ThemeVideoInput, styleId: StyleId, scene: Slide, logo: string | null) {
   return {
     styleId,
     slide: scene,
@@ -142,8 +143,8 @@ export async function renderVideoOverlays(
   return ids
 }
 
-/** Fotografija za sliku videa: kadar iz snimka sa Pexels-a ili prva fotografija videa. */
-async function posterPhoto(clipId: string | null, photoId: string | null): Promise<Buffer | null> {
+/** Fotografija ispod kadra (slika videa i pregled teksta, D-129): kadar iz snimka ili fotografija videa. */
+export async function posterPhoto(clipId: string | null, photoId: string | null): Promise<Buffer | null> {
   const admin = createSupabaseAdminClient()
   if (clipId) {
     const { data } = await admin.from('media_assets').select('source_data').eq('id', clipId).maybeSingle()

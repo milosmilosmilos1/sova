@@ -526,7 +526,9 @@
       "confirmSkip": "Skip this draft? You can restore it from the post editor.",
       "confirmPublish": "Publish now to the selected networks?",
       "confirmRegenerate": "Create new copy and new slides? It uses {tokens} tokens.",
-      "makeVideo": "Make a video"
+      "makeVideo": "Make a video",
+      "slideText": "Text on images",
+      "videoText": "Text in video"
     },
     "panel": {
       "decision": "Decision",
@@ -579,6 +581,47 @@
       "pending": "video in progress",
       "pendingDetail": "The theme video is being made in your browser while Approvals is open. After that it can be scheduled.",
       "poster": "First frame of the theme video"
+    },
+    "slideText": {
+      "title": "Text on images",
+      "titleVideo": "Text in video",
+      "description": "You change only the words. Photos and the look stay the same, and Sova redraws only the slides you change. No tokens used.",
+      "descriptionVideo": "You change the text of each scene. Clips and the look stay the same. After you save, Sova rebuilds the video while Approvals is open. No tokens used.",
+      "slide": "Slide {n}",
+      "slideOf": "Slide {n} of {total}",
+      "scene": "Scene {n}",
+      "sceneOf": "Scene {n} of {total}",
+      "changed": "changed",
+      "kinds": {
+        "cover": "Cover slide",
+        "point": "Message slide",
+        "cta": "Call to action"
+      },
+      "sceneKinds": {
+        "first": "First scene",
+        "text": "Message scene",
+        "cta": "Final scene"
+      },
+      "fields": {
+        "kicker": "Label above the title",
+        "title": "Title",
+        "body": "Text",
+        "stat": "Highlighted number",
+        "items": "List"
+      },
+      "itemsHint": "One item per line, up to {max}.",
+      "titleRequired": "The title can't be empty.",
+      "preview": "Preview of slide {n}",
+      "previewScene": "Preview of scene {n}",
+      "previewing": "Updating preview…",
+      "save": "Save changes",
+      "saving": "Drawing slides…",
+      "savingVideo": "Drawing scenes…",
+      "cancel": "Cancel",
+      "discard": "Discard your text changes?",
+      "saved": "Text on images saved.",
+      "savedVideo": "Text in video saved. The video is rebuilt while Approvals is open.",
+      "unchanged": "The text didn't change."
     }
   },
   "setup": {

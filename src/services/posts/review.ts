@@ -190,6 +190,8 @@ export interface ReviewDetail {
   limits: Record<string, number>
   /** video u temi (D-128): da li MP4 još čeka pregledač i slika videa do tada */
   video: { pending: boolean; posterUrl: string | null } | null
+  /** tekst na slikama može da se menja (D-129): slike je nacrtala Sova, a objava još nije zakazana */
+  canEditText: boolean
 }
 
 export async function getReviewDetail(viewer: Viewer, postId: string): Promise<ReviewDetail> {
@@ -241,6 +243,11 @@ export async function getReviewDetail(viewer: Viewer, postId: string): Promise<R
       post.targets.map((t) => [t.platform, PLATFORMS[t.platform as SocialPlatform]?.textMax ?? 2200]),
     ),
     video,
+    canEditText:
+      Boolean(design?.copy?.slides.length) &&
+      (design?.format !== 'video' || Boolean(design.video)) &&
+      post.actions.includes('edit') &&
+      !post.lockedAt,
   }
 }
 
