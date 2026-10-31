@@ -19,14 +19,8 @@ import { parsePostDesign, themeOf, type PostDesignContext } from '@/services/des
 import { renderDesignSlides } from '@/services/design/render-post'
 import { downloadAsset, signedUrl } from '@/services/media'
 import { nextFreeSlot } from '@/services/posts/calendar'
-import { getPostView, updatePost, type PostView } from '@/services/posts/posts'
-import {
-  cancelPost,
-  decidePost,
-  publishNow,
-  schedulePost,
-  withdrawFromReview,
-} from '@/services/posts/workflow'
+import { getPostView, loadPost, updatePost, type PostView } from '@/services/posts/posts'
+import { cancel, decidePost, publishNow, schedulePost, withdraw } from '@/services/posts/workflow'
 
 /**
  * Odobravanje (D-108, faza 4): nacrti koji čekaju odluku, pregled slajdova i opisa po mreži, i
@@ -252,12 +246,19 @@ export async function saveDeskEdits(viewer: Viewer, postId: string, input: DeskE
 
 /** Nacrt koji čeka odobrenje se prvo vraća u nacrte, pa otkazuje (state machine ne otkazuje iz odobravanja). */
 export async function skipPost(viewer: Viewer, postId: string, version: number): Promise<PostView> {
-  const view = await getPostView(viewer, postId)
-  if (view.status === 'in_review') {
-    const withdrawn = await withdrawFromReview(viewer, postId, version)
-    return cancelPost(viewer, postId, withdrawn.version)
-  }
-  return cancelPost(viewer, postId, version)
+  await skip(viewer, postId, version)
+  return getPostView(viewer, postId)
+}
+
+/** Isto bez punog prikaza objave, i za više nacrta odjednom (D-126); bez `version` važi trenutna. */
+export async function skip(viewer: Viewer, postId: string, version?: number): Promise<void> {
+  const post = await loadPost(viewer, postId)
+  const current = version ?? post.version
+  await cancel(
+    viewer,
+    postId,
+    post.status === 'in_review' ? await withdraw(viewer, postId, current) : current,
+  )
 }
 
 /**

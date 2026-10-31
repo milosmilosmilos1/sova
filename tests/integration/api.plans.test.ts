@@ -496,6 +496,47 @@ describe('označavanje u listama', () => {
     ).toMatchObject({ done: [] })
   })
 
+  it('nacrt sa odobravanja se povlači pa briše ili preskače; više nacrta ide paralelno, redom kao ulaz', async () => {
+    const rows = ['Čeka 1', 'Čeka 2', ...Array.from({ length: 8 }, (_, i) => `Nacrt ${i}`)].map((text) => ({
+      brand_id: brandId,
+      workspace_id: wsId,
+      master_text: text,
+      status: (text.startsWith('Čeka') ? 'in_review' : 'draft') as 'in_review' | 'draft',
+      created_by: user.id,
+    }))
+    const { data: posts } = await admin.from('posts').insert(rows).select('id, master_text')
+    const id = (text: string) => posts!.find((p) => p.master_text === text)!.id
+    const drafts = rows.filter((r) => r.status === 'draft').map((r) => id(r.master_text))
+    type Bulk = { done: string[]; failed: unknown[]; rest: string[] }
+    const del = await call<Bulk>(postsBulkPost, '/api/posts/bulk', {
+      token: user.token,
+      body: { ids: [id('Čeka 1'), ...drafts], action: 'delete' },
+    })
+    expect(del.json.data).toEqual({ done: [id('Čeka 1'), ...drafts], failed: [], rest: [] })
+    const skip = await call<Bulk>(postsBulkPost, '/api/posts/bulk', {
+      token: user.token,
+      body: { ids: [id('Čeka 2')], action: 'skip' },
+    })
+    expect(skip.json.data).toEqual({ done: [id('Čeka 2')], failed: [], rest: [] })
+
+    const { data: after } = await admin
+      .from('posts')
+      .select('id, status, deleted_at')
+      .in('id', [id('Čeka 1'), id('Čeka 2'), ...drafts])
+    const byId = new Map(after!.map((p) => [p.id, p]))
+    expect(byId.get(id('Čeka 1'))).toMatchObject({ status: 'draft' })
+    expect(drafts.every((d) => byId.get(d)!.deleted_at)).toBe(true)
+    expect(byId.get(id('Čeka 1'))!.deleted_at).not.toBeNull()
+    expect(byId.get(id('Čeka 2'))).toMatchObject({ status: 'canceled', deleted_at: null })
+    const { data: versions } = await admin
+      .from('post_versions')
+      .select('change_summary')
+      .eq('post_id', id('Čeka 2'))
+    expect(versions!.map((v) => v.change_summary)).toEqual(
+      expect.arrayContaining(['povučeno sa odobravanja', 'otkazano']),
+    )
+  })
+
   it('brisanje više fotografija iz galerije; tuđa fotografija se ne dira', async () => {
     const asset = (brand: string, ws: string) => ({
       workspace_id: ws,

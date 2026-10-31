@@ -7,6 +7,7 @@ import {
   Download,
   FileText,
   Film,
+  LoaderCircle,
   Pencil,
   RefreshCw,
   Search,
@@ -14,11 +15,12 @@ import {
   Trash2,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useState } from 'react'
 
 import { ThemeNotice } from '@/components/design/theme-notice'
-import { api } from '@/components/shared/api-client'
+import { api, bulkRequest } from '@/components/shared/api-client'
 import { BulkBar, SelectAllBox, SelectBox, useSelection } from '@/components/shared/bulk'
 import { ErrorBox } from '@/components/shared/error-box'
 import { MediaThumb } from '@/components/shared/media-thumb'
@@ -103,6 +105,7 @@ export function ReviewDesk({
 }) {
   const t = useTranslations('review')
   const qc = useQueryClient()
+  const router = useRouter()
   const [tab, setTab] = useState<Tab>('waiting')
   const [q, setQ] = useState('')
   const [format, setFormat] = useState<Format | ''>('')
@@ -120,7 +123,11 @@ export function ReviewDesk({
   })
   const items = list.data?.items ?? []
   const current = selected && items.some((i) => i.id === selected) ? selected : (items[0]?.id ?? null)
-  const refresh = () => qc.invalidateQueries({ queryKey: ['review', brandId] })
+  // broj nacrta koji čekaju u meniju dolazi sa servera, pa se i on čita ponovo
+  const refresh = () => {
+    router.refresh()
+    return qc.invalidateQueries({ queryKey: ['review', brandId] })
+  }
   // nacrti usklađeni sa temom (D-125) imaju nove slajdove: lista i otvoren nacrt se čitaju ponovo
   const refreshAfterTheme = useCallback(() => {
     void qc.invalidateQueries({ queryKey: ['review'] })
@@ -131,15 +138,19 @@ export function ReviewDesk({
   const selection = useSelection(items.map((i) => i.id))
   const bulk = useMutation({
     mutationFn: (input: { ids: string[]; action: 'delete' | 'skip' }) =>
-      api<{ done: string[]; failed: Array<{ id: string; message: string }> }>('/api/posts/bulk', {
-        method: 'POST',
-        json: input,
-      }),
-    onSuccess: () => {
-      selection.clear()
-      void refresh()
-    },
+      bulkRequest('/api/posts/bulk', { action: input.action }, input.ids),
+    onSuccess: () => selection.clear(),
+    // i posle greške: deo nacrta je možda već obrisan, pa lista mora da pokaže stvarno stanje (D-126)
+    onSettled: () => refresh(),
   })
+  const bulkIcon = (action: 'delete' | 'skip') =>
+    bulk.isPending && bulk.variables?.action === action ? (
+      <LoaderCircle className="animate-spin" aria-hidden />
+    ) : action === 'skip' ? (
+      <SkipForward aria-hidden />
+    ) : (
+      <Trash2 aria-hidden />
+    )
 
   return (
     <div className="space-y-5">
@@ -309,7 +320,7 @@ export function ReviewDesk({
             bulk.mutate({ ids: [...selection.selected], action: 'skip' })
           }
         >
-          <SkipForward aria-hidden />
+          {bulkIcon('skip')}
           {tb('skip')}
         </Button>
         <Button
@@ -321,7 +332,7 @@ export function ReviewDesk({
             bulk.mutate({ ids: [...selection.selected], action: 'delete' })
           }
         >
-          <Trash2 aria-hidden />
+          {bulkIcon('delete')}
           {tb('delete')}
         </Button>
       </BulkBar>

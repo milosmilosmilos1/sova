@@ -345,9 +345,14 @@ export async function submitForReview(viewer: Viewer, postId: string, version: n
   return getPostView(viewer, postId)
 }
 
-export async function withdrawFromReview(viewer: Viewer, postId: string, version: number): Promise<PostView> {
+/** Povlačenje bez punog prikaza objave (potpisan link za svaki slajd); vraća novu verziju (D-126). */
+export async function withdraw(viewer: Viewer, postId: string, version: number): Promise<number> {
   await actor(viewer, postId, 'withdraw')
-  await transition(postId, 'draft', version, viewer.user.id, 'povučeno sa odobravanja')
+  return transition(postId, 'draft', version, viewer.user.id, 'povučeno sa odobravanja')
+}
+
+export async function withdrawFromReview(viewer: Viewer, postId: string, version: number): Promise<PostView> {
+  await withdraw(viewer, postId, version)
   return getPostView(viewer, postId)
 }
 
@@ -527,11 +532,17 @@ export async function resumePost(viewer: Viewer, postId: string, version: number
   return getPostView(viewer, postId)
 }
 
-export async function cancelPost(viewer: Viewer, postId: string, version: number): Promise<PostView> {
+/** Otkazivanje bez punog prikaza objave; vraća novu verziju (D-126). */
+export async function cancel(viewer: Viewer, postId: string, version: number): Promise<number> {
   await actor(viewer, postId, 'cancel')
   await unscheduleTargets(postId)
-  await transition(postId, 'canceled', version, viewer.user.id, 'otkazano')
+  const next = await transition(postId, 'canceled', version, viewer.user.id, 'otkazano')
   await setTargetsStatus(postId, 'canceled')
+  return next
+}
+
+export async function cancelPost(viewer: Viewer, postId: string, version: number): Promise<PostView> {
+  await cancel(viewer, postId, version)
   return getPostView(viewer, postId)
 }
 

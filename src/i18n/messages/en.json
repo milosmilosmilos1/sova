@@ -9,7 +9,8 @@
     "save": "Save",
     "cancel": "Cancel",
     "errorId": "Error ID for support: {id}",
-    "error": "Error."
+    "error": "Error.",
+    "timeout": "The server didn't finish in time. Refresh the page to see what was done, then try again."
   },
   "nav": {
     "login": "Log in",

@@ -9,7 +9,8 @@
     "save": "Sačuvaj",
     "cancel": "Otkaži",
     "errorId": "ID greške za podršku: {id}",
-    "error": "Greška."
+    "error": "Greška.",
+    "timeout": "Server nije stigao da završi na vreme. Osvežite stranicu da vidite šta je urađeno, pa pokušajte ponovo."
   },
   "nav": {
     "login": "Prijava",

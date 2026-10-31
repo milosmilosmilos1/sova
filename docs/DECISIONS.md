@@ -1004,3 +1004,14 @@ Odluka (vlasnik: „kontinuitet u dizajnu ne sme da se gubi, ni na mesec ni na t
 - Svaka nacrtana objava pamti stil, boje i font teme (`posts.design.styleId`, `colors`, `fonts`). Nacrti koji čekaju (nacrt, na odobravanju, odbijen), a nisu u temi, prikazuju se kao obaveštenje u Odobravanju i na kartici teme, sa dugmetom „Uskladi sa temom”: pozadinski posao `design-harmonize` ih crta ponovo u temi, sa istim tekstom i fotografijama, bez tokena, svaku u svojim koracima. Posle čuvanja nove teme usklađivanje kreće samo. Zakazane i objavljene objave se ne diraju, a ni nacrt koji je neko izmenio dok je Sova crtala. Objava pre D-116 bez sačuvanog teksta slajdova ne može da se nacrta ponovo; za nju ostaje „Generiši ponovo”.
 
 Razlog: u Odobravanju su se mešali šareni nacrti, stariji nacrti u stilu Naslov i nacrti u temi, pa se feed „šarao”. Vlasnik traži da se to nikad ne dešava.
+
+## D-126 · 31.10.2026 · usvojeno · Brisanje i preskakanje više stavki staje u 30 sekundi
+
+Odluka:
+
+- `POST /api/posts/bulk` i `POST /api/gallery/delete` rade po šest stavki u isto vreme (`settleWithin` u `lib/map-limit.ts`). Stavka koja ne počne za 20 sekundi vraća se u novo polje odgovora `rest`, a klijent (`bulkRequest` u `components/shared/api-client.ts`) je šalje u sledećem zahtevu dok sve ne bude urađeno; više od 100 označenih stavki ide u više zahteva.
+- Brisanje i preskakanje čitaju status i verziju iz reda objave i koriste `withdraw` i `cancel` (vraćaju novu verziju) umesto punog prikaza objave, koji je za svaki slajd pravio potpisan link. Provere uloge i statusa su iste kao kod pojedinačne radnje.
+- Odobravanje, Objave i Galerija posle radnje nad više stavki uvek ponovo čitaju listu, i kad zahtev padne, jer je deo posla možda već urađen. Dugme pokazuje da radnja traje. U Odobravanju se zajedno sa listom osvežava i broj nacrta koji čekaju u meniju (dolazi sa servera).
+- Zajednički `api()` više ne pada sa „Cannot read properties of undefined (reading 'message')” kad odgovor nije od Sove (Netlify posle 30 sekundi vraća 502 sa svojim telom): baca `HttpError` sa statusom, a `ErrorBox` za 502 i 504 kaže da server nije stigao na vreme i da osvežavanje pokazuje šta je urađeno (`common.timeout` na tri jezika).
+
+Razlog: na produkciji je brisanje 39 nacrta iz Odobravanja četiri puta prekinuto posle 30 sekundi. Svaki nacrt je trajao 1–2 sekunde (povlačenje sa odobravanja, brisanje i dva puna prikaza sa potpisanim linkovima za slajdove), jedan za drugim. Server je za to vreme ipak obrisao 91 nacrt, ali lista se posle greške nije osvežila, pa je izgledalo kao da se ništa nije desilo.

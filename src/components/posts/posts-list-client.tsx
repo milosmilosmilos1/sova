@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
-import { api as apiJson } from '@/components/shared/api-client'
+import { bulkRequest } from '@/components/shared/api-client'
 import { BulkBar, SelectAllBox, SelectBox, useSelection } from '@/components/shared/bulk'
 import { ErrorBox } from '@/components/shared/error-box'
 import { MediaThumb } from '@/components/shared/media-thumb'
@@ -73,15 +73,10 @@ export function PostsListClient({
   // označavanje više objava (D-119): brisanje ide kroz ista pravila kao pojedinačno
   const selection = useSelection(canEdit ? (posts.data?.items ?? []).map((p) => p.id) : [])
   const bulk = useMutation({
-    mutationFn: (ids: string[]) =>
-      apiJson<{ done: string[]; failed: Array<{ id: string; message: string }> }>('/api/posts/bulk', {
-        method: 'POST',
-        json: { ids, action: 'delete' },
-      }),
-    onSuccess: () => {
-      selection.clear()
-      void qc.invalidateQueries({ queryKey: ['posts', brandId] })
-    },
+    mutationFn: (ids: string[]) => bulkRequest('/api/posts/bulk', { action: 'delete' }, ids),
+    onSuccess: () => selection.clear(),
+    // i posle greške: deo objava je možda već obrisan (D-126)
+    onSettled: () => qc.invalidateQueries({ queryKey: ['posts', brandId] }),
   })
   return (
     <div className="space-y-6">

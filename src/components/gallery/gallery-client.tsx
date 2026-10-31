@@ -15,7 +15,7 @@ import {
 import { useTranslations } from 'next-intl'
 import { useRef, useState } from 'react'
 
-import { api } from '@/components/shared/api-client'
+import { api, bulkRequest } from '@/components/shared/api-client'
 import { BulkBar, SelectAllBox, SelectBox, useSelection } from '@/components/shared/bulk'
 import { ErrorBox } from '@/components/shared/error-box'
 import { Button } from '@/components/ui/button'
@@ -135,16 +135,13 @@ export function GalleryClient({
   const tb = useTranslations('bulk')
   const selection = useSelection(canEdit ? (view?.items ?? []).map((i) => i.id) : [])
   const bulkDelete = useMutation({
-    mutationFn: (ids: string[]) =>
-      api<{ done: string[]; failed: Array<{ id: string; message: string }> }>('/api/gallery/delete', {
-        method: 'POST',
-        json: { brandId, ids },
-      }),
-    onSuccess: async (r) => {
+    mutationFn: (ids: string[]) => bulkRequest('/api/gallery/delete', { brandId }, ids),
+    onSuccess: (r) => {
       setEdits((cur) => Object.fromEntries(Object.entries(cur).filter(([id]) => !r.done.includes(id))))
       selection.clear()
-      await refresh()
     },
+    // i posle greške: deo fotografija je možda već obrisan (D-126)
+    onSettled: () => refresh(),
   })
   const bulkMove = useMutation({
     mutationFn: (v: { ids: string[]; categoryId: string | null }) =>
