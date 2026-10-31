@@ -7,7 +7,7 @@ import { settleWithin } from '@/lib/map-limit'
 import { availableActions, type PostStatus } from '@/lib/posts/state-machine'
 import { deleteMediaAsset } from '@/services/media'
 import { deletePost, loadPost } from '@/services/posts/posts'
-import { skip } from '@/services/posts/review'
+import { approveAndSchedule, skip } from '@/services/posts/review'
 import { cancel, withdraw } from '@/services/posts/workflow'
 
 /**
@@ -67,12 +67,19 @@ async function each(ids: string[], action: (id: string) => Promise<unknown>): Pr
   }
 }
 
+/** Zakazivanje (D-127) odobrava nacrt koji čeka i zakazuje ga u termin iz `at` ili iz plana. */
 export async function bulkPosts(
   viewer: Viewer,
   ids: string[],
-  action: 'delete' | 'skip',
+  action: 'delete' | 'skip' | 'schedule',
+  at: Record<string, string> = {},
 ): Promise<BulkResult> {
-  return each(ids, (id) => (action === 'delete' ? removePost(viewer, id) : skip(viewer, id)))
+  if (action === 'schedule' && !viewer.profile.emailVerifiedAt) throw new ApiError('EMAIL_NOT_VERIFIED')
+  return each(ids, (id) => {
+    if (action === 'delete') return removePost(viewer, id)
+    if (action === 'skip') return skip(viewer, id)
+    return approveAndSchedule(viewer, id, at[id])
+  })
 }
 
 /** Brisanje fotografija iz galerije; fotografija u zakazanoj objavi se ne briše (čuvar u bazi). */

@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
+  CalendarClock,
   ChevronLeft,
   ChevronRight,
   Download,
@@ -20,6 +21,7 @@ import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useState } from 'react'
 
 import { ThemeNotice } from '@/components/design/theme-notice'
+import { BulkScheduleDialog } from '@/components/review/bulk-schedule-dialog'
 import { api, bulkRequest } from '@/components/shared/api-client'
 import { BulkBar, SelectAllBox, SelectBox, useSelection } from '@/components/shared/bulk'
 import { ErrorBox } from '@/components/shared/error-box'
@@ -133,19 +135,33 @@ export function ReviewDesk({
     void qc.invalidateQueries({ queryKey: ['review'] })
     void qc.invalidateQueries({ queryKey: ['review-detail'] })
   }, [qc])
-  // označavanje više nacrta (D-119): preskakanje ili brisanje svih označenih odjednom
+  // označavanje više nacrta (D-119): zakazivanje (D-127), preskakanje ili brisanje svih označenih
   const tb = useTranslations('bulk')
   const selection = useSelection(items.map((i) => i.id))
+  const [scheduling, setScheduling] = useState(false)
   const bulk = useMutation({
-    mutationFn: (input: { ids: string[]; action: 'delete' | 'skip' }) =>
-      bulkRequest('/api/posts/bulk', { action: input.action }, input.ids),
-    onSuccess: () => selection.clear(),
+    mutationFn: (input: {
+      ids: string[]
+      action: 'delete' | 'skip' | 'schedule'
+      at?: Record<string, string>
+    }) =>
+      bulkRequest(
+        '/api/posts/bulk',
+        { action: input.action, ...(input.at ? { at: input.at } : {}) },
+        input.ids,
+      ),
+    onSuccess: () => {
+      selection.clear()
+      setScheduling(false)
+    },
     // i posle greške: deo nacrta je možda već obrisan, pa lista mora da pokaže stvarno stanje (D-126)
     onSettled: () => refresh(),
   })
-  const bulkIcon = (action: 'delete' | 'skip') =>
+  const bulkIcon = (action: 'delete' | 'skip' | 'schedule') =>
     bulk.isPending && bulk.variables?.action === action ? (
       <LoaderCircle className="animate-spin" aria-hidden />
+    ) : action === 'schedule' ? (
+      <CalendarClock aria-hidden />
     ) : action === 'skip' ? (
       <SkipForward aria-hidden />
     ) : (
@@ -311,6 +327,10 @@ export function ReviewDesk({
         )}
       </div>
       <BulkBar selection={selection}>
+        <Button size="sm" disabled={bulk.isPending} onClick={() => setScheduling(true)}>
+          {bulkIcon('schedule')}
+          {tb('schedule')}
+        </Button>
         <Button
           size="sm"
           variant="outline"
@@ -336,6 +356,17 @@ export function ReviewDesk({
           {tb('delete')}
         </Button>
       </BulkBar>
+      {scheduling ? (
+        <BulkScheduleDialog
+          items={items
+            .filter((i) => selection.has(i.id))
+            .map((i) => ({ id: i.id, scheduledFor: i.scheduledFor }))}
+          timeZone={timeZone}
+          pending={bulk.isPending}
+          onClose={() => setScheduling(false)}
+          onConfirm={({ ids, at }) => bulk.mutate({ ids, action: 'schedule', at })}
+        />
+      ) : null}
     </div>
   )
 }

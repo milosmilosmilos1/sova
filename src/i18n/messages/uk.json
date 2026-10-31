@@ -1624,6 +1624,25 @@
     "moveTo": "Перемістити в категорію",
     "noCategory": "Без категорії",
     "result": "Виконано: {done}.",
-    "resultFailed": "Виконано: {done}. Не вдалося: {failed}."
+    "resultFailed": "Виконано: {done}. Не вдалося: {failed}.",
+    "schedule": "Запланувати",
+    "scheduleTitle": "Запланувати {count, plural, one {# чернетку} few {# чернетки} many {# чернеток} other {# чернетки}}",
+    "scheduleHint": "Чернетки, що чекають рішення, схвалюються й плануються. Час за поясом бренду ({tz}).",
+    "schedulePlan": "Час із плану",
+    "schedulePlanHint": "Кожна чернетка виходить у свій час, від {first} до {last}.",
+    "schedulePlanNone": "Жодна позначена чернетка не має майбутнього часу з плану. Розподіліть їх від дати.",
+    "schedulePlanMissing": "Без майбутнього часу: {count}. Вони лишаються в Погодженні; розподіліть їх від дати.",
+    "scheduleSpread": "Розподілити від дати",
+    "scheduleSpreadText": "Та сама година через кілька днів, у порядку плану.",
+    "scheduleDate": "Від дати",
+    "scheduleTime": "Година",
+    "scheduleEvery": "Інтервал",
+    "every1": "Щодня",
+    "every2": "Через день",
+    "every3": "Кожен третій день",
+    "every7": "Раз на тиждень",
+    "scheduleSpreadHint": "Перша {first}, остання {last}.",
+    "schedulePast": "Початок у минулому. Оберіть пізнішу дату чи годину.",
+    "scheduleConfirm": "Запланувати {count, plural, one {# чернетку} few {# чернетки} many {# чернеток} other {# чернетки}}"
   }
 }

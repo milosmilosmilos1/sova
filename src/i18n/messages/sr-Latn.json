@@ -1624,6 +1624,25 @@
     "moveTo": "Premesti u kategoriju",
     "noCategory": "Bez kategorije",
     "result": "Urađeno: {done}.",
-    "resultFailed": "Urađeno: {done}. Nije uspelo: {failed}."
+    "resultFailed": "Urađeno: {done}. Nije uspelo: {failed}.",
+    "schedule": "Zakaži",
+    "scheduleTitle": "Zakaži {count, plural, one {# nacrt} few {# nacrta} other {# nacrta}}",
+    "scheduleHint": "Nacrti koji čekaju odluku se odobravaju i zakazuju. Vreme je po zoni brenda ({tz}).",
+    "schedulePlan": "Termini iz plana",
+    "schedulePlanHint": "Svaki nacrt ide u svoj termin, od {first} do {last}.",
+    "schedulePlanNone": "Nijedan označen nacrt nema budući termin iz plana. Izaberite raspored od datuma.",
+    "schedulePlanMissing": "Bez budućeg termina: {count}. Oni ostaju u Odobravanju; za njih izaberite raspored od datuma.",
+    "scheduleSpread": "Rasporedi od datuma",
+    "scheduleSpreadText": "Isti sat na svakih nekoliko dana, redom kao u planu.",
+    "scheduleDate": "Od datuma",
+    "scheduleTime": "Sat",
+    "scheduleEvery": "Razmak",
+    "every1": "Svaki dan",
+    "every2": "Svaki drugi dan",
+    "every3": "Svaki treći dan",
+    "every7": "Jednom nedeljno",
+    "scheduleSpreadHint": "Prvi {first}, poslednji {last}.",
+    "schedulePast": "Početak je u prošlosti. Izaberite kasniji datum ili sat.",
+    "scheduleConfirm": "Zakaži {count, plural, one {# nacrt} few {# nacrta} other {# nacrta}}"
   }
 }

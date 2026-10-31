@@ -358,13 +358,14 @@ export async function withdrawFromReview(viewer: Viewer, postId: string, version
 
 export type Decision = 'approved' | 'rejected' | 'changes_requested'
 
-export async function decidePost(
+/** Odluka bez punog prikaza objave (potpisan link za svaki slajd); vraća novu verziju (D-127). */
+export async function decide(
   viewer: Viewer,
   postId: string,
   version: number,
   decision: Decision,
   comment: string | null,
-): Promise<PostView> {
+): Promise<number> {
   const action: PostAction =
     decision === 'approved' ? 'approve' : decision === 'rejected' ? 'reject' : 'request_changes'
   const { post } = await actor(viewer, postId, action)
@@ -374,7 +375,7 @@ export async function decidePost(
     })
   }
   const admin = createSupabaseAdminClient()
-  const { error } = await admin.rpc('decide_post', {
+  const { data: newVersion, error } = await admin.rpc('decide_post', {
     p_post_id: postId,
     p_decision: decision,
     p_comment: comment ?? '',
@@ -394,6 +395,17 @@ export async function decidePost(
     changes_requested: 'Traže se izmene objave',
   }
   await notifyAuthor(post, `post_${decision}`, titles[decision], comment, viewer.user.id)
+  return newVersion ?? version + 1
+}
+
+export async function decidePost(
+  viewer: Viewer,
+  postId: string,
+  version: number,
+  decision: Decision,
+  comment: string | null,
+): Promise<PostView> {
+  await decide(viewer, postId, version, decision, comment)
   return getPostView(viewer, postId)
 }
 
@@ -410,8 +422,17 @@ function conflictFromSameMinute(error: unknown): ApiError | null {
   return null
 }
 
-/** Zakazivanje: vreme u budućnosti, nalozi aktivni, sadržaj validan, isti minut po nalogu zabranjen (K8). */
-export async function schedulePost(viewer: Viewer, postId: string, input: ScheduleInput): Promise<PostView> {
+/**
+ * Zakazivanje: vreme u budućnosti, nalozi aktivni, sadržaj validan, isti minut po nalogu zabranjen (K8).
+ * Vraća novu verziju bez punog prikaza objave (D-127); `validated` znači da je pozivalac upravo
+ * proverio sadržaj (masovno zakazivanje proverava pre odobrenja), pa se provera ne ponavlja.
+ */
+export async function schedule(
+  viewer: Viewer,
+  postId: string,
+  input: ScheduleInput,
+  { validated = false }: { validated?: boolean } = {},
+): Promise<number> {
   await actor(viewer, postId, 'schedule')
   const when = new Date(input.scheduledFor)
   const timeCheck = validateScheduleTime(when)
@@ -424,8 +445,8 @@ export async function schedulePost(viewer: Viewer, postId: string, input: Schedu
     const c = validateScheduleTime(new Date(t))
     if (!c.ok) throw new ApiError('VALIDATION', c.message)
   }
-  const validation = await validatePostContent(viewer, postId)
-  if (!validation.ok)
+  const validation = validated ? null : await validatePostContent(viewer, postId)
+  if (validation && !validation.ok)
     throw new ApiError('VALIDATION', 'Objava nije spremna za zakazivanje.', {
       details: { problems: validation.problems },
     })
@@ -475,6 +496,11 @@ export async function schedulePost(viewer: Viewer, postId: string, input: Schedu
     at: when.toISOString(),
     by: viewer.user.id,
   })
+  return newVersion
+}
+
+export async function schedulePost(viewer: Viewer, postId: string, input: ScheduleInput): Promise<PostView> {
+  await schedule(viewer, postId, input)
   return getPostView(viewer, postId)
 }
 

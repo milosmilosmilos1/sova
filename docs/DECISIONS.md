@@ -1015,3 +1015,13 @@ Odluka:
 - Zajednički `api()` više ne pada sa „Cannot read properties of undefined (reading 'message')” kad odgovor nije od Sove (Netlify posle 30 sekundi vraća 502 sa svojim telom): baca `HttpError` sa statusom, a `ErrorBox` za 502 i 504 kaže da server nije stigao na vreme i da osvežavanje pokazuje šta je urađeno (`common.timeout` na tri jezika).
 
 Razlog: na produkciji je brisanje 39 nacrta iz Odobravanja četiri puta prekinuto posle 30 sekundi. Svaki nacrt je trajao 1–2 sekunde (povlačenje sa odobravanja, brisanje i dva puna prikaza sa potpisanim linkovima za slajdove), jedan za drugim. Server je za to vreme ipak obrisao 91 nacrt, ali lista se posle greške nije osvežila, pa je izgledalo kao da se ništa nije desilo.
+
+## D-127 · 31.10.2026 · usvojeno · Masovno zakazivanje iz Odobravanja
+
+Odluka:
+
+- Traka za označene nacrte u Odobravanju ima dugme „Zakaži”. Prozor nudi dva načina. „Termini iz plana”: svaki nacrt ide u svoj termin iz plana (`posts.scheduled_for`), a nacrti bez budućeg termina se ne šalju i ostaju u Odobravanju. „Rasporedi od datuma”: početni datum i sat u zoni brenda i razmak (svaki dan, svaki drugi, svaki treći ili jednom nedeljno), redom kao u planu, a nacrti bez termina na kraju.
+- Nacrt koji čeka se odobrava i zakazuje kao kod „Sačuvaj i zakaži”, kroz `POST /api/posts/bulk` sa `action: 'schedule'` i `at` (termin po nacrtu; bez njega važi termin iz plana). Nacrt koji čeka mogu da zakažu vlasnik i administrator, a urednik samo već odobren. Uloga, termin i sadržaj po mreži proveravaju se pre prve promene, pa nacrt koji ne može da se zakaže ostaje na odobravanju sa razlogom u izveštaju, a ne odobren bez termina. Zakazivanje traži potvrđen email.
+- `decide` i `schedule` vraćaju novu verziju bez punog prikaza objave, kao `withdraw` i `cancel` iz D-126; posle odobrenja se sadržaj ne proverava ponovo. Rad po šest u isto vreme i ostatak u `rest` važe kao za brisanje.
+
+Razlog: vlasnik traži da nacrte zakaže odjednom umesto jedan po jedan. Na produkciji BelgradeMidnight ima 26 nacrta koji čekaju, svi sa budućim terminom iz plana (2.11–30.12) i povezanim Facebook-om i Instagramom.

@@ -1624,6 +1624,25 @@
     "moveTo": "Move to category",
     "noCategory": "No category",
     "result": "Done: {done}.",
-    "resultFailed": "Done: {done}. Failed: {failed}."
+    "resultFailed": "Done: {done}. Failed: {failed}.",
+    "schedule": "Schedule",
+    "scheduleTitle": "Schedule {count, plural, one {# draft} other {# drafts}}",
+    "scheduleHint": "Drafts waiting for a decision are approved and scheduled. Times use the brand time zone ({tz}).",
+    "schedulePlan": "Times from the plan",
+    "schedulePlanHint": "Each draft goes out at its own time, from {first} to {last}.",
+    "schedulePlanNone": "None of the selected drafts has an upcoming time from the plan. Spread them from a date instead.",
+    "schedulePlanMissing": "Without an upcoming time: {count}. They stay in Approvals; spread them from a date.",
+    "scheduleSpread": "Spread from a date",
+    "scheduleSpreadText": "Same hour every few days, in plan order.",
+    "scheduleDate": "Start date",
+    "scheduleTime": "Time",
+    "scheduleEvery": "Spacing",
+    "every1": "Every day",
+    "every2": "Every other day",
+    "every3": "Every third day",
+    "every7": "Once a week",
+    "scheduleSpreadHint": "First {first}, last {last}.",
+    "schedulePast": "The start is in the past. Pick a later date or time.",
+    "scheduleConfirm": "Schedule {count, plural, one {# draft} other {# drafts}}"
   }
 }

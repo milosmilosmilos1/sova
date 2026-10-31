@@ -4,7 +4,12 @@ import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
-import type { PostStatus } from '@/lib/posts/state-machine'
+import {
+  checkAction,
+  validateScheduleTime,
+  type PostAction,
+  type PostStatus,
+} from '@/lib/posts/state-machine'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError } from '@/lib/supabase/errors'
 import type { Slide } from '@/lib/visuals/design/types'
@@ -20,7 +25,17 @@ import { renderDesignSlides } from '@/services/design/render-post'
 import { downloadAsset, signedUrl } from '@/services/media'
 import { nextFreeSlot } from '@/services/posts/calendar'
 import { getPostView, loadPost, updatePost, type PostView } from '@/services/posts/posts'
-import { cancel, decidePost, publishNow, schedulePost, withdraw } from '@/services/posts/workflow'
+import {
+  cancel,
+  decide,
+  decidePost,
+  publishNow,
+  schedule,
+  schedulePost,
+  validatePostContent,
+  withdraw,
+  type ContentProblem,
+} from '@/services/posts/workflow'
 
 /**
  * Odobravanje (D-108, faza 4): nacrti koji čekaju odluku, pregled slajdova i opisa po mreži, i
@@ -232,6 +247,52 @@ export async function saveAndSchedule(
   let view = await applyEdits(viewer, postId, input)
   if (view.status === 'in_review') view = await decidePost(viewer, postId, view.version, 'approved', null)
   return schedulePost(viewer, postId, { version: view.version, scheduledFor: input.scheduledFor })
+}
+
+function problemsMessage(problems: ContentProblem[]): string {
+  const first = problems[0]
+  const network = first?.platform
+    ? (PLATFORMS[first.platform as SocialPlatform]?.label ?? first.platform)
+    : ''
+  const problem = first?.problems[0]
+  return problem
+    ? `Objava nije spremna za zakazivanje. ${network ? `${network}: ` : ''}${problem}`
+    : 'Objava nije spremna za zakazivanje.'
+}
+
+/**
+ * Odobrenje (ako čeka) i zakazivanje bez izmena, za više nacrta odjednom (D-127). Bez `at` važi
+ * termin iz plana (`scheduled_for`). Uloga, status, termin i sadržaj se proveravaju pre prve
+ * promene, pa nacrt koji ne može da se zakaže ostaje gde je bio, a ne odobren bez termina.
+ */
+export async function approveAndSchedule(viewer: Viewer, postId: string, at?: string): Promise<void> {
+  const post = await loadPost(viewer, postId)
+  const { role } = await requireMembership(viewer, post.workspace_id)
+  const steps: Array<[PostAction, PostStatus]> =
+    post.status === 'in_review'
+      ? [
+          ['approve', 'in_review'],
+          ['schedule', 'approved'],
+        ]
+      : [['schedule', post.status]]
+  for (const [action, from] of steps) {
+    const check = checkAction(action, from, role)
+    if (!check.ok) throw new ApiError(check.reason === 'role' ? 'FORBIDDEN' : 'CONFLICT', check.message)
+  }
+  const when = at ?? post.scheduled_for
+  if (!when)
+    throw new ApiError('VALIDATION', 'Nacrt nema termin iz plana. Izaberite datum od kog se raspoređuje.')
+  const time = validateScheduleTime(new Date(when))
+  if (!time.ok)
+    throw new ApiError(
+      'VALIDATION',
+      at ? time.message : 'Termin iz plana je prošao. Izaberite datum od kog se raspoređuje.',
+    )
+  const content = await validatePostContent(viewer, postId)
+  if (!content.ok) throw new ApiError('VALIDATION', problemsMessage(content.problems))
+  const version =
+    post.status === 'in_review' ? await decide(viewer, postId, post.version, 'approved', null) : post.version
+  await schedule(viewer, postId, { version, scheduledFor: when }, { validated: true })
 }
 
 export async function publishFromDesk(viewer: Viewer, postId: string, input: DeskEdits): Promise<PostView> {

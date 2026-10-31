@@ -17,6 +17,7 @@ import { POST as skipPost } from '@/app/api/approvals/[id]/skip/route'
 import { GET as listGet } from '@/app/api/approvals/route'
 import { POST as flowRunPost } from '@/app/api/flows/[id]/run/route'
 import { POST as flowsPost } from '@/app/api/flows/route'
+import { POST as postsBulkPost } from '@/app/api/posts/bulk/route'
 import { POST as workspacesPost } from '@/app/api/workspaces/route'
 import { enqueueTargetScheduled } from '@/lib/jobs/enqueue'
 import { resetBreakerForTests } from '@/lib/ai/orchestrator'
@@ -357,5 +358,81 @@ describe('Odobravanje: odluke', () => {
     expect(eocd.readUInt16LE(10)).toBe(3)
     expect(zip.includes(Buffer.from('01.jpg'))).toBe(true)
     expect(zip.includes(Buffer.from('03.jpg'))).toBe(true)
+  })
+})
+
+describe('Odobravanje: masovno zakazivanje (D-127)', () => {
+  type Bulk = { done: string[]; failed: Array<{ id: string; message: string }>; rest: string[] }
+  const minute = (hours: number) => {
+    const when = new Date(Date.now() + hours * 3600_000)
+    when.setSeconds(0, 0)
+    return when.toISOString()
+  }
+  const bulk = (ids: string[], at?: Record<string, string>, token = owner.token) =>
+    call<Bulk>(postsBulkPost, '/api/posts/bulk', {
+      token,
+      body: { ids, action: 'schedule', ...(at ? { at } : {}) },
+    })
+  const row = async (id: string) =>
+    (
+      await admin
+        .from('posts')
+        .select('status, scheduled_for, post_targets(status, scheduled_at)')
+        .eq('id', id)
+        .single()
+    ).data!
+
+  it('termini iz plana i raspored od datuma: odobrenje i termin odjednom, publisher dobija targete', async () => {
+    const [a, b, c] = [await draft('Plan prvi'), await draft('Plan drugi'), await draft('Bez termina')]
+    const planned = { [a]: minute(50), [b]: minute(74) }
+    for (const [id, at] of Object.entries(planned))
+      await admin.from('posts').update({ scheduled_for: at }).eq('id', id)
+    await admin.from('posts').update({ scheduled_for: null }).eq('id', c)
+
+    const r = await bulk([a, b, c])
+    expect(r.json.data!.done).toEqual([a, b])
+    expect(r.json.data!.rest).toEqual([])
+    expect(r.json.data!.failed).toEqual([{ id: c, message: expect.stringContaining('nema termin iz plana') }])
+    for (const id of [a, b]) {
+      const p = await row(id)
+      expect(p.status).toBe('scheduled')
+      expect(Date.parse(p.scheduled_for!)).toBe(Date.parse(planned[id]!))
+      expect(
+        p.post_targets.every(
+          (t) => t.status === 'scheduled' && Date.parse(t.scheduled_at!) === Date.parse(planned[id]!),
+        ),
+      ).toBe(true)
+    }
+    expect(vi.mocked(enqueueTargetScheduled)).toHaveBeenCalledTimes(4)
+    // nacrt bez termina nije ni odobren
+    expect((await row(c)).status).toBe('in_review')
+
+    const at = minute(98)
+    const spread = await bulk([c], { [c]: at })
+    expect(spread.json.data).toEqual({ done: [c], failed: [], rest: [] })
+    expect(Date.parse((await row(c)).scheduled_for!)).toBe(Date.parse(at))
+  })
+
+  it('nacrt koji ne može da se zakaže ostaje na odobravanju: uloga, prošao termin, sadržaj', async () => {
+    const [d, e, f] = [await draft('Urednik'), await draft('Prošao termin'), await draft('Predug opis')]
+    await admin
+      .from('posts')
+      .update({ scheduled_for: minute(-2) })
+      .eq('id', e)
+    await admin
+      .from('post_targets')
+      .update({ text_content: 'a'.repeat(2300) })
+      .eq('post_id', f)
+      .eq('social_account_id', igId)
+
+    const byEditor = await bulk([d], { [d]: minute(30) }, editor.token)
+    expect(byEditor.json.data!.failed[0]!.message).toContain('uloga')
+    const r = await bulk([e, f], { [f]: minute(30) })
+    expect(r.json.data!.done).toEqual([])
+    const message = Object.fromEntries(r.json.data!.failed.map((x) => [x.id, x.message]))
+    expect(message[e]).toContain('Termin iz plana je prošao')
+    expect(message[f]).toMatch(/^Objava nije spremna za zakazivanje\. Instagram: /)
+    for (const id of [d, e, f]) expect((await row(id)).status).toBe('in_review')
+    expect(vi.mocked(enqueueTargetScheduled)).not.toHaveBeenCalled()
   })
 })
