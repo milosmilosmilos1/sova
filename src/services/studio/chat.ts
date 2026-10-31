@@ -349,11 +349,12 @@ async function reviseStudioPost(
       uploadedBy: viewer.user.id,
       // iste fotografije kao do sada; menja se samo tekst
       photoAssetIds: design.copy.photoAssetIds.length ? design.copy.photoAssetIds : undefined,
+      cyclePhotos: Boolean(design.ownPhotos),
       origin: { postId: view.id },
     })
     media = rendered.assetIds.map((mediaAssetId, sortOrder) => ({ mediaAssetId, sortOrder }))
     title = slides[0]?.title.slice(0, 200)
-    nextDesign = { ...design, copy: { slides, photoAssetIds: rendered.photos.map((p) => p.id) } }
+    nextDesign = { ...design, copy: { slides, photoAssetIds: rendered.photoIds } }
   }
   const caption = revision.caption
   const updated = await updatePost(viewer, view.id, {

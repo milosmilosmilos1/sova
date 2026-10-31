@@ -120,6 +120,7 @@ export async function composeDesigned(
     query: (copy.visualQuery || input.topic).slice(0, 100),
     uploadedBy: viewer.user.id,
     photoAssetIds: photoIds.length ? photoIds : undefined,
+    cyclePhotos: photoIds.length > 0,
   })
   const notes = [...rendered.notes]
   if (format === 'story') notes.push('Priča nema opis: tekst je sačuvan uz nacrt, a objavljuju se slajdovi.')
@@ -161,7 +162,7 @@ export async function composeDesigned(
     locale,
     platforms,
     ...(photoIds.length ? { ownPhotos: true } : {}),
-    copy: { slides: copy.slides, photoAssetIds: rendered.photos.map((p) => p.id) },
+    copy: { slides: copy.slides, photoAssetIds: rendered.photoIds },
   }
   await createSupabaseAdminClient()
     .from('posts')

@@ -15,6 +15,7 @@ import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
+import { mapLimit } from '@/lib/map-limit'
 import type { UnsplashSearchInput, UnsplashSelectInput } from '@/lib/schemas/visuals'
 import { safeFetch } from '@/lib/ssrf'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
@@ -25,6 +26,7 @@ import {
   resizedUrl,
   searchPhotos,
   trackDownload,
+  unsplashRemaining,
   type UnsplashAttribution,
   type UnsplashOrientation,
   type UnsplashPhoto,
@@ -32,7 +34,7 @@ import {
 import { getBrand } from '@/services/brands'
 import type { MediaAssetRow } from '@/services/media'
 import { storeServerImage } from '@/services/visuals/store'
-import { queryVariants, usedStockIds } from '@/services/visuals/used'
+import { queryVariants, STOCK_PARALLEL, usedStockIds } from '@/services/visuals/used'
 
 export interface UnsplashPhotoView {
   id: string
@@ -170,7 +172,8 @@ export async function selectUnsplashPhoto(
  * Automatski izbor za „Novu objavu”, plan i Autopilot (D-107): rezultati pretrage redom, isečeni za
  * vrstu objave (kvadrat staje na svaku mrežu, 9:16 je za priču). Fotografija koju je brend već
  * dobio se preskače (D-121): traže se sledeće strane i kraći oblici upita, a bez nove fotografije
- * slajd ostaje u bojama.
+ * slajd ostaje u bojama. Izabrane se čuvaju paralelno, i samo onoliko koliko satni limit još prima
+ * (D-122); ostatak traži pozivalac sa Pexels-a.
  */
 export async function pickUnsplashPhotos(input: {
   workspaceId: string
@@ -181,11 +184,18 @@ export async function pickUnsplashPhotos(input: {
   uploadedBy: string | null
 }): Promise<SelectedPhoto[]> {
   if (!isUnsplashConfigured() || input.count <= 0) return []
+  // pretraga i bar jedno praćenje preuzimanja; sa potrošenim limitom se odmah prelazi na Pexels
+  const spent = () => {
+    const left = unsplashRemaining()
+    return left !== null && left < 2
+  }
+  if (spent()) return []
   const used = await usedStockIds(input.brandId, 'unsplash')
-  const out: SelectedPhoto[] = []
+  const chosen: UnsplashPhoto[] = []
   const variants = queryVariants(input.query)
-  for (let v = 0; v < variants.length && out.length < input.count; v++) {
-    for (let page = 1; page <= (v === 0 ? 3 : 1) && out.length < input.count; page++) {
+  search: for (let v = 0; v < variants.length && chosen.length < input.count; v++) {
+    for (let page = 1; page <= (v === 0 ? 3 : 1) && chosen.length < input.count; page++) {
+      if (spent()) break search
       const r = await searchPhotos({
         query: variants[v]!,
         perPage: 30,
@@ -194,15 +204,26 @@ export async function pickUnsplashPhotos(input: {
         contentFilter: 'high',
       })
       for (const photo of r.results) {
-        if (out.length >= input.count) break
+        if (chosen.length >= input.count) break
         if (used.has(photo.id)) continue
         used.add(photo.id)
-        out.push(await storePickedPhoto(photo, input))
+        chosen.push(photo)
       }
       if (page >= r.totalPages) break
     }
   }
-  return out
+  // svaka upotrebljena fotografija troši jedan zahtev (praćenje preuzimanja)
+  const room = unsplashRemaining()
+  const take = room === null ? chosen : chosen.slice(0, Math.max(0, room))
+  const stored = await mapLimit(take, STOCK_PARALLEL, async (photo) => {
+    try {
+      return await storePickedPhoto(photo, input)
+    } catch (error) {
+      logger.warn('unsplash_pick_store_failed', { photoId: photo.id, error })
+      return null
+    }
+  })
+  return stored.filter((p): p is SelectedPhoto => Boolean(p))
 }
 
 async function storePickedPhoto(
@@ -210,13 +231,16 @@ async function storePickedPhoto(
   input: { workspaceId: string; brandId: string; crop: 'square' | 'portrait'; uploadedBy: string | null },
 ): Promise<SelectedPhoto> {
   const attribution = attributionFor(photo)
-  await trackDownload(photo.downloadLocation)
   const size = input.crop === 'portrait' ? { w: 1080, h: 1920 } : { w: 1600, h: 1600 }
-  const res = await safeFetch(resizedUrl(photo.urls.raw, { ...size, fit: 'crop', q: 85 }), {
-    timeoutMs: 20_000,
-    maxBytes: 15 * 1024 * 1024,
-    headers: { accept: 'image/*' },
-  })
+  // praćenje preuzimanja ide uporedo sa preuzimanjem (greška praćenja se samo beleži)
+  const [, res] = await Promise.all([
+    trackDownload(photo.downloadLocation),
+    safeFetch(resizedUrl(photo.urls.raw, { ...size, fit: 'crop', q: 85 }), {
+      timeoutMs: 20_000,
+      maxBytes: 15 * 1024 * 1024,
+      headers: { accept: 'image/*' },
+    }),
+  ])
   if (!res.ok) throw new ApiError('PROVIDER_ERROR', 'Fotografija nije mogla da se preuzme sa Unsplash-a.')
   const asset = await storeServerImage({
     workspaceId: input.workspaceId,

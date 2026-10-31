@@ -83,7 +83,13 @@ export const events = {
     schema: z.object({ planId: uuid, brandId: uuid }),
   }),
   monthPlanGenerate: eventType('plan/month.generate', {
-    schema: z.object({ planId: uuid, brandId: uuid }),
+    // nastavak posle pada posla (D-122): samo neurađene stavke, najviše `MAX_PLAN_RESUMES` puta
+    schema: z.object({
+      planId: uuid,
+      brandId: uuid,
+      resume: z.boolean().optional(),
+      resumes: z.number().int().min(0).optional(),
+    }),
   }),
 
   // Faza 12

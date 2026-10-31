@@ -9,6 +9,9 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
  */
 export type StockKind = 'unsplash' | 'pexels-photo' | 'pexels-video'
 
+/** Koliko fotografija automatski izbor preuzima i čuva u isto vreme (D-122). */
+export const STOCK_PARALLEL = 4
+
 export async function usedStockIds(brandId: string, kind: StockKind): Promise<Set<string>> {
   const admin = createSupabaseAdminClient()
   const query =

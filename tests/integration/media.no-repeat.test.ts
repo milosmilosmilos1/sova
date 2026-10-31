@@ -81,7 +81,7 @@ describe('fotografije i snimci bez ponavljanja', () => {
       query: 'coffee morning',
     })
     expect(rendered.assetIds).toHaveLength(5)
-    expect(rendered.photos).toHaveLength(5)
+    expect(rendered.photoIds).toHaveLength(5)
     const { data: assets } = await admin
       .from('media_assets')
       .select('id, source_data')

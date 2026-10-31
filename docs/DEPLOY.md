@@ -142,6 +142,8 @@ Za punu produkciju:
 
 **Inbox i DM automatizacija (D-117)** su iza prekidača `inbox`. Za probu na jednom radnom prostoru pre odobrenja Mete: `insert into feature_flags (key, enabled, description, rollout) values ('inbox', false, 'Inbox i DM automatizacija', '{"workspaces": ["<id radnog prostora>"]}') on conflict (key) do update set rollout = excluded.rollout;`, zatim u Meta konfiguraciji prijave dodati `pages_manage_engagement`, `pages_messaging` i `instagram_manage_messages` i ponovo povezati nalog. Za sve korisnike: posle App Review-a `update feature_flags set enabled = true where key = 'inbox';`. Posao `inbox-sync` traži Inngest sinhronizaciju posle deploy-a.
 
+**Limit od 30 sekundi (D-122)**: Netlify prekida svaki zahtev posle 30 sekundi, i rute i Inngest korake (`export const maxDuration` u ruti se ne poštuje). Prekinut zahtev u logu je 502 ili 504 sa trajanjem oko 30,2 s (Netlify konektor → observability → `get-request-logs` sa filtrom `URL = /api/inngest`). Posao koji može da traje duže deli se na Inngest korake od kojih nijedan ne prelazi oko 15 sekundi; tako rade mesečni plan i tokovi (slajdovi po tri u koraku).
+
 Build počinje proverom env-a (`npm run check:env`, D-103). Ako fali obavezna promenljiva, build pada sa njenim imenom u logu, a živi sajt ostaje na prethodnom deploy-u. Kad prođe, log pokazuje koji servisi su podešeni.
 
 Novi deploy iz čiste kopije (bez `.env` fajlova): `git archive HEAD | tar -x -C /c/Temp/sova-deploy` (git worktree na dugoj putanji pada), pa u tom folderu komanda koju daje Netlify konektor (`npx -y @netlify/mcp@latest --site-id … --proxy-path …`). Kad se GitHub repo poveže sa sajtom (Netlify → Build & deploy → Link repository), svaki push na `main` gradi sajt sam.

@@ -6,6 +6,7 @@ import { variantToText } from '@/lib/ai/prompts/post-text'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
+import { logger } from '@/lib/logger'
 import type { ComposeInput } from '@/lib/schemas/ai'
 import { generatePostText } from '@/services/ai/text'
 import { generateTemplateVisual } from '@/services/autopilot/content'
@@ -139,13 +140,23 @@ export async function composePost(
           asset: p.asset,
           attribution: p.attribution.text,
         }))
-      const fromPexels = async () =>
-        (await pickPexelsPhotos({ ...ctx, query, count: need.count, crop })).map((p) => ({
+      const fromPexels = async (count: number) =>
+        (await pickPexelsPhotos({ ...ctx, query, count, crop })).map((p) => ({
           asset: p.asset,
           attribution: p.attribution.text,
         }))
-      media = input.source === 'pexels' ? await fromPexels() : await fromUnsplash()
-      if (!media.length && input.source === 'auto') media = await fromPexels()
+      if (input.source === 'pexels') media = await fromPexels(need.count)
+      else {
+        try {
+          media = await fromUnsplash()
+        } catch (error) {
+          // „auto”: limit ili pad Unsplash-a ne ostavlja objavu bez fotografije (D-122)
+          if (input.source !== 'auto') throw error
+          logger.warn('compose_unsplash_failed', { brandId: brand.id, error })
+        }
+        if (input.source === 'auto' && media.length < need.count)
+          media = [...media, ...(await fromPexels(need.count - media.length))]
+      }
       if (!media.length)
         notes.push('Fotografija nije nađena za ovu temu. Dodajte je iz biblioteke ili Canve.')
       else if (media.length < need.count)

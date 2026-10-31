@@ -260,7 +260,9 @@ export async function skipPost(viewer: Viewer, postId: string, version: number):
 }
 
 /**
- * „Generiši ponovo”: nov tekst (2 tokena) i novi slajdovi po istom kontekstu (tema, stil, format).
+ * „Generiši ponovo”: nov tekst (2 tokena) i novi slajdovi po istom kontekstu (tema, stil, format,
+ * paleta), sa istim fotografijama (D-122). Zahtev čeka korisnik, a nov izbor fotografija uz crtanje
+ * svih slajdova ne staje u 30 sekundi koliko Netlify daje; objava bez fotografija dobija nove.
  * Stari slajdovi ostaju u biblioteci; objava dobija novu verziju sa istorijom.
  */
 export async function regeneratePost(viewer: Viewer, postId: string, version: number): Promise<PostView> {
@@ -309,8 +311,9 @@ export async function regeneratePost(viewer: Viewer, postId: string, version: nu
     colors: ctx.colors,
     query: (copy.visualQuery || ctx.topic).slice(0, 100),
     uploadedBy: viewer.user.id,
-    // fotografije koje je dao korisnik ostaju; ostale se biraju ponovo po novom tekstu
-    photoAssetIds: ctx.ownPhotos ? ctx.copy?.photoAssetIds : undefined,
+    // iste fotografije kao do sada; ukrug idu samo one koje je dao korisnik
+    photoAssetIds: ctx.copy?.photoAssetIds.length ? ctx.copy.photoAssetIds : undefined,
+    cyclePhotos: Boolean(ctx.ownPhotos),
     origin: { postId },
   })
   const updated = await updatePost(viewer, postId, {
@@ -329,7 +332,7 @@ export async function regeneratePost(viewer: Viewer, postId: string, version: nu
   const next: PostDesignContext = {
     ...ctx,
     slides: copy.slides.length,
-    copy: { slides: copy.slides as Slide[], photoAssetIds: rendered.photos.map((p) => p.id) },
+    copy: { slides: copy.slides as Slide[], photoAssetIds: rendered.photoIds },
   }
   await createSupabaseAdminClient()
     .from('posts')

@@ -4,6 +4,8 @@ import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import type { PexelsSearchInput, PexelsSelectInput } from '@/lib/schemas/visuals'
+import { logger } from '@/lib/logger'
+import { mapLimit } from '@/lib/map-limit'
 import { safeFetch, SsrfError } from '@/lib/ssrf'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import {
@@ -22,7 +24,7 @@ import {
 import { getBrand } from '@/services/brands'
 import { maxVideoBytes, storeServerVideo, type MediaAssetRow } from '@/services/media'
 import { storeServerImage } from '@/services/visuals/store'
-import { queryVariants, usedStockIds } from '@/services/visuals/used'
+import { queryVariants, STOCK_PARALLEL, usedStockIds } from '@/services/visuals/used'
 import type { Json } from '@/types/database'
 
 /**
@@ -153,13 +155,16 @@ export async function storePexelsMedia(input: {
   id: number
   crop?: 'square' | 'portrait' | 'original'
   uploadedBy: string | null
+  /** već dobijeno pretragom (automatski izbor): bez još jednog poziva Pexels-u (D-122) */
+  photo?: PexelsPhoto
+  video?: PexelsVideo
 }): Promise<StoredPexels> {
   const found = await existing(input.brandId, input.kind, input.id, input.crop)
   // već sačuvan: atribucija je u redu medija, bez novog poziva Pexels-u (200 zahteva na sat)
   if (found)
     return { asset: found, attribution: found.attribution as unknown as PexelsAttribution, reused: true }
   if (input.kind === 'video') {
-    const video = await getVideo(input.id)
+    const video = input.video ?? (await getVideo(input.id))
     const attribution = attributionFor('video', video.user, video.pageUrl)
     const file = await downloadVideo(video)
     const asset = await storeServerVideo({
@@ -183,7 +188,7 @@ export async function storePexelsMedia(input: {
     return { asset, attribution, reused: false }
   }
 
-  const photo = await getPhoto(input.id)
+  const photo = input.photo ?? (await getPhoto(input.id))
   const attribution = attributionFor(
     'photo',
     { name: photo.photographer, url: photo.photographerUrl },
@@ -251,7 +256,7 @@ export async function pickPexelsVideo(input: {
         if (used.has(String(clip.id))) continue
         used.add(String(clip.id))
         try {
-          return await storePexelsMedia({ ...input, kind: 'video', id: clip.id })
+          return await storePexelsMedia({ ...input, kind: 'video', id: clip.id, video: clip })
         } catch (error) {
           if (error instanceof ApiError && error.code === 'PAYLOAD_TOO_LARGE') continue
           throw error
@@ -263,7 +268,10 @@ export async function pickPexelsVideo(input: {
   return null
 }
 
-/** Automatski izbor fotografija za upit, bez onih koje je brend već dobio; najviše `count`. */
+/**
+ * Automatski izbor fotografija za upit, bez onih koje je brend već dobio; najviše `count`.
+ * Izabrane se preuzimaju i čuvaju paralelno (D-122); fotografija koja ne stigne se preskače.
+ */
 export async function pickPexelsPhotos(input: {
   workspaceId: string
   brandId: string
@@ -274,10 +282,10 @@ export async function pickPexelsPhotos(input: {
 }): Promise<StoredPexels[]> {
   if (!isPexelsConfigured() || input.count <= 0) return []
   const used = await usedStockIds(input.brandId, 'pexels-photo')
-  const out: StoredPexels[] = []
+  const chosen: PexelsPhoto[] = []
   const variants = queryVariants(input.query)
-  for (let v = 0; v < variants.length && out.length < input.count; v++) {
-    for (let page = 1; page <= (v === 0 ? 3 : 1) && out.length < input.count; page++) {
+  for (let v = 0; v < variants.length && chosen.length < input.count; v++) {
+    for (let page = 1; page <= (v === 0 ? 3 : 1) && chosen.length < input.count; page++) {
       const photos = await searchPhotos({
         query: variants[v]!,
         orientation: input.crop === 'portrait' ? 'portrait' : 'square',
@@ -285,22 +293,29 @@ export async function pickPexelsPhotos(input: {
         page,
       })
       for (const photo of photos) {
-        if (out.length >= input.count) break
+        if (chosen.length >= input.count) break
         if (used.has(String(photo.id))) continue
         used.add(String(photo.id))
-        out.push(
-          await storePexelsMedia({
-            workspaceId: input.workspaceId,
-            brandId: input.brandId,
-            kind: 'photo',
-            id: photo.id,
-            crop: input.crop,
-            uploadedBy: input.uploadedBy,
-          }),
-        )
+        chosen.push(photo)
       }
       if (photos.length < 40) break
     }
   }
-  return out
+  const stored = await mapLimit(chosen, STOCK_PARALLEL, async (photo) => {
+    try {
+      return await storePexelsMedia({
+        workspaceId: input.workspaceId,
+        brandId: input.brandId,
+        kind: 'photo',
+        id: photo.id,
+        crop: input.crop,
+        uploadedBy: input.uploadedBy,
+        photo,
+      })
+    } catch (error) {
+      logger.warn('pexels_pick_store_failed', { pexelsId: photo.id, error })
+      return null
+    }
+  })
+  return stored.filter((p): p is StoredPexels => Boolean(p))
 }

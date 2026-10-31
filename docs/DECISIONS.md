@@ -954,3 +954,17 @@ Odluka:
 - U jednoj objavi svaki slajd koji traži fotografiju dobija drugu (do deset), umesto da se jedna ponavlja. Fotografije koje je dao korisnik i dalje idu ukrug, jer je to njegov izbor. Kad Unsplash ne odgovori (limit, mreža), fotografije daje Pexels.
 
 Razlog: vlasnik traži mnogo šarenije i raznovrsnije objave, sa slikama koje se ne ponavljaju i videom koji se ne ponavlja.
+
+## D-122 · 31.10.2026 · usvojeno · Teški vizuali u koracima pozadinskog posla
+
+Odluka:
+
+- Netlify prekida svaki zahtev posle 30 sekundi (izmereno na produkciji: 502 i 504 na 30,1–30,3 s; `maxDuration` se ne poštuje). Mesečni plan zato pravi karusel, sliku i priču u koracima: tekst, fotografije, slajdovi po tri, nacrt. Svaki korak je poseban Inngest step sa sopstvenim ponovnim pokušajem, pa ponovljen korak ne piše tekst i ne bira fotografije ponovo (nema ni dvostruke naplate teksta). Tekst, link i video staju u jedan korak. Tokovi crtaju slajdove na isti način (`renderDesignInSteps`).
+- Korak koji ni u drugom pokušaju ne uspe ostavlja stavku u neuspelima, a plan nastavlja sa sledećom. Kad posao padne ceo (korak nije stao u limit ni drugi put), `onFailure` stavlja zaglavljenu stavku u neuspele i sam nastavlja plan sa stavkama koje još čekaju (najviše 20 nastavaka); greška na stavci kaže da je pravljenje trajalo predugo. Slajdovi neuspelog pokušaja se brišu iz biblioteke, a fotografije ostaju (brend ih je dobio, pa se ne ponavljaju).
+- Raspored fotografija po slajdovima se računa unapred (`photoOrder`), da bude isti u svakom delu i u ponovljenom koraku. Čuvanje slajda ide uporedo sa crtanjem sledećeg.
+- Inngest SDK v4 u jednom zahtevu izvršava korake redom dok ne prođe `maxRuntime` (podrazumevano 10 s), a staje tek posle koraka koji je u toku, pa zahtev traje do `maxRuntime` + jedan korak. Klijent zato ima `checkpointing: { maxRuntime: '2s' }`: kratki koraci (upiti u bazu) se i dalje spajaju, a dug korak ide u svom zahtevu. Važi za sve pozadinske poslove.
+- „Nova objava” (izbor „auto”) i Autopilot dopunjuju fotografije sa Pexels-a kad Unsplash da manje od traženog ili javi grešku, kao slajdovi.
+- Automatski izbor sa Unsplash-a i Pexels-a prvo izabere fotografije, pa ih preuzima i čuva po četiri u isto vreme; Pexels pri tome ne pita ponovo za fotografiju ili snimak koje je pretraga već vratila. Unsplash (demo aplikacija, 50 zahteva na sat, a svaka upotrebljena fotografija troši jedan) daje samo onoliko fotografija koliko limit još prima, a sa potrošenim limitom izbor odmah ide na Pexels, bez čekanja na odbijanje.
+- „Generiši ponovo” piše nov tekst i crta nove slajdove sa istim fotografijama: zahtev čeka korisnik i mora da stane u 30 sekundi. Objava bez fotografija dobija nove.
+
+Razlog: na produkciji karusel sa fotografijom na svakom slajdu (Pola-pola, Događaj) nije stao u 30 sekundi, posao je posle dva pokušaja pao i plan je stao, a tekst je naplaćen pri svakom pokušaju. Karuseli sa pet fotografija koji su prošli trajali su 25–27 sekundi, na samoj granici.

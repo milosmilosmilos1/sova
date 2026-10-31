@@ -257,11 +257,20 @@ export async function draftMedia(
     }
     const crop = format === 'story' ? 'portrait' : 'square'
     const count = format === 'carousel' ? 3 : 1
-    let photos = (await pickUnsplashPhotos({ ...ctx, query: input.query, count, crop })).map(
-      (p) => p.asset.id,
-    )
-    if (!photos.length)
-      photos = (await pickPexelsPhotos({ ...ctx, query: input.query, count, crop })).map((p) => p.asset.id)
+    // Unsplash koliko limit prima (D-122), ostatak Pexels; pad Unsplash-a ne preskače Pexels
+    let photos: string[] = []
+    try {
+      photos = (await pickUnsplashPhotos({ ...ctx, query: input.query, count, crop })).map((p) => p.asset.id)
+    } catch (error) {
+      logger.warn('autopilot_unsplash_failed', { postId: input.postId, error })
+    }
+    if (photos.length < count)
+      photos = [
+        ...photos,
+        ...(await pickPexelsPhotos({ ...ctx, query: input.query, count: count - photos.length, crop })).map(
+          (p) => p.asset.id,
+        ),
+      ]
     if (photos.length) {
       if (format === 'carousel' && photos.length < 2) format = 'image'
       return {

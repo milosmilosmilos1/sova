@@ -4,9 +4,11 @@ import { GALLERY_SOURCES, galleryWords, rankGalleryPhotos } from '@/lib/gallery/
 import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getStyle, wantsPhoto, type StyleId } from '@/lib/visuals/design'
+import { photoOrder, slideRanges } from '@/lib/visuals/design/batches'
 import type { PhotoSource } from '@/lib/visuals/design/catalog'
 import { preparePhoto, renderSlide } from '@/lib/visuals/design/render'
 import type { DesignColors, DesignFormat, Slide } from '@/lib/visuals/design/types'
+import type { StepRunner } from '@/services/autopilot/runner'
 import { downloadAsset, type MediaAssetRow } from '@/services/media'
 import { pickPexelsPhotos } from '@/services/visuals/pexels'
 import { storeServerImage } from '@/services/visuals/store'
@@ -22,7 +24,7 @@ import { logoDataUri, type ResolvedDesign } from './brand-design'
 export interface RenderedDesign {
   assetIds: string[]
   /** fotografije korišćene u slajdovima (atribucija za Unsplash i Pexels je u njihovim redovima) */
-  photos: MediaAssetRow[]
+  photoIds: string[]
   notes: string[]
   width: number
   height: number
@@ -125,21 +127,25 @@ async function pickPhotos(input: {
   }
 }
 
-/** Fotografije po ID-ju, redom kojim su date; samo slike ovog brenda (ili bez brenda) koje nisu obrisane. */
-async function loadPhotos(brandId: string, ids: string[]): Promise<MediaAssetRow[]> {
+/** Fotografije po ID-ju; samo slike ovog brenda (ili bez brenda) koje nisu obrisane. */
+async function loadPhotoMap(brandId: string, ids: string[]): Promise<Map<string, MediaAssetRow>> {
+  if (!ids.length) return new Map()
   const { data } = await createSupabaseAdminClient()
     .from('media_assets')
     .select('*')
     .in('id', ids)
     .eq('kind', 'image')
     .is('deleted_at', null)
-  const byId = new Map(
-    (data ?? []).filter((a) => !a.brand_id || a.brand_id === brandId).map((a) => [a.id, a]),
-  )
+  return new Map((data ?? []).filter((a) => !a.brand_id || a.brand_id === brandId).map((a) => [a.id, a]))
+}
+
+/** Fotografije po ID-ju, redom kojim su date. */
+async function loadPhotos(brandId: string, ids: string[]): Promise<MediaAssetRow[]> {
+  const byId = await loadPhotoMap(brandId, ids)
   return ids.map((id) => byId.get(id)).filter((a): a is MediaAssetRow => Boolean(a))
 }
 
-export async function renderDesignSlides(input: {
+export interface DesignRenderInput {
   workspaceId: string
   brandId: string
   design: ResolvedDesign
@@ -155,14 +161,24 @@ export async function renderDesignSlides(input: {
   topic?: string | null
   /** tačno ove fotografije iz biblioteke, redom (priložene u Studiju ili iz prethodnih slajdova) */
   photoAssetIds?: string[]
+  /** date fotografije idu ukrug kad ih je korisnik sam izabrao; inače slajd bez svoje ostaje u bojama */
+  cyclePhotos?: boolean
   /** oznaka u source_data (npr. ID toka ili objave) */
   origin?: Record<string, string | null>
-}): Promise<RenderedDesign> {
+}
+
+export interface PickedDesignPhotos {
+  photoIds: string[]
+  notes: string[]
+}
+
+/**
+ * Fotografije za slajdove: date iz biblioteke ili izabrane po izvoru. Svaki slajd sa fotografijom
+ * dobija drugu (D-121); naslovni stil traži samo jednu. Greška izvora ne obara objavu.
+ */
+export async function pickDesignPhotos(input: DesignRenderInput): Promise<PickedDesignPhotos> {
   const style = getStyle(input.styleId)
-  const colors = input.colors ?? input.design.colors
-  const needs = input.slides.map((s, i) => wantsPhoto(style, s.kind, i))
-  const needed = needs.filter(Boolean).length
-  // svaki slajd sa fotografijom dobija drugu fotografiju (D-121); naslovni stil traži samo jednu
+  const needed = input.slides.filter((s, i) => wantsPhoto(style, s.kind, i)).length
   const count = needed === 0 ? 0 : style.photo === 'cover' ? 1 : Math.min(needed, 10)
   const notes: string[] = []
   let photos: MediaAssetRow[] = []
@@ -190,66 +206,125 @@ export async function renderDesignSlides(input: {
         ? 'U galeriji nema fotografija, pa su slajdovi bez njih. Dodajte fotografije u galeriju.'
         : 'Fotografija za temu nije nađena, pa su slajdovi u bojama brenda.',
     )
-  const prepared = await Promise.all(
-    photos.map(async (p) => {
+  return { photoIds: photos.map((p) => p.id), notes }
+}
+
+/**
+ * Slajdovi [from, to) sa već izabranim fotografijama: obrada fotografije za stil, render i čuvanje
+ * kao `template` medij. Raspored fotografija je isti za svaki deo (`photoOrder`), a čuvanje slajda
+ * ide uporedo sa crtanjem sledećeg. Fotografija koja ne može da se obradi ostavlja slajd u bojama.
+ */
+export async function renderDesignRange(
+  input: DesignRenderInput,
+  photoIds: string[],
+  from: number,
+  to: number,
+): Promise<{ assetIds: string[]; width: number; height: number }> {
+  const style = getStyle(input.styleId)
+  const colors = input.colors ?? input.design.colors
+  const needs = input.slides.map((s, i) => wantsPhoto(style, s.kind, i))
+  const order = photoOrder(needs, photoIds.length, Boolean(input.cyclePhotos))
+  const wanted = [...new Set(order.slice(from, to).filter((k): k is number => k !== null))]
+  const rows = await loadPhotoMap(
+    input.brandId,
+    wanted.map((k) => photoIds[k]!),
+  )
+  const prepared = new Map<number, string>()
+  await Promise.all(
+    wanted.map(async (k) => {
+      const row = rows.get(photoIds[k]!)
+      if (!row) return
       try {
-        return { asset: p, uri: await preparePhoto(await downloadAsset(p), style, colors) }
+        prepared.set(k, await preparePhoto(await downloadAsset(row), style, colors))
       } catch (error) {
-        logger.warn('design_photo_prepare_failed', { assetId: p.id, error })
-        return null
+        logger.warn('design_photo_prepare_failed', { assetId: row.id, error })
       }
     }),
   )
-  const usable = prepared.filter((p): p is { asset: MediaAssetRow; uri: string } => Boolean(p))
   const logo = await logoDataUri(input.design.logoAssetId)
 
-  const assetIds: string[] = []
-  let k = 0
+  const stores: Array<Promise<string>> = []
   let size = { width: 0, height: 0 }
-  for (let i = 0; i < input.slides.length; i++) {
-    const slide = input.slides[i]!
-    // izabrana fotografija se u istoj objavi ne ponavlja: kad ih ponestane, slajd ostaje u bojama;
-    // fotografije koje je dao korisnik idu ukrug, jer je to njegov izbor
-    const own = Boolean(input.photoAssetIds?.length)
-    const picked =
-      needs[i] && usable.length && (own || k < usable.length) ? usable[k++ % usable.length]! : null
-    const photo = picked?.uri ?? null
-    const rendered = await renderSlide({
-      styleId: input.styleId,
-      slide,
-      format: input.format,
-      colors,
-      brandFonts: input.design.fonts,
-      brandName: input.design.brandName,
-      handle: input.design.handle,
-      logo,
-      photo,
-      index: i,
-      total: input.slides.length,
-    })
-    size = { width: rendered.width, height: rendered.height }
-    const asset = await storeServerImage({
-      workspaceId: input.workspaceId,
-      brandId: input.brandId,
-      bytes: rendered.bytes,
-      mimeType: rendered.mimeType,
-      source: 'template',
-      folder: 'design',
-      altText: [slide.title, slide.body].filter(Boolean).join('. ').slice(0, 500),
-      tags: ['design', input.styleId],
-      sourceData: {
-        design: true,
+  try {
+    for (let i = from; i < to; i++) {
+      const slide = input.slides[i]!
+      const k = order[i] ?? null
+      const photo = k === null ? null : (prepared.get(k) ?? null)
+      const rendered = await renderSlide({
         styleId: input.styleId,
+        slide,
         format: input.format,
-        kind: slide.kind,
+        colors,
+        brandFonts: input.design.fonts,
+        brandName: input.design.brandName,
+        handle: input.design.handle,
+        logo,
+        photo,
         index: i,
         total: input.slides.length,
-        photoAssetId: picked?.asset.id ?? null,
-        ...(input.origin ?? {}),
-      },
-      uploadedBy: input.uploadedBy,
-    })
-    assetIds.push(asset.id)
+      })
+      size = { width: rendered.width, height: rendered.height }
+      const stored = storeServerImage({
+        workspaceId: input.workspaceId,
+        brandId: input.brandId,
+        bytes: rendered.bytes,
+        mimeType: rendered.mimeType,
+        source: 'template',
+        folder: 'design',
+        altText: [slide.title, slide.body].filter(Boolean).join('. ').slice(0, 500),
+        tags: ['design', input.styleId],
+        sourceData: {
+          design: true,
+          styleId: input.styleId,
+          format: input.format,
+          kind: slide.kind,
+          index: i,
+          total: input.slides.length,
+          photoAssetId: photo && k !== null ? photoIds[k]! : null,
+          ...(input.origin ?? {}),
+        },
+        uploadedBy: input.uploadedBy,
+      }).then((asset) => asset.id)
+      // greška čuvanja stiže kroz Promise.all ispod; ovde samo da ne ostane neobrađena dok se crta dalje
+      stored.catch(() => undefined)
+      stores.push(stored)
+    }
+  } catch (error) {
+    await Promise.allSettled(stores)
+    throw error
   }
-  return { assetIds, photos, notes, ...size }
+  return { assetIds: await Promise.all(stores), ...size }
+}
+
+/** Ceo dizajn u jednom pozivu: zahtev koji čeka korisnik (Studio, „Generiši ponovo”, izmena). */
+export async function renderDesignSlides(input: DesignRenderInput): Promise<RenderedDesign> {
+  const picked = await pickDesignPhotos(input)
+  const out = await renderDesignRange(input, picked.photoIds, 0, input.slides.length)
+  return {
+    assetIds: out.assetIds,
+    photoIds: picked.photoIds,
+    notes: picked.notes,
+    width: out.width,
+    height: out.height,
+  }
+}
+
+/**
+ * Isto u koracima pozadinskog posla (D-122): fotografije u jednom koraku, pa najviše tri slajda po
+ * koraku. Netlify prekida svaki zahtev posle 30 sekundi, a karusel sa fotografijom na svakom
+ * slajdu u jednom komadu traje duže; ponovljen korak ne bira fotografije ponovo.
+ */
+export async function renderDesignInSteps(
+  step: StepRunner,
+  input: DesignRenderInput,
+): Promise<RenderedDesign> {
+  const picked = await step('photos', () => pickDesignPhotos(input))
+  const assetIds: string[] = []
+  let size = { width: 0, height: 0 }
+  for (const [from, to] of slideRanges(input.slides.length)) {
+    const part = await step(`slides-${from}`, () => renderDesignRange(input, picked.photoIds, from, to))
+    assetIds.push(...part.assetIds)
+    size = { width: part.width, height: part.height }
+  }
+  return { assetIds, photoIds: picked.photoIds, notes: picked.notes, ...size }
 }

@@ -124,8 +124,32 @@ async function cacheSet(key: string, value: unknown): Promise<void> {
   memoryCache.set(key, { expires: Date.now() + CACHE_TTL_SEC * 1000, value })
 }
 
+/**
+ * Preostali zahtevi ovog sata (D-122), iz zaglavlja poslednjeg odgovora. Demo aplikacija ima 50
+ * zahteva na sat, a svaka upotrebljena fotografija troši jedan (praćenje preuzimanja). Automatski
+ * izbor po ovome uzima sa Unsplash-a samo onoliko koliko staje, a ostatak sa Pexels-a, umesto da
+ * čeka odbijanje usred karusela. Pamti se u procesu; posle deset minuta se više ne zna.
+ */
+let quota: { remaining: number; at: number } | null = null
+let limitedUntil = 0
+const QUOTA_TTL_MS = 10 * 60_000
+
+function noteQuota(res: Response): void {
+  const value = Number(res.headers.get('x-ratelimit-remaining') ?? Number.NaN)
+  if (Number.isFinite(value)) quota = { remaining: value, at: Date.now() }
+}
+
+/** Koliko zahteva Unsplash još prima (`null` kad se ne zna); 0 kad je limit potrošen. */
+export function unsplashRemaining(): number | null {
+  if (Date.now() < limitedUntil) return 0
+  if (!quota || Date.now() - quota.at > QUOTA_TTL_MS) return null
+  return quota.remaining
+}
+
 export function resetUnsplashCacheForTests(): void {
   memoryCache.clear()
+  quota = null
+  limitedUntil = 0
 }
 
 async function unsplashFetch(path: string, init: RequestInit = {}): Promise<Response> {
@@ -151,6 +175,7 @@ async function unsplashFetch(path: string, init: RequestInit = {}): Promise<Resp
     res.status === 403 &&
     (res.headers.get('x-ratelimit-remaining') === '0' || /rate limit/i.test(await res.clone().text()))
   ) {
+    limitedUntil = Date.now() + QUOTA_TTL_MS
     throw new ApiError(
       'RATE_LIMITED',
       'Unsplash limit pretraga je potrošen za ovaj sat. Pokušajte kasnije ili otpremite svoju fotografiju.',
@@ -165,6 +190,7 @@ async function unsplashFetch(path: string, init: RequestInit = {}): Promise<Resp
     logger.warn('unsplash_error', { status: res.status, path })
     throw new ApiError('PROVIDER_ERROR', 'Unsplash je vratio grešku. Pokušajte ponovo.')
   }
+  noteQuota(res)
   return res
 }
 

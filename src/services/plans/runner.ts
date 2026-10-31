@@ -28,12 +28,12 @@ import { wallClock, zonedToUtc } from '@/lib/zoned-time'
 import { failGeneration, startGeneration } from '@/services/ai/generations'
 import { buildBrandContext } from '@/services/ai/text'
 import { draftMedia, generateDraftText, headlineFrom } from '@/services/autopilot/content'
-import { notifyRoles } from '@/services/autopilot/runner'
+import { notifyRoles, type StepRunner } from '@/services/autopilot/runner'
 import type { BrandRow } from '@/services/brands'
 import { resolveDesign } from '@/services/design/brand-design'
 import { captionFor, generateDesignedCopy } from '@/services/design/copy'
 import type { PostDesignContext } from '@/services/design/post-design'
-import { renderDesignSlides } from '@/services/design/render-post'
+import { renderDesignInSteps, type DesignRenderInput } from '@/services/design/render-post'
 import { systemSchedule, systemSubmitForReview } from '@/services/posts/system'
 import type { Database, Json } from '@/types/database'
 
@@ -326,13 +326,16 @@ export async function runPlanning(planId: string): Promise<'ready' | 'failed' | 
   return finishPlanning(planId)
 }
 
-/** Stavke koje „Generiši sve” obrađuje: još neurađene i one koje nisu uspele. */
-export async function pendingItems(planId: string): Promise<string[]> {
+/**
+ * Stavke koje „Generiši sve” obrađuje: još neurađene i one koje nisu uspele. Nastavak posle pada
+ * posla (`onlyPlanned`) uzima samo neurađene, da ista stavka ne obara plan ukrug.
+ */
+export async function pendingItems(planId: string, opts: { onlyPlanned?: boolean } = {}): Promise<string[]> {
   const { data } = await createSupabaseAdminClient()
     .from('month_plan_items')
     .select('id')
     .eq('plan_id', planId)
-    .in('status', ['planned', 'failed', 'generating'])
+    .in('status', opts.onlyPlanned ? ['planned'] : ['planned', 'failed', 'generating'])
     .order('scheduled_for')
   return (data ?? []).map((r) => r.id)
 }
@@ -350,19 +353,72 @@ function fitText(platform: SocialPlatform, text: string): string {
   return `${text.slice(0, 277).trimEnd()}…`
 }
 
-/** Jedna stavka plana postaje nacrt (ili zakazana objava). */
-export async function runPlanItem(itemId: string): Promise<'done' | 'failed' | 'skipped'> {
+/** Nacrt kako ide u bazu, bez medija; dizajnirana stavka ga nosi između koraka. */
+interface PlanDraft {
+  title: string
+  master: string
+  firstComment: string | null
+  link: string | null
+  texts: Partial<Record<SocialPlatform, string>>
+  accounts: Array<{ id: string; platform: SocialPlatform }>
+  story: boolean
+  locale: ContentLocale
+  design: PostDesignContext | null
+  tokens: number
+}
+
+/** Dizajnirana stavka posle prvog koraka (D-122): mali JSON koji Inngest pamti za sledeće korake. */
+interface DesignedWork {
+  itemId: string
+  render: DesignRenderInput
+  draft: PlanDraft
+}
+
+type StartedItem = { status: 'done' | 'failed' | 'skipped' } | { status: 'render'; work: DesignedWork }
+
+/** Slajdovi neuspelog pokušaja ne ostaju u biblioteci; fotografije ostaju, brend ih je dobio. */
+async function dropAttemptSlides(itemId: string): Promise<void> {
+  const admin = createSupabaseAdminClient()
+  const { data } = await admin
+    .from('media_assets')
+    .select('id')
+    .eq('source', 'template')
+    .eq('source_data->>itemId', itemId)
+    .is('deleted_at', null)
+  const ids = (data ?? []).map((r) => r.id)
+  if (!ids.length) return
+  const { data: used } = await admin.from('post_media').select('media_asset_id').in('media_asset_id', ids)
+  const keep = new Set((used ?? []).map((r) => r.media_asset_id))
+  const drop = ids.filter((id) => !keep.has(id))
+  if (drop.length)
+    await admin.from('media_assets').update({ deleted_at: new Date().toISOString() }).in('id', drop)
+}
+
+/** Stavka ide u neuspele (sledeće „Generiši sve” je pravi ponovo), bez ostataka pokušaja. */
+export async function failPlanItem(itemId: string, message: string): Promise<'failed'> {
+  logger.warn('month_plan_item_failed', { itemId, message })
+  await setItem(itemId, { status: 'failed', error: message.slice(0, 500) })
+  await dropAttemptSlides(itemId).catch((error) =>
+    logger.warn('month_plan_item_cleanup_failed', { itemId, error }),
+  )
+  return 'failed'
+}
+
+/**
+ * Prvi korak stavke: nalozi, kontekst i tekst. Tekst, link i video se ovde i završe (staju u jedan
+ * korak); karusel, slika i priča vraćaju posao za slajdove, koji idu u svojim koracima.
+ */
+async function startPlanItem(itemId: string): Promise<StartedItem> {
   const admin = createSupabaseAdminClient()
   const { data: item } = await admin.from('month_plan_items').select('*').eq('id', itemId).maybeSingle()
-  if (!item || item.status === 'done' || item.post_id) return 'skipped'
+  if (!item || item.status === 'done' || item.post_id) return { status: 'skipped' }
   const loaded = await loadPlan(item.plan_id)
-  if (!loaded || loaded.plan.status !== 'generating') return 'skipped'
+  if (!loaded || loaded.plan.status !== 'generating') return { status: 'skipped' }
   const { plan, brand } = loaded
   const settings = planSettings(plan)
   const format = item.format as PostFormat
   await setItem(item.id, { status: 'generating', error: null })
 
-  let postId: string | null = null
   try {
     const { data: accountRows } = await admin
       .from('social_accounts')
@@ -370,26 +426,16 @@ export async function runPlanItem(itemId: string): Promise<'done' | 'failed' | '
       .eq('brand_id', brand.id)
       .eq('status', 'active')
       .in('platform', item.platforms as SocialPlatform[])
-    const accounts = (accountRows ?? []).filter((a) =>
-      PLATFORM_FORMATS[a.platform as SocialPlatform]?.includes(format),
-    )
+    const accounts = (accountRows ?? [])
+      .map((a) => ({ id: a.id, platform: a.platform as SocialPlatform }))
+      .filter((a) => PLATFORM_FORMATS[a.platform]?.includes(format))
     if (!accounts.length)
       throw new Error('Nema povezanog naloga koji prima ovu vrstu objave. Povežite mrežu u Mrežama.')
-    const platforms = [...new Set(accounts.map((a) => a.platform as SocialPlatform))]
+    const platforms = [...new Set(accounts.map((a) => a.platform))]
     const locale = toContentLocale(settings.locale ?? brand.content_locale)
     const topic = item.brief ? `${item.topic}\n\n${item.brief}` : item.topic
     const publishDate = wallClock(item.scheduled_for, brand.timezone).date
     const context = await buildBrandContext(brand, topic.slice(0, 500), locale)
-
-    let title = item.topic.slice(0, 200)
-    let master = ''
-    let firstComment: string | null = null
-    let link: string | null = null
-    let assetIds: string[] = []
-    let design: PostDesignContext | null = null
-    let texts: Partial<Record<SocialPlatform, string>> = {}
-    let tokens = 0
-    let story = format === 'story'
 
     const designed = DESIGNED[format]
     if (designed) {
@@ -398,7 +444,7 @@ export async function runPlanItem(itemId: string): Promise<'done' | 'failed' | '
       const vivid = settings.look !== 'brand' ? planLook(item.position, seedFrom(plan.id), look.colors) : null
       const styleId = vivid?.styleId ?? look.styleId
       const photoSource = vivid && look.photoSource === 'none' ? 'stock' : look.photoSource
-      const slides = designed === 'carousel' ? look.slides : 1
+      const story = format === 'story'
       const copy = await generateDesignedCopy({
         workspaceId: brand.workspace_id,
         brandId: brand.id,
@@ -407,110 +453,153 @@ export async function runPlanItem(itemId: string): Promise<'done' | 'failed' | '
         topic,
         cta: item.cta,
         format: designed,
-        slides,
+        slides: designed === 'carousel' ? look.slides : 1,
         platforms,
         includeHashtags: true,
         publishDate,
         origin: { plan: plan.id, item: item.id },
       })
-      tokens += copy.tokens
-      const rendered = await renderDesignSlides({
-        workspaceId: brand.workspace_id,
-        brandId: brand.id,
-        design: look,
-        styleId,
-        format: story ? 'story' : look.size,
-        slides: copy.slides as Slide[],
-        photoSource,
-        colors: vivid?.colors,
-        query: (copy.visualQuery || item.topic).slice(0, 100),
-        uploadedBy: null,
-        topic: [item.topic, ...copy.slides.map((s) => s.title)].join(' '),
-        origin: { planId: plan.id, itemId: item.id },
-      })
-      assetIds = rendered.assetIds
-      title = (copy.slides[0]?.title ?? item.topic).slice(0, 200)
-      master = captionFor(copy, 'instagram')
-      firstComment = copy.firstComment
-      texts = Object.fromEntries(platforms.map((p) => [p, captionFor(copy, p)]))
-      design = {
-        topic: topic.slice(0, 2000),
-        cta: item.cta,
-        format: designed as PostDesignContext['format'],
-        styleId,
-        slides: copy.slides.length,
-        photoSource,
-        size: look.size,
-        ...(vivid ? { colors: vivid.colors } : {}),
-        locale,
-        platforms,
-        copy: { slides: copy.slides as Slide[], photoAssetIds: rendered.photos.map((p) => p.id) },
-      }
-    } else {
-      const main = platforms.includes('instagram')
-        ? 'instagram'
-        : platforms.includes('facebook')
-          ? 'facebook'
-          : platforms[0]!
-      const text = await generateDraftText(brand, context, {
-        platform: main,
-        topic,
-        goal: item.goal as PostGoal,
-        cta: item.cta,
-        postId: item.id,
-        runId: plan.id,
-        publishDate,
-        format,
-      })
-      tokens += text.tokens
-      master = text.text
-      firstComment = text.firstComment
-      texts = Object.fromEntries(platforms.map((p) => [p, fitText(p, text.text)]))
-      if (format === 'link') link = brand.website_url
-      if (format === 'video') {
-        const media = await draftMedia(brand, {
-          format: 'video',
-          required: true,
-          query: (text.visualQuery || item.topic).slice(0, 100),
-          headline: headlineFrom(text.body, item.topic),
-          cta: item.cta,
-          postId: item.id,
-          runId: plan.id,
-        })
-        tokens += media.tokens
-        assetIds = media.assetIds
-        story = false
+      return {
+        status: 'render',
+        work: {
+          itemId: item.id,
+          render: {
+            workspaceId: brand.workspace_id,
+            brandId: brand.id,
+            design: look,
+            styleId,
+            format: story ? 'story' : look.size,
+            slides: copy.slides as Slide[],
+            photoSource,
+            colors: vivid?.colors,
+            query: (copy.visualQuery || item.topic).slice(0, 100),
+            uploadedBy: null,
+            topic: [item.topic, ...copy.slides.map((s) => s.title)].join(' '),
+            origin: { planId: plan.id, itemId: item.id },
+          },
+          draft: {
+            title: (copy.slides[0]?.title ?? item.topic).slice(0, 200),
+            master: captionFor(copy, 'instagram'),
+            firstComment: copy.firstComment,
+            link: null,
+            texts: Object.fromEntries(platforms.map((p) => [p, captionFor(copy, p)])),
+            accounts,
+            story,
+            locale,
+            tokens: copy.tokens,
+            design: {
+              topic: topic.slice(0, 2000),
+              cta: item.cta,
+              format: designed as PostDesignContext['format'],
+              styleId,
+              slides: copy.slides.length,
+              photoSource,
+              size: look.size,
+              ...(vivid ? { colors: vivid.colors } : {}),
+              locale,
+              platforms,
+              copy: { slides: copy.slides as Slide[], photoAssetIds: [] },
+            },
+          },
+        },
       }
     }
 
+    const main = platforms.includes('instagram')
+      ? 'instagram'
+      : platforms.includes('facebook')
+        ? 'facebook'
+        : platforms[0]!
+    const text = await generateDraftText(brand, context, {
+      platform: main,
+      topic,
+      goal: item.goal as PostGoal,
+      cta: item.cta,
+      postId: item.id,
+      runId: plan.id,
+      publishDate,
+      format,
+    })
+    let tokens = text.tokens
+    let assetIds: string[] = []
+    if (format === 'video') {
+      const media = await draftMedia(brand, {
+        format: 'video',
+        required: true,
+        query: (text.visualQuery || item.topic).slice(0, 100),
+        headline: headlineFrom(text.body, item.topic),
+        cta: item.cta,
+        postId: item.id,
+        runId: plan.id,
+      })
+      tokens += media.tokens
+      assetIds = media.assetIds
+    }
+    const draft: PlanDraft = {
+      title: item.topic.slice(0, 200),
+      master: text.text,
+      firstComment: text.firstComment,
+      link: format === 'link' ? brand.website_url : null,
+      texts: Object.fromEntries(platforms.map((p) => [p, fitText(p, text.text)])),
+      accounts,
+      story: false,
+      locale,
+      design: null,
+      tokens,
+    }
+    return { status: await savePlanDraft(item.id, draft, assetIds) }
+  } catch (error) {
+    return { status: await failPlanItem(item.id, error instanceof Error ? error.message : String(error)) }
+  }
+}
+
+/**
+ * Poslednji korak: nacrt sa mrežama i medijima, pa odobravanje ili zakazivanje sa terminom iz plana.
+ * Gotova stavka se ne pravi dvaput (ponovljen korak samo vraća „gotovo”).
+ */
+async function savePlanDraft(
+  itemId: string,
+  draft: PlanDraft,
+  assetIds: string[],
+): Promise<'done' | 'failed' | 'skipped'> {
+  const admin = createSupabaseAdminClient()
+  const { data: item } = await admin.from('month_plan_items').select('*').eq('id', itemId).maybeSingle()
+  if (!item) return 'skipped'
+  if (item.status === 'done' || item.post_id) return 'done'
+  const loaded = await loadPlan(item.plan_id)
+  if (!loaded) return 'skipped'
+  const { plan, brand } = loaded
+
+  let postId: string | null = null
+  try {
     const { data: post, error } = await admin
       .from('posts')
       .insert({
         brand_id: brand.id,
         workspace_id: brand.workspace_id,
-        title,
-        master_text: master,
-        first_comment: firstComment,
-        link_url: link,
+        title: draft.title,
+        master_text: draft.master,
+        first_comment: draft.firstComment,
+        link_url: draft.link,
         status: 'draft',
         source: 'ai',
-        language: locale,
+        language: draft.locale,
         scheduled_for: item.scheduled_for,
         created_by: plan.created_by,
-        design: design as unknown as Json,
+        design: draft.design as unknown as Json,
       })
       .select('id')
       .single()
     if (error || !post) throw new Error(error?.message ?? 'Nacrt nije upisan.')
     postId = post.id
     const { error: targetsError } = await admin.from('post_targets').insert(
-      accounts.map((a) => ({
+      draft.accounts.map((a) => ({
         post_id: post.id,
         brand_id: brand.id,
         social_account_id: a.id,
         platform: a.platform,
-        text_content: texts[a.platform as SocialPlatform] ?? master,
-        options: (story ? { format: 'story' } : {}) as NonNullable<Json>,
+        text_content: draft.texts[a.platform] ?? draft.master,
+        options: (draft.story ? { format: 'story' } : {}) as NonNullable<Json>,
       })),
     )
     if (targetsError) throw new Error(targetsError.message)
@@ -523,14 +612,11 @@ export async function runPlanItem(itemId: string): Promise<'done' | 'failed' | '
       if (mediaError) throw new Error(mediaError.message)
     }
     await setItem(item.id, { status: 'done', post_id: post.id, error: null })
-    await addTokens(plan.id, tokens)
+    await addTokens(plan.id, draft.tokens)
   } catch (error) {
-    const message = error instanceof Error ? error.message : String(error)
-    logger.warn('month_plan_item_failed', { itemId, message })
     // nacrt bez mreža ili medija ne ostaje u Objavama; sledeće „Generiši sve” pravi nov
     if (postId) await admin.from('posts').delete().eq('id', postId)
-    await setItem(item.id, { status: 'failed', error: message.slice(0, 500) })
-    return 'failed'
+    return failPlanItem(item.id, error instanceof Error ? error.message : String(error))
   }
 
   // Nacrt postoji i stavka je gotova; ako zakazivanje ili slanje na odobravanje ne uspe,
@@ -538,13 +624,66 @@ export async function runPlanItem(itemId: string): Promise<'done' | 'failed' | '
   try {
     // zakazivanje bez odobravanja traži budući termin; prošao termin ide na odobravanje
     const future = Date.parse(item.scheduled_for) > Date.now() + 60_000
-    if (settings.mode === 'schedule' && future)
+    if (planSettings(plan).mode === 'schedule' && future)
       await systemSchedule(postId, 'Mesečni plan: zakazano bez odobravanja')
     else await systemSubmitForReview(postId, 'Mesečni plan: nacrt čeka odluku', { notify: false })
   } catch (error) {
     logger.warn('month_plan_item_submit_failed', { itemId, postId, error })
   }
   return 'done'
+}
+
+/**
+ * Jedna stavka plana postaje nacrt (ili zakazana objava). Karusel, slika i priča idu u koracima
+ * (D-122): tekst, fotografije, slajdovi po tri i nacrt, svaki ispod 30 sekundi koliko Netlify daje
+ * zahtevu; tekst, link i video staju u prvi korak. `step` je Inngest korak, a bez njega (testovi)
+ * se sve izvrši redom. Korak koji ni posle ponovnog pokušaja ne uspe ostavlja stavku u neuspelima.
+ */
+export async function runPlanItem(
+  itemId: string,
+  step: StepRunner = (_name, fn) => fn(),
+): Promise<'done' | 'failed' | 'skipped'> {
+  const started = await step('start', () => startPlanItem(itemId))
+  if (started.status !== 'render') return started.status
+  const { work } = started
+  try {
+    const rendered = await renderDesignInSteps(step, work.render)
+    const draft: PlanDraft = {
+      ...work.draft,
+      design: work.draft.design && {
+        ...work.draft.design,
+        copy: { slides: work.render.slides, photoAssetIds: rendered.photoIds },
+      },
+    }
+    return await step('save', () => savePlanDraft(itemId, draft, rendered.assetIds))
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error)
+    return step('failed', () => failPlanItem(itemId, `Slajdovi nisu napravljeni: ${message}`))
+  }
+}
+
+/**
+ * Posao plana je pao usred stavke (korak nije stao u limit ni u drugom pokušaju): ta stavka ide u
+ * neuspele, a vraća se broj stavki koje još čekaju, da se plan nastavi bez nje.
+ */
+export async function interruptPlan(planId: string): Promise<number> {
+  const admin = createSupabaseAdminClient()
+  const { data: stuck } = await admin
+    .from('month_plan_items')
+    .select('id')
+    .eq('plan_id', planId)
+    .eq('status', 'generating')
+    .is('post_id', null)
+  for (const row of stuck ?? [])
+    await failPlanItem(row.id, 'Pravljenje je trajalo predugo pa je prekinuto. Pokušajte ponovo.')
+  const { data: plan } = await admin.from('month_plans').select('status').eq('id', planId).maybeSingle()
+  if (plan?.status !== 'generating') return 0
+  const { count } = await admin
+    .from('month_plan_items')
+    .select('id', { count: 'exact', head: true })
+    .eq('plan_id', planId)
+    .eq('status', 'planned')
+  return count ?? 0
 }
 
 /** Kraj: plan je gotov kad nema neurađenih stavki; jedno obaveštenje umesto jednog po nacrtu. */
