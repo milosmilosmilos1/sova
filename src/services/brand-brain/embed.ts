@@ -31,6 +31,8 @@ export interface IndexResult {
   embedded: boolean
   reason?: string
   usage: { inputTokens: number }
+  /** delovi koji nisu stigli u ovom roku; pozivalac ih šalje u sledećem koraku */
+  remaining?: number
 }
 
 function toVectorLiteral(vector: number[]): string {
@@ -42,7 +44,12 @@ function hashOf(text: string): string {
 }
 
 /** Indeksira sve stranice brenda iz date analize; nepromenjeni chunkovi se ne šalju ponovo. */
-export async function indexBrandPages(brandId: string, crawlId: string): Promise<IndexResult> {
+export async function indexBrandPages(
+  brandId: string,
+  crawlId: string,
+  options: { budgetMs?: number } = {},
+): Promise<IndexResult> {
+  const startedAt = Date.now()
   const admin = createSupabaseAdminClient()
   const { data: pages, error } = await admin
     .from('website_pages')
@@ -120,6 +127,12 @@ export async function indexBrandPages(brandId: string, crawlId: string): Promise
   }
 
   for (let i = 0; i < pending.length; i += BATCH) {
+    // posle roka staje između paketa; već upisani delovi se sledeći put preskaču (isti hash)
+    if (options.budgetMs && Date.now() - startedAt > options.budgetMs) {
+      base.remaining = pending.length - i
+      logger.info('brand_embed_round', { brandId, crawlId, indexed: base.indexed, remaining: base.remaining })
+      return base
+    }
     const batch = pending.slice(i, i + BATCH)
     const outcome = await callWithFallback(
       [await embeddingModel()],

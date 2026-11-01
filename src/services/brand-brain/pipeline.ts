@@ -160,6 +160,24 @@ interface EmbedStep extends IndexResult {
   error: string | null
 }
 
+/** Rezultat AI dela profila; poseban korak, da i sa 60 stranica stane u Netlify-jevih 30 s (D-122). */
+interface ProfileAiStep {
+  ok: true
+  json: unknown
+  model: string | null
+  usage: Usage
+  fallbackUsed: boolean
+  aiError: string | null
+  pagesUsed: number
+  timedOut: boolean
+}
+
+/** Rok za AI deo profila: zahtev se na Netlify-u prekida posle 30 s, a korak još čita stranice. */
+const PROFILE_AI_BUDGET_MS = 24_000
+/** Indeksiranje (embeddings) radi u rundama; posle ovog vremena ostatak ide u sledeći korak. */
+const EMBED_ROUND_BUDGET_MS = 18_000
+const EMBED_MAX_ROUNDS = 10
+
 const FETCH_BATCH = 10
 
 export async function runAnalysisPipeline(
@@ -195,9 +213,31 @@ export async function runAnalysisPipeline(
 
   const visual = await run('visual', () => stepVisual(job, prepared))
   const photo = await run('photo-style', () => stepPhotoStyle(job, prepared, visual))
-  const profile = await run('profile', () => stepProfile(job, prepared, discovered, visual, photo))
+  // AI deo profila u svom koraku; ako ne stigne, još jednom sa kraćim tekstom sajta
+  let profileAi = await run('profile-ai', () =>
+    stepProfileAi(job, prepared, { maxChars: 80_000, thinking: 'low' }),
+  )
+  if (!profileAi.ok) return { status: 'canceled' }
+  if (profileAi.timedOut)
+    profileAi = await run('profile-ai-short', () =>
+      stepProfileAi(job, prepared, { maxChars: 30_000, thinking: 'minimal' }),
+    )
+  if (!profileAi.ok) return { status: 'canceled' }
+  const aiStep = profileAi
+  const profile = await run('profile', () => stepProfile(job, prepared, discovered, visual, photo, aiStep))
   if (!profile.ok) return { status: 'canceled' }
-  const embed = await run('embed', () => stepEmbed(job))
+  // indeksiranje u rundama: svaka runda staje u rok, a sledeća preskače već upisane delove
+  let embed = await run('embed', () => stepEmbed(job))
+  for (let round = 2; (embed.remaining ?? 0) > 0 && round <= EMBED_MAX_ROUNDS; round++) {
+    const prev = embed
+    const next = await run(`embed-${round}`, () => stepEmbed(job))
+    embed = {
+      ...next,
+      indexed: prev.indexed + next.indexed,
+      removed: prev.removed + next.removed,
+      usage: { inputTokens: prev.usage.inputTokens + next.usage.inputTokens },
+    }
+  }
   return run('finish', () =>
     stepFinish(job, { prepared, discovered, totals, timedOut, visual, photo, profile, embed }),
   )
@@ -704,15 +744,89 @@ async function loadPages(crawlId: string): Promise<HeuristicPage[]> {
   return (data ?? []).map(rowToHeuristicPage)
 }
 
+async function stepProfileAi(
+  job: AnalysisJob,
+  prepared: PrepareResult,
+  opts: { maxChars: number; thinking: 'low' | 'minimal' },
+): Promise<ProfileAiStep | { ok: false }> {
+  if (await isCanceled(job.crawlId)) return { ok: false }
+  await setCrawlProgress(job.crawlId, { phase: 'profile' })
+  const empty = {
+    ok: true as const,
+    json: null,
+    model: null,
+    usage: ZERO,
+    fallbackUsed: false,
+    timedOut: false,
+  }
+  if (!env.GEMINI_API_KEY)
+    return {
+      ...empty,
+      aiError: 'AI servis nije podešen (nedostaje ključ); profil je sastavljen heuristički.',
+      pagesUsed: 0,
+    }
+  const pages = await loadPages(job.crawlId)
+  const corpus = buildCorpus(
+    pages.map((p) => ({ url: p.url, type: p.type, title: p.title, text: p.text })),
+    opts.maxChars,
+  )
+  const deadline = Date.now() + PROFILE_AI_BUDGET_MS
+  try {
+    const outcome = await callWithFallback(
+      await textModelChain(),
+      (m) => {
+        const left = deadline - Date.now()
+        // rezervni model ne kreće ako ne može da stigne pre kraja zahteva
+        if (left < 6_000)
+          throw new AiError('TIMEOUT', 'Nema vremena za još jedan model u ovom koraku.', { model: m })
+        return generateText({
+          model: m,
+          system: buildBrandProfileSystemPrompt(),
+          prompt: buildBrandProfilePrompt({
+            brandName: prepared.brand.name,
+            websiteUrl: prepared.homeUrl,
+            corpus: corpus.text,
+            pageCount: corpus.used,
+          }),
+          jsonSchema: brandProfileJsonSchema(),
+          maxOutputTokens: 8192,
+          temperature: 0.3,
+          thinking: opts.thinking,
+          timeoutMs: left,
+        })
+      },
+      { label: 'brand-profile', attempts: 1 },
+    )
+    return {
+      ok: true,
+      json: outcome.result.json,
+      model: outcome.model,
+      usage: {
+        inputTokens: outcome.result.usage.inputTokens,
+        outputTokens: outcome.result.usage.outputTokens,
+        thoughtTokens: outcome.result.usage.thoughtTokens,
+      },
+      fallbackUsed: outcome.fallbackUsed,
+      aiError: null,
+      pagesUsed: corpus.used,
+      timedOut: false,
+    }
+  } catch (error) {
+    const e = classifyProviderError(error)
+    logger.warn('brand_profile_ai_failed', { crawlId: job.crawlId, code: e.code, maxChars: opts.maxChars })
+    return { ...empty, aiError: e.message, pagesUsed: corpus.used, timedOut: e.code === 'TIMEOUT' }
+  }
+}
+
 async function stepProfile(
   job: AnalysisJob,
   prepared: PrepareResult,
   discovered: DiscoverStep,
   visual: VisualStep,
   photo: PhotoStyleStep,
+  aiStep: ProfileAiStep,
 ): Promise<ProfileStep | { ok: false }> {
   if (await isCanceled(job.crawlId)) return { ok: false }
-  await setCrawlProgress(job.crawlId, { phase: 'profile' })
   const pages = await loadPages(job.crawlId)
   const visualInput: HeuristicVisual = {
     logo: visual.logo
@@ -735,55 +849,18 @@ async function stepProfile(
 
   let ai: Partial<Record<FieldPath, Field<unknown>>> | null = null
   let model: string | null = null
-  let usage: Usage = ZERO
-  let fallbackUsed = false
-  let aiError: string | null = null
-  let pagesUsed = pages.length
-  if (env.GEMINI_API_KEY) {
-    const corpus = buildCorpus(pages.map((p) => ({ url: p.url, type: p.type, title: p.title, text: p.text })))
-    pagesUsed = corpus.used
-    try {
-      const outcome = await callWithFallback(
-        await textModelChain(),
-        (m) =>
-          generateText({
-            model: m,
-            system: buildBrandProfileSystemPrompt(),
-            prompt: buildBrandProfilePrompt({
-              brandName: prepared.brand.name,
-              websiteUrl: prepared.homeUrl,
-              corpus: corpus.text,
-              pageCount: corpus.used,
-            }),
-            jsonSchema: brandProfileJsonSchema(),
-            maxOutputTokens: 8192,
-            temperature: 0.3,
-            thinking: 'medium',
-            timeoutMs: 120_000,
-          }),
-        { label: 'brand-profile' },
-      )
-      const parsed = aiProfileOutputSchema.safeParse(outcome.result.json)
-      if (!parsed.success) {
-        throw new AiError('INVALID_RESPONSE', 'Model je vratio JSON koji ne odgovara šemi profila.', {
-          model: outcome.model,
-        })
-      }
+  let aiError = aiStep.aiError
+  const { usage, fallbackUsed } = aiStep
+  const pagesUsed = aiStep.pagesUsed || pages.length
+  if (aiStep.json !== null) {
+    const parsed = aiProfileOutputSchema.safeParse(aiStep.json)
+    if (parsed.success) {
       ai = aiOutputToFields(parsed.data)
-      model = outcome.model
-      fallbackUsed = outcome.fallbackUsed
-      usage = {
-        inputTokens: outcome.result.usage.inputTokens,
-        outputTokens: outcome.result.usage.outputTokens,
-        thoughtTokens: outcome.result.usage.thoughtTokens,
-      }
-    } catch (error) {
-      const e = classifyProviderError(error)
-      aiError = e.message
-      logger.warn('brand_profile_ai_failed', { crawlId: job.crawlId, code: e.code })
+      model = aiStep.model
+    } else {
+      aiError = 'Model je vratio JSON koji ne odgovara šemi profila.'
+      logger.warn('brand_profile_ai_failed', { crawlId: job.crawlId, code: 'INVALID_RESPONSE' })
     }
-  } else {
-    aiError = 'AI servis nije podešen (nedostaje ključ); profil je sastavljen heuristički.'
   }
 
   const prevRow = await getCurrentProfileRow(job.brandId)
@@ -845,7 +922,7 @@ async function stepProfile(
 async function stepEmbed(job: AnalysisJob): Promise<EmbedStep> {
   await setCrawlProgress(job.crawlId, { phase: 'embed' })
   try {
-    const r = await indexBrandPages(job.brandId, job.crawlId)
+    const r = await indexBrandPages(job.brandId, job.crawlId, { budgetMs: EMBED_ROUND_BUDGET_MS })
     return { ...r, error: null }
   } catch (error) {
     const e = classifyProviderError(error)
