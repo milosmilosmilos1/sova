@@ -921,12 +921,13 @@
   "brandAccount": {
     "eyebrow": "Vaša podešavanja",
     "title": "Brend i nalog",
-    "subtitle": "Glas brenda, izgled, pretplata i nalog na jednom mestu.",
+    "subtitle": "Glas brenda, izgled, brendovi, pretplata i nalog na jednom mestu.",
     "tabsLabel": "Kartice podešavanja",
     "tabs": {
       "voice": "Glas brenda",
       "visual": "Vizuelni identitet",
       "styles": "Stilovi",
+      "brands": "Brendovi",
       "billing": "Pretplata",
       "account": "Nalog"
     },

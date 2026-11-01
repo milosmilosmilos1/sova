@@ -111,6 +111,30 @@ describe('API: brendovi i limiti plana', () => {
     expect(r.json.error?.code).toBe('PLAN_LIMIT')
   })
 
+  it('kad plan dozvoljava više brendova, drugi brend se pravi i vraća (agencija)', async () => {
+    const { admin } = await import('./helpers')
+    // Podigni limit brendova besplatnog plana samo za ovaj test (vraća se na kraju).
+    await admin
+      .from('plans')
+      .update({ limits: { brands: 3, social_accounts: 2, members: 1, crawl_pages: 30 } })
+      .eq('code', 'free')
+    try {
+      const r = await call<{ id: string; name: string; workspace_id: string }>(brandsPost, '/api/brands', {
+        token: a.token,
+        body: { workspaceId: wsA, name: 'Klijent agencije' },
+      })
+      expect(r.status).toBe(200)
+      expect(r.json.data?.name).toBe('Klijent agencije')
+      expect(r.json.data?.workspace_id).toBe(wsA)
+      await admin.from('brands').delete().eq('id', r.json.data!.id)
+    } finally {
+      await admin
+        .from('plans')
+        .update({ limits: { brands: 1, social_accounts: 2, members: 1, crawl_pages: 30 } })
+        .eq('code', 'free')
+    }
+  })
+
   it('B ne može da napravi brend u A-ovom workspace-u', async () => {
     const r = await call(brandsPost, '/api/brands', {
       token: b.token,

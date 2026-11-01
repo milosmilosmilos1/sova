@@ -7,6 +7,7 @@ import { useState } from 'react'
 import { MonthlyReportsCard } from '@/components/analytics/monthly-reports-card'
 import { ColumnChart, type ColumnBar } from '@/components/charts/column-chart'
 import { TrendChart } from '@/components/charts/trend-chart'
+import { NetworkName } from '@/components/shared/network-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -235,6 +236,7 @@ export function AnalyticsClient({
   reportEmails: string[]
   canManageRecipients: boolean
 }) {
+  const tg = useTranslations('shell')
   const { t, intl, n: fmtN, rate: fmtRate } = useFormat()
   const weekOf = (day: string) => t('chart.weekOf', { date: day })
   const qc = useQueryClient()
@@ -280,6 +282,7 @@ export function AnalyticsClient({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
+          <p className="text-xs font-semibold tracking-wider text-primary uppercase">{tg('groups.growth')}</p>
           <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
           <p className="text-sm text-muted-foreground">{t('subtitle', { brand: brandName, timezone })}</p>
         </div>
@@ -446,7 +449,11 @@ export function AnalyticsClient({
                         <td className="py-1 pr-2">
                           {f.name ?? f.accountId}
                           {f.platform ? (
-                            <span className="text-muted-foreground"> · {PLATFORMS[f.platform].label}</span>
+                            <NetworkName
+                              platform={f.platform}
+                              size={12}
+                              className="ml-2 align-middle text-muted-foreground"
+                            />
                           ) : null}
                         </td>
                         <td className="py-1 pr-2 text-right tabular-nums">{fmtN(f.first)}</td>
@@ -608,7 +615,7 @@ function PostsTable({
             <tr key={p.targetId} className="border-t align-top">
               <td className="py-1 pr-2 whitespace-nowrap">{fmtDate(p.publishedAt, timezone)}</td>
               <td className="py-1 pr-2 whitespace-nowrap">
-                {PLATFORMS[p.platform].label}
+                <NetworkName platform={p.platform} size={12} className="align-middle" />
                 {p.accountName ? <span className="text-muted-foreground"> · {p.accountName}</span> : null}
               </td>
               <td className="py-1 pr-2">

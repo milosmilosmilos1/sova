@@ -17,8 +17,9 @@ import { useMemo, useState } from 'react'
 
 import { api } from '@/components/shared/api-client'
 import { ErrorBox } from '@/components/shared/error-box'
+import { NetworkIcons, NetworkNames } from '@/components/shared/network-badge'
 import { Button } from '@/components/ui/button'
-import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
+import { type SocialPlatform } from '@/config/platforms'
 import { cn } from '@/lib/utils'
 
 interface Item {
@@ -328,7 +329,10 @@ export function CalendarClient({ brandId, timezone }: { brandId: string; timezon
                           />
                         )}
                         <span className="min-w-0">
-                          <span className="block font-medium tabular-nums">{time(item.scheduledFor!)}</span>
+                          <span className="flex items-center gap-1 font-medium tabular-nums">
+                            {time(item.scheduledFor!)}
+                            <NetworkIcons platforms={platformsOf(item)} size={11} />
+                          </span>
                           <span className="block truncate text-muted-foreground">{title(item)}</span>
                         </span>
                         <span className="sr-only">{t(`status.${item.status as PostStatusKey}`)}</span>
@@ -424,10 +428,11 @@ export function CalendarClient({ brandId, timezone }: { brandId: string; timezon
                               hour: '2-digit',
                               minute: '2-digit',
                             })}
-                            {' · '}
-                            {platformsOf(item)
-                              .map((p) => PLATFORMS[p]?.label ?? p)
-                              .join(', ')}
+                            <NetworkNames
+                              platforms={platformsOf(item)}
+                              size={12}
+                              className="ml-2 align-middle"
+                            />
                           </span>
                         </span>
                       </Link>

@@ -50,6 +50,7 @@ export function FlowsClient({
   defaultSlides: number
 }) {
   const t = useTranslations('flows')
+  const tg = useTranslations('shell')
   const locale = useLocale()
   const qc = useQueryClient()
   const [filter, setFilter] = useState<'all' | 'active' | 'paused'>('all')
@@ -125,6 +126,7 @@ export function FlowsClient({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
+          <p className="text-xs font-semibold tracking-wider text-primary uppercase">{tg('groups.work')}</p>
           <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
           <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
         </div>

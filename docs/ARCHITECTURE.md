@@ -134,7 +134,7 @@ sova/
 │   ├── proxy.ts                 sesija + redirect + admin gate + bezbednosni headeri + jezik (/en, /uk; D-130)
 │   ├── components/
 │   │   ├── ui/                  shadcn/ui
-│   │   ├── shared/              AsyncState, ConfirmDialog, TokenBadge, ...
+│   │   ├── shared/              AsyncState, ConfirmDialog, TokenBadge, NetworkBadge (mreže u bojama, D-131), ...
 │   │   └── <feature>/           komponente po modulu
 │   ├── config/
 │   │   ├── platforms.ts         ograničenja mreža (karakteri, formati, odnosi)

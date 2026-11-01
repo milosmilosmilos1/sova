@@ -6,6 +6,7 @@ import { useState } from 'react'
 
 import { PlatformTile } from '@/components/landing/platform-tile'
 import { byKey } from '@/components/landing/platforms'
+import { NetworkBadge, NetworkName } from '@/components/shared/network-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -142,6 +143,7 @@ export function AccountsClient({
   noticeProvider: string | null
 }) {
   const t = useTranslations('accounts')
+  const tg = useTranslations('shell')
   const locale = useLocale()
   const qc = useQueryClient()
   const key = ['social-accounts', brandId, pendingState]
@@ -206,6 +208,9 @@ export function AccountsClient({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
+          <p className="text-xs font-semibold tracking-wider text-primary uppercase">
+            {tg('groups.settings')}
+          </p>
           <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
           <p className="text-sm text-muted-foreground">{t('subtitle', { brand: brandName })}</p>
         </div>
@@ -324,7 +329,7 @@ export function AccountsClient({
                   <div className="min-w-0 flex-1">
                     <div className="truncate font-medium">{a.name}</div>
                     <div className="text-xs text-muted-foreground">
-                      {platformLabel(a.platform)}
+                      <NetworkName platform={a.platform} size={12} className="align-middle" />
                       {a.username ? ` · @${a.username}` : ''}
                       {a.followers !== null ? ` · ${t('followers', { count: a.followers })}` : ''}
                       {!a.capabilities.publish ? ` · ${t('readOnly')}` : ''}
@@ -363,7 +368,7 @@ export function AccountsClient({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="truncate font-medium">{a.name}</span>
-                    <Badge variant="secondary">{platformLabel(a.platform)}</Badge>
+                    <NetworkBadge platform={a.platform} />
                     <Badge variant={a.status === 'active' ? 'default' : 'outline'}>
                       {t(`status.${a.status}`)}
                     </Badge>

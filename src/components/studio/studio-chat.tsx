@@ -22,10 +22,11 @@ import { DetailPanes } from '@/components/review/review-desk'
 import { ThemeVideoQueue } from '@/components/review/theme-video-queue'
 import { api } from '@/components/shared/api-client'
 import { ErrorBox } from '@/components/shared/error-box'
+import { NetworkName } from '@/components/shared/network-badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { CONTENT_LOCALES } from '@/config/locales'
-import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
+import { type SocialPlatform } from '@/config/platforms'
 import { formatsForPlatforms, type PostFormat, type PostFormatChoice } from '@/config/post-formats'
 import { uploadMediaFile } from '@/lib/media/client-upload'
 import { STUDIO_PHOTOS_MAX, STUDIO_TEXT_MAX } from '@/lib/schemas/studio'
@@ -467,7 +468,7 @@ export function StudioChat({
                               : 'bg-background text-muted-foreground',
                           )}
                         >
-                          {PLATFORMS[p].label}
+                          <NetworkName platform={p} />
                         </button>
                       )
                     })}

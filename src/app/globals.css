@@ -142,6 +142,9 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    /* tanak skrol u bojama teme (Chrome i Edge 121+, Firefox); boja se računa u svakoj temi posebno */
+    scrollbar-width: thin;
+    scrollbar-color: color-mix(in oklab, var(--muted-foreground) 45%, transparent) transparent;
   }
   body {
     @apply bg-background text-foreground;
@@ -149,6 +152,20 @@
   html {
     @apply font-sans;
   }
+}
+
+/* Vodoravne trake (meni na telefonu, kartice, filteri): bez trake za skrol, a ivica blago bledi
+   da se vidi da ima još sadržaja. */
+@utility scrollbar-none {
+  scrollbar-width: none;
+}
+@utility fade-x {
+  mask-image: linear-gradient(to right, transparent, #000 10px, #000 calc(100% - 28px), transparent);
+}
+/* bočni meni na računaru: vrh i dno blago blede dok ima stavki iznad ili ispod (razmaci drže prvu i
+   poslednju stavku jasnom) */
+@utility fade-y {
+  mask-image: linear-gradient(to bottom, transparent, #000 14px, #000 calc(100% - 32px), transparent);
 }
 
 /* Vizuelni jezik reference: fina mreža i meki sjaj (u components sloju, da ih utility klase nadjačaju) */
@@ -333,10 +350,12 @@
   }
 }
 
-/* anchor linkovi landinga klize i ne završavaju ispod lepljivog zaglavlja */
+/* anchor linkovi landinga klize i ne završavaju ispod lepljivog zaglavlja; tamna traka za skrol */
 :root:has(.l-root) {
   scroll-behavior: smooth;
   scroll-padding-top: 84px;
+  color-scheme: dark;
+  scrollbar-color: rgb(148 170 210 / 0.35) #060a13;
 }
 @media (prefers-reduced-motion: reduce) {
   :root:has(.l-root) {

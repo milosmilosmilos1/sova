@@ -16,6 +16,7 @@ import { GoogleBusinessPanel } from '@/components/posts/google-business-panel'
 import { PinterestPanel } from '@/components/posts/pinterest-panel'
 import { TikTokPanel } from '@/components/posts/tiktok-panel'
 import { YouTubePanel } from '@/components/posts/youtube-panel'
+import { NetworkBadge, NetworkName } from '@/components/shared/network-badge'
 import { readGbpOptions } from '@/config/google-business'
 import { readPinterestOptions } from '@/config/pinterest'
 import { readYouTubeOptions } from '@/config/youtube'
@@ -758,7 +759,7 @@ function EditorForm({
                       }
                     />
                     <span className="font-medium">{a.name}</span>
-                    <Badge variant="outline">{PLATFORMS[a.platform]?.label ?? a.platform}</Badge>
+                    <NetworkBadge platform={a.platform} />
                     {a.status !== 'active' ? <Badge variant="secondary">{a.status}</Badge> : null}
                     {a.assistedOnly ? <Badge variant="secondary">{t('networks.assisted')}</Badge> : null}
                     <span className="ml-auto text-xs text-muted-foreground">
@@ -1471,7 +1472,7 @@ function TargetCard({
   return (
     <div className="space-y-1 rounded-md border p-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="truncate">{target.accountName ?? target.platform}</span>
+        <NetworkName platform={target.platform} label={target.accountName ?? undefined} />
         <Badge variant={failed ? 'destructive' : done ? 'default' : 'outline'}>
           {t.has(statusKey) ? t(statusKey) : target.status}
         </Badge>

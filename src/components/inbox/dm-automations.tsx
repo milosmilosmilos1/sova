@@ -8,6 +8,7 @@ import { useState } from 'react'
 
 import { api } from '@/components/shared/api-client'
 import { ErrorBox } from '@/components/shared/error-box'
+import { NetworkName } from '@/components/shared/network-badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
@@ -202,7 +203,7 @@ export function DmAutomations({ brandId, canEdit }: { brandId: string; canEdit: 
                 <p className="flex flex-wrap items-center gap-2 font-medium">
                   {a.name}
                   <span className="text-xs font-normal text-muted-foreground">
-                    {PLATFORMS[a.platform]?.label} · {a.accountName}
+                    <NetworkName platform={a.platform} size={12} className="align-middle" /> · {a.accountName}
                   </span>
                 </p>
                 <p className="flex flex-wrap gap-1">

@@ -19,6 +19,7 @@ import { InboxClient } from '@/components/autopilot/inbox-client'
 import { api } from '@/components/shared/api-client'
 import { BulkBar, runBulk, SelectAllBox, SelectBox, useSelection } from '@/components/shared/bulk'
 import { ErrorBox } from '@/components/shared/error-box'
+import { NetworkName } from '@/components/shared/network-badge'
 import { Button } from '@/components/ui/button'
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { REPLY_MAX } from '@/lib/schemas/inbox'
@@ -215,7 +216,7 @@ export function InboxShell({
                     platform === p && 'border-primary bg-primary/10 text-accent-foreground',
                   )}
                 >
-                  {PLATFORMS[p].label}
+                  <NetworkName platform={p} />
                 </button>
               ))}
               <label className="sr-only" htmlFor="inbox-status">
@@ -377,7 +378,7 @@ function ThreadButton({
         </span>
         <span className="block truncate text-xs text-muted-foreground">{x.preview}</span>
         <span className="mt-0.5 flex items-center gap-2 text-[11px] text-muted-foreground">
-          <span>{PLATFORMS[x.platform]?.label ?? x.platform}</span>
+          <NetworkName platform={x.platform} size={12} />
           {x.rating ? <Stars value={x.rating} label={t('rating', { n: x.rating })} /> : null}
           <span className="ml-auto">{when.format(new Date(x.lastMessageAt))}</span>
         </span>

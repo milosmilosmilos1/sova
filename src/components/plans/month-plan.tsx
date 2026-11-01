@@ -24,13 +24,14 @@ import { useState } from 'react'
 import { BulkBar, SelectAllBox, SelectBox, useSelection } from '@/components/shared/bulk'
 import { api } from '@/components/shared/api-client'
 import { ErrorBox } from '@/components/shared/error-box'
+import { NetworkName, NetworkNames } from '@/components/shared/network-badge'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { CONTENT_LOCALES } from '@/config/locales'
-import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
+import { type SocialPlatform } from '@/config/platforms'
 import { PLATFORM_FORMATS, POST_FORMATS, type PostFormat } from '@/config/post-formats'
 import { buildSlots, MONTH_OPTIONS, monthEnd, PER_WEEK_OPTIONS, slotMonths } from '@/lib/plans/slots'
 import type { StyleId } from '@/lib/visuals/design/catalog'
@@ -388,7 +389,7 @@ function SetupCard({
                 onClick={() => setPlatforms((cur) => (on ? cur.filter((x) => x !== p) : [...cur, p]))}
                 className={chip(on)}
               >
-                {PLATFORMS[p].label}
+                <NetworkName platform={p} />
               </button>
             )
           })}
@@ -765,7 +766,7 @@ function PlanBoard({
                             <Icon className="size-3.5" aria-hidden />
                             {t(`formats.${i.format}`)}
                           </span>
-                          <span>{i.platforms.map((p) => PLATFORMS[p].label).join(' · ')}</span>
+                          <NetworkNames platforms={i.platforms} size={12} />
                           {[
                             ...new Set(
                               [i.pillar, t(`goals.${i.goal}` as 'goals.engagement')].filter(

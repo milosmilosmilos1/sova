@@ -20,9 +20,9 @@ import type { ReactNode } from 'react'
 
 import { InstallCard } from '@/components/app/install-card'
 import { MediaThumb } from '@/components/shared/media-thumb'
+import { NetworkName, NetworkNames } from '@/components/shared/network-badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
@@ -184,7 +184,6 @@ export default async function AppHomePage({ searchParams }: PageProps<'/app'>) {
   const delta = (v: number | null | undefined) =>
     v === null || v === undefined ? null : `${v >= 0 ? '+' : ''}${format.number(Math.round(v))} %`
   const num = (v: number) => format.number(v)
-  const platformsLabel = (list: SocialPlatform[]) => list.map((p) => PLATFORMS[p]?.label ?? p).join(', ')
 
   return (
     <div className="space-y-6">
@@ -372,8 +371,9 @@ export default async function AppHomePage({ searchParams }: PageProps<'/app'>) {
                       <span className="block truncate text-sm font-medium">
                         {item.title ?? t('review.untitled')}
                       </span>
-                      <span className="block truncate text-xs text-muted-foreground">
-                        {[item.flowName, platformsLabel(item.platforms)].filter(Boolean).join(' · ')}
+                      <span className="flex min-w-0 items-center gap-2 overflow-hidden text-xs text-muted-foreground">
+                        {item.flowName ? <span className="truncate">{item.flowName}</span> : null}
+                        <NetworkNames platforms={item.platforms} size={12} className="flex-nowrap" />
                       </span>
                     </span>
                   </Link>
@@ -623,9 +623,11 @@ export default async function AppHomePage({ searchParams }: PageProps<'/app'>) {
                     </td>
                     <td className="max-w-0 py-2 pr-3">
                       <span className="block truncate">{p.title ?? p.excerpt}</span>
-                      <span className="block text-xs text-muted-foreground">
-                        {PLATFORMS[p.platform]?.label ?? p.platform}
-                      </span>
+                      <NetworkName
+                        platform={p.platform}
+                        size={12}
+                        className="text-xs text-muted-foreground"
+                      />
                     </td>
                     <td className="py-2 text-right tabular-nums">{p.reach !== null ? num(p.reach) : '—'}</td>
                     <td className="py-2 text-right tabular-nums">{num(p.engagement)}</td>

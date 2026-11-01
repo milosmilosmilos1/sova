@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
+import { NetworkName } from '@/components/shared/network-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -103,6 +104,7 @@ export function AutopilotClient({
   canEdit: boolean
 }) {
   const t = useTranslations('autopilot')
+  const tg = useTranslations('shell')
   const intl = INTL_UI[useLocale()]
   const fmtDate = (d: string) => dayMonth(d, intl)
   const qc = useQueryClient()
@@ -133,6 +135,7 @@ export function AutopilotClient({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
+          <p className="text-xs font-semibold tracking-wider text-primary uppercase">{tg('groups.growth')}</p>
           <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
           <p className="text-sm text-muted-foreground">
             {t('subtitle', {
@@ -391,7 +394,12 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
                         )
                       }
                     />
-                    {a.name} <span className="text-muted-foreground">· {PLATFORMS[a.platform].label}</span>
+                    {a.name}{' '}
+                    <NetworkName
+                      platform={a.platform}
+                      size={12}
+                      className="align-middle text-muted-foreground"
+                    />
                   </label>
                 ))}
             </fieldset>

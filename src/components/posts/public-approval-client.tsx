@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
+import { NetworkBadge } from '@/components/shared/network-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -124,9 +125,7 @@ export function PublicApprovalClient({ token }: { token: string }) {
                 {statusLabel(p.status)}
               </Badge>
               {p.platforms.map((pl) => (
-                <Badge key={pl} variant="outline">
-                  {pl}
-                </Badge>
+                <NetworkBadge key={pl} platform={pl} />
               ))}
             </CardTitle>
           </CardHeader>

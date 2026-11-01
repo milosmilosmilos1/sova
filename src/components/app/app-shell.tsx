@@ -9,8 +9,9 @@ import {
   Images,
   Inbox,
   Lightbulb,
-  MessageCircleReply,
   LogOut,
+  MessageCircleReply,
+  Plus,
   Settings,
   Share2,
   ShieldCheck,
@@ -36,7 +37,7 @@ import { LocaleSwitcher } from '@/components/shared/locale-switcher'
 import { Badge } from '@/components/ui/badge'
 import { company } from '@/config/company'
 import { signOutAction, switchBrandAction, switchWorkspaceAction } from '@/lib/auth/actions'
-import type { Membership } from '@/lib/auth/workspace'
+import { EDIT_ROLES, type Membership } from '@/lib/auth/workspace'
 import type { BrandSummary } from '@/services/brands'
 
 export interface ShellViewer {
@@ -112,10 +113,22 @@ export function AppShell({
                 {t(`roles.${current.role}`)}
                 {currentBrand ? ` · ${currentBrand.name}` : ''}
               </p>
+              {EDIT_ROLES.includes(current.role) ? (
+                <Link
+                  href="/app/brands#novi"
+                  className="flex items-center gap-1.5 rounded-md px-1 py-0.5 text-xs font-medium text-primary hover:underline"
+                >
+                  <Plus className="size-3.5" aria-hidden />
+                  {t('addBrand')}
+                </Link>
+              ) : null}
             </div>
           ) : null}
 
-          <nav className="flex gap-1 overflow-x-auto md:flex-col md:gap-4" aria-label={t('mainNav')}>
+          <nav
+            className="flex gap-1 overflow-x-auto max-md:scrollbar-none max-md:fade-x md:flex-col md:gap-4 md:fade-y md:pt-3 md:pb-8"
+            aria-label={t('mainNav')}
+          >
             <NavGroup label={t('groups.work')}>
               <NavLink href="/app" exact>
                 <Home aria-hidden />
@@ -188,7 +201,7 @@ export function AppShell({
                 <Users aria-hidden />
                 {t('nav.team')}
               </NavLink>
-              <NavLink href="/app/brand" also={['/app/billing', '/app/settings']}>
+              <NavLink href="/app/brand" also={['/app/brands', '/app/billing', '/app/settings']}>
                 <Settings aria-hidden />
                 {t('nav.brandAccount')}
               </NavLink>
@@ -206,16 +219,18 @@ export function AppShell({
             </NavGroup>
           </nav>
 
-          <div className="mt-auto space-y-3 border-t border-sidebar-border pt-4">
-            <LocaleSwitcher />
+          {/* na telefonu jezik i nalog u jednom redu, da sadržaj strane počne više */}
+          <div className="mt-auto flex items-center gap-3 border-t border-sidebar-border pt-3 md:block md:space-y-3 md:pt-4">
+            <LocaleSwitcher className="min-w-0 flex-1" />
             <div className="flex items-center gap-3 text-sm">
               <span
                 aria-hidden
+                title={viewer.email}
                 className="grid size-9 shrink-0 place-items-center rounded-full bg-sidebar-accent font-medium text-sidebar-accent-foreground"
               >
                 {(viewer.fullName ?? viewer.email).trim().charAt(0).toUpperCase()}
               </span>
-              <div className="min-w-0 flex-1">
+              <div className="min-w-0 flex-1 max-md:hidden">
                 <p className="truncate font-medium">{viewer.fullName ?? viewer.email}</p>
                 <p className="truncate text-xs text-muted-foreground">{viewer.email}</p>
               </div>

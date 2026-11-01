@@ -1074,3 +1074,15 @@ Odluka:
 - Manifest za instalaciju na telefon bira jezik iz kolačića, a pošto ga pregledač traži bez kolačića, obično iz jezika pregledača. Dopuna tokena na Stripe strani i na računu ima ime na jeziku korisnika.
 
 Razlog: vlasnik prodaje i na engleskom i ukrajinskom, pa i sajt i softver moraju da postoje na tim jezicima i da kupac od prve posete do mejla vidi isti jezik. Prefiks u adresi daje svakom jeziku svoju adresu za oglase, deljenje i pretragu, a srpske adrese se ne menjaju.
+
+## D-131 · 1.11.2026 · usvojeno · Brendovi na svojoj kartici, mreže u svojim bojama, uredan skrol
+
+Odluka:
+
+- Brendovi radnog prostora imaju svoju karticu u „Brend i nalog” (`/app/brands`): spisak sa oznakom trenutnog, „Otvori” (prelazak na brend), zona, arhiviranje i forma za novi brend (agencija pravi brend za svakog klijenta). Bočni meni ima link „Novi brend” ispod izbora brenda. Posle dodavanja novi brend postaje trenutni i Sova otvara njegov uvod (D-112). Kartica je ranije bila na dnu Podešavanja i niko je nije nalazio.
+- Upis brenda ide bez RETURNING: pravilo za čitanje brenda (`has_brand_access`) traži red po id-ju, a u istoj naredbi ga još ne vidi, pa je dodavanje drugog brenda padalo sa „Nemate dozvolu za ovu radnju” na svakom planu. Id se pravi u servisu, a brend se čita posebnim upitom. Integracioni test sada proverava i uspešno dodavanje.
+- Mreža se svuda prikazuje u svojim bojama: pločica sa znakom mreže (iste boje i znaci kao na sajtu) i naziv; tekst ostaje u boji teksta, a boja mreže je na pločici i u okviru čipa (`components/shared/network-badge.tsx`: `NetworkIcon`, `NetworkName`, `NetworkNames`, `NetworkIcons`, `NetworkBadge`).
+- Skrol je tanak i u bojama teme (aplikacija i sajt, tamna traka na sajtu). Vodoravne trake na telefonu (meni, kartice) nemaju traku za skrol nego blago bledu ivicu, a aktivna stavka sama dolazi u vidno polje; meni na računaru bledi na vrhu i dnu dok ima stavki iznad ili ispod.
+- Starije strane dobile su isti mali natpis iznad naslova kao novije (grupa iz menija), a Strategija pravo prazno stanje sa dugmetom.
+
+Razlog: vlasnik nije našao gde se dodaje brend za agenciju, a kad se nađe, dodavanje nije radilo. Mreže kao goli tekst se teško razlikuju, a debele sive trake za skrol u Windows-u su ružne.

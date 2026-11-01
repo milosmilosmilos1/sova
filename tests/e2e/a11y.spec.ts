@@ -23,6 +23,7 @@ const APP_PAGES = [
   '/app/team',
   '/app/billing',
   '/app/settings',
+  '/app/brands',
   '/app/notifications',
 ]
 

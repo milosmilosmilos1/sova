@@ -59,7 +59,8 @@
       "newPost": "Nova objava",
       "post": "Objava",
       "studioTools": "Ručni alati Studija"
-    }
+    },
+    "addBrand": "Novi brend"
   },
   "team": {
     "metaTitle": "Tim",
@@ -122,7 +123,7 @@
   },
   "settings": {
     "metaTitle": "Podešavanja",
-    "intro": "Profil, radni prostor i brendovi.",
+    "intro": "Profil, radni prostor, obaveštenja i privatnost.",
     "impersonation": "Izvoz i brisanje naloga nisu dostupni tokom impersonacije.",
     "profile": {
       "title": "Vaš profil",
@@ -158,7 +159,14 @@
       "contentLocale": "Jezik sadržaja",
       "timezone": "Vremenska zona brenda",
       "add": "Dodajte brend",
-      "adding": "Dodajem…"
+      "adding": "Dodajem…",
+      "metaTitle": "Brendovi",
+      "intro": "Svaki brend ima svoj Brand Brain, mreže, kalendar i izveštaje. Agencija ovde dodaje brend za svakog klijenta.",
+      "usage": "{used} od {max, plural, one {# brenda} other {# brendova}} na planu {plan}",
+      "current": "Trenutni",
+      "open": "Otvori",
+      "newTitle": "Novi brend",
+      "newHint": "Novi brend odmah postaje trenutni, a Sova vas vodi kroz njegovo podešavanje: mreže, sajt i glas."
     },
     "brandTimezone": {
       "save": "Sačuvaj zonu",

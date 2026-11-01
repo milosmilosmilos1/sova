@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { randomUUID } from 'node:crypto'
+
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
@@ -65,19 +67,22 @@ export async function createBrand(viewer: Viewer, input: CreateBrandInput): Prom
       `Vaš plan dozvoljava ${plan.limits.brands} ${plan.limits.brands === 1 ? 'brend' : 'brenda'}. Nadogradite plan za više brendova.`,
     )
   }
+  // Bez RETURNING: pravilo za čitanje brenda (has_brand_access) traži red po id-ju, a u istoj naredbi
+  // ga još ne vidi (STABLE funkcija čita stanje sa početka naredbe), pa bi upis pao kao „nemate
+  // dozvolu”. Id pravimo ovde i brend čitamo posebnim upitom, posle upisa.
+  const id = randomUUID()
+  const { error } = await viewer.supabase.from('brands').insert({
+    id,
+    workspace_id: input.workspaceId,
+    name: input.name,
+    website_url: input.websiteUrl ?? null,
+    timezone: input.timezone,
+    content_locale: input.contentLocale,
+    created_by: viewer.user.id,
+  })
+  if (error) throw mapDbError(error, 'Brend nije sačuvan.')
   return unwrap(
-    await viewer.supabase
-      .from('brands')
-      .insert({
-        workspace_id: input.workspaceId,
-        name: input.name,
-        website_url: input.websiteUrl ?? null,
-        timezone: input.timezone,
-        content_locale: input.contentLocale,
-        created_by: viewer.user.id,
-      })
-      .select(BRAND_COLUMNS)
-      .single(),
+    await viewer.supabase.from('brands').select(BRAND_COLUMNS).eq('id', id).single(),
     'Brend nije sačuvan.',
   )
 }

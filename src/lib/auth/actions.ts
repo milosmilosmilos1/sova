@@ -480,7 +480,8 @@ export async function createBrandAction(_prev: FormState, formData: FormData): P
     return errorState(error, formValues(formData, ['name', 'websiteUrl']))
   }
   revalidatePath('/app', 'layout')
-  return localized({ ok: true, message: 'Brend je napravljen.' })
+  // novi brend je trenutni; uvod (D-112) vodi kroz mreže, sajt i glas tog brenda
+  go('/app/setup')
 }
 
 export async function deleteBrandAction(formData: FormData): Promise<void> {

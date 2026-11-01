@@ -3,9 +3,27 @@
 import type { Route } from 'next'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import type { ReactNode } from 'react'
+import { useEffect, useRef, type ReactNode, type RefObject } from 'react'
 
 import { cn } from '@/lib/utils'
+
+/**
+ * Aktivna stavka trake koja se skroluje (meni na telefonu, kartice) dolazi u vidno polje trake.
+ * Pomera se samo traka, ne cela strana, da povratak unazad zadrži položaj strane.
+ */
+export function useKeepInView(ref: RefObject<HTMLElement | null>, active: boolean) {
+  useEffect(() => {
+    const el = ref.current
+    const strip = el?.closest('nav')
+    if (!active || !el || !strip) return
+    const box = strip.getBoundingClientRect()
+    const item = el.getBoundingClientRect()
+    if (item.left < box.left || item.right > box.right)
+      strip.scrollLeft += item.left - box.left - (box.width - item.width) / 2
+    if (item.top < box.top || item.bottom > box.bottom)
+      strip.scrollTop += item.top - box.top - (box.height - item.height) / 2
+  }, [ref, active])
+}
 
 /** Link u bočnoj navigaciji; aktivno stanje računa na klijentu (usePathname), ne na serveru. */
 export function NavLink({
@@ -23,8 +41,11 @@ export function NavLink({
   const pathname = usePathname()
   const under = (path: string) => pathname === path || pathname.startsWith(`${path}/`)
   const active = exact ? pathname === href : under(href) || also.some(under)
+  const ref = useRef<HTMLAnchorElement>(null)
+  useKeepInView(ref, active)
   return (
     <Link
+      ref={ref}
       href={href}
       aria-current={active ? 'page' : undefined}
       className={cn(

@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
 
 import { previewUrl, StylePicker } from '@/components/design/style-picker'
+import { NetworkName } from '@/components/shared/network-badge'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -352,7 +353,7 @@ function TextPanel({ brandId, onDone }: { brandId: string; onDone: () => void })
                   setPlatforms((cur) => (e.target.checked ? [...cur, p] : cur.filter((x) => x !== p)))
                 }
               />
-              {PLATFORMS[p].label}
+              <NetworkName platform={p} />
             </label>
           ))}
         </fieldset>
@@ -1610,7 +1611,7 @@ function ComposePanel({
                   setPlatforms((cur) => (e.target.checked ? [...cur, p] : cur.filter((x) => x !== p)))
                 }
               />
-              {PLATFORMS[p].label}
+              <NetworkName platform={p} />
             </label>
           ))}
         </fieldset>

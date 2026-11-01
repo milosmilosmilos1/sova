@@ -93,6 +93,7 @@ test.describe.serial('registracija, potvrda emaila, onboarding, tim, nacrt, odja
     await page.getByLabel('Ime i prezime').fill('E2E Vlasnik Izmenjen')
     await page.getByRole('button', { name: 'Sačuvajte profil' }).click()
     await expect(page.getByRole('status').filter({ hasText: 'Profil je sačuvan' })).toBeVisible()
+    await page.goto('/app/brands')
     await expect(page.getByText(/Dostigli ste limit brendova/).first()).toBeVisible()
   })
 

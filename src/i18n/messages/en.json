@@ -921,12 +921,13 @@
   "brandAccount": {
     "eyebrow": "Your settings",
     "title": "Brand and account",
-    "subtitle": "Brand voice, look, subscription and account in one place.",
+    "subtitle": "Brand voice, look, brands, subscription and account in one place.",
     "tabsLabel": "Settings tabs",
     "tabs": {
       "voice": "Brand voice",
       "visual": "Visual identity",
       "styles": "Styles",
+      "brands": "Brands",
       "billing": "Subscription",
       "account": "Account"
     },

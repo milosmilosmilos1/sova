@@ -30,13 +30,14 @@ import { BulkBar, SelectAllBox, SelectBox, useSelection } from '@/components/sha
 import { ErrorBox } from '@/components/shared/error-box'
 import { MediaThumb } from '@/components/shared/media-thumb'
 import { VideoDialog } from '@/components/review/video-dialog'
+import { NetworkName } from '@/components/shared/network-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
+import { type SocialPlatform } from '@/config/platforms'
 import { wallClock, zonedToUtc } from '@/lib/zoned-time'
 import { cn } from '@/lib/utils'
 
@@ -126,6 +127,7 @@ export function ReviewDesk({
   canEdit?: boolean
 }) {
   const t = useTranslations('review')
+  const tg = useTranslations('shell')
   const qc = useQueryClient()
   const router = useRouter()
   const [tab, setTab] = useState<Tab>('waiting')
@@ -192,6 +194,7 @@ export function ReviewDesk({
     <div className="space-y-5">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
+          <p className="text-xs font-semibold tracking-wider text-primary uppercase">{tg('groups.work')}</p>
           <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
           <p className="text-sm text-muted-foreground">{t('subtitle')}</p>
         </div>
@@ -725,7 +728,7 @@ function DetailForm({
                       netTab === tg.socialAccountId && 'border-primary bg-primary/10 text-accent-foreground',
                     )}
                   >
-                    {PLATFORMS[tg.platform]?.label ?? tg.platform}
+                    <NetworkName platform={tg.platform} className="align-middle" />
                     {texts[tg.socialAccountId] ? ' •' : ''}
                   </button>
                 ))}

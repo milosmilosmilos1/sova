@@ -10,11 +10,11 @@ import { bulkRequest } from '@/components/shared/api-client'
 import { BulkBar, SelectAllBox, SelectBox, useSelection } from '@/components/shared/bulk'
 import { ErrorBox } from '@/components/shared/error-box'
 import { MediaThumb } from '@/components/shared/media-thumb'
+import { NetworkBadge } from '@/components/shared/network-badge'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
-import { PLATFORMS } from '@/config/platforms'
 import { INTL_UI } from '@/i18n/config'
 import type { ApiResponse } from '@/lib/api/response'
 
@@ -64,6 +64,7 @@ export function PostsListClient({
 }) {
   const [status, setStatus] = useState(initialStatus)
   const t = useTranslations('postsList')
+  const tg = useTranslations('shell')
   const tb = useTranslations('bulk')
   const locale = useLocale()
   const dateTime = (iso: string) =>
@@ -88,6 +89,7 @@ export function PostsListClient({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
+          <p className="text-xs font-semibold tracking-wider text-primary uppercase">{tg('groups.work')}</p>
           <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
           <p className="text-sm text-muted-foreground">{t('subtitle', { brand: brandName })}</p>
         </div>
@@ -165,9 +167,7 @@ export function PostsListClient({
                       {p.statusLabel}
                     </Badge>
                     {p.platforms.map((pl) => (
-                      <Badge key={pl} variant="outline">
-                        {PLATFORMS[pl as keyof typeof PLATFORMS]?.label ?? pl}
-                      </Badge>
+                      <NetworkBadge key={pl} platform={pl} />
                     ))}
                   </div>
                   <p className="truncate text-sm text-muted-foreground">{p.masterText.slice(0, 140)}</p>

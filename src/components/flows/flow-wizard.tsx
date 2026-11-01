@@ -9,6 +9,7 @@ import { useState } from 'react'
 
 import { api } from '@/components/shared/api-client'
 import { ErrorBox } from '@/components/shared/error-box'
+import { NetworkName } from '@/components/shared/network-badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -16,7 +17,7 @@ import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { Textarea } from '@/components/ui/textarea'
 import { CONTENT_LOCALES } from '@/config/locales'
-import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
+import { type SocialPlatform } from '@/config/platforms'
 import { PLATFORM_FORMATS, type PostFormat } from '@/config/post-formats'
 import { PHOTO_SOURCES, type PhotoSource, type PostSize, type StyleId } from '@/lib/visuals/design/catalog'
 import type { DesignColors } from '@/lib/visuals/design/types'
@@ -404,7 +405,7 @@ export function FlowWizard({
                               )
                             }
                           />
-                          {PLATFORMS[a.platform].label} · {a.username ? `@${a.username}` : a.name}
+                          <NetworkName platform={a.platform} /> · {a.username ? `@${a.username}` : a.name}
                           {!ok ? (
                             <span className="text-xs text-muted-foreground">({t('unsupported')})</span>
                           ) : null}

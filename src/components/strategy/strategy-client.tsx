@@ -3,8 +3,10 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useLocale, useTranslations } from 'next-intl'
+import { Target } from 'lucide-react'
 import { useState } from 'react'
 
+import { NetworkName } from '@/components/shared/network-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -133,6 +135,7 @@ export function StrategyClient({
   canEdit: boolean
 }) {
   const t = useTranslations('strategy')
+  const tg = useTranslations('shell')
   const intl = INTL_UI[useLocale()]
   const fmtDate = (iso: string) => dateLabel(iso, intl)
   const qc = useQueryClient()
@@ -179,6 +182,7 @@ export function StrategyClient({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
+          <p className="text-xs font-semibold tracking-wider text-primary uppercase">{tg('groups.growth')}</p>
           <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
           <p className="text-sm text-muted-foreground">{t('subtitle', { brand: brandName, timezone })}</p>
         </div>
@@ -215,49 +219,62 @@ export function StrategyClient({
         </Card>
       ) : null}
 
-      <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
-        <aside className="space-y-2">
-          <p className="text-xs font-medium text-muted-foreground uppercase">{t('versions')}</p>
-          {list.isPending ? <p className="text-sm text-muted-foreground">{t('loading')}</p> : null}
-          {list.data?.strategies.length === 0 ? (
-            <p className="rounded-md border p-3 text-sm text-muted-foreground">{t('empty')}</p>
-          ) : null}
-          <ul className="space-y-1">
-            {list.data?.strategies.map((s) => (
-              <li key={s.id}>
-                <button
-                  type="button"
-                  onClick={() => setSelectedId(s.id)}
-                  className={`w-full rounded-md border px-3 py-2 text-left text-sm hover:bg-accent/50 ${s.id === currentId ? 'border-primary bg-accent/40' : ''}`}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span>
-                      {fmtDate(s.periodStart)} – {fmtDate(s.periodEnd)}
-                    </span>
-                    <Badge variant={s.status === 'active' ? 'default' : 'outline'}>
-                      {t(`status.${s.status}`)}
-                    </Badge>
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                    {t('listMeta', { version: s.version, weeks: s.weeks })}
-                    {s.usesAssumptions ? ` · ${t('assumptionsTag')}` : ''}
-                  </div>
-                </button>
-              </li>
-            ))}
-          </ul>
-        </aside>
+      {list.data?.strategies.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center gap-3 py-12 text-center">
+            <span className="grid size-12 place-items-center rounded-xl bg-primary/10 text-primary">
+              <Target className="size-6" aria-hidden />
+            </span>
+            <p className="max-w-md text-sm text-muted-foreground">{t('empty')}</p>
+            {canEdit && !showForm ? (
+              <Button onClick={() => setShowForm(true)} disabled={Boolean(jobId)}>
+                {t('new')}
+              </Button>
+            ) : null}
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
+          <aside className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground uppercase">{t('versions')}</p>
+            {list.isPending ? <p className="text-sm text-muted-foreground">{t('loading')}</p> : null}
+            <ul className="space-y-1">
+              {list.data?.strategies.map((s) => (
+                <li key={s.id}>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedId(s.id)}
+                    className={`w-full rounded-md border px-3 py-2 text-left text-sm hover:bg-accent/50 ${s.id === currentId ? 'border-primary bg-accent/40' : ''}`}
+                  >
+                    <div className="flex items-center justify-between gap-2">
+                      <span>
+                        {fmtDate(s.periodStart)} – {fmtDate(s.periodEnd)}
+                      </span>
+                      <Badge variant={s.status === 'active' ? 'default' : 'outline'}>
+                        {t(`status.${s.status}`)}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-muted-foreground">
+                      {t('listMeta', { version: s.version, weeks: s.weeks })}
+                      {s.usesAssumptions ? ` · ${t('assumptionsTag')}` : ''}
+                    </div>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </aside>
 
-        <div className="space-y-4">
-          {detail.isPending && currentId ? (
-            <p className="text-sm text-muted-foreground">{t('loadingStrategy')}</p>
-          ) : null}
-          {detail.isError ? <ErrorBox error={detail.error} /> : null}
-          {detail.data ? (
-            <StrategyDetail s={detail.data} brandId={brandId} canEdit={canEdit} onChanged={refreshAll} />
-          ) : null}
+          <div className="space-y-4">
+            {detail.isPending && currentId ? (
+              <p className="text-sm text-muted-foreground">{t('loadingStrategy')}</p>
+            ) : null}
+            {detail.isError ? <ErrorBox error={detail.error} /> : null}
+            {detail.data ? (
+              <StrategyDetail s={detail.data} brandId={brandId} canEdit={canEdit} onChanged={refreshAll} />
+            ) : null}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   )
 }
@@ -498,7 +515,7 @@ function StrategyDetail({
             <ul className="space-y-1 text-sm">
               {platforms.map((p) => (
                 <li key={p}>
-                  <span className="font-medium">{PLATFORMS[p].label}</span>:{' '}
+                  <NetworkName platform={p} className="align-middle font-medium" />:{' '}
                   {t('perWeekValue', { count: s.networkMix[p]?.per_week ?? 0 })}
                   {s.networkMix[p]?.formats.length ? ` · ${s.networkMix[p]!.formats.join(', ')}` : ''}
                   {s.networkMix[p]?.role ? (
@@ -552,7 +569,7 @@ function StrategyDetail({
           <CardContent className="space-y-2 text-sm">
             {platforms.map((p) => (
               <div key={p}>
-                <span className="font-medium">{PLATFORMS[p].label}:</span>{' '}
+                <NetworkName platform={p} className="align-middle font-medium" />:{' '}
                 {(s.bestTimes[p] ?? []).map((slot, i) => (
                   <Badge key={i} variant={slot.source === 'data' ? 'default' : 'outline'} className="mr-1">
                     {weekdayName(slot.weekday, intl)} {String(slot.hour).padStart(2, '0')}:
