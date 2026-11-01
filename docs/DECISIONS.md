@@ -1086,3 +1086,15 @@ Odluka:
 - Starije strane dobile su isti mali natpis iznad naslova kao novije (grupa iz menija), a Strategija pravo prazno stanje sa dugmetom.
 
 Razlog: vlasnik nije našao gde se dodaje brend za agenciju, a kad se nađe, dodavanje nije radilo. Mreže kao goli tekst se teško razlikuju, a debele sive trake za skrol u Windows-u su ružne.
+
+## D-132 · 1.11.2026 · usvojeno · Ritam teme: ista tema, tri rasporeda
+
+Odluka:
+
+- Sve objave i dalje idu u temi brenda (stil, boje i font, D-125), ali svaka nosi i varijantu: osnovnu, obrnutu ili udarnu. Od šest objava za redom tri su osnovne, dve obrnute i jedna udarna (`THEME_RHYTHM` u `lib/visuals/design/variants.ts`), a dve udarne nikad ne stoje jedna do druge.
+- Obrnuta varijanta crta raspored u ogledalu i menja mesta dvema bojama naglaska (druga boja postaje glavna samo kad se vidi na podlozi). Udarna stavlja boju brenda u podlogu, a boja podloge postaje naglasak; tekst se bira tako da se čita (bar 4,5:1).
+- Šest stilova tema ima svoje rasporede: Pola-pola sa tekstom gore i fotografijom dole, Nalepnica i Blokovi u ogledalu, Aurora sa karticom iznad fotografije, Poster sa tekstom na vrhu, a udarni Poster sa fotografijom obojenom bojom brenda, Okvir sa tekstom iznad uramljene fotografije i trakom naslova pomerenom udesno. Ostali stilovi (kad ih korisnik sam izabere u Studiju) dobijaju samo boje varijante.
+- Varijantu bira mesto gde objava nastaje: mesečni plan po mestu stavke u planu (pa se ritam vidi u Odobravanju i kalendaru), tok po prolazu, Autopilot po objavi, Studio nasumično. Stil koji korisnik izričito izabere u Studiju ostaje u osnovnom rasporedu.
+- Varijanta se čuva u dizajnu objave (`posts.design.variant`), a boje u dizajnu ostaju boje teme, pa „Uskladi sa temom” i dalje prepoznaje objavu kao usklađenu. „Generiši ponovo”, izmena u Studiju, tekst na slikama i usklađivanje crtaju u istoj varijanti. Starije objave bez varijante ostaju osnovne. Video u temi ostaje u osnovnom rasporedu.
+
+Razlog: vlasnik je primetio da posle jedne teme za sve objave (D-125) nacrti u Odobravanju liče jedan na drugi. Ritam čuva prepoznatljiv izgled brenda, a feed na svakih par objava dobije promenu, kao serija koju pravi dizajner.

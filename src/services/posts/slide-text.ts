@@ -134,6 +134,7 @@ function slideInput(work: TextWork, slides: Slide[], uploadedBy: string): Design
     photoAssetIds: photos.length ? photos : undefined,
     cyclePhotos: Boolean(work.design.ownPhotos),
     origin: { postId: work.post.id, edit: 'text' },
+    variant: work.design.variant,
   }
 }
 
@@ -290,6 +291,7 @@ export async function previewSlideText(
     photo,
     index: input.index,
     total: slides.length,
+    variant: work.design.variant,
     outputWidth: PREVIEW_WIDTH,
     format_out: 'jpeg',
   })

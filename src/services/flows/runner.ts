@@ -10,6 +10,7 @@ import type { FlowFormat } from '@/lib/schemas/flows'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import type { PhotoSource } from '@/lib/visuals/design/catalog'
 import type { Slide } from '@/lib/visuals/design/types'
+import { variantFor } from '@/lib/visuals/design/variants'
 import { wallClock } from '@/lib/zoned-time'
 import { buildBrandContext } from '@/services/ai/text'
 import { notifyRoles, recentTexts, type StepRunner } from '@/services/autopilot/runner'
@@ -154,7 +155,8 @@ export async function runFlow(runId: string, step: StepRunner): Promise<FlowRunR
       const design = await resolveDesign(brand)
       // jedna tema za sve objave (D-125): stil toka iz ranijih verzija se više ne koristi
       const photoSource = (flow.photo_source as PhotoSource | null) ?? design.photoSource
-      return { design, styleId: design.styleId, photoSource, size: design.size }
+      // ritam teme (D-132): varijanta po prolazu toka, zapamćena u koraku
+      return { design, styleId: design.styleId, photoSource, size: design.size, variant: variantFor(runId) }
     })
     // fotografije pa slajdovi po tri, svaki deo u svom koraku (D-122: Netlify daje 30 s po zahtevu)
     const out = await renderDesignInSteps(step, {
@@ -170,6 +172,7 @@ export async function runFlow(runId: string, step: StepRunner): Promise<FlowRunR
       galleryCategoryId: flow.gallery_category_id,
       topic: [flow.topic, ...copy.slides.map((s) => s.title)].join(' '),
       origin: { flowId: flow.id, runId },
+      variant: look.variant,
     })
     const rendered = { ...look, assetIds: out.assetIds, photoIds: out.photoIds }
     const assetIds = rendered.assetIds
@@ -217,6 +220,7 @@ export async function runFlow(runId: string, step: StepRunner): Promise<FlowRunR
             photoSource: rendered.photoSource,
             size: rendered.size,
             ...themeOf(look.design),
+            variant: look.variant,
             locale,
             platforms,
             flowId: flow.id,

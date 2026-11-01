@@ -188,7 +188,15 @@ export function brandMark(ctx: DesignContext, height: number, color: string): Sa
 }
 
 /** Gornja traka: nalog levo, brojač desno. */
-export function topBar(ctx: DesignContext, color: string, opts: { font?: string; size?: number } = {}) {
+export function topBar(
+  ctx: DesignContext,
+  color: string,
+  opts: {
+    font?: string
+    size?: number
+    /** boja brojača kad desno stoji na drugoj boji */ right?: string
+  } = {},
+) {
   const s = sc(ctx)
   const size = (opts.size ?? 26) * s
   return box(
@@ -200,7 +208,7 @@ export function topBar(ctx: DesignContext, color: string, opts: { font?: string;
       color,
       letterSpacing: '0.5px',
     },
-    [text({}, handleText(ctx)), text({}, counterText(ctx))],
+    [text({}, handleText(ctx)), text(opts.right ? { color: opts.right } : {}, counterText(ctx))],
   )
 }
 

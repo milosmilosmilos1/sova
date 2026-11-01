@@ -133,6 +133,7 @@ async function prepare(postId: string): Promise<HarmonizeWork | null> {
       // fotografije koje je dao korisnik idu ukrug kao do sada; izabrane automatski se dopunjuju
       cyclePhotos: Boolean(design.ownPhotos),
       topUpPhotos: !design.ownPhotos,
+      variant: design.variant,
       origin: { postId, harmonized: 'theme' },
     },
   }

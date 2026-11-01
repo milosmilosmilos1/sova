@@ -7,7 +7,7 @@ import { getStyle, wantsPhoto, type StyleId } from '@/lib/visuals/design'
 import { photoOrder, slideRanges } from '@/lib/visuals/design/batches'
 import type { PhotoSource } from '@/lib/visuals/design/catalog'
 import { preparePhoto, renderSlide } from '@/lib/visuals/design/render'
-import type { DesignColors, DesignFormat, Slide } from '@/lib/visuals/design/types'
+import type { DesignColors, DesignFormat, Slide, ThemeVariant } from '@/lib/visuals/design/types'
 import type { StepRunner } from '@/services/autopilot/runner'
 import { downloadAsset, type MediaAssetRow } from '@/services/media'
 import { pickPexelsPhotos } from '@/services/visuals/pexels'
@@ -167,6 +167,8 @@ export interface DesignRenderInput {
   topUpPhotos?: boolean
   /** oznaka u source_data (npr. ID toka ili objave) */
   origin?: Record<string, string | null>
+  /** ritam teme (D-132): ista varijanta se čuva uz objavu i važi pri svakom ponovnom crtanju */
+  variant?: ThemeVariant
 }
 
 export interface PickedDesignPhotos {
@@ -268,6 +270,7 @@ export async function renderDesignRange(
         photo,
         index: i,
         total: input.slides.length,
+        variant: input.variant,
       })
       size = { width: rendered.width, height: rendered.height }
       const stored = storeServerImage({

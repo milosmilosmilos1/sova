@@ -42,6 +42,7 @@ export function drawnFields(input: {
       muted: '#6B7280',
     },
     fonts: { headings: 'Inter', body: 'Inter' },
+    variant: 0,
     brandName: 'Sova',
     handle: '@sova',
     logo: null,

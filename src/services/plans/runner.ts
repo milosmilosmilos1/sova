@@ -24,6 +24,7 @@ import { getTokenPrice } from '@/lib/tokens/prices'
 import { confirmReservation } from '@/lib/tokens/reservation'
 import type { Slide } from '@/lib/visuals/design/types'
 import { videoScenes } from '@/lib/visuals/design/video'
+import { variantAt } from '@/lib/visuals/design/variants'
 import { wallClock, zonedToUtc } from '@/lib/zoned-time'
 import { failGeneration, startGeneration } from '@/services/ai/generations'
 import { buildBrandContext } from '@/services/ai/text'
@@ -536,6 +537,7 @@ async function startPlanItem(itemId: string): Promise<StartedItem> {
             uploadedBy: null,
             topic: [item.topic, ...copy.slides.map((s) => s.title)].join(' '),
             origin: { planId: plan.id, itemId: item.id },
+            variant: variantAt(item.position),
           },
           draft: {
             title: (copy.slides[0]?.title ?? item.topic).slice(0, 200),
@@ -556,6 +558,8 @@ async function startPlanItem(itemId: string): Promise<StartedItem> {
               photoSource,
               size: look.size,
               ...themeOf(look),
+              // ritam teme (D-132): mesto u planu bira raspored, pa se osnovni, obrnut i udarni smenjuju
+              variant: variantAt(item.position),
               locale,
               platforms,
               copy: { slides: copy.slides as Slide[], photoAssetIds: [] },

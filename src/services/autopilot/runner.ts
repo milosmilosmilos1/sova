@@ -16,6 +16,7 @@ import {
 } from '@/lib/autopilot/rules'
 import { isFeatureEnabled } from '@/lib/flags'
 import { slidesFromText } from '@/lib/visuals/design/from-text'
+import { variantFor } from '@/lib/visuals/design/variants'
 import { videoScenes } from '@/lib/visuals/design/video'
 import { logger } from '@/lib/logger'
 import {
@@ -751,6 +752,7 @@ async function startDraft(runId: string, postId: string): Promise<DraftStart> {
             uploadedBy: null,
             topic: [topic, ...slides.map((s) => s.title)].join(' ').slice(0, 2000),
             origin: { autopilotRunId: runId, postId },
+            variant: variantFor(postId),
           },
           design: {
             topic: topic.slice(0, 2000),
@@ -761,6 +763,7 @@ async function startDraft(runId: string, postId: string): Promise<DraftStart> {
             photoSource: look.photoSource,
             size: look.size,
             ...themeOf(look),
+            variant: variantFor(postId),
             locale: toContentLocale(context.locale),
             platforms: [platform],
             copy: { slides, photoAssetIds: [] },

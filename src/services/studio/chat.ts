@@ -390,6 +390,7 @@ async function reviseStudioPost(
       photoAssetIds: design.copy.photoAssetIds.length ? design.copy.photoAssetIds : undefined,
       cyclePhotos: Boolean(design.ownPhotos),
       origin: { postId: view.id },
+      variant: design.variant,
     })
     media = rendered.assetIds.map((mediaAssetId, sortOrder) => ({ mediaAssetId, sortOrder }))
     title = slides[0]?.title.slice(0, 200)

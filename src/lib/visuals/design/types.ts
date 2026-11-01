@@ -14,6 +14,9 @@ export const DESIGN_SIZES: Record<DesignFormat, { width: number; height: number 
 
 export type SlideKind = 'cover' | 'point' | 'cta'
 
+/** Ritam teme (D-132): 0 osnovni raspored, 1 obrnut (ogledalo), 2 udarni (boja brenda u podlozi). */
+export type ThemeVariant = 0 | 1 | 2
+
 export interface Slide {
   kind: SlideKind
   /** mala oznaka iznad naslova (serija, kategorija, datum i mesto za događaj) */
@@ -51,6 +54,8 @@ export interface DesignContext {
   photo: string | null
   index: number
   total: number
+  /** varijanta ritma teme; boje su već prilagođene, a stil po njoj bira raspored (D-132) */
+  variant: ThemeVariant
 }
 
 export type PhotoUse = 'none' | 'optional' | 'cover' | 'all'

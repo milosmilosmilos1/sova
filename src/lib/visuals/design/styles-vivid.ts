@@ -65,6 +65,20 @@ function tone(ctx: DesignContext): Tone {
   return { bg, fg: readable(bg, ctx.colors.text), a1, a2, on1: readable(a1), on2: readable(a2) }
 }
 
+/**
+ * Obrnut raspored ritma teme (D-132): leva i desna strana menjaju mesta, a nagib ide na drugu stranu.
+ * `L` i `R` vraćaju položaj za osnovni raspored; u ogledalu je to suprotna strana.
+ */
+function mirror(ctx: DesignContext) {
+  const m = ctx.variant === 1
+  return {
+    m,
+    L: (v: string): Style => (m ? { right: v } : { left: v }),
+    R: (v: string): Style => (m ? { left: v } : { right: v }),
+    rot: (deg: number) => `rotate(${m ? -deg : deg}deg)`,
+  }
+}
+
 /** Apsolutno postavljen ukras (krug, traka, blok). */
 const shape = (style: Style, children?: Child | Child[]) =>
   el('div', { position: 'absolute', display: 'flex', ...style }, children)
@@ -177,12 +191,19 @@ function button(ctx: DesignContext, bg: string, fg: string) {
 }
 
 /** Dno slajda: znak brenda i strelica „prevuci”, a na poslednjem slajdu dugme. */
-function footer(ctx: DesignContext, slide: Slide, color: string, buttonBg: string, buttonFg: string) {
+function footer(
+  ctx: DesignContext,
+  slide: Slide,
+  color: string,
+  buttonBg: string,
+  buttonFg: string,
+  hint = color,
+) {
   const s = sc(ctx)
   if (slide.kind === 'cta') return button(ctx, buttonBg, buttonFg)
   return box({ justifyContent: 'space-between', alignItems: 'center' }, [
     brandMark(ctx, 50 * s, color),
-    swipeHint(ctx, color),
+    swipeHint(ctx, hint),
   ])
 }
 
@@ -363,6 +384,58 @@ const split: StyleDef = {
       lineHeight: 1.05,
       charWidth: 0.62,
     })
+    const pillStyle: Style = {
+      position: 'absolute',
+      backgroundColor: t.a1,
+      color: t.on1,
+      fontFamily: ctx.fonts.headings,
+      fontWeight: 700,
+      fontSize: px(30 * s),
+      letterSpacing: '1.5px',
+      textTransform: 'uppercase',
+      padding: `${px(14 * s)} ${px(30 * s)}`,
+      borderRadius: px(40 * s),
+      boxShadow: `0 ${px(10 * s)} ${px(24 * s)} rgba(0,0,0,0.25)`,
+    }
+    if (ctx.variant === 1) {
+      // obrnut raspored (D-132): tekst gore, fotografija dole, oznaka na desnoj ivici fotografije
+      const photoTop = Hd - topH
+      return root(ctx, { backgroundColor: t.bg, padding: px(p), color: t.fg }, [
+        ctx.photo
+          ? img(ctx.photo, {
+              position: 'absolute',
+              left: 0,
+              top: px(photoTop),
+              width: px(Wd),
+              height: px(topH),
+              objectFit: 'cover',
+            })
+          : shape({
+              left: 0,
+              top: px(photoTop),
+              width: px(Wd),
+              height: px(topH),
+              backgroundImage: `linear-gradient(315deg, ${t.a1} 0%, ${t.a2} 100%)`,
+            }),
+        ctx.photo
+          ? null
+          : circle(topH * 0.95, alpha(t.bg, 0.2), { left: px(-topH * 0.25), bottom: px(-topH * 0.3) }),
+        ctx.photo
+          ? null
+          : ring(topH * 0.42, alpha('#FFFFFF', 0.4), 14 * s, { right: px(Wd * 0.1), bottom: px(topH * 0.3) }),
+        label
+          ? text({ ...pillStyle, right: px(p), top: px(photoTop - 34 * s), transform: 'rotate(2deg)' }, label)
+          : null,
+        topBar(ctx, alpha(t.fg, 0.85)),
+        col({ gap: px(20 * s), marginTop: px(48 * s) }, [
+          heading(ctx, slide.title, titleSize, t.fg, W(ctx, p)),
+          bodyText(ctx, slide.body, alpha(t.fg, 0.88), W(ctx, p), ctx.format === 'square' ? 30 : 33),
+        ]),
+        box({ flexGrow: 1 }),
+        footer(ctx, slide, t.fg, t.a1, t.on1),
+        box({ height: px(topH - p + 48 * s) }),
+      ])
+    }
     return root(ctx, { backgroundColor: t.bg, padding: px(p), color: t.fg }, [
       ctx.photo
         ? img(ctx.photo, {
@@ -443,6 +516,7 @@ const sticker: StyleDef = {
     const ink = '#16161F'
     const accentInk = contrast(t.a1, '#FFFFFF') >= 3 ? t.a1 : ink
     const photo = slide.kind === 'cover' ? ctx.photo : null
+    const { m, L, R, rot } = mirror(ctx)
     const cardW = W(ctx, p) - 24 * s
     const inner = cardW - 112 * s
     const phW = Wd * byFormat(ctx, { portrait: 0.46, square: 0.32, story: 0.6 })
@@ -454,12 +528,12 @@ const sticker: StyleDef = {
       lineHeight: 1.06,
       charWidth: 0.62,
     })
-    const tape = (pos: Style, rot: number) =>
+    const tape = (pos: Style, deg: number) =>
       shape({
         width: px(180 * s),
         height: px(52 * s),
         backgroundColor: alpha(t.a2, 0.88),
-        transform: `rotate(${rot}deg)`,
+        transform: rot(deg),
         ...pos,
       })
     const card = col(
@@ -471,7 +545,7 @@ const sticker: StyleDef = {
         borderRadius: px(40 * s),
         padding: px(56 * s),
         gap: px(20 * s),
-        transform: 'rotate(-2deg)',
+        transform: rot(-2),
         boxShadow: `0 ${px(28 * s)} ${px(60 * s)} rgba(0,0,0,0.25)`,
         position: 'relative',
       },
@@ -493,26 +567,27 @@ const sticker: StyleDef = {
         box({ width: px(150 * s), height: px(14 * s), borderRadius: px(7 * s), backgroundColor: t.a1 }),
         bodyText(ctx, slide.body, alpha(ink, 0.78), inner, ctx.format === 'square' ? 29 : 32),
         slide.kind === 'cta' ? button(ctx, t.a1, t.on1) : null,
-        tape({ top: px(-26 * s), left: px(56 * s) }, -8),
-        tape({ top: px(-22 * s), right: px(56 * s) }, 7),
+        tape({ top: px(-26 * s), ...L(px(56 * s)) }, -8),
+        tape({ top: px(-22 * s), ...R(px(56 * s)) }, 7),
         slide.kind === 'point'
-          ? shape({ top: px(-58 * s), left: px(-26 * s) }, [numberBadge(ctx, t.a1, t.on1, 124, -10)])
+          ? shape({ top: px(-58 * s), ...L(px(-26 * s)) }, [numberBadge(ctx, t.a1, t.on1, 124, m ? 10 : -10)])
           : null,
       ],
     )
     return root(ctx, { backgroundColor: t.bg, padding: px(p), color: t.fg }, [
-      circle(Wd * 0.62, alpha(t.a1, 0.9), { left: px(-Wd * 0.26), top: px(Hd * 0.12) }),
+      circle(Wd * 0.62, alpha(t.a1, 0.9), { ...L(px(-Wd * 0.26)), top: px(Hd * 0.12) }),
+      // donji krug ostaje desno, ispod strelice: u ogledalu bi presekao ime brenda
       circle(Wd * 0.34, alpha(t.a2, 0.9), { right: px(-Wd * 0.1), bottom: px(Hd * 0.08) }),
-      ring(Wd * 0.16, alpha(t.fg, 0.25), 10 * s, { right: px(Wd * 0.1), top: px(Hd * 0.12) }),
+      ring(Wd * 0.16, alpha(t.fg, 0.25), 10 * s, { ...R(px(Wd * 0.1)), top: px(Hd * 0.12) }),
       photo
         ? col(
             {
               position: 'absolute',
               top: px(Hd * byFormat(ctx, { portrait: 0.08, square: 0.09, story: 0.08 })),
-              right: px(Wd * 0.08),
+              ...R(px(Wd * 0.08)),
               backgroundColor: '#FFFFFF',
               padding: `${px(16 * s)} ${px(16 * s)} ${px(56 * s)}`,
-              transform: 'rotate(6deg)',
+              transform: rot(6),
               boxShadow: `0 ${px(20 * s)} ${px(44 * s)} rgba(0,0,0,0.28)`,
             },
             [img(photo, { width: px(phW), height: px(phW), objectFit: 'cover' })],
@@ -568,7 +643,12 @@ const blocks: StyleDef = {
     const t = tone(ctx)
     const p = 80 * s
     const photo = slide.kind === 'cover' ? ctx.photo : null
-    const archW = Wd * byFormat(ctx, { portrait: 0.42, square: 0.3, story: 0.56 })
+    const { m, L, R, rot } = mirror(ctx)
+    // oznake na krugovima: nalog (u ogledalu brojač) je na prvom naglasku, strelica na drugom
+    const onA1 = contrast(t.a1, t.fg) >= 3 ? t.fg : t.on1
+    const onA2 = contrast(t.a2, t.fg) >= 3 ? t.fg : t.on2
+    // u ogledalu je luk sa fotografijom levo, iznad teksta: malo manji, da ne pređe preko oznake
+    const archW = Wd * byFormat(ctx, { portrait: 0.42, square: 0.3, story: 0.56 }) * (m ? 0.86 : 1)
     const archH = archW * 1.12
     const titleSize = fit(slide.title, {
       max: (slide.kind === 'point' ? 90 : photo ? 96 : 108) * s,
@@ -579,7 +659,7 @@ const blocks: StyleDef = {
       charWidth: 0.62,
     })
     const dots = col(
-      { position: 'absolute', right: px(Wd * 0.1), top: px(Hd * 0.13), gap: px(18 * s) },
+      { position: 'absolute', ...R(px(Wd * 0.1)), top: px(Hd * 0.13), gap: px(18 * s) },
       [0, 1, 2].map(() =>
         box(
           { gap: px(18 * s) },
@@ -598,12 +678,12 @@ const blocks: StyleDef = {
       ctx,
       { backgroundColor: t.bg, padding: px(p), color: t.fg, justifyContent: 'space-between' },
       [
-        circle(Wd * 0.56, t.a1, { left: px(-Wd * 0.28), top: px(-Wd * 0.28) }),
+        circle(Wd * 0.56, t.a1, { ...L(px(-Wd * 0.28)), top: px(-Wd * 0.28) }),
         circle(Wd * 0.58, t.a2, { right: px(-Wd * 0.28), bottom: px(-Wd * 0.26) }),
         photo
           ? img(photo, {
               position: 'absolute',
-              right: px(Wd * 0.08),
+              ...R(px(Wd * 0.08)),
               top: px(Hd * byFormat(ctx, { portrait: 0.11, square: 0.1, story: 0.1 })),
               width: px(archW),
               height: px(archH),
@@ -616,15 +696,15 @@ const blocks: StyleDef = {
         photo
           ? null
           : shape({
-              right: px(Wd * 0.3),
+              ...R(px(Wd * 0.3)),
               top: px(Hd * 0.2),
               width: px(86 * s),
               height: px(86 * s),
               backgroundColor: alpha(t.fg, 0.85),
-              transform: 'rotate(18deg)',
+              transform: rot(18),
             }),
-        shape({ left: px(p), top: px(Hd * 0.15) }, [zigzag(220 * s, 40 * s, t.a1, 10 * s)]),
-        topBar(ctx, contrast(t.a1, t.fg) >= 3 ? t.fg : readable(t.a1)),
+        shape({ ...L(px(p)), top: px(Hd * 0.15) }, [zigzag(220 * s, 40 * s, t.a1, 10 * s)]),
+        topBar(ctx, m ? t.fg : onA1, { right: m ? onA1 : t.fg }),
         // tekst je na dnu, ispod fotografije u luku
         box({ flexGrow: 1 }),
         col({ gap: px(24 * s) }, [
@@ -649,7 +729,7 @@ const blocks: StyleDef = {
           bodyText(ctx, slide.body, alpha(t.fg, 0.88), W(ctx, p) * 0.6, ctx.format === 'square' ? 29 : 33),
         ]),
         box({ height: px(40 * s) }),
-        footer(ctx, slide, t.fg, t.fg, t.bg),
+        footer(ctx, slide, t.fg, t.fg, t.bg, onA2),
       ],
     )
   },
@@ -667,6 +747,7 @@ const aurora: StyleDef = {
     const t = tone(ctx)
     const p = 72 * s
     const photo = slide.kind === 'cover' ? ctx.photo : null
+    const { m } = mirror(ctx)
     const dark = isDark(t.bg)
     const inner = W(ctx, p) - 112 * s
     const phH = Hd * byFormat(ctx, { portrait: 0.3, square: 0.24, story: 0.34 })
@@ -688,42 +769,44 @@ const aurora: StyleDef = {
       lineHeight: 1.06,
       charWidth: 0.62,
     })
+    const photoNode = photo
+      ? img(photo, {
+          [m ? 'marginBottom' : 'marginTop']: px(36 * s),
+          width: px(W(ctx, p)),
+          height: px(phH),
+          objectFit: 'cover',
+          borderRadius: px(40 * s),
+          boxShadow: `0 ${px(24 * s)} ${px(50 * s)} rgba(0,0,0,0.3)`,
+        })
+      : null
+    const panel = col(
+      {
+        backgroundColor: dark ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.55)',
+        border: `${px(2 * s)} solid rgba(255,255,255,0.5)`,
+        borderRadius: px(48 * s),
+        padding: px(56 * s),
+        gap: px(20 * s),
+      },
+      [
+        slide.kind === 'point' ? numberBadge(ctx, t.a1, t.on1, 104) : pill(ctx, slide.kicker, t.a1, t.on1),
+        heading(ctx, slide.title, titleSize, t.fg, inner),
+        bodyText(ctx, slide.body, alpha(t.fg, 0.88), inner, ctx.format === 'square' ? 29 : 32),
+        slide.kind === 'cta' ? button(ctx, t.fg, t.bg) : null,
+      ],
+    )
+    const bottom = box({ justifyContent: 'space-between', alignItems: 'center' }, [
+      brandMark(ctx, 46 * s, t.fg),
+      swipeHint(ctx, t.fg),
+    ])
     return root(ctx, { backgroundColor: t.bg, padding: px(p), color: t.fg }, [
-      glow(10, 12, t.a1, 50),
-      glow(92, 24, t.a2, 52),
-      glow(55, 100, mix(t.a1, t.a2, 0.5), 52),
+      glow(m ? 90 : 10, 12, t.a1, 50),
+      glow(m ? 8 : 92, 24, t.a2, 52),
+      glow(m ? 45 : 55, 100, mix(t.a1, t.a2, 0.5), 52),
       topBar(ctx, alpha(t.fg, 0.85)),
-      photo
-        ? img(photo, {
-            marginTop: px(36 * s),
-            width: px(W(ctx, p)),
-            height: px(phH),
-            objectFit: 'cover',
-            borderRadius: px(40 * s),
-            boxShadow: `0 ${px(24 * s)} ${px(50 * s)} rgba(0,0,0,0.3)`,
-          })
-        : null,
-      box({ flexGrow: 1 }),
-      col(
-        {
-          backgroundColor: dark ? 'rgba(255,255,255,0.14)' : 'rgba(255,255,255,0.55)',
-          border: `${px(2 * s)} solid rgba(255,255,255,0.5)`,
-          borderRadius: px(48 * s),
-          padding: px(56 * s),
-          gap: px(20 * s),
-        },
-        [
-          slide.kind === 'point' ? numberBadge(ctx, t.a1, t.on1, 104) : pill(ctx, slide.kicker, t.a1, t.on1),
-          heading(ctx, slide.title, titleSize, t.fg, inner),
-          bodyText(ctx, slide.body, alpha(t.fg, 0.88), inner, ctx.format === 'square' ? 29 : 32),
-          slide.kind === 'cta' ? button(ctx, t.fg, t.bg) : null,
-        ],
-      ),
-      box({ minHeight: px(36 * s) }),
-      box({ justifyContent: 'space-between', alignItems: 'center' }, [
-        brandMark(ctx, 46 * s, t.fg),
-        swipeHint(ctx, t.fg),
-      ]),
+      ...(m
+        ? // obrnut raspored (D-132): ploča sa tekstom gore, fotografija dole
+          [box({ minHeight: px(36 * s) }), panel, box({ flexGrow: 1 }), photoNode, bottom]
+        : [photoNode, box({ flexGrow: 1 }), panel, box({ minHeight: px(36 * s) }), bottom]),
     ])
   },
 }

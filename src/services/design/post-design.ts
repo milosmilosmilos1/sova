@@ -41,6 +41,8 @@ export const postDesignSchema = z.object({
   colors: designColorsSchema.optional(),
   /** font u kom je objava nacrtana (D-125) */
   fonts: fontPairSchema.optional(),
+  /** ritam teme (D-132): 0 osnovni, 1 obrnut, 2 udarni raspored; bez nje (starije objave) osnovni */
+  variant: z.union([z.literal(0), z.literal(1), z.literal(2)]).optional(),
   copy: z
     .object({
       slides: z.array(designSlideSchema).min(1).max(10),

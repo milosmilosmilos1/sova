@@ -435,6 +435,7 @@ export async function regeneratePost(viewer: Viewer, postId: string, version: nu
     cyclePhotos: Boolean(ctx.ownPhotos),
     topUpPhotos: !ctx.ownPhotos,
     origin: { postId },
+    variant: ctx.variant,
   })
   const updated = await updatePost(viewer, postId, {
     version: view.version,

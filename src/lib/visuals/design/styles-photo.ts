@@ -66,14 +66,14 @@ function backdrop(ctx: DesignContext, fallback?: string) {
   })
 }
 
-const shade = (ctx: DesignContext, from: number, to: number) =>
+const shade = (ctx: DesignContext, from: number, to: number, angle = 180) =>
   el('div', {
     position: 'absolute',
     left: 0,
     top: 0,
     width: px(ctx.size.width),
     height: px(ctx.size.height),
-    backgroundImage: `linear-gradient(180deg, ${alpha('#000000', from)} 0%, ${alpha('#000000', from)} 35%, ${alpha('#000000', to)} 100%)`,
+    backgroundImage: `linear-gradient(${angle}deg, ${alpha('#000000', from)} 0%, ${alpha('#000000', from)} 35%, ${alpha('#000000', to)} 100%)`,
   })
 
 // Poster: fotografija preko celog kadra, tamni preliv i naslov pri dnu ----------------------------
@@ -93,72 +93,95 @@ const poster: StyleDef = {
       lineHeight: 1.02,
       charWidth: 0.62,
     })
-    return root(ctx, { padding: px(p), color: '#ffffff', justifyContent: 'space-between' }, [
+    // ritam teme (D-132): udarni poster je fotografija obojena bojom brenda (boja je tada u podlozi)
+    const tint = ctx.variant === 2 ? ctx.colors.background : null
+    const fg = tint ? readable(tint) : '#ffffff'
+    const words = [
+      text(
+        {
+          fontFamily: ctx.fonts.body,
+          fontWeight: 700,
+          fontSize: px(24 * s),
+          letterSpacing: '3px',
+          textTransform: 'uppercase',
+          color: tint ? alpha(fg, 0.85) : mix(ctx.colors.primary, '#ffffff', 0.35),
+        },
+        slide.kicker,
+      ),
+      text(
+        {
+          fontFamily: ctx.fonts.headings,
+          fontWeight: 700,
+          fontSize: px(titleSize),
+          lineHeight: 1.02,
+          textTransform: 'uppercase',
+          width: px(W(ctx, p)),
+        },
+        slide.title,
+      ),
+      text(
+        {
+          fontFamily: ctx.fonts.body,
+          fontSize: px(30 * s),
+          lineHeight: 1.4,
+          color: alpha(fg, 0.88),
+          width: px(W(ctx, p) * 0.85),
+        },
+        slide.body,
+      ),
+    ]
+    const bottomRow = box({ justifyContent: 'space-between', alignItems: 'flex-end' }, [
+      slide.kind === 'cta'
+        ? text(
+            {
+              backgroundColor: ctx.colors.primary,
+              color: readable(ctx.colors.primary),
+              fontFamily: ctx.fonts.body,
+              fontWeight: 700,
+              fontSize: px(28 * s),
+              padding: `${px(14 * s)} ${px(30 * s)}`,
+              borderRadius: px(40 * s),
+            },
+            handleText(ctx),
+          )
+        : swipeHint(ctx, fg),
+      ctx.total > 1
+        ? text(
+            {
+              fontFamily: ctx.fonts.headings,
+              fontWeight: 700,
+              fontSize: px(150 * s),
+              lineHeight: 0.85,
+              color: alpha(fg, 0.18),
+            },
+            String(ctx.index + 1).padStart(2, '0'),
+          )
+        : null,
+    ])
+    if (ctx.variant === 1)
+      // obrnut raspored (D-132): tamni preliv i tekst gore, poziv i broj slajda dole
+      return root(ctx, { padding: px(p), color: fg }, [
+        backdrop(ctx),
+        shade(ctx, 0.15, 0.85, 0),
+        topBar(ctx, alpha(fg, 0.85)),
+        col({ gap: px(20 * s), marginTop: px(40 * s) }, words),
+        box({ flexGrow: 1 }),
+        bottomRow,
+      ])
+    return root(ctx, { padding: px(p), color: fg, justifyContent: 'space-between' }, [
       backdrop(ctx),
-      shade(ctx, 0.15, 0.85),
-      topBar(ctx, alpha('#ffffff', 0.85)),
-      col({ gap: px(20 * s) }, [
-        text(
-          {
-            fontFamily: ctx.fonts.body,
-            fontWeight: 700,
-            fontSize: px(24 * s),
-            letterSpacing: '3px',
-            textTransform: 'uppercase',
-            color: mix(ctx.colors.primary, '#ffffff', 0.35),
-          },
-          slide.kicker,
-        ),
-        text(
-          {
-            fontFamily: ctx.fonts.headings,
-            fontWeight: 700,
-            fontSize: px(titleSize),
-            lineHeight: 1.02,
-            textTransform: 'uppercase',
-            width: px(W(ctx, p)),
-          },
-          slide.title,
-        ),
-        text(
-          {
-            fontFamily: ctx.fonts.body,
-            fontSize: px(30 * s),
-            lineHeight: 1.4,
-            color: alpha('#ffffff', 0.88),
-            width: px(W(ctx, p) * 0.85),
-          },
-          slide.body,
-        ),
-        box({ justifyContent: 'space-between', alignItems: 'flex-end' }, [
-          slide.kind === 'cta'
-            ? text(
-                {
-                  backgroundColor: ctx.colors.primary,
-                  color: readable(ctx.colors.primary),
-                  fontFamily: ctx.fonts.body,
-                  fontWeight: 700,
-                  fontSize: px(28 * s),
-                  padding: `${px(14 * s)} ${px(30 * s)}`,
-                  borderRadius: px(40 * s),
-                },
-                handleText(ctx),
-              )
-            : swipeHint(ctx, '#ffffff'),
-          ctx.total > 1
-            ? text(
-                {
-                  fontFamily: ctx.fonts.headings,
-                  fontWeight: 700,
-                  fontSize: px(150 * s),
-                  lineHeight: 0.85,
-                  color: alpha('#ffffff', 0.18),
-                },
-                String(ctx.index + 1).padStart(2, '0'),
-              )
-            : null,
-        ]),
-      ]),
+      tint
+        ? el('div', {
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            width: px(ctx.size.width),
+            height: px(ctx.size.height),
+            backgroundImage: `linear-gradient(180deg, ${alpha(tint, 0.45)} 0%, ${alpha(tint, 0.62)} 40%, ${alpha(tint, 0.94)} 100%)`,
+          })
+        : shade(ctx, 0.15, 0.85),
+      topBar(ctx, alpha(fg, 0.85)),
+      col({ gap: px(20 * s) }, [...words, bottomRow]),
     ])
   },
 }
@@ -404,7 +427,8 @@ const framed: StyleDef = {
     const bg = ctx.colors.background
     const strip = ctx.colors.primary
     const onStrip = readable(strip)
-    const photoH = ctx.size.height * 0.56
+    const mirrored = ctx.variant === 1
+    const photoH = ctx.size.height * (mirrored ? 0.5 : 0.56)
     const titleSize = fit(slide.title, {
       max: 66 * s,
       min: 36 * s,
@@ -412,72 +436,75 @@ const framed: StyleDef = {
       height: ctx.size.height * 0.16 * tall(ctx),
       lineHeight: 1.08,
     })
+    const frame = col({ position: 'relative' }, [
+      box(
+        {
+          backgroundColor: '#ffffff',
+          padding: px(18 * s),
+          boxShadow: `0 ${px(14 * s)} ${px(40 * s)} ${alpha('#000000', 0.18)}`,
+        },
+        [
+          ctx.photo
+            ? img(ctx.photo, { width: px(W(ctx, p) - 36 * s), height: px(photoH), objectFit: 'cover' })
+            : el('div', {
+                width: px(W(ctx, p) - 36 * s),
+                height: px(photoH),
+                backgroundImage: `linear-gradient(135deg, ${mix(strip, '#ffffff', 0.5)}, ${ctx.colors.secondary})`,
+              }),
+        ],
+      ),
+      col(
+        {
+          marginTop: px(-90 * s),
+          marginLeft: px((mirrored ? 96 : 36) * s),
+          marginRight: px((mirrored ? -12 : 36) * s),
+          backgroundColor: strip,
+          color: onStrip,
+          padding: `${px(34 * s)} ${px(36 * s)}`,
+          gap: px(12 * s),
+        },
+        [
+          text(
+            {
+              fontFamily: ctx.fonts.body,
+              fontWeight: 700,
+              fontSize: px(20 * s),
+              letterSpacing: '3px',
+              textTransform: 'uppercase',
+              opacity: 0.85,
+            },
+            slide.kind === 'point' ? pointNumber(ctx) : slide.kicker,
+          ),
+          text(
+            { fontFamily: ctx.fonts.headings, fontWeight: 700, fontSize: px(titleSize), lineHeight: 1.08 },
+            slide.title,
+          ),
+        ],
+      ),
+    ])
+    const body = text(
+      {
+        fontFamily: ctx.fonts.body,
+        fontSize: px(28 * s),
+        lineHeight: 1.45,
+        color: mix(readable(bg), bg, 0.25),
+      },
+      slide.body,
+    )
+    const bottomRow = box({ justifyContent: 'space-between', alignItems: 'center' }, [
+      slide.kind === 'cta'
+        ? text(
+            { fontFamily: ctx.fonts.body, fontWeight: 700, fontSize: px(30 * s), color: strip },
+            handleText(ctx),
+          )
+        : brandMark(ctx, 40 * s, readable(bg)),
+      swipeHint(ctx, strip),
+    ])
     return root(ctx, { backgroundColor: bg, padding: px(p), justifyContent: 'space-between' }, [
       topBar(ctx, mix(readable(bg), bg, 0.4)),
-      col({ position: 'relative' }, [
-        box(
-          {
-            backgroundColor: '#ffffff',
-            padding: px(18 * s),
-            boxShadow: `0 ${px(14 * s)} ${px(40 * s)} ${alpha('#000000', 0.18)}`,
-          },
-          [
-            ctx.photo
-              ? img(ctx.photo, { width: px(W(ctx, p) - 36 * s), height: px(photoH), objectFit: 'cover' })
-              : el('div', {
-                  width: px(W(ctx, p) - 36 * s),
-                  height: px(photoH),
-                  backgroundImage: `linear-gradient(135deg, ${mix(strip, '#ffffff', 0.5)}, ${ctx.colors.secondary})`,
-                }),
-          ],
-        ),
-        col(
-          {
-            marginTop: px(-90 * s),
-            marginLeft: px(36 * s),
-            marginRight: px(36 * s),
-            backgroundColor: strip,
-            color: onStrip,
-            padding: `${px(34 * s)} ${px(36 * s)}`,
-            gap: px(12 * s),
-          },
-          [
-            text(
-              {
-                fontFamily: ctx.fonts.body,
-                fontWeight: 700,
-                fontSize: px(20 * s),
-                letterSpacing: '3px',
-                textTransform: 'uppercase',
-                opacity: 0.85,
-              },
-              slide.kind === 'point' ? pointNumber(ctx) : slide.kicker,
-            ),
-            text(
-              { fontFamily: ctx.fonts.headings, fontWeight: 700, fontSize: px(titleSize), lineHeight: 1.08 },
-              slide.title,
-            ),
-          ],
-        ),
-      ]),
-      text(
-        {
-          fontFamily: ctx.fonts.body,
-          fontSize: px(28 * s),
-          lineHeight: 1.45,
-          color: mix(readable(bg), bg, 0.25),
-        },
-        slide.body,
-      ),
-      box({ justifyContent: 'space-between', alignItems: 'center' }, [
-        slide.kind === 'cta'
-          ? text(
-              { fontFamily: ctx.fonts.body, fontWeight: 700, fontSize: px(30 * s), color: strip },
-              handleText(ctx),
-            )
-          : brandMark(ctx, 40 * s, readable(bg)),
-        swipeHint(ctx, strip),
-      ]),
+      // obrnut raspored (D-132): tekst iznad uramljene fotografije, traka naslova pomerena udesno
+      ...(mirrored ? [body, frame] : [frame, body]),
+      bottomRow,
     ])
   },
 }

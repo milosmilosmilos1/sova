@@ -16,7 +16,9 @@ import {
   type FontChoice,
   type Slide,
   type StyleDef,
+  type ThemeVariant,
 } from './types'
+import { variantColors } from './variants'
 
 /**
  * Render slajda (D-108): stil → Satori stablo → SVG → PNG (resvg) → JPEG. Fontovi stila se
@@ -36,6 +38,8 @@ export interface SlideRenderInput {
   photo: string | null
   index: number
   total: number
+  /** ritam teme (D-132); bez nje osnovni raspored */
+  variant?: ThemeVariant
   /** širina izlaza; pregled u biraču je manji od pune veličine */
   outputWidth?: number
   format_out?: 'jpeg' | 'png'
@@ -65,10 +69,11 @@ export async function renderSlide(input: SlideRenderInput): Promise<SlideRenderR
     headings: loaded.available.has(want.headings) ? want.headings : BUNDLED_FAMILY,
     body: loaded.available.has(want.body) ? want.body : BUNDLED_FAMILY,
   }
+  const variant = input.variant ?? 0
   const ctx: DesignContext = {
     format: input.format,
     size,
-    colors: input.colors,
+    colors: variantColors(input.colors, variant),
     fonts,
     brandName: input.brandName,
     handle: input.handle,
@@ -76,6 +81,7 @@ export async function renderSlide(input: SlideRenderInput): Promise<SlideRenderR
     photo: input.photo,
     index: input.index,
     total: input.total,
+    variant,
   }
   // stil sa sopstvenim fontom (npr. uski Oswald) je veličinu naslova podesio za taj font
   const designed = style.fonts.headings

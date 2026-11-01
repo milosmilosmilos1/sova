@@ -1291,6 +1291,7 @@ alter table posts add column design jsonb;          -- kontekst za „Generiši 
 -- posts.design.colors {primary, secondary, background, text, muted} i fonts {headings, body}: tema u kojoj je objava nacrtana (D-121, D-125); po njima „Uskladi sa temom” zna da li je objava u trenutnoj temi brenda
 -- posts.design.format = 'video' i video {clipAssetIds, overlayAssetIds, seconds, posterAssetId, renderedAssetId}: video u temi (D-128); copy.slides su kadrovi, slojevi teksta su PNG sa providnošću, renderedAssetId je MP4 iz pregledača (bez njega nema zakazivanja)
 -- posts.design.copy.slides menja i korisnik kroz „Tekst na slikama” (D-129): vrsta slajda ostaje, a ponovo se crtaju samo izmenjeni slajdovi (izvor 'template', source_data.edit = 'text')
+-- posts.design.variant 0 | 1 | 2: ritam teme (D-132), osnovni, obrnut ili udarni raspored u istoj temi; design.colors ostaju boje teme, a varijanta menja boje tek pri crtanju; bez nje (starije objave i video) osnovni
 
 -- glas brenda, uvod i PDF o brendu (migracija 033, D-112)
 alter table brands add column voice jsonb not null default '{}';   -- offer, audience, tone, usp, avoid, cta, topics[] (do 8), updated_at, updated_by

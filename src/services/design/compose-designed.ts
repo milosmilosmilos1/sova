@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { randomUUID } from 'node:crypto'
+
 import { toContentLocale } from '@/config/locales'
 import type { SocialPlatform } from '@/config/platforms'
 import { formatFor, type PostFormat } from '@/config/post-formats'
@@ -11,6 +13,7 @@ import { wallClock } from '@/lib/zoned-time'
 import { styleForPhotos } from '@/lib/visuals/design'
 import type { StyleId } from '@/lib/visuals/design/catalog'
 import type { Slide } from '@/lib/visuals/design/types'
+import { variantFor } from '@/lib/visuals/design/variants'
 import { assertDailyQuota } from '@/services/ai/generations'
 import { buildBrandContext } from '@/services/ai/text'
 import type { BrandRow } from '@/services/brands'
@@ -107,6 +110,8 @@ export async function composeDesigned(
           ? 'carousel'
           : 'image'
   const baseStyle = input.styleId ?? design.styleId
+  // ritam teme (D-132); stil koji je korisnik izričito izabrao za ovu objavu ostaje u osnovnom rasporedu
+  const variant = input.styleId ? 0 : variantFor(randomUUID())
   // priložena fotografija traži stil koji je crta: tipografski stil bez fotografije prelazi na „Poster”
   const styleId: StyleId = styleForPhotos(baseStyle, photoIds.length > 0)
   const rendered = await renderDesignSlides({
@@ -121,6 +126,7 @@ export async function composeDesigned(
     uploadedBy: viewer.user.id,
     photoAssetIds: photoIds.length ? photoIds : undefined,
     cyclePhotos: photoIds.length > 0,
+    variant,
   })
   const notes = [...rendered.notes]
   if (format === 'story') notes.push('Priča nema opis: tekst je sačuvan uz nacrt, a objavljuju se slajdovi.')
@@ -160,6 +166,7 @@ export async function composeDesigned(
     photoSource: input.photoSource ?? design.photoSource,
     size: input.size ?? design.size,
     ...themeOf(design),
+    variant,
     locale,
     platforms,
     ...(photoIds.length ? { ownPhotos: true } : {}),
