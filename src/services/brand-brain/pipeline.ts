@@ -521,6 +521,18 @@ async function storeLogo(job: AnalysisJob, logo: LogoResult): Promise<VisualStep
   const usePng = !LOGO_MIME_OK.has(logo.mimeType)
   const bytes = usePng ? logo.png : logo.bytes
   const mimeType = usePng ? 'image/png' : logo.mimeType
+  const sha256 = createHash('sha256').update(bytes).digest('hex')
+  // isti logo kao pri prošloj analizi ostaje ista slika: objave nacrtane njime ostaju u temi
+  const { data: same } = await admin
+    .from('media_assets')
+    .select('id, mime_type')
+    .eq('brand_id', job.brandId)
+    .eq('sha256', sha256)
+    .is('deleted_at', null)
+    .order('created_at', { ascending: true })
+    .limit(1)
+    .maybeSingle()
+  if (same) return { assetId: same.id, sourceUrl: logo.sourceUrl, mimeType: same.mime_type }
   const ext =
     mimeType === 'image/svg+xml'
       ? 'svg'
@@ -550,7 +562,7 @@ async function storeLogo(job: AnalysisJob, logo: LogoResult): Promise<VisualStep
     size_bytes: bytes.length,
     width: logo.width,
     height: logo.height,
-    sha256: createHash('sha256').update(bytes).digest('hex'),
+    sha256,
     alt_text: 'Logo',
     tags: ['logo'],
     attribution: { source: 'website', url: logo.sourceUrl, reason: logo.reason },

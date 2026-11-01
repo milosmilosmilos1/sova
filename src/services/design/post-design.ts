@@ -43,6 +43,8 @@ export const postDesignSchema = z.object({
   fonts: fontPairSchema.optional(),
   /** ritam teme (D-132): 0 osnovni, 1 obrnut, 2 udarni raspored; bez nje (starije objave) osnovni */
   variant: z.union([z.literal(0), z.literal(1), z.literal(2)]).optional(),
+  /** logo kojim je objava nacrtana (`null`: bez logoa); starije objave ga nemaju */
+  logoAssetId: z.uuid().nullable().optional(),
   copy: z
     .object({
       slides: z.array(designSlideSchema).min(1).max(10),
@@ -77,12 +79,13 @@ export function parsePostDesign(value: unknown): PostDesignContext | null {
 }
 
 /**
- * Tema u kojoj se objava crta (D-125): boje i font brenda u trenutku crtanja. Čuva se uz objavu, pa
- * „Uskladi nacrte” zna koje objave nisu u trenutnoj temi.
+ * Tema u kojoj se objava crta (D-125): boje, font i logo brenda u trenutku crtanja. Čuva se uz
+ * objavu, pa „Uskladi nacrte” zna koje objave nisu u trenutnoj temi (i kad se promeni logo).
  */
 export function themeOf(design: {
   colors: PostDesignContext['colors'] & object
   fonts: { headings: string; body: string }
-}): Pick<PostDesignContext, 'colors' | 'fonts'> {
-  return { colors: design.colors, fonts: design.fonts }
+  logoAssetId: string | null
+}): Pick<PostDesignContext, 'colors' | 'fonts' | 'logoAssetId'> {
+  return { colors: design.colors, fonts: design.fonts, logoAssetId: design.logoAssetId }
 }

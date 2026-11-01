@@ -297,3 +297,35 @@ describe('sanitizeSvg', () => {
     expect(() => sanitizeSvg('<html></html>')).toThrow()
   })
 })
+
+describe('logo sajta, ne logo klijenta (1.11.2026)', () => {
+  it('logo iz JSON-LD-a zadat referencom se razrešava, a logoi klijenata se preskaču', () => {
+    const html = `<!doctype html><html><head><meta property="og:site_name" content="TangerineSEO">
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://t.test/#org","name":"TangerineSEO","logo":{"@id":"https://t.test/#logo"}},{"@type":"ImageObject","@id":"https://t.test/#logo","url":"https://t.test/logo-mark.svg"}]}</script></head>
+<body><header><a class="site__logo" href="/"><svg viewBox="0 0 10 10"></svg> TangerineSEO</a></header>
+<main><section class="clients"><img src="/uploads/klijent-01.webp" alt="Logo klijenta Altema"><img src="/uploads/klijent-02.webp" alt="Logo klijenta Maxmoment"></section>
+<p><img src="/uploads/nagrada.png" alt="Logo nagrade za dizajn"></p></main></body></html>`
+    const page = extractPage(html, 'https://t.test/', 200)
+    expect(page.logoCandidates.map((c) => [c.src, c.reason])).toEqual([
+      ['https://t.test/logo-mark.svg', 'json-ld'],
+    ])
+  })
+
+  it('bez JSON-LD-a logo iz zaglavlja ide pre trake logoa i načina plaćanja, a „partner” u imenu sajta ne smeta', () => {
+    const html = `<!doctype html><html><head><title>Partner Servis</title></head><body>
+<header><a href="/"><img src="/img/partner-servis.png" alt="Partner Servis" width="180" height="50"></a></header>
+<main><div class="row"><img src="/a.png" alt="Acme logo"><img src="/b.png" alt="Beta logo"><img src="/c.png" alt="Gama logo"></div>
+<p><img src="/blog/logo-saveti.jpg" alt="Kako da izaberete logo"></p></main>
+<footer><img src="/visa-logo.png" alt="Visa"><img src="/mc-logo.png" alt="Mastercard"><img src="/paypal-logo.png" alt="PayPal"></footer></body></html>`
+    const page = extractPage(html, 'https://partner-servis.test/', 200)
+    expect(page.logoCandidates[0]).toMatchObject({
+      src: 'https://partner-servis.test/img/partner-servis.png',
+      reason: 'header-home-link',
+    })
+    // slika iz teksta sa rečju „logo” je tek iza logoa iz zaglavlja; traka logoa i plaćanja ne ulaze
+    expect(page.logoCandidates.map((c) => c.src)).toEqual([
+      'https://partner-servis.test/img/partner-servis.png',
+      'https://partner-servis.test/blog/logo-saveti.jpg',
+    ])
+  })
+})

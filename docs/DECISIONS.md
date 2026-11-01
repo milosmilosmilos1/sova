@@ -1098,3 +1098,14 @@ Odluka:
 - Varijanta se čuva u dizajnu objave (`posts.design.variant`), a boje u dizajnu ostaju boje teme, pa „Uskladi sa temom” i dalje prepoznaje objavu kao usklađenu. „Generiši ponovo”, izmena u Studiju, tekst na slikama i usklađivanje crtaju u istoj varijanti. Starije objave bez varijante ostaju osnovne. Video u temi ostaje u osnovnom rasporedu.
 
 Razlog: vlasnik je primetio da posle jedne teme za sve objave (D-125) nacrti u Odobravanju liče jedan na drugi. Ritam čuva prepoznatljiv izgled brenda, a feed na svakih par objava dobije promenu, kao serija koju pravi dizajner.
+
+## D-133 · 1.11.2026 · usvojeno · Logo sajta, ne logo klijenta; logo je deo teme
+
+Odluka:
+
+- Sova bira logo sajta ovim redom: logo firme iz JSON-LD-a (Organization, LocalBusiness, WebSite), i kad je zadat referencom (`{"@id": "…#logo"}`, kako ga pišu Rank Math i Yoast); slika sa rečju „logo” u zaglavlju; slika u zaglavlju koja vodi na naslovnu; ista takva u podnožju; slika sa rečju „logo” negde drugde; ikone sajta.
+- Logo nekog drugog se ne uzima: slika ili deo strane koji pominje klijente, partnere, sponzore, reference, sertifikate, nagrade ili načine plaćanja, i slika koja stoji u nizu sa još bar dva logoa (traka klijenata, kartice za plaćanje). Ime sajta u opisu slike ne smeta (sajt „Partner Servis”), a slika sa imenom sajta dobija prednost.
+- Ponovna analiza sajta koristi istu sliku logoa kad je logo isti (ista slika istog brenda), umesto nove slike pri svakoj analizi.
+- Logo je deo teme: objava pamti logo kojim je nacrtana (`posts.design.logoAssetId`), a „Uskladi sa temom” nudi nacrte nacrtane drugim logoom. Starija objava bez zapamćenog logoa je van teme kad je trenutni logo brenda postavljen posle nje.
+
+Razlog: tangerineseo.rs ima traku logoa klijenata („Logo klijenta Altema” i još devet), a pravi logo je SVG u zaglavlju i u JSON-LD-u kao referenca. Sova je za brend TangerineSEO uzela logo klijenta Altema i ucrtala ga u nacrte; na tangerineseo.com logo iz istog razloga nije ni nađen.

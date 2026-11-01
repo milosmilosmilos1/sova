@@ -41,26 +41,51 @@ const upper = (c: Record<string, string> | undefined) =>
       )
     : ''
 
-/** Da li je objava nacrtana u temi: isti stil, boje i font. Objava bez zapamćenih boja nije. */
-export function inTheme(design: PostDesignContext, theme: ResolvedDesign): boolean {
+/**
+ * Da li je objava nacrtana u temi: isti stil, boje, font i logo. Objava bez zapamćenih boja nije.
+ * Starija objava bez zapamćenog logoa je van teme kad je trenutni logo brenda postavljen posle nje
+ * (`drawn.logoSince`): nacrtana je sa drugim logoom ili bez njega (tuđi logo sa sajta, 1.11.2026).
+ */
+export function inTheme(
+  design: PostDesignContext,
+  theme: ResolvedDesign,
+  drawn?: { createdAt: string; logoSince: string | null },
+): boolean {
   const style =
     design.format === 'video'
       ? videoStyleFor(theme.styleId)
       : styleForPhotos(theme.styleId, Boolean(design.ownPhotos))
+  const logo =
+    design.logoAssetId !== undefined
+      ? design.logoAssetId === theme.logoAssetId
+      : !(drawn?.logoSince && Date.parse(drawn.logoSince) > Date.parse(drawn.createdAt))
   return (
     design.styleId === style &&
     upper(design.colors) === upper(theme.colors as unknown as Record<string, string>) &&
     design.fonts?.headings === theme.fonts.headings &&
-    design.fonts?.body === theme.fonts.body
+    design.fonts?.body === theme.fonts.body &&
+    logo
   )
+}
+
+/** Kad je postavljen trenutni logo brenda (slika u biblioteci); bez logoa `null`. */
+async function logoSince(logoAssetId: string | null): Promise<string | null> {
+  if (!logoAssetId) return null
+  const { data } = await createSupabaseAdminClient()
+    .from('media_assets')
+    .select('created_at')
+    .eq('id', logoAssetId)
+    .maybeSingle()
+  return data?.created_at ?? null
 }
 
 /** Nacrti koji čekaju, imaju tekst slajdova (pa mogu da se nacrtaju ponovo) i nisu u temi. */
 export async function offThemeDrafts(brand: BrandRow): Promise<string[]> {
   const theme = await resolveDesign(brand)
+  const since = await logoSince(theme.logoAssetId)
   const { data } = await createSupabaseAdminClient()
     .from('posts')
-    .select('id, design')
+    .select('id, design, created_at')
     .eq('brand_id', brand.id)
     .is('deleted_at', null)
     .in('status', [...PENDING])
@@ -70,7 +95,10 @@ export async function offThemeDrafts(brand: BrandRow): Promise<string[]> {
   return (data ?? [])
     .filter((p) => {
       const design = parsePostDesign(p.design)
-      return Boolean(design?.copy?.slides.length) && !inTheme(design!, theme)
+      return (
+        Boolean(design?.copy?.slides.length) &&
+        !inTheme(design!, theme, { createdAt: p.created_at, logoSince: since })
+      )
     })
     .map((p) => p.id)
 }
@@ -114,7 +142,8 @@ async function prepare(postId: string): Promise<HarmonizeWork | null> {
   const { data: brand } = await admin.from('brands').select('*').eq('id', post.brand_id).single()
   if (!brand) return null
   const theme = await resolveDesign(brand)
-  if (inTheme(design, theme)) return null
+  if (inTheme(design, theme, { createdAt: post.created_at, logoSince: await logoSince(theme.logoAssetId) }))
+    return null
   return {
     version: post.version,
     design,

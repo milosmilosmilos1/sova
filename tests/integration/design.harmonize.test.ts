@@ -1,3 +1,4 @@
+import sharp from 'sharp'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 
 vi.mock(import('@/lib/jobs/enqueue'), async (importOriginal) => ({
@@ -14,6 +15,7 @@ import type { StepRunner } from '@/services/autopilot/runner'
 import { resolveDesign } from '@/services/design/brand-design'
 import { harmonizePost, offThemeDraftIds } from '@/services/design/harmonize'
 import { renderDesignSlides } from '@/services/design/render-post'
+import { storeServerImage } from '@/services/visuals/store'
 import type { Json } from '@/types/database'
 
 import { geminiServer } from './gemini-mock'
@@ -244,5 +246,29 @@ describe('jedna tema za sve objave (D-125)', () => {
       .eq('source_data->>harmonized', 'theme')
     expect(leftovers!.length).toBeGreaterThan(0)
     expect(leftovers!.every((a) => a.deleted_at)).toBe(true)
+  })
+
+  it('nov logo brenda: nacrt nacrtan pre njega nije u temi, a posle usklađivanja pamti logo', async () => {
+    // nacrt u temi, a logo stiže tek posle njega (kao kad Sova ispravi tuđi logo sa sajta)
+    const themed = await draft('in_review', 'theme')
+    expect(await offThemeDraftIds(brandId)).not.toContain(themed.id)
+    const png = await sharp({ create: { width: 240, height: 80, channels: 4, background: '#C8102E' } })
+      .png()
+      .toBuffer()
+    const logo = await storeServerImage({
+      workspaceId: wsId,
+      brandId,
+      bytes: png,
+      mimeType: 'image/png',
+      source: 'upload',
+      folder: 'logo',
+    })
+    await admin.from('brands').update({ logo_asset_id: logo.id }).eq('id', brandId)
+    expect(await offThemeDraftIds(brandId)).toContain(themed.id)
+
+    expect(await harmonizePost(themed.id)).toBe('done')
+    const { data: after } = await admin.from('posts').select('design').eq('id', themed.id).single()
+    expect((after!.design as { logoAssetId: string }).logoAssetId).toBe(logo.id)
+    expect(await offThemeDraftIds(brandId)).not.toContain(themed.id)
   })
 })

@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 
 import * as cheerio from 'cheerio'
+import type { Element } from 'domhandler'
 
 import { classifyPath, sameSite, shouldSkipUrl } from './classify'
 import type { ExtractedPage, IconLink, ImageRef, LogoCandidate } from './types'
@@ -81,16 +82,122 @@ function parseSize(sizes: string | null): number {
   return m ? Math.max(Number(m[1]), Number(m[2])) : sizes === 'any' ? 512 : 0
 }
 
-function jsonLdLogo(blocks: unknown[]): string | null {
-  for (const block of blocks) {
-    const obj = block as Record<string, unknown>
-    const logo = obj.logo
-    if (typeof logo === 'string') return logo
-    if (logo && typeof logo === 'object' && typeof (logo as Record<string, unknown>).url === 'string') {
-      return (logo as Record<string, unknown>).url as string
+/** Čvorovi JSON-LD-a po `@id` (i ugnježdeni), da se referenca `{"@id": "…#logo"}` razreši. */
+function jsonLdIndex(blocks: unknown[]): Map<string, Record<string, unknown>> {
+  const index = new Map<string, Record<string, unknown>>()
+  const walk = (value: unknown, depth: number) => {
+    if (depth > 8 || !value || typeof value !== 'object') return
+    if (Array.isArray(value)) {
+      for (const v of value) walk(v, depth + 1)
+      return
     }
+    const obj = value as Record<string, unknown>
+    const id = obj['@id']
+    if (typeof id === 'string' && Object.keys(obj).length > 1 && !index.has(id)) index.set(id, obj)
+    for (const v of Object.values(obj)) walk(v, depth + 1)
+  }
+  walk(blocks, 0)
+  return index
+}
+
+/** Adresa slike iz vrednosti `logo`: tekst, ImageObject (`url`, `contentUrl`), niz ili referenca. */
+function imageUrl(value: unknown, index: Map<string, Record<string, unknown>>, depth = 0): string | null {
+  if (depth > 3 || !value) return null
+  if (typeof value === 'string') return value
+  if (Array.isArray(value)) {
+    for (const v of value) {
+      const url = imageUrl(v, index, depth + 1)
+      if (url) return url
+    }
+    return null
+  }
+  if (typeof value !== 'object') return null
+  const obj = value as Record<string, unknown>
+  if (typeof obj.url === 'string') return obj.url
+  if (typeof obj.contentUrl === 'string') return obj.contentUrl
+  const ref = typeof obj['@id'] === 'string' ? index.get(obj['@id']) : undefined
+  return ref && ref !== obj ? imageUrl(ref, index, depth + 1) : null
+}
+
+const ORG_TYPES = /^(Organization|Corporation|LocalBusiness|ProfessionalService|Store|OnlineStore|WebSite)$/
+
+/** Čvor koji opisuje samu firmu ili sajt, ne recenziju, proizvod ili klijenta. */
+function isOrg(block: unknown): boolean {
+  const type = (block as Record<string, unknown>)['@type']
+  return (Array.isArray(type) ? type : [type]).some((t) => typeof t === 'string' && ORG_TYPES.test(t))
+}
+
+/**
+ * Logo sajta iz JSON-LD-a: prvo logo same firme (Organization, LocalBusiness, WebSite), pa tek onda
+ * logo iz drugih čvorova (recenzija, proizvod, klijent). Logo zadat referencom se razrešava.
+ */
+function jsonLdLogo(blocks: unknown[]): string | null {
+  const index = jsonLdIndex(blocks)
+  for (const block of [...blocks.filter(isOrg), ...blocks.filter((b) => !isOrg(b))]) {
+    const url = imageUrl((block as Record<string, unknown>).logo, index)
+    if (url) return url
   }
   return null
+}
+
+/**
+ * Logo nekog drugog (klijent, partner, sertifikat, način plaćanja): po opisu slike ili po delu
+ * strane u kom stoji. Takav logo nikad nije logo sajta (tangerineseo.rs: „Logo klijenta Altema”).
+ */
+const FOREIGN_LOGO =
+  /klijent|client|partner|customer|kupc|sponzor|sponsor|referenc|portfolio|certifi|sertifik|award|nagrad|trusted|featured|asseen|testimonial|payment|placanj|plaćanj|клијент|партнер|спонзор/
+
+/** Samo slova i cifre, malim slovima (i ćirilica): „Partner-Servis” i „partner servis” su isto. */
+const flat = (text: string) => text.toLowerCase().replace(/[^\p{L}\p{N}]/gu, '')
+
+/** Ime sajta u obliku za poređenje: og:site_name, ime firme iz JSON-LD-a i domen bez nastavka. */
+function siteNames(siteName: string | undefined, blocks: unknown[], host: string): string[] {
+  const org = (blocks.find(isOrg) as Record<string, unknown> | undefined)?.name
+  const label = host.replace(/^www\./, '').split('.')[0]
+  return [siteName, typeof org === 'string' ? org : undefined, label]
+    .map((n) => flat(n ?? ''))
+    .filter((n) => n.length >= 4)
+}
+
+/**
+ * Slika je logo nekog drugog: opis (bez imena sajta, da „Partner Servis” ne izbaci svoj logo) ili
+ * deo strane u kom stoji pominje klijente, partnere i slično, ili je slika u traci sa još bar dva
+ * logoa (klijenti, načini plaćanja). Traka u zaglavlju se ne broji: sajt tu ima više verzija logoa.
+ */
+function foreignLogo(
+  $: cheerio.CheerioAPI,
+  el: Element,
+  hint: string,
+  names: string[],
+  inHeader: boolean,
+  isLogo: (img: Element) => boolean,
+): boolean {
+  const foreign = (text: string) => {
+    let own = flat(text)
+    for (const name of names) own = own.split(name).join(' ')
+    return FOREIGN_LOGO.test(own)
+  }
+  if (foreign(hint)) return true
+  const parents = $(el).parents().toArray()
+  for (const p of parents) {
+    if (p.tagName === 'body' || p.tagName === 'html') break
+    if (foreign(`${$(p).attr('class') ?? ''} ${$(p).attr('id') ?? ''} ${$(p).attr('aria-label') ?? ''}`))
+      return true
+  }
+  if (inHeader) return false
+  // traka logoa: slika (ili njen omotač, do pet nivoa) stoji u nizu sa još bar dva logoa
+  let node: Element = el
+  for (let level = 0; level < 5; level++) {
+    const parent = node.parent
+    if (!parent || !('tagName' in parent) || parent.tagName === 'body') break
+    const withLogo = $(parent)
+      .children()
+      .toArray()
+      .filter((c) => (c.tagName === 'img' ? isLogo(c) : $(c).find('img').toArray().some(isLogo)))
+    if (withLogo.length >= 3) return true
+    node = parent
+  }
+  return false
 }
 
 export function flattenJsonLd(raw: unknown): unknown[] {
@@ -172,6 +279,14 @@ export function extractPage(html: string, finalUrl: string, httpStatus: number):
   )
   const ldLogo = abs(base, jsonLdLogo(jsonLd) ?? undefined)
   if (ldLogo) logoCandidates.push({ src: ldLogo, alt: 'logo (JSON-LD)', score: 100, reason: 'json-ld' })
+  const names = siteNames(openGraph['og:site_name'], jsonLd, pageUrl.hostname)
+  const imgHint = (el: Element) => {
+    const src = $(el).attr('src') ?? $(el).attr('data-src') ?? ''
+    // putanja slike bez domena: domen „partner-servis.rs” ne govori ništa o samoj slici
+    const path = src.replace(/^(https?:)?\/\/[^/]+/i, '')
+    return `${path} ${$(el).attr('alt') ?? ''} ${$(el).attr('class') ?? ''} ${$(el).attr('id') ?? ''} ${$(el).attr('title') ?? ''}`.toLowerCase()
+  }
+  const isLogo = (el: Element) => /logo/.test(imgHint(el))
 
   $('img').each((_, el) => {
     const src =
@@ -187,16 +302,28 @@ export function extractPage(html: string, finalUrl: string, httpStatus: number):
       images.push({ src, alt, width, height })
       seenImg.add(src)
     }
-    const hint =
-      `${src} ${alt} ${$(el).attr('class') ?? ''} ${$(el).attr('id') ?? ''} ${$(el).attr('title') ?? ''}`.toLowerCase()
+    const hint = imgHint(el)
     const inHeader = $(el).closest(headerScope).length > 0
+    if (foreignLogo($, el, hint, names, inHeader, isLogo)) return
+    const inFooter = $(el).closest('footer, [role="contentinfo"], .footer, #footer, .site-footer').length > 0
     const inHomeLink =
       $(el).closest('a').length > 0 &&
       /^(\/|https?:\/\/[^/]+\/?)$/.test($(el).closest('a').attr('href') ?? '')
-    if (/logo/.test(hint)) logoCandidates.push({ src, alt, score: inHeader ? 95 : 85, reason: 'img:logo' })
-    else if (inHeader && inHomeLink) logoCandidates.push({ src, alt, score: 80, reason: 'header-home-link' })
+    // ime sajta u opisu slike: verovatnije logo sajta nego druga slika sa rečju „logo”
+    const own = names.some((n) => flat(hint).includes(n)) ? 4 : 0
+    if (/logo/.test(hint))
+      logoCandidates.push({
+        src,
+        alt,
+        score: (inHeader ? 95 : inHomeLink || inFooter ? 85 : 75) + own,
+        reason: 'img:logo',
+      })
+    else if (inHeader && inHomeLink)
+      logoCandidates.push({ src, alt, score: 80 + own, reason: 'header-home-link' })
+    else if (inFooter && inHomeLink)
+      logoCandidates.push({ src, alt, score: 70 + own, reason: 'footer-home-link' })
     else if (inHeader && logoCandidates.length < 6)
-      logoCandidates.push({ src, alt, score: 50, reason: 'header-img' })
+      logoCandidates.push({ src, alt, score: 50 + own, reason: 'header-img' })
   })
   const ogImage = openGraph['og:image']
   if (ogImage && /logo/i.test(ogImage))

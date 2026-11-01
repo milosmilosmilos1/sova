@@ -38,6 +38,7 @@ import { admin, call, createTestUser, deleteTestUser, type TestUser } from './he
 let user: TestUser
 let wsId = ''
 let brandId = ''
+let firstLogoId = ''
 
 interface ProfileView {
   exists: boolean
@@ -215,6 +216,7 @@ describe('Brand Brain', () => {
       .eq('id', brandId)
       .single()
     expect(brand!.logo_asset_id).toBe(p.profile.visual.logo.value.asset_id)
+    firstLogoId = brand!.logo_asset_id!
     expect(brand!.sitemap_hash).toBeTruthy()
     expect(brand!.website_url).toBe(`${FIXTURE_ORIGIN}/`)
   })
@@ -286,6 +288,15 @@ describe('Brand Brain', () => {
       .single()
     expect(gen).toMatchObject({ status: 'succeeded', tokens_charged: 10, type: 'brand_profile' })
     expect(Number(gen!.cost_usd)).toBeGreaterThan(0)
+    // isti logo na sajtu ostaje ista slika: nacrti nacrtani njime ostaju u temi (usklađivanje gleda logo)
+    const { data: brand } = await admin.from('brands').select('logo_asset_id').eq('id', brandId).single()
+    expect(brand!.logo_asset_id).toBe(firstLogoId)
+    const { count } = await admin
+      .from('media_assets')
+      .select('id', { count: 'exact', head: true })
+      .eq('brand_id', brandId)
+      .contains('tags', ['logo'])
+    expect(count).toBe(1)
   })
 
   it('vraćanje starije verzije pravi novu verziju sa starim sadržajem', async () => {
