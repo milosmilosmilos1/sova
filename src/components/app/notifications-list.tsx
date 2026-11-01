@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import type { Route } from 'next'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 
 import { Button } from '@/components/ui/button'
 import type { ApiResponse } from '@/lib/api/response'
@@ -47,19 +48,22 @@ export async function markRead(body: {
   if (!data.ok) throw new Error(data.error.message)
 }
 
-export function timeAgo(iso: string): string {
+type NotificationsT = ReturnType<typeof useTranslations<'notifications'>>
+
+export function timeAgo(iso: string, t: NotificationsT): string {
   const diff = Date.now() - new Date(iso).getTime()
   const m = Math.round(diff / 60_000)
-  if (m < 1) return 'upravo'
-  if (m < 60) return `pre ${m} min`
+  if (m < 1) return t('ago.now')
+  if (m < 60) return t('ago.minutes', { count: m })
   const h = Math.round(m / 60)
-  if (h < 24) return `pre ${h} h`
+  if (h < 24) return t('ago.hours', { count: h })
   const d = Math.round(h / 24)
-  return `pre ${d} d`
+  return t('ago.days', { count: d })
 }
 
 /** Lista obaveštenja (strana /app/notifications): klik otvara vezanu objavu i označava red kao pročitan. */
 export function NotificationsList({ workspaceId }: { workspaceId: string | null }) {
+  const t = useTranslations('notifications')
   const qc = useQueryClient()
   const page = useQuery({
     queryKey: ['notifications', workspaceId, 50],
@@ -69,14 +73,14 @@ export function NotificationsList({ workspaceId }: { workspaceId: string | null 
     mutationFn: markRead,
     onSuccess: () => void qc.invalidateQueries({ queryKey: ['notifications'] }),
   })
-  if (page.isPending) return <p className="text-sm text-muted-foreground">Učitavam…</p>
+  if (page.isPending) return <p className="text-sm text-muted-foreground">{t('loading')}</p>
   if (page.isError) return <p className="text-sm text-destructive">{page.error.message}</p>
   const { items, unreadCount } = page.data
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-muted-foreground">
-          {unreadCount ? `${unreadCount} nepročitano` : 'Sve je pročitano.'}
+          {unreadCount ? t('unread', { count: unreadCount }) : t('allRead')}
         </p>
         {unreadCount ? (
           <Button
@@ -85,14 +89,12 @@ export function NotificationsList({ workspaceId }: { workspaceId: string | null 
             onClick={() => read.mutate({ all: true, workspaceId })}
             disabled={read.isPending}
           >
-            Označi sve kao pročitano
+            {t('markAllRead')}
           </Button>
         ) : null}
       </div>
       {items.length === 0 ? (
-        <p className="rounded-md border p-6 text-center text-sm text-muted-foreground">
-          Još nema obaveštenja.
-        </p>
+        <p className="rounded-md border p-6 text-center text-sm text-muted-foreground">{t('empty')}</p>
       ) : (
         <ul className="divide-y rounded-md border">
           {items.map((n) => (
@@ -115,6 +117,7 @@ export function NotificationRow({
   onOpen: () => void
   compact?: boolean
 }) {
+  const t = useTranslations('notifications')
   const inner = (
     <div className={compact ? 'px-3 py-2' : 'px-4 py-3'}>
       <div className="flex items-start justify-between gap-2">
@@ -122,13 +125,13 @@ export function NotificationRow({
           {!n.readAt ? (
             <span
               className="mr-1.5 inline-block size-2 rounded-full bg-primary align-middle"
-              aria-label="nepročitano"
+              aria-label={t('unreadDot')}
             />
           ) : null}
           {n.title}
         </p>
         <time className="shrink-0 text-xs text-muted-foreground" dateTime={n.createdAt}>
-          {timeAgo(n.createdAt)}
+          {timeAgo(n.createdAt, t)}
         </time>
       </div>
       {n.body ? (

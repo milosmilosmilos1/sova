@@ -1,1 +1,837 @@
-{}
+{
+  "site": {
+    "demo": {
+      "domain": "pekarazrno.rs",
+      "brand": "Pekara Zrno",
+      "logo": "ZRNO",
+      "handle": "pekarazrno",
+      "headline": "Hleb kakav se nekad pekao.",
+      "tones": {
+        "warm": "Topao",
+        "local": "Domaći",
+        "plain": "Bez žargona"
+      },
+      "week": "2–8. novembar",
+      "postTitle": "Kroasani iz prve ture",
+      "client": "Jelena",
+      "placeholder": "vasafirma.rs",
+      "inputLabel": "Adresa vašeg sajta",
+      "try": "Isprobajte",
+      "start": "Počnite besplatno"
+    },
+    "hero": {
+      "pill": {
+        "open": "Otvoreno",
+        "closed": "U izradi",
+        "openText": "Registracija je otvorena",
+        "closedText": "Registracija stiže uskoro"
+      },
+      "title1": "Unesite sajt,",
+      "title2": "Sova vodi",
+      "title3": "vaše mreže.",
+      "sub": "Sova nauči vaš brend sa sajta, napravi strategiju, piše objave, pravi vizuale, zakazuje i objavljuje, pa uči iz rezultata.",
+      "freeTokens": "{count, plural, one {# besplatan token} few {# besplatna tokena} other {# besplatnih tokena}}",
+      "freeTrial": "Besplatna proba",
+      "noCard": "Bez kartice",
+      "languages": "Srpski, latinica i ćirilica",
+      "publishesTo": "Objavljuje na"
+    },
+    "heroDemo": {
+      "region": "Primer rada Sove",
+      "steps": {
+        "site": "Vaš sajt",
+        "brain": "Brand Brain",
+        "strategy": "Strategija",
+        "posts": "Objave i vizuali",
+        "publish": "Objavljivanje",
+        "results": "Rezultati"
+      },
+      "state": {
+        "manual": "Kliknite korake",
+        "paused": "Pauzirano",
+        "running": "Demo u toku"
+      },
+      "site": {
+        "title": "01 · ČITANJE SAJTA",
+        "meta": "14 stranica",
+        "pages": {
+          "home": "Početna",
+          "offer": "Ponuda i cene",
+          "about": "O nama",
+          "contact": "Kontakt i radno vreme",
+          "blog": "Blog, 3 teksta"
+        },
+        "done": "pročitano",
+        "reading": "čitam…"
+      },
+      "brand": {
+        "title": "02 · BRAND BRAIN",
+        "meta": "primer analize",
+        "place": "Zanatska pekara · Novi Sad",
+        "colours": "BOJE",
+        "tone": "TON",
+        "audience": "PUBLIKA",
+        "services": "USLUGE",
+        "audienceText": "Porodice i zaposleni, 25–45 godina, Novi Sad i Petrovaradin",
+        "list": {
+          "sourdough": "Hleb na kvascu",
+          "croissants": "Kroasani",
+          "cakes": "Torte po porudžbini",
+          "catering": "Ketering"
+        },
+        "note": "Sova koristi ovaj profil u svakoj objavi. Možete ga izmeniti bilo kad."
+      },
+      "strategy": {
+        "title": "03 · STRATEGIJA",
+        "meta": "Novembar 2026",
+        "headline": "12 objava, 3 mreže",
+        "goal": "Cilj meseca: +15% poseta profilu i 40 porudžbina torti preko poruka.",
+        "pillars": {
+          "products": "Proizvodi",
+          "behind": "Iza kulisa",
+          "tips": "Saveti i recepti",
+          "offers": "Akcije"
+        },
+        "rhythm": "RITAM",
+        "slots": {
+          "mon": "Pon 08:00",
+          "wed": "Sre 19:00",
+          "fri": "Pet 08:00"
+        }
+      },
+      "posts": {
+        "title": "04 · OBJAVE I VIZUALI",
+        "meta": "4 od 12 spremno",
+        "ready": "Spremno",
+        "draft": "Nacrt",
+        "caption": "Jutro počinje mirisom. Kroasani izlaze iz peći u 7:00.",
+        "tags": "#novisad #pekara"
+      },
+      "badges": {
+        "published": "Objavljeno",
+        "scheduled": "Zakazano",
+        "review": "Čeka odobrenje",
+        "draft": "Nacrt"
+      },
+      "publish": {
+        "title": "05 · OBJAVLJIVANJE",
+        "rows": {
+          "ig": {
+            "when": "PON 08:00"
+          },
+          "fb": {
+            "when": "PON 08:05"
+          },
+          "tiktok": {
+            "when": "SRE 19:00",
+            "title": "36 sati za jedan kroasan"
+          },
+          "cakes": {
+            "when": "PET 08:00",
+            "title": "Vikend torte po porudžbini"
+          },
+          "hours": {
+            "when": "PET 09:00",
+            "title": "Radno vreme za praznik"
+          },
+          "why": {
+            "when": "NED 10:00",
+            "title": "Zašto 36 sati za kroasan"
+          }
+        },
+        "timezone": "Vremenska zona: Beograd (CET)"
+      },
+      "results": {
+        "title": "06 · REZULTATI",
+        "meta": "Oktobar 2026",
+        "reach": "Doseg",
+        "reachValue": "18,4 hilj.",
+        "engagement": "Angažovanje",
+        "engagementValue": "6,1%",
+        "engagementDelta": "+1,4 p.p.",
+        "followers": "Pratioci",
+        "from": "SEP",
+        "to": "OKT",
+        "insight": "Objave iza kulisa imaju 2,3× veći doseg. U decembru ih planiram više."
+      },
+      "approval": {
+        "title": "Jelena je odobrila 3 objave",
+        "meta": "Klijent · pre 2 min"
+      }
+    },
+    "networks": {
+      "title": "Jedan kalendar za sve mreže",
+      "sub": "Napišete jednom, Sova prilagodi format, dužinu i ton svakoj mreži. Objavljuje kroz zvanične API-je, uz vaše odobrenje ili automatski. Izaberite mrežu i pogledajte.",
+      "preview": "PREGLED OBJAVE",
+      "adapted": "Ista objava, prilagođena za {network}",
+      "officialApi": "Zvanični API",
+      "textLength": "Dužina teksta",
+      "call": "Pozovite",
+      "likes": "2,4 hilj.",
+      "share": "Podeli"
+    },
+    "platforms": {
+      "instagram": {
+        "name": "Instagram",
+        "format": "4:5 · fotografija",
+        "tags": "4 hashtaga",
+        "handle": "pekarazrno · Novi Sad",
+        "actions": "Sviđa mi se · Komentariši · Podeli",
+        "note": "Duži opis, 4 hashtaga na kraju i kadar 4:5 koji zauzima ceo ekran.",
+        "caption": "Jutro počinje mirisom. Kroasani sa francuskim puterom izlaze iz peći u 7:00 – dođite dok su topli.\n\n#novisad #pekara #kroasan #doručak"
+      },
+      "facebook": {
+        "name": "Facebook",
+        "format": "1,91:1 · fotografija",
+        "tags": "bez hashtagova",
+        "handle": "Pekara Zrno · pre 2 min",
+        "actions": "Sviđa mi se · Komentar · Podeli",
+        "note": "Kraći tekst, poziv da rezervišete porukom, bez hashtagova.",
+        "caption": "Novo u Zrnu: kroasani sa francuskim puterom, svako jutro od 7:00. Rezervišite svoje porukom, čuvamo ih do 10h."
+      },
+      "linkedin": {
+        "name": "LinkedIn",
+        "format": "1,91:1 · fotografija",
+        "tags": "3 hashtaga",
+        "handle": "Pekara Zrno · 1.204 pratioca",
+        "actions": "Preporuči · Komentariši · Podeli",
+        "note": "Priča iza posla, profesionalniji ton i 3 hashtaga.",
+        "caption": "Iza svakog kroasana stoji 36 sati rada. Ovog meseca uveli smo francuski puter i novi raspored pečenja, pa prva tura stiže već u 7:00.\n\nMala pekara, veliki standardi. #zanat #novisad #preduzetništvo"
+      },
+      "tiktok": {
+        "name": "TikTok",
+        "format": "9:16 · video",
+        "tags": "3 hashtaga",
+        "handle": "@pekarazrno",
+        "videoTop": "Za vas",
+        "note": "Udica u prvoj sekundi, kratak tekst preko vertikalnog videa.",
+        "caption": "36 sati za jedan kroasan. Gledajte do kraja. #pekara #novisad #kroasan"
+      },
+      "x": {
+        "name": "X",
+        "format": "16:9 · tekst i slika",
+        "tags": "bez hashtagova",
+        "handle": "@pekarazrno · 2 min",
+        "actions": "Odgovori · Repost · Sviđa mi se",
+        "note": "Skraćeno da stane u 280 znakova, sa malo humora.",
+        "caption": "Kroasani sa francuskim puterom, topli od 7:00. Ko stigne pre 8, kafa je na nama."
+      },
+      "youtube": {
+        "name": "YouTube Shorts",
+        "format": "9:16 · video",
+        "tags": "#Shorts",
+        "handle": "Pekara Zrno",
+        "videoTop": "Shorts",
+        "note": "Naslov do 100 znakova sa oznakom #Shorts.",
+        "caption": "Kako nastaje kroasan: 36 sati za 30 sekundi #Shorts"
+      },
+      "pinterest": {
+        "name": "Pinterest",
+        "format": "2:3 · pin",
+        "tags": "ključne reči",
+        "handle": "Pekara Zrno · Recepti",
+        "actions": "Sačuvaj · Podeli",
+        "note": "Opisni naslov sa ključnim rečima koje ljudi traže.",
+        "caption": "Domaći hleb na kvascu: recept i saveti iz Pekare Zrno"
+      },
+      "google_business": {
+        "name": "Google poslovni profil",
+        "format": "4:3 · novost",
+        "tags": "bez hashtagova",
+        "handle": "Bulevar oslobođenja 42, Novi Sad",
+        "actions": "Ocena 4,8 · 312 recenzija",
+        "note": "Praktične informacije, radno vreme i dugme za poziv.",
+        "caption": "Kroasani sa francuskim puterom, svako jutro od 7:00. Radno vreme: 6:30–20:00, nedeljom do 14:00."
+      }
+    },
+    "features": {
+      "title": "Sve što radi agencija, <accent>za deo cene</accent>",
+      "sub": "Šest alata koji rade zajedno, od prvog čitanja sajta do mesečnog izveštaja.",
+      "cards": {
+        "brain": {
+          "title": "Brand Brain",
+          "text": "Pročita sajt i izvuče usluge, ton, publiku, boje i činjenice koje posle koristi u svakoj objavi."
+        },
+        "studio": {
+          "title": "AI Studio",
+          "text": "Tekst za svaku mrežu po njenim pravilima, slike i vizuali iz šablona, prevod i hashtagovi."
+        },
+        "calendar": {
+          "title": "Kalendar i odobravanje",
+          "text": "Nacrti, komentari, link za odobrenje klijentu i objava u tačno vreme, i kad promenite zonu."
+        },
+        "autopilot": {
+          "title": "Autopilot",
+          "text": "Nedeljni plan iz strategije, sa kontrolom kvaliteta, budžetom tokena i rokovima za odobrenje."
+        },
+        "analytics": {
+          "title": "Analitika i uvidi",
+          "text": "Doseg, angažovanje i najbolji termini po mreži, uz nedeljne uvide šta da radite drugačije."
+        }
+      },
+      "brain": {
+        "nav": {
+          "offer": "Ponuda",
+          "about": "O nama",
+          "contact": "Kontakt"
+        },
+        "cta": "Pogledajte ponudu",
+        "profile": "PROFIL BRENDA",
+        "done": "gotovo",
+        "colours": "Boje",
+        "tone": "Ton",
+        "facts": "Činjenice",
+        "factsText": "Peku od 1998. · Kvasac star 20 godina · Otvoreno od 6:30"
+      },
+      "calendar": {
+        "client": "klijent",
+        "comment": "Može, samo pomerite na 9:00.",
+        "approved": "Odobreno"
+      },
+      "agencies": {
+        "title": "Za agencije i timove",
+        "text": "Više brendova u jednom radnom prostoru, uloge, pozivnice i odobravanje po klijentu.",
+        "brandsLabel": "BRENDOVI",
+        "teamLabel": "TIM · PEKARA ZRNO",
+        "invite": "Pozovite člana tima",
+        "waiting": "{count, plural, one {# čeka} few {# čeka} other {# čeka}}",
+        "allApproved": "Sve odobreno",
+        "brands": {
+          "bakery": {
+            "meta": "Novi Sad · 3 mreže"
+          },
+          "gym": {
+            "name": "Teretana Forma",
+            "meta": "Beograd · 4 mreže"
+          },
+          "florist": {
+            "name": "Cvećara Lala",
+            "meta": "Niš · 2 mreže"
+          },
+          "bistro": {
+            "name": "Bistro Ugao",
+            "meta": "Kragujevac · 5 mreža"
+          }
+        },
+        "team": {
+          "owner": "Ana Petrović",
+          "editor": "Marko Ilić",
+          "client": "Jelena Kovač"
+        },
+        "roles": {
+          "owner": "Vlasnik",
+          "editor": "Urednik",
+          "client": "Klijent"
+        }
+      }
+    },
+    "featureDemos": {
+      "studio": {
+        "label": "Pismo i jezik teksta",
+        "options": {
+          "a": {
+            "label": "Latinica",
+            "text": "Jutro počinje mirisom. Kroasani izlaze iz peći u 7:00 – dođite dok su topli.",
+            "tags": "#novisad #pekara #doručak"
+          },
+          "b": {
+            "label": "Ćirilica",
+            "text": "Јутро почиње мирисом. Кроасани излазе из пећи у 7:00 – дођите док су топли.",
+            "tags": "#новисад #пекара #доручак"
+          },
+          "c": {
+            "label": "English",
+            "text": "Mornings smell better here. Croissants leave the oven at 7:00 – get them while they’re warm.",
+            "tags": "#novisad #bakery #breakfast"
+          }
+        }
+      },
+      "autopilot": {
+        "name": "Autopilot",
+        "next": "Sledeća objava: pon 08:00",
+        "manual": "Sve objave čekaju vaše odobrenje",
+        "toggle": "Uključi ili isključi Autopilot",
+        "budget": "Budžet tokena, novembar",
+        "rules": {
+          "quality": "Provera kvaliteta pre svake objave",
+          "limit": "Najviše 3 objave nedeljno",
+          "offers": "Akcije i cene uvek čekaju odobrenje"
+        }
+      },
+      "reach": {
+        "label": "Doseg, poslednjih 7 dana",
+        "best": "Najbolji termin: utorak u 19h"
+      }
+    },
+    "days": {
+      "short": {
+        "mon": "PON",
+        "tue": "UTO",
+        "wed": "SRE",
+        "thu": "ČET",
+        "fri": "PET",
+        "sat": "SUB",
+        "sun": "NED"
+      },
+      "long": {
+        "mon": "Ponedeljak",
+        "tue": "Utorak",
+        "wed": "Sreda",
+        "thu": "Četvrtak",
+        "fri": "Petak",
+        "sat": "Subota",
+        "sun": "Nedelja"
+      }
+    },
+    "how": {
+      "title": "Kako radi u tri koraka",
+      "sub": "Od adrese sajta do prve objave za nekoliko minuta.",
+      "analyse": "Analiziraj",
+      "chips": {
+        "logo": "Logo",
+        "colours": "Boje",
+        "services": "Usluge",
+        "tone": "Ton",
+        "audience": "Publika"
+      },
+      "steps": {
+        "url": {
+          "title": "Unesite URL sajta",
+          "text": "Sova sama izvuče logo, boje, usluge, ton i publiku. Vi samo pregledate i ispravite."
+        },
+        "connect": {
+          "title": "Povežite mreže",
+          "text": "Facebook, Instagram, LinkedIn, TikTok, X, YouTube, Pinterest i Google poslovni profil."
+        },
+        "approve": {
+          "title": "Odobrite ili uključite Autopilot",
+          "text": "Sova objavljuje u pravo vreme, prati rezultate i prilagođava plan za sledeći mesec."
+        }
+      },
+      "connect": {
+        "count": "{count} od 8 mreža povezano",
+        "hint": "Kliknite da povežete"
+      },
+      "approveDemo": {
+        "when": "Instagram · pon 08:00",
+        "edit": "Izmeni",
+        "approve": "Odobri",
+        "approved": "Odobreno",
+        "scheduled": "Zakazano za ponedeljak u 08:00.",
+        "link": "Klijent dobija link za odobravanje."
+      }
+    },
+    "pricing": {
+      "title": "Jednostavne cene,",
+      "titleAccent": "plaćate rad, ne sedišta",
+      "sub": "Tokeni se troše kad AI nešto napravi. Kalendar i analitika ne koštaju ništa.",
+      "unavailable": "Cenovnik trenutno nije dostupan. Osvežite stranicu za nekoliko minuta.",
+      "plans": {
+        "free": "Besplatno",
+        "monthly": "Mesečni",
+        "yearly": "Godišnji"
+      },
+      "tokens": "{count, plural, one {# token} few {# tokena} other {# tokena}}",
+      "popular": "Najčešći izbor",
+      "covers": "Pokriva vaš obim",
+      "regularPrice": "Redovna cena",
+      "introPrice": "Uvodna cena",
+      "introDiscount": "Uvodna cena, {discount} % popusta",
+      "start": "Počnite",
+      "perMonth": "mesečno",
+      "perYear": "godišnje",
+      "free": {
+        "description": "{tokens, plural, one {# token} few {# tokena} other {# tokena}} za probu, {brands, plural, one {# brend} few {# brenda} other {# brendova}} i {networks, plural, one {# mreža} few {# mreže} other {# mreža}}.",
+        "tokens": "{count, plural, one {# token} few {# tokena} other {# tokena}} jednom",
+        "limits": "{brands, plural, one {# brend} few {# brenda} other {# brendova}}, {networks, plural, one {# mreža} few {# mreže} other {# mreža}}",
+        "calendar": "Kalendar i objavljivanje"
+      },
+      "monthly": {
+        "description": "{tokens, plural, one {# token} few {# tokena} other {# tokena}} svakog meseca, do {brands, plural, one {# brend} few {# brenda} other {# brendova}}, {networks, plural, one {# mreža} few {# mreže} other {# mreža}} i {members, plural, one {# član} few {# člana} other {# članova}}.",
+        "tokens": "{count, plural, one {# token} few {# tokena} other {# tokena}} svakog meseca",
+        "limits": "Do {brands, plural, one {# brend} few {# brenda} other {# brendova}}, {networks, plural, one {# mreža} few {# mreže} other {# mreža}}",
+        "members": "{count, plural, one {# član} few {# člana} other {# članova}} tima"
+      },
+      "yearly": {
+        "description": "{count, plural, one {# token} few {# tokena} other {# tokena}} svakog meseca, plaćeno za godinu unapred.",
+        "everything": "Sve iz Mesečnog plana",
+        "perMonth": "Oko {price} mesečno",
+        "saving": "{saving} % manje nego mesečni plan"
+      },
+      "calc": {
+        "title": "Koliko tokena vam treba?",
+        "sub": "Pomerite klizače, preporuka plana se ažurira.",
+        "textPosts": "Objave samo sa tekstom",
+        "imagePosts": "Objave sa slikom",
+        "hint": "{posts} × {cost, plural, one {# token} few {# tokena} other {# tokena}}",
+        "imageNote": "Tekst {text, plural, one {# token} few {# tokena} other {# tokena}} + slika {image, plural, one {# token} few {# tokena} other {# tokena}}",
+        "strategy": "Mesečna strategija",
+        "need": "MESEČNO VAM TREBA",
+        "total": "{count, plural, one {<n>#</n> <w>token</w>} few {<n>#</n> <w>tokena</w>} other {<n>#</n> <w>tokena</w>}}"
+      },
+      "rec": {
+        "freeTitle": "Besplatno je dovoljno",
+        "freeNote": "{count, plural, one {# token} few {# tokena} other {# tokena}} za probu pokriva ovaj obim.",
+        "planTitle": "Mesečni ili Godišnji plan",
+        "planNote": "Ostaje vam {count, plural, one {# token} few {# tokena} other {# tokena}} mesečno za dodatne objave.",
+        "topupTitle": "Plan + dopuna",
+        "over": "{count, plural, one {# token} few {# tokena} other {# tokena}} preko plana",
+        "need": "Potrebna vam je dopuna za {over}.",
+        "add": "Dodajte {parts} tokena ({price}) za {over}."
+      },
+      "topups": {
+        "title": "Dopune koje ne ističu",
+        "sub": "Kupite samo kad vam zatreba.",
+        "note": "Objavljivanje, kalendar i analitika ne troše tokene, osim objava na X ({xPost, plural, one {# token} few {# tokena} other {# tokena}}, sa linkom {withLink})."
+      }
+    },
+    "faq": {
+      "title": "Česta pitanja",
+      "intro": "Ako ne nađete odgovor, pišite nam preko stranice <link>Kontakt</link>.",
+      "items": {
+        "tokens": {
+          "q": "Šta su tokeni?",
+          "a": "Tokeni su jedinica rada AI-ja. Tekst objave košta {text, plural, one {# token} few {# tokena} other {# tokena}}, slika {image}, a mesečna strategija {strategy}. Objavljivanje, kalendar i analitika ne troše tokene, osim objava na X: {xPost, plural, one {# token} few {# tokena} other {# tokena}}, a sa linkom {withLink}."
+        },
+        "autopilot": {
+          "q": "Da li Sova objavljuje bez mene?",
+          "a": "Samo ako to želite. Podrazumevano svaka objava čeka vaše odobrenje. Kada uključite Autopilot, Sova objavljuje po planu, u okviru budžeta tokena i pravila koja ste postavili."
+        },
+        "cancel": {
+          "q": "Mogu li da otkažem pretplatu?",
+          "a": "Da, u svakom trenutku, sa stranice Naplata u aplikaciji. Plan ostaje aktivan do kraja plaćenog perioda, a kupljene dopune tokena ne ističu."
+        },
+        "data": {
+          "q": "Šta se dešava sa mojim podacima?",
+          "a": "Podaci se koriste samo za rad na vašem brendu i ne prodajemo ih. Delimo ih samo sa obrađivačima iz <privacy>Politike privatnosti</privacy>, kao što su hosting, AI i naplata. Nalog i sve podatke možete trajno obrisati sa stranice <deletion>Brisanje podataka</deletion>."
+        },
+        "language": {
+          "q": "Da li radi na srpskom?",
+          "a": "Da. Sova piše na srpskom, latinicom i ćirilicom, i na engleskom kada vam treba. Poštuje padeže, ton vašeg brenda i lokalne izraze."
+        }
+      }
+    },
+    "finalCta": {
+      "title": "Pustite Sovu da vodi <accent>vaše mreže</accent>",
+      "sub": "Unesite sajt i za nekoliko minuta dobijate profil brenda, strategiju i prve objave.",
+      "noCard": "Bez kartice.",
+      "trialTokens": "{count, plural, one {# token} few {# tokena} other {# tokena}} za probu.",
+      "closed": "Aplikacija je u izradi. Registracija stiže uskoro."
+    }
+  },
+  "legal": {
+    "updated": "poslednja izmena / last updated: {date}",
+    "address": "Adresa: {address}.",
+    "privacy": {
+      "title": "Politika privatnosti",
+      "metaDescription": "Kako Sova prikuplja, koristi i štiti podatke o ličnosti.",
+      "s1": {
+        "title": "1. Ko je rukovalac podacima",
+        "text": "Rukovalac podacima je <b>{company}</b>, vlasnik platforme {product} dostupne na {domain}. Za sva pitanja o zaštiti podataka pišite na <mail>{email}</mail>."
+      },
+      "s2": {
+        "title": "2. Koje podatke obrađujemo",
+        "items": {
+          "account": "<b>Podaci o nalogu:</b> ime, email adresa, lozinka (čuva se samo kao heš kod našeg obrađivača za autentifikaciju), jezik, vremenska zona, podešavanja obaveštenja.",
+          "brand": "<b>Podaci o brendu:</b> URL sajta i javno dostupan sadržaj sa njega (tekstovi, logo, boje, fontovi, slike, podaci o uslugama), opisi koje sami unesete, podaci o konkurentima koje dodate.",
+          "social": "<b>Podaci sa povezanih društvenih mreža:</b> identifikator i naziv naloga ili stranice, slika profila, pristupni tokeni koje nam mreža izda kad odobrite povezivanje, vaše ranije objave sa javnim metrikama (doseg, reakcije, komentari), metrike objava koje Sova objavi u vaše ime.",
+          "content": "<b>Sadržaj koji kreirate u Sovi:</b> tekstovi objava, fotografije i video koje otpremite, generisane slike, strategije, komentari i odluke o odobravanju.",
+          "payment": "<b>Podaci o plaćanju:</b> obrađuje ih Stripe. Mi čuvamo samo identifikator kupca, plan, status pretplate i istoriju tokena. Broj kartice nikad ne dolazi do nas.",
+          "technical": "<b>Tehnički podaci:</b> IP adresa, tip pregledača i uređaja, vreme pristupa, zapisi o greškama, kolačići neophodni za sesiju.",
+          "team": "<b>Podaci članova tima i klijenata:</b> email adrese osoba koje pozovete u radni prostor i njihove odluke o odobravanju objava."
+        }
+      },
+      "s3": {
+        "title": "3. Svrhe i pravni osnov",
+        "items": {
+          "service": "Pružanje usluge koju ste zatražili (analiza sajta, kreiranje sadržaja, zakazivanje i objavljivanje, analitika): izvršenje ugovora.",
+          "security": "Bezbednost naloga, sprečavanje zloupotrebe i otklanjanje grešaka: legitimni interes.",
+          "billing": "Naplata i računovodstvena evidencija: izvršenje ugovora i zakonska obaveza.",
+          "emails": "Emailovi o stanju naloga, neuspelim objavama i odobrenjima: izvršenje ugovora. Marketinški emailovi samo uz vašu saglasnost, koju možete povući u svakom trenutku.",
+          "analytics": "Analitika korišćenja proizvoda i kolačići koji nisu neophodni: saglasnost."
+        }
+      },
+      "s4": {
+        "title": "4. Podaci sa platformi trećih strana",
+        "p1": "Kad povežete Facebook, Instagram, LinkedIn, TikTok, X, YouTube, Pinterest ili Google poslovni profil, Sova dobija pristup isključivo onim podacima koje ste odobrili u toku povezivanja. Te podatke koristimo samo za funkcije koje ste tražili: objavljivanje sadržaja u vaše ime, uvoz ranijih objava radi učenja o brendu i prikaz metrika. Podatke sa platformi ne prodajemo, ne koristimo za oglašavanje i ne delimo sa trećim stranama osim obrađivača iz odeljka 5. Pristupni tokeni se čuvaju šifrovani (AES-256-GCM) i brišu se čim prekinete vezu sa nalogom.",
+        "p2": "Korišćenje podataka dobijenih preko Google API-ja (YouTube, Google poslovni profil, Google prijava) u skladu je sa <policy>Google API Services User Data Policy</policy>, uključujući zahteve o ograničenoj upotrebi (Limited Use). Korišćenje podataka sa Meta platformi u skladu je sa Meta Platform Terms, a sa TikToka sa TikTok Developer Terms."
+      },
+      "s5": {
+        "title": "5. Obrađivači kojima poveravamo podatke",
+        "processors": {
+          "supabase": "<b>Supabase</b>: baza podataka, autentifikacija, skladište fajlova",
+          "vercel": "<b>Vercel</b>: hosting aplikacije i isporuka sadržaja",
+          "gemini": "<b>Google (Gemini API)</b>: generisanje teksta i slika, analiza sadržaja sajta i slika",
+          "stripe": "<b>Stripe</b>: naplata pretplata i paketa tokena",
+          "resend": "<b>Resend</b>: slanje transakcionih emailova",
+          "upstash": "<b>Upstash</b>: ograničavanje broja zahteva i privremeni keš",
+          "inngest": "<b>Inngest</b>: pozadinski poslovi (analiza sajta, objavljivanje, metrike)",
+          "sentry": "<b>Sentry</b>: praćenje tehničkih grešaka",
+          "posthog": "<b>PostHog</b>: analitika korišćenja proizvoda",
+          "turnstile": "<b>Cloudflare Turnstile</b>: zaštita od botova pri registraciji",
+          "media": "<b>Unsplash i Canva</b>: fotografije i dizajni, samo kad ih vi izaberete"
+        },
+        "text": "Sa svakim obrađivačem imamo ugovor o obradi podataka. Neki od njih obrađuju podatke u Sjedinjenim Američkim Državama; prenos se zasniva na standardnim ugovornim klauzulama ili EU-US Data Privacy Framework-u."
+      },
+      "s6": {
+        "title": "6. Veštačka inteligencija",
+        "text": "Za generisanje teksta i slika i za analizu sajta koristimo Google Gemini API. Gemini-ju šaljemo javni sadržaj vašeg sajta, opis brenda, vaše unose i fotografije koje sami priložite. Po uslovima plaćenog Gemini API-ja, Google te podatke ne koristi za treniranje svojih modela. Vizuali koje napravi veštačka inteligencija su u aplikaciji označeni kao AI generisani, a tamo gde mreža to podržava, Sova postavlja i oznaku na samoj objavi."
+      },
+      "s7": {
+        "title": "7. Koliko dugo čuvamo podatke",
+        "items": {
+          "account": "Podatke naloga i brenda: dok nalog postoji, a zatim najviše 30 dana posle brisanja naloga.",
+          "tokens": "Pristupne tokene mreža: dok je nalog povezan; brišu se odmah po prekidu veze.",
+          "logs": "Tehničke zapise (logove): do 90 dana.",
+          "invoices": "Podatke o plaćanju i fakture: u roku koji propisuju računovodstveni propisi."
+        }
+      },
+      "s8": {
+        "title": "8. Vaša prava",
+        "p1": "Po Opštoj uredbi o zaštiti podataka (GDPR) i Zakonu o zaštiti podataka o ličnosti Republike Srbije imate pravo na pristup, ispravku, brisanje, ograničenje obrade, prenosivost podataka, prigovor na obradu i povlačenje saglasnosti. Zahtev pošaljite na <mail>{email}</mail> i odgovorićemo u roku od 30 dana. Imate pravo i na pritužbu Povereniku za informacije od javnog značaja i zaštitu podataka o ličnosti (Srbija) ili nadzornom organu u svojoj zemlji.",
+        "p2": "Nalog i sve podatke možete obrisati sami, bez kontakta sa nama. Postupak je opisan na strani <deletion>Brisanje podataka</deletion>."
+      },
+      "s9": {
+        "title": "9. Kolačići",
+        "text": "Neophodni kolačići služe za prijavu, zaštitu od zloupotrebe i pamćenje jezika i ne traže saglasnost. Kolačići za analitiku korišćenja postavljaju se samo ako ih prihvatite. Pregledač možete podesiti da odbija kolačiće, ali bez neophodnih kolačića prijava ne radi."
+      },
+      "s10": {
+        "title": "10. Bezbednost",
+        "text": "Podaci putuju šifrovano (TLS). Pristupni tokeni su šifrovani u bazi, pristup podacima je ograničen politikama na nivou baze tako da svaki korisnik vidi samo svoj radni prostor, a pristup osoblja je zabeležen u evidenciji. Ni jedan sistem nije potpuno bezbedan; u slučaju povrede podataka obavestićemo vas i nadležni organ u zakonskom roku."
+      },
+      "s11": {
+        "title": "11. Deca",
+        "text": "Sova je namenjena poslovnim korisnicima starijim od 18 godina. Ne prikupljamo svesno podatke dece."
+      },
+      "s12": {
+        "title": "12. Izmene",
+        "text": "O važnim izmenama ove politike obavestićemo vas emailom ili obaveštenjem u aplikaciji najmanje 14 dana pre stupanja na snagu."
+      }
+    },
+    "terms": {
+      "title": "Uslovi korišćenja",
+      "metaDescription": "Uslovi pod kojima koristite platformu Sova.",
+      "s1": {
+        "title": "1. Ugovorne strane i prihvatanje",
+        "text": "Ove uslove zaključujete sa <b>{company}</b> (u daljem tekstu „mi”), vlasnikom platforme {product}. Registracijom naloga potvrđujete da ste ih pročitali i prihvatili. Ako nalog otvarate u ime firme ili agencije, potvrđujete da ste ovlašćeni da je obavežete."
+      },
+      "s2": {
+        "title": "2. Šta je Sova",
+        "text": "Sova je softver koji pomaže u vođenju društvenih mreža: analizira vaš sajt, predlaže strategiju, generiše tekstove i vizuale uz pomoć veštačke inteligencije, zakazuje i objavljuje sadržaj na mrežama koje povežete i prikazuje rezultate. Sova je alat; odluke o tome šta se objavljuje donosite vi."
+      },
+      "s3": {
+        "title": "3. Nalog",
+        "items": {
+          "age": "Morate imati najmanje 18 godina i dati tačne podatke.",
+          "password": "Odgovorni ste za čuvanje lozinke i za sve što se dogodi pod vašim nalogom. Preporučujemo dvofaktorsku zaštitu.",
+          "free": "Jedan besplatan nalog po osobi. Otvaranje više besplatnih naloga radi dodatnih tokena nije dozvoljeno.",
+          "team": "Članove tima i klijente koje pozovete u radni prostor obavezuju isti uslovi."
+        }
+      },
+      "s4": {
+        "title": "4. Povezane društvene mreže",
+        "text": "Povezivanjem naloga na nekoj mreži ovlašćujete Sovu da u vaše ime objavljuje sadržaj koji ste odobrili ili koji nastaje u režimu Autopilota koji ste sami uključili, da uvozi vaše ranije objave i da čita metrike. Ovlašćenje možete povući u svakom trenutku u aplikaciji (Mreže → Prekini vezu) ili u podešavanjima same mreže. Dužni ste da poštujete pravila svake mreže; mi ne odgovaramo za ograničenja, odbijanja ili suspenzije koje mreža primeni na vaš nalog."
+      },
+      "s5": {
+        "title": "5. Vaš sadržaj i veštačka inteligencija",
+        "items": {
+          "yours": "Sadržaj koji otpremite ili kreirate u Sovi ostaje vaš. Dajete nam samo dozvolu da ga obrađujemo, čuvamo i objavljujemo u vaše ime, koliko je potrebno za rad usluge.",
+          "accuracy": "Sadržaj koji generiše veštačka inteligencija može biti netačan ili neprikladan. Pre objave ga pregledajte. Sova proverava činjenice samo naspram podataka iz vašeg profila brenda i ne garantuje tačnost.",
+          "responsibility": "Odgovorni ste za sve što objavite: autorska prava na fotografije, tačnost cena i tvrdnji, poštovanje propisa o oglašavanju i pravila mreža.",
+          "forbidden": "Zabranjeno je: nezakonit, uvredljiv, obmanjujući ili diskriminatorski sadržaj; spam; sadržaj koji krši tuđa prava; pokušaji zaobilaženja bezbednosnih mera ili ograničenja AI servisa.",
+          "thirdParty": "Fotografije sa Unsplasha i dizajni iz Canve podležu uslovima tih servisa, koje prihvatate kad ih koristite."
+        }
+      },
+      "s6": {
+        "title": "6. Tokeni, planovi i plaćanje",
+        "items": {
+          "usage": "Radnje koje koriste veštačku inteligenciju troše tokene. Cena svake radnje je prikazana u aplikaciji pre potvrde. Tokeni se rezervišu pre radnje i naplaćuju tek kad radnja uspe; neuspela radnja ne troši tokene.",
+          "allowance": "Besplatan nalog dobija jednokratnu količinu tokena posle potvrde email adrese. Mesečni i godišnji plan dobijaju tokene po obračunskom periodu; neiskorišćeni tokeni iz pretplate ne prenose se u sledeći period. Dodatno kupljeni paketi tokena ne ističu.",
+          "renewal": "Pretplate se naplaćuju unapred preko Stripe-a i automatski obnavljaju dok ih ne otkažete. Otkazivanje važi od kraja tekućeg perioda; do tada zadržavate pristup.",
+          "prices": "Cene mogu da se promene uz obaveštenje najmanje 30 dana unapred; promena važi od sledećeg obračunskog perioda.",
+          "refunds": "Povraćaj novca za iskorišćene tokene nije moguć. Za neiskorišćenu pretplatu u prvih 14 dana od prve kupovine možete tražiti povraćaj pisanjem na našu adresu podrške.",
+          "value": "Tokeni nemaju novčanu vrednost van Sove i ne mogu se prenositi između radnih prostora."
+        }
+      },
+      "s7": {
+        "title": "7. Dostupnost i podrška",
+        "text": "Trudimo se da Sova radi bez prekida, ali ne garantujemo dostupnost. Sova zavisi od API-ja društvenih mreža, Google Gemini servisa i drugih dobavljača na koje ne utičemo; njihovi prekidi, promene pravila ili ukidanje pristupa mogu privremeno ili trajno onemogućiti pojedine funkcije. Ako objava ne uspe, Sova vas obaveštava i nudi ponovni pokušaj ili ručno objavljivanje."
+      },
+      "s8": {
+        "title": "8. Intelektualna svojina",
+        "text": "Softver, dizajn, naziv Sova i dokumentacija su naše vlasništvo ili vlasništvo naših davalaca licence. Ne smete kopirati, menjati, dekompilirati ni preprodavati Sovu bez pisane dozvole. Povratne informacije koje nam date možemo slobodno koristiti."
+      },
+      "s9": {
+        "title": "9. Ograničenje odgovornosti",
+        "text": "Sova se pruža „takva kakva jeste”. U meri u kojoj zakon dozvoljava, ne odgovaramo za indirektnu štetu, izgubljenu dobit, gubitak podataka ni za posledice sadržaja koji ste objavili. Naša ukupna odgovornost po ovim uslovima ograničena je na iznos koji ste nam platili u 12 meseci pre događaja koji je doveo do štete. Ništa u ovim uslovima ne isključuje odgovornost koja se po zakonu ne može isključiti."
+      },
+      "s10": {
+        "title": "10. Prekid",
+        "text": "Nalog možete obrisati u svakom trenutku (postupak je na strani <deletion>Brisanje podataka</deletion>). Mi možemo da suspendujemo ili ukinemo nalog koji krši ove uslove, pravila mreža ili zakon, uz obaveštenje kad je to razumno moguće. Odredbe o sadržaju, odgovornosti i merodavnom pravu važe i posle prekida."
+      },
+      "s11": {
+        "title": "11. Merodavno pravo",
+        "text": "Na ove uslove primenjuje se pravo države u kojoj je registrovan {company}, uz poštovanje obaveznih propisa o zaštiti potrošača i podataka o ličnosti u zemlji vašeg prebivališta. Sporove ćemo prvo pokušati da rešimo dogovorom."
+      },
+      "s12": {
+        "title": "12. Izmene uslova",
+        "text": "O izmenama ovih uslova obavestićemo vas emailom ili u aplikaciji najmanje 14 dana unapred. Nastavak korišćenja posle tog roka znači prihvatanje izmena."
+      },
+      "s13": {
+        "title": "13. Kontakt",
+        "text": "Pitanja o ovim uslovima: <mail>{email}</mail>."
+      }
+    },
+    "dataDeletion": {
+      "title": "Brisanje podataka",
+      "metaDescription": "Kako da obrišete nalog, prekinete vezu sa mrežom ili zatražite brisanje podataka iz Sove.",
+      "received": {
+        "title": "Zahtev za brisanje je primljen.",
+        "text": "Kod potvrde: <mono>{code}</mono>. Brisanje se izvršava u roku od 30 dana. O završetku ćemo obavestiti email adresu povezanu sa nalogom. / Your deletion request has been received and will be completed within 30 days."
+      },
+      "s1": {
+        "title": "1. Brisanje celog naloga (u aplikaciji)",
+        "items": {
+          "login": "Prijavite se u Sovu.",
+          "open": "Otvorite Podešavanja → Privatnost i podaci → Obriši nalog.",
+          "confirm": "Ukucajte svoju email adresu radi potvrde i kliknite „Obriši nalog”.",
+          "result": "Sova odmah opoziva pristupne tokene svih povezanih mreža, otkazuje zakazane objave i briše podatke. Brisanje iz rezervnih kopija završava se najkasnije za 30 dana."
+        },
+        "note": "Ako ste jedini vlasnik radnog prostora sa drugim članovima, prvo prenesite vlasništvo ili obrišite radni prostor; aplikacija vas vodi kroz taj korak."
+      },
+      "s2": {
+        "title": "2. Prekid veze sa jednom mrežom",
+        "p1": "Otvorite Mreže, pronađite nalog i kliknite „Prekini vezu”. Sova briše pristupni token, uvezene objave i metrike tog naloga. Već objavljen sadržaj ostaje na mreži; njega brišete direktno na mreži.",
+        "p2": "Vezu možete prekinuti i sa strane mreže: Facebook i Instagram (Podešavanja → Aplikacije i sajtovi), LinkedIn (Podešavanja → Dozvole aplikacija), TikTok (Podešavanja → Bezbednost → Aplikacije), X (Podešavanja → Povezane aplikacije), Google (myaccount.google.com → Bezbednost → Aplikacije trećih strana), Pinterest (Podešavanja → Bezbednost → Povezane aplikacije). Sova to prepoznaje i briše tokene."
+      },
+      "s3": {
+        "title": "3. Zahtev emailom",
+        "subject": "Brisanje podataka",
+        "text": "Ako ne možete da se prijavite, pošaljite email sa adrese kojom ste registrovani na <mail>{email}</mail> sa naslovom „Brisanje podataka”. Potvrdićemo identitet i obrisati podatke u roku od 30 dana."
+      },
+      "s4": {
+        "title": "4. Šta se briše, a šta ostaje",
+        "items": {
+          "deleted": "Briše se: profil, radni prostori čiji ste jedini vlasnik, brendovi, profil brenda i znanje o brendu, povezani nalozi i tokeni, uvezene i kreirane objave, mediji, strategije, metrike, obaveštenja.",
+          "kept": "Ostaje u zakonskom roku: fakture i podaci o plaćanju koje moramo čuvati po računovodstvenim propisima, kao i anonimizovani zbirni podaci o korišćenju koji ne mogu da vas identifikuju.",
+          "member": "Ako ste član tuđeg radnog prostora, brišu se vaši lični podaci, a sadržaj koji ste kreirali za taj radni prostor ostaje njegovom vlasniku."
+        }
+      },
+      "s5": {
+        "title": "5. Automatski zahtevi sa Facebooka i Instagrama",
+        "text": "Kad uklonite Sovu iz podešavanja Facebook ili Instagram naloga, Meta nam automatski šalje zahtev za brisanje. Sova odmah briše podatke tog naloga i vraća vam kod potvrde i link na ovu stranicu, gde možete proveriti status."
+      }
+    }
+  },
+  "auth": {
+    "google": "Nastavite sa Google nalogom",
+    "or": "ili",
+    "email": "Email",
+    "password": "Lozinka",
+    "passwordHint": "Najmanje 10 karaktera.",
+    "sending": "Šaljem…",
+    "resendVerification": "Pošaljite ponovo email za potvrdu",
+    "login": {
+      "title": "Prijava",
+      "description": "Dobro došli nazad u Sovu.",
+      "deleted": "Nalog je obrisan zajedno sa vašim podacima. Hvala što ste koristili Sovu.",
+      "errors": {
+        "link": "Link je nevažeći ili je istekao. Prijavite se ili zatražite nov link.",
+        "provider": "Prijava preko spoljnog naloga nije uspela. Pokušajte ponovo.",
+        "google": "Google prijava trenutno nije dostupna."
+      },
+      "pending": "Prijavljujem…",
+      "submit": "Prijavite se",
+      "magic": "Prijava linkom na email",
+      "forgot": "Zaboravili ste lozinku?",
+      "magicPending": "Šaljem link…",
+      "magicSubmit": "Pošaljite mi link za prijavu",
+      "backToPassword": "Nazad na prijavu lozinkom",
+      "noAccount": "Nemate nalog?",
+      "createOne": "Napravite ga"
+    },
+    "register": {
+      "metaTitle": "Registracija",
+      "title": "Napravite nalog",
+      "description": "Besplatno dobijate 50 tokena posle potvrde email adrese.",
+      "closed": "Registracija je trenutno zatvorena. Pokušajte kasnije.",
+      "fullName": "Ime i prezime",
+      "terms": "Prihvatam <terms>Uslove korišćenja</terms> i <privacy>Politiku privatnosti</privacy>.",
+      "pending": "Pravim nalog…",
+      "submit": "Napravite nalog",
+      "haveAccount": "Već imate nalog?",
+      "login": "Prijavite se"
+    },
+    "forgot": {
+      "title": "Zaboravljena lozinka",
+      "description": "Unesite email i poslaćemo vam link za promenu lozinke.",
+      "submit": "Pošaljite link za promenu lozinke",
+      "back": "Nazad na prijavu"
+    },
+    "reset": {
+      "title": "Nova lozinka",
+      "description": "Izaberite novu lozinku za svoj nalog.",
+      "requestNew": "Zatražite nov link",
+      "newPassword": "Nova lozinka",
+      "confirm": "Ponovite lozinku",
+      "pending": "Čuvam…",
+      "submit": "Sačuvajte novu lozinku"
+    },
+    "verify": {
+      "metaTitle": "Potvrdite email",
+      "title": "Proverite poštu",
+      "description": "Poslali smo vam link za potvrdu email adrese. Kliknite na njega da aktivirate nalog.",
+      "notArrived": "Nije stiglo? Proverite spam folder ili zatražite novu poruku. Link važi 24 sata.",
+      "dev": "DEV: lokalni emailovi stižu u Mailpit na <link>127.0.0.1:54324</link>."
+    }
+  },
+  "contact": {
+    "title": "Kontakt",
+    "metaDescription": "Kako da kontaktirate tim Sove: podrška, pitanja o naplati, privatnost i brisanje podataka.",
+    "support": {
+      "title": "Podrška i pitanja",
+      "text": "Za pitanja o aplikaciji, naplati i povezivanju mreža pišite na <mail>{email}</mail>, na srpskom ili engleskom."
+    },
+    "privacy": {
+      "title": "Privatnost i brisanje podataka",
+      "text": "Zahteve u vezi sa ličnim podacima šaljite na <mail>{email}</mail>. Nalog i podatke možete obrisati i sami, uputstvo je na stranici <deletion>Brisanje podataka</deletion>."
+    },
+    "company": {
+      "title": "Firma",
+      "text": "{product} je proizvod firme {company}."
+    },
+    "address": "Adresa: {address}."
+  },
+  "botPage": {
+    "metaDescription": "Šta je SovaBot, kada čita sajtove i kako da ga dozvolite ili zabranite.",
+    "what": {
+      "title": "Šta je SovaBot",
+      "text": "SovaBot je čitač sajtova aplikacije Sova ({company}). Pokreće ga vlasnik brenda kad u Sovi unese adresu svog sajta, da bi Sova naučila ponudu, ton i vizuelni identitet brenda. SovaBot ne obilazi internet sam od sebe i ne čita sajtove koje niko nije uneo."
+    },
+    "behaviour": {
+      "title": "Kako se ponaša",
+      "items": {
+        "robots": "Poštuje robots.txt (token User-agent: SovaBot) i Crawl-delay.",
+        "pages": "Čita najviše 60 strana po analizi, 3 istovremeno, uz pauzu kad sajt to traži.",
+        "sitemap": "Posle prve analize proverava sitemap i RSS jednom nedeljno; stranice ne preuzima ponovo bez zahteva vlasnika.",
+        "forms": "Ne popunjava forme, ne prijavljuje se i ne izvršava JavaScript."
+      }
+    },
+    "block": {
+      "title": "Kako da ga zabranite",
+      "add": "Dodajte u robots.txt:",
+      "text": "Sova će tada vlasniku brenda prikazati poruku da sajt ne dozvoljava čitanje i ponuditi ručni unos podataka. Za pitanja pišite na {email}."
+    }
+  },
+  "invitePage": {
+    "metaTitle": "Pozivnica",
+    "title": "Pozivnica u radni prostor",
+    "description": "Neko vas je pozvao da sarađujete u Sovi.",
+    "signedIn": "Prijavljeni ste kao <b>{email}</b>. Pozivnica važi samo za adresu na koju je poslata.",
+    "pending": "Prihvatam…",
+    "accept": "Prihvatite pozivnicu",
+    "signedOut": "Prijavite se ili napravite nalog sa email adresom na koju je pozivnica stigla.",
+    "login": "Prijavite se",
+    "register": "Napravite nalog"
+  }
+}

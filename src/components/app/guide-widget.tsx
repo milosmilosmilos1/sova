@@ -132,11 +132,11 @@ export function GuideWidget({ brandId, supportEmail }: { brandId: string; suppor
         <LifeBuoy className="size-5 shrink-0" aria-hidden />
         <span className="hidden min-w-0 sm:block">
           <span className="block text-sm leading-tight font-semibold">{t('title')}</span>
-          <span className="block max-w-48 truncate text-xs text-primary-foreground/80">
+          <span className="block max-w-48 truncate text-xs text-primary-foreground">
             {view.next ? t('next', { step: t(`steps.${view.next}.title`) }) : t('allDoneShort')}
           </span>
         </span>
-        <span className="rounded-full bg-primary-foreground/20 px-2 py-0.5 text-xs font-semibold tabular-nums">
+        <span className="rounded-full bg-black/20 px-2 py-0.5 text-xs font-semibold tabular-nums">
           {view.done}/{total}
         </span>
       </button>

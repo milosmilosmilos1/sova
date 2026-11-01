@@ -207,7 +207,10 @@ export function DmAutomations({ brandId, canEdit }: { brandId: string; canEdit: 
                 </p>
                 <p className="flex flex-wrap gap-1">
                   {a.keywords.map((k) => (
-                    <span key={k} className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">
+                    <span
+                      key={k}
+                      className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-accent-foreground"
+                    >
                       {k}
                     </span>
                   ))}
@@ -274,7 +277,7 @@ export function DmAutomations({ brandId, canEdit }: { brandId: string; canEdit: 
       </section>
 
       <div className="grid gap-4 lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]">
-        <section className="overflow-x-auto rounded-xl border bg-card">
+        <section className="overflow-x-auto rounded-xl border bg-card" tabIndex={0}>
           <header className="border-b px-5 py-3">
             <h2 className="font-semibold">{t('contacts.title')}</h2>
             <p className="text-xs text-muted-foreground">{t('contacts.hint')}</p>
@@ -453,7 +456,7 @@ function AutomationEditor({
               {draft.keywords.map((k) => (
                 <span
                   key={k}
-                  className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs text-primary"
+                  className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs text-accent-foreground"
                 >
                   {k}
                   <button

@@ -48,20 +48,62 @@ function patterns(locale: Translated): Pattern[] {
   return list
 }
 
+/** Granica rečenice: tačka, upitnik ili uzvičnik, razmak i veliko slovo ili navodnik. */
+const SENTENCE_END = /(?<=[.!?])\s+(?=[\p{Lu}„"])/u
+const CROSSES_SENTENCE = /[.!?]\s+[\p{Lu}„"]/u
+
+/** Prevod po šablonu; promenljivi deo ne prelazi granicu rečenice (dužu poruku deli pozivalac). */
+function byPattern(text: string, locale: Translated, depth: number): string | null {
+  for (const p of patterns(locale)) {
+    const match = p.re.exec(text)
+    if (!match || match.slice(1).some((v) => CROSSES_SENTENCE.test(v))) continue
+    const value = (name: string) => match[p.slots.indexOf(name) + 1]
+    return p.out.replace(/\{(\w+)((?:\|[^|{}]*)+)?\}/g, (whole, name: string, forms?: string) => {
+      if (!p.slots.includes(name)) return whole
+      // {0|dan|dana}: oblik reči uz broj iz promenljive (srpski oblik iz izvora se tada izostavlja)
+      if (forms) return pluralForm(locale, value(name) ?? '', forms.slice(1).split('|'))
+      return translateServerText(value(name) ?? '', locale, depth + 1)
+    })
+  }
+  return null
+}
+
 export function translateServerText(text: string, locale: AppLocale, depth = 0): string {
   if (locale === 'sr-Latn' || !text) return text
   const exact = DICTIONARIES[locale][text]
   if (exact) return exact
   if (depth > 2) return text
-  for (const p of patterns(locale)) {
-    const match = p.re.exec(text)
-    if (!match) continue
-    return p.out.replace(/\{(\w+)\}/g, (whole, name: string) => {
-      const i = p.slots.indexOf(name)
-      return i < 0 ? whole : translateServerText(match[i + 1] ?? '', locale, depth + 1)
-    })
+  const whole = byPattern(text, locale, depth)
+  if (whole !== null) return whole
+  // više rečenica (nedeljni izveštaj, provere kvaliteta): najduži početak koji je poznata poruka,
+  // pa ostatak na isti način
+  const sentences = text.split(SENTENCE_END)
+  if (sentences.length < 2) return text
+  const out: string[] = []
+  for (let i = 0; i < sentences.length;) {
+    let j = sentences.length
+    let piece: string | null = null
+    while (j > i + 1) {
+      const chunk = sentences.slice(i, j).join(' ')
+      piece = DICTIONARIES[locale][chunk] ?? byPattern(chunk, locale, depth)
+      if (piece !== null) break
+      j--
+    }
+    out.push(piece ?? translateServerText(sentences[i]!, locale, depth + 1))
+    i = j
   }
-  return text
+  return out.join(' ')
+}
+
+/** Oblik reči uz broj: engleski jedan i ostalo, ukrajinski jedan, nekoliko (2–4) i mnogo. */
+function pluralForm(locale: Translated, raw: string, forms: string[]): string {
+  const n = Number(raw.replace(/[^\d]/g, '') || '0')
+  if (locale === 'en') return (n === 1 ? forms[0] : forms[1]) ?? forms[0] ?? ''
+  const mod10 = n % 10
+  const mod100 = n % 100
+  const i =
+    mod10 === 1 && mod100 !== 11 ? 0 : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 1 : 2
+  return forms[i] ?? forms[forms.length - 1] ?? ''
 }
 
 /** Poruke polja (Zod) na jeziku korisnika. */

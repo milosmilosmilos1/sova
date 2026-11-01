@@ -1,6 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -33,6 +34,7 @@ export function CanvaCard({
   canEdit: boolean
   notice: string | null
 }) {
+  const t = useTranslations('settings.canva')
   const qc = useQueryClient()
   const status = useQuery({
     queryKey: ['canva-status', workspaceId],
@@ -47,40 +49,29 @@ export function CanvaCard({
     <Card>
       <CardHeader>
         <CardTitle>Canva</CardTitle>
-        <CardDescription>
-          Dizajne iz Sove otvarate u Canvi, dorađujete ih i vraćate u biblioteku brenda. Veza je lična (po
-          korisniku).
-        </CardDescription>
+        <CardDescription>{t('description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-3 text-sm">
         {notice === 'connected' ? (
           <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-emerald-900">
-            Canva je povezana.
+            {t('connectedNotice')}
           </p>
         ) : null}
         {notice === 'denied' ? (
           <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
-            Povezivanje je otkazano u Canvi.
+            {t('deniedNotice')}
           </p>
         ) : null}
-        {status.isPending ? <p className="text-muted-foreground">Proveravam vezu…</p> : null}
-        {status.isError ? <p className="text-destructive">Status Canve nije učitan.</p> : null}
-        {s && !s.configured ? (
-          <p className="text-muted-foreground">
-            Canva integracija još nije podešena na serveru (ključevi aplikacije).
-          </p>
-        ) : null}
-        {s && s.configured && !s.enabled ? (
-          <p className="text-muted-foreground">Canva integracija je privremeno isključena.</p>
-        ) : null}
+        {status.isPending ? <p className="text-muted-foreground">{t('checking')}</p> : null}
+        {status.isError ? <p className="text-destructive">{t('loadFailed')}</p> : null}
+        {s && !s.configured ? <p className="text-muted-foreground">{t('notConfigured')}</p> : null}
+        {s && s.configured && !s.enabled ? <p className="text-muted-foreground">{t('disabled')}</p> : null}
         {s && s.configured && s.enabled ? (
           <div className="flex flex-wrap items-center gap-2">
             {s.connected ? (
               <>
-                <Badge>povezano</Badge>
-                <Badge variant="outline">
-                  {s.autofillAvailable ? 'Autofill dostupan' : 'bez Autofill-a (besplatan plan)'}
-                </Badge>
+                <Badge>{t('connected')}</Badge>
+                <Badge variant="outline">{s.autofillAvailable ? t('autofill') : t('noAutofill')}</Badge>
                 {canEdit ? (
                   <Button
                     size="sm"
@@ -88,16 +79,16 @@ export function CanvaCard({
                     onClick={() => disconnect.mutate()}
                     disabled={disconnect.isPending}
                   >
-                    Prekini vezu
+                    {t('disconnect')}
                   </Button>
                 ) : null}
               </>
             ) : (
               <>
                 {s.status === 'needs_reauth' ? (
-                  <Badge variant="outline">veza je istekla</Badge>
+                  <Badge variant="outline">{t('expired')}</Badge>
                 ) : (
-                  <Badge variant="secondary">nije povezano</Badge>
+                  <Badge variant="secondary">{t('notConnected')}</Badge>
                 )}
                 {canEdit ? (
                   <Button
@@ -109,7 +100,7 @@ export function CanvaCard({
                       />
                     }
                   >
-                    Poveži Canvu
+                    {t('connect')}
                   </Button>
                 ) : null}
               </>

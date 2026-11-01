@@ -1,13 +1,14 @@
 'use client'
 
 import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import { useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { INTL_UI } from '@/i18n/config'
 import type { ApiResponse } from '@/lib/api/response'
-import { pluralSr } from '@/lib/plural'
 
 interface PlanView {
   code: string
@@ -61,47 +62,35 @@ const post = <T,>(path: string, body: unknown) =>
     body: JSON.stringify(body),
   })
 
-const money = (cents: number, currency: string) =>
-  new Intl.NumberFormat('sr-Latn-RS', { style: 'currency', currency, maximumFractionDigits: 2 }).format(
-    cents / 100,
-  )
+type LedgerKey =
+  | 'consume'
+  | 'expire'
+  | 'refund'
+  | 'supportGrant'
+  | 'supportAdjust'
+  | 'signup'
+  | 'subscription'
+  | 'topup'
+  | 'refunded'
+  | 'grant'
 
-const date = (iso: string) => new Date(iso).toLocaleDateString('sr-Latn-RS')
-
-/** „Do 5 brendova, 10 mreža i 2 člana.”: posle „do” ide genitiv, pa i 1 i 2–4 imaju isti oblik. */
-function limitsLine(l: Overview['plan']['limits']): string {
-  const b = l.brands
-  const n = l.social_accounts
-  const m = l.members
-  return `Do ${b} ${pluralSr(b, 'brenda', 'brenda', 'brendova')}, ${n} ${pluralSr(n, 'mreže', 'mreže', 'mreža')} i ${m} ${pluralSr(m, 'člana', 'člana', 'članova')}.`
-}
-
-const STATUS: Record<string, string> = {
-  active: 'aktivna',
-  trialing: 'probni period',
-  past_due: 'plaćanje nije uspelo',
-  unpaid: 'neplaćena',
-  canceled: 'završena',
-  incomplete: 'čeka prvo plaćanje',
-  paused: 'pauzirana',
-}
-
-function ledgerLabel(e: LedgerEntry): string {
-  if (e.reason === 'consume') return 'Potrošeno'
-  if (e.reason === 'expire') return 'Isteklo'
-  if (e.reason === 'refund') return 'Oduzeto posle povraćaja novca'
-  if (e.reason === 'admin_adjust') return e.delta > 0 ? 'Dodela podrške' : 'Izmena podrške'
+/** Ključ natpisa promene u istoriji tokena (poruke billing.ledger). */
+function ledgerKey(e: LedgerEntry): LedgerKey {
+  if (e.reason === 'consume') return 'consume'
+  if (e.reason === 'expire') return 'expire'
+  if (e.reason === 'refund') return 'refund'
+  if (e.reason === 'admin_adjust') return e.delta > 0 ? 'supportGrant' : 'supportAdjust'
   switch (e.source) {
     case 'signup':
-      return 'Poklon pri registraciji'
+      return 'signup'
     case 'subscription':
-      return 'Pretplata'
+      return 'subscription'
     case 'topup':
-      return 'Dopuna'
+      return 'topup'
     case 'refund':
-      return 'Vraćeni tokeni'
+      return 'refunded'
     default:
-      return 'Dodela'
+      return 'grant'
   }
 }
 
@@ -115,6 +104,20 @@ export function BillingPanel({
   canSeeLedger: boolean
   checkout: 'success' | 'canceled' | null
 }) {
+  const t = useTranslations('billing')
+  const tag = INTL_UI[useLocale()]
+  const money = (cents: number, currency: string) =>
+    new Intl.NumberFormat(tag, { style: 'currency', currency, maximumFractionDigits: 2 }).format(cents / 100)
+  const date = (iso: string) => new Date(iso).toLocaleDateString(tag)
+  // naziv plana iz baze se prevodi po kodu; nepoznat kod ostaje sa nazivom iz baze
+  const planName = (code: string, name: string) => {
+    const key = `planNames.${code}` as 'planNames.free'
+    return t.has(key) ? t(key) : name
+  }
+  const statusLabel = (status: string) => {
+    const key = `status.${status}` as 'status.active'
+    return t.has(key) ? t(key) : status
+  }
   const [pollUntil] = useState(() => (checkout === 'success' ? Date.now() + 60_000 : 0))
   const overview = useQuery({
     queryKey: ['billing', workspaceId],
@@ -149,57 +152,61 @@ export function BillingPanel({
     <div className="space-y-6">
       {checkout === 'success' ? (
         <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-          Plaćanje je primljeno. Plan i tokeni se ažuriraju za nekoliko sekundi.
+          {t('paid')}
         </p>
       ) : null}
       {checkout === 'canceled' ? (
         <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          Plaćanje je otkazano; ništa nije naplaćeno.
+          {t('canceled')}
         </p>
       ) : null}
-      {overview.isError ? <p className="text-sm text-destructive">Podaci o naplati nisu učitani.</p> : null}
+      {overview.isError ? <p className="text-sm text-destructive">{t('loadFailed')}</p> : null}
       {go.isError ? <p className="text-sm text-destructive">{go.error.message}</p> : null}
 
       {o && !o.configured ? (
-        <p className="rounded-md border px-3 py-2 text-sm text-muted-foreground">
-          Plaćanje još nije uključeno na serveru (Stripe ključevi). Plan i tokeni rade kao i do sada.
-        </p>
+        <p className="rounded-md border px-3 py-2 text-sm text-muted-foreground">{t('notConfigured')}</p>
       ) : null}
-      {o && !o.canManage ? (
-        <p className="text-sm text-muted-foreground">Plaćanja vodi vlasnik radnog prostora.</p>
-      ) : null}
+      {o && !o.canManage ? <p className="text-sm text-muted-foreground">{t('ownerOnly')}</p> : null}
 
       {sub?.status === 'past_due' && sub.graceUntil ? (
         <p role="alert" className="rounded-md border border-red-300 bg-red-50 px-3 py-2 text-sm text-red-900">
-          {sub.blocked
-            ? 'Rok za plaćanje je istekao: generisanje je zaustavljeno. Zakazane objave i dalje izlaze.'
-            : `Plaćanje pretplate nije uspelo. Ažurirajte karticu do ${date(sub.graceUntil)}; posle toga generisanje staje.`}
+          {sub.blocked ? t('blocked') : t('pastDue', { date: date(sub.graceUntil) })}
         </p>
       ) : null}
 
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            Plan <Badge variant="secondary">{o?.plan.name ?? '…'}</Badge>
+            {t('plan')} <Badge variant="secondary">{o ? planName(o.plan.code, o.plan.name) : '…'}</Badge>
           </CardTitle>
-          <CardDescription>{o ? limitsLine(o.plan.limits) : 'Učitavam…'}</CardDescription>
+          <CardDescription>
+            {o
+              ? t('limits', {
+                  brands: o.plan.limits.brands,
+                  networks: o.plan.limits.social_accounts,
+                  members: o.plan.limits.members,
+                })
+              : t('loading')}
+          </CardDescription>
         </CardHeader>
         <CardContent className="space-y-3 text-sm">
           {o ? (
             <p>
-              Dostupno tokena: <strong>{o.balance.available}</strong>
-              {o.balance.reserved ? ` (još ${o.balance.reserved} u radu)` : ''}
+              {t.rich('available', {
+                count: o.balance.available,
+                strong: (chunks) => <strong>{chunks}</strong>,
+              })}
+              {o.balance.reserved ? ` ${t('reserved', { count: o.balance.reserved })}` : ''}
             </p>
           ) : null}
           {sub ? (
             <p>
-              Pretplata: {STATUS[sub.status] ?? sub.status}
               {sub.currentPeriodEnd
-                ? sub.cancelAtPeriodEnd
-                  ? `, završava se ${date(sub.currentPeriodEnd)}`
-                  : `, sledeća obnova ${date(sub.currentPeriodEnd)}`
-                : ''}
-              .
+                ? t(sub.cancelAtPeriodEnd ? 'subscriptionEnds' : 'subscriptionRenews', {
+                    status: statusLabel(sub.status),
+                    date: date(sub.currentPeriodEnd),
+                  })
+                : t('subscription', { status: statusLabel(sub.status) })}
             </p>
           ) : null}
           {sub && o?.hasCustomer && o.canManage ? (
@@ -208,7 +215,7 @@ export function BillingPanel({
               disabled={!canBuy || go.isPending}
               onClick={() => go.mutate({ path: '/api/billing/portal', body: { workspaceId } })}
             >
-              Upravljajte pretplatom i karticom
+              {t('manage')}
             </Button>
           ) : null}
         </CardContent>
@@ -219,32 +226,34 @@ export function BillingPanel({
           {subscriptionPlans.map((p) => (
             <Card key={p.code}>
               <CardHeader>
-                <CardTitle>{p.name}</CardTitle>
+                <CardTitle>{planName(p.code, p.name)}</CardTitle>
                 <CardDescription>
                   {p.regularPriceCents ? (
                     <>
                       <s>
-                        <span className="sr-only">Redovna cena </span>
+                        <span className="sr-only">{t('regularPrice')} </span>
                         {money(p.regularPriceCents, p.currency)}
                       </s>{' '}
-                      <span className="sr-only">Uvodna cena </span>
+                      <span className="sr-only">{t('introPrice')} </span>
                     </>
                   ) : null}
-                  {money(p.priceCents, p.currency)} {p.interval === 'year' ? 'godišnje' : 'mesečno'}
+                  {t(p.interval === 'year' ? 'perYear' : 'perMonth', {
+                    price: money(p.priceCents, p.currency),
+                  })}
                   {p.interval === 'year'
-                    ? ` (oko ${money(Math.round(p.priceCents / 12), p.currency)} mesečno)`
+                    ? ` ${t('aboutMonthly', { price: money(Math.round(p.priceCents / 12), p.currency) })}`
                     : ''}
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-3 text-sm">
-                <p>{p.tokens} tokena svakog meseca, veći limiti brendova, mreža i članova.</p>
+                <p>{t('monthlyTokens', { count: p.tokens })}</p>
                 <Button
                   disabled={!canBuy || go.isPending}
                   onClick={() =>
                     go.mutate({ path: '/api/billing/checkout', body: { workspaceId, planCode: p.code } })
                   }
                 >
-                  Pretplatite se
+                  {t('subscribe')}
                 </Button>
               </CardContent>
             </Card>
@@ -254,8 +263,8 @@ export function BillingPanel({
 
       <Card>
         <CardHeader>
-          <CardTitle>Dopuna tokena</CardTitle>
-          <CardDescription>Kupljeni tokeni ne ističu i troše se posle tokena iz pretplate.</CardDescription>
+          <CardTitle>{t('topup.title')}</CardTitle>
+          <CardDescription>{t('topup.description')}</CardDescription>
         </CardHeader>
         <CardContent className="flex flex-wrap gap-3">
           {topups.map((p) => (
@@ -267,7 +276,7 @@ export function BillingPanel({
                 go.mutate({ path: '/api/billing/topup', body: { workspaceId, planCode: p.code } })
               }
             >
-              {p.name} · {money(p.priceCents, p.currency)}
+              {t('topup.name', { count: p.tokens })} · {money(p.priceCents, p.currency)}
             </Button>
           ))}
         </CardContent>
@@ -276,19 +285,19 @@ export function BillingPanel({
       {canSeeLedger ? (
         <Card>
           <CardHeader>
-            <CardTitle>Istorija tokena</CardTitle>
+            <CardTitle>{t('ledger.title')}</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3 text-sm">
             {ledger.data?.pages[0]?.entries.length === 0 ? (
-              <p className="text-muted-foreground">Još nema promena.</p>
+              <p className="text-muted-foreground">{t('ledger.empty')}</p>
             ) : null}
             <table className="w-full text-left">
               <thead className="text-muted-foreground">
                 <tr>
-                  <th className="py-1 font-normal">Datum</th>
-                  <th className="py-1 font-normal">Promena</th>
-                  <th className="py-1 text-right font-normal">Promena tokena</th>
-                  <th className="py-1 text-right font-normal">Stanje</th>
+                  <th className="py-1 font-normal">{t('ledger.date')}</th>
+                  <th className="py-1 font-normal">{t('ledger.change')}</th>
+                  <th className="py-1 text-right font-normal">{t('ledger.tokenChange')}</th>
+                  <th className="py-1 text-right font-normal">{t('ledger.balance')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -297,7 +306,7 @@ export function BillingPanel({
                   .map((e) => (
                     <tr key={e.id} className="border-t">
                       <td className="py-1">{date(e.createdAt)}</td>
-                      <td className="py-1">{ledgerLabel(e)}</td>
+                      <td className="py-1">{t(`ledger.${ledgerKey(e)}`)}</td>
                       <td className={`py-1 text-right ${e.delta > 0 ? 'text-success' : ''}`}>
                         {e.delta > 0 ? `+${e.delta}` : e.delta}
                       </td>
@@ -312,7 +321,7 @@ export function BillingPanel({
                 disabled={ledger.isFetchingNextPage}
                 onClick={() => ledger.fetchNextPage()}
               >
-                Prikaži starije
+                {t('ledger.more')}
               </Button>
             ) : null}
           </CardContent>

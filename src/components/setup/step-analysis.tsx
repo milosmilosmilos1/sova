@@ -142,7 +142,7 @@ export function StepAnalysis({
                 <Input
                   id="setup-site"
                   value={url}
-                  placeholder="https://primer.rs"
+                  placeholder={t('siteUrlPlaceholder')}
                   autoComplete="url"
                   disabled={isRunning}
                   onChange={(e) => setUrl(e.target.value)}

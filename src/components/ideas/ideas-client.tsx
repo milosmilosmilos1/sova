@@ -30,7 +30,7 @@ interface Idea {
 }
 
 const STATUS_TONE: Record<IdeaStatus, string> = {
-  new: 'bg-primary/10 text-primary',
+  new: 'bg-primary/10 text-accent-foreground',
   planned: 'bg-sky-100 text-sky-900',
   in_progress: 'bg-amber-100 text-amber-900',
   done: 'bg-emerald-100 text-emerald-900',

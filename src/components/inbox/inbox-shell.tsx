@@ -177,7 +177,7 @@ export function InboxShell({
               <span
                 className={cn(
                   'rounded-full px-1.5 text-xs',
-                  tab === k ? 'bg-white/20' : 'bg-primary/10 text-primary',
+                  tab === k ? 'bg-black/20' : 'bg-primary/10 text-accent-foreground',
                 )}
               >
                 {data.counts[k].unread}
@@ -199,7 +199,7 @@ export function InboxShell({
                 onClick={() => setPlatform('')}
                 className={cn(
                   'rounded-full border px-2.5 py-1 text-xs',
-                  platform === '' && 'border-primary bg-primary/10 text-primary',
+                  platform === '' && 'border-primary bg-primary/10 text-accent-foreground',
                 )}
               >
                 {t('allNetworks')}
@@ -212,7 +212,7 @@ export function InboxShell({
                   onClick={() => setPlatform(p)}
                   className={cn(
                     'rounded-full border px-2.5 py-1 text-xs',
-                    platform === p && 'border-primary bg-primary/10 text-primary',
+                    platform === p && 'border-primary bg-primary/10 text-accent-foreground',
                   )}
                 >
                   {PLATFORMS[p].label}

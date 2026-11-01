@@ -7,7 +7,6 @@ import { toContentLocale } from '@/config/locales'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
-import { isFeatureEnabled } from '@/lib/flags'
 import { SETUP_STEPS } from '@/lib/schemas/setup'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -39,7 +38,6 @@ export default async function SetupPage({ searchParams }: PageProps<'/app/setup'
       canEdit={EDIT_ROLES.includes(current.role)}
       canAdmin={ADMIN_ROLES.includes(current.role)}
       emailVerified={Boolean(viewer.profile.emailVerifiedAt)}
-      showUiLocale={await isFeatureEnabled('ui_languages')}
       initialStep={initialStep}
       pendingState={pending}
       notice={notice}

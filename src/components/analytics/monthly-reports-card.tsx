@@ -1,6 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useLocale, useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
@@ -8,9 +9,9 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { INTL_UI } from '@/i18n/config'
 import type { ApiResponse } from '@/lib/api/response'
-import { pluralSr } from '@/lib/plural'
-import { monthLabel, recentMonths } from '@/lib/reports/period'
+import { recentMonths } from '@/lib/reports/period'
 
 /**
  * Mesečni PDF izveštaj (D-094): pravljenje na zahtev za izabrani mesec, lista napravljenih sa
@@ -43,13 +44,14 @@ async function api<T>(path: string, init: RequestInit & { json?: unknown } = {})
 }
 
 function ErrorBox({ error }: { error: unknown }) {
+  const tc = useTranslations('common')
   if (!error) return null
   return (
     <div
       role="alert"
       className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
     >
-      {error instanceof Error ? error.message : 'Greška.'}
+      {error instanceof Error ? error.message : tc('error')}
     </div>
   )
 }
@@ -71,6 +73,9 @@ export function MonthlyReportsCard({
   reportEmails: string[]
   canManageRecipients: boolean
 }) {
+  const t = useTranslations('reports')
+  const tc = useTranslations('common')
+  const intl = INTL_UI[useLocale()]
   const qc = useQueryClient()
   const months = useMemo(() => recentMonths(new Date(), timezone, 12), [timezone])
   // podrazumevano prethodni, završeni mesec
@@ -97,22 +102,25 @@ export function MonthlyReportsCard({
     onSuccess: (b) => setEmails(b.report_emails.join(', ')),
   })
   const fmtWhen = (iso: string) =>
-    new Date(iso).toLocaleString('sr-Latn-RS', { timeZone: timezone, dateStyle: 'short', timeStyle: 'short' })
+    new Date(iso).toLocaleString(intl, { timeZone: timezone, dateStyle: 'short', timeStyle: 'short' })
+  // naziv meseca po jeziku interfejsa; za srpski isto što i monthLabel („oktobar 2026.”)
+  const fmtMonth = (month: string) =>
+    new Date(`${month}-01T12:00:00Z`).toLocaleDateString(intl, {
+      month: 'long',
+      year: 'numeric',
+      timeZone: 'UTC',
+    })
 
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Mesečni izveštaj (PDF)</CardTitle>
-        <CardDescription>
-          Isti brojevi kao na ovoj strani, za ceo kalendarski mesec u zoni brenda i uz poređenje sa prethodnim
-          mesecom. Prvog u mesecu ujutru izveštaj za prethodni mesec stiže sam: vlasniku i administratorima
-          kao obaveštenje, a klijentu emailom ako su adrese upisane ispod.
-        </CardDescription>
+        <CardTitle className="text-base">{t('title')}</CardTitle>
+        <CardDescription>{t('description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex flex-wrap items-end gap-2">
           <div className="space-y-1">
-            <Label htmlFor="report-month">Mesec</Label>
+            <Label htmlFor="report-month">{t('month')}</Label>
             <select
               id="report-month"
               value={month}
@@ -121,14 +129,13 @@ export function MonthlyReportsCard({
             >
               {months.map((m, i) => (
                 <option key={m} value={m}>
-                  {monthLabel(m)}
-                  {i === 0 ? ' (u toku)' : ''}
+                  {i === 0 ? t('currentMonth', { month: fmtMonth(m) }) : fmtMonth(m)}
                 </option>
               ))}
             </select>
           </div>
           <Button onClick={() => create.mutate()} disabled={create.isPending}>
-            {create.isPending ? 'Pravim PDF…' : 'Napravi PDF'}
+            {create.isPending ? t('creating') : t('create')}
           </Button>
         </div>
         <ErrorBox error={create.error ?? reports.error} />
@@ -137,19 +144,17 @@ export function MonthlyReportsCard({
           <ul className="divide-y rounded-md border">
             {reports.data.map((r) => (
               <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 px-3 py-2 text-sm">
-                <span className="font-medium">{r.monthLabel}</span>
+                <span className="font-medium">{fmtMonth(r.month)}</span>
                 <span className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
                   {r.sentTo ? (
                     <Badge variant="secondary">
-                      {r.sentTo.length
-                        ? `poslat klijentu na ${r.sentTo.length} ${pluralSr(r.sentTo.length, 'adresu', 'adrese', 'adresa')}`
-                        : 'poslat timu'}
+                      {r.sentTo.length ? t('sentToClient', { count: r.sentTo.length }) : t('sentToTeam')}
                     </Badge>
                   ) : null}
-                  <span>napravljen {fmtWhen(r.createdAt)}</span>
+                  <span>{t('created', { when: fmtWhen(r.createdAt) })}</span>
                   {r.url ? (
                     <a href={r.url} className="font-medium text-primary underline underline-offset-2">
-                      Preuzmi
+                      {t('download')}
                     </a>
                   ) : null}
                 </span>
@@ -157,7 +162,7 @@ export function MonthlyReportsCard({
             ))}
           </ul>
         ) : reports.data ? (
-          <p className="text-sm text-muted-foreground">Još nema napravljenih izveštaja.</p>
+          <p className="text-sm text-muted-foreground">{t('empty')}</p>
         ) : null}
 
         <div className="space-y-2 border-t pt-4">
@@ -169,7 +174,7 @@ export function MonthlyReportsCard({
                 save.mutate()
               }}
             >
-              <Label htmlFor="report-emails">Klijent dobija izveštaj na (do 5 adresa)</Label>
+              <Label htmlFor="report-emails">{t('recipientsLabel')}</Label>
               <div className="flex flex-wrap gap-2">
                 <Input
                   id="report-emails"
@@ -178,30 +183,29 @@ export function MonthlyReportsCard({
                     setEmails(e.target.value)
                     save.reset()
                   }}
-                  placeholder="klijent@firma.rs, direktor@firma.rs"
+                  placeholder={t('placeholder')}
                   className="min-w-0 flex-1"
                   autoComplete="off"
                 />
                 <Button type="submit" variant="outline" disabled={save.isPending}>
-                  {save.isPending ? 'Čuvam…' : 'Sačuvaj'}
+                  {save.isPending ? t('saving') : tc('save')}
                 </Button>
               </div>
-              <p className="text-xs text-muted-foreground">
-                Adrese odvojite zarezom. Prazno polje znači da izveštaj ide samo timu.
-              </p>
+              <p className="text-xs text-muted-foreground">{t('hint')}</p>
               {save.isSuccess ? (
                 <p role="status" className="text-xs text-muted-foreground">
-                  Sačuvano.
+                  {t('saved')}
                 </p>
               ) : null}
               <ErrorBox error={save.error} />
             </form>
           ) : (
             <>
-              <p className="text-sm font-medium">Klijent dobija izveštaj na</p>
+              <p className="text-sm font-medium">{t('recipientsTitle')}</p>
               <p className="text-sm text-muted-foreground">
-                {reportEmails.length ? reportEmails.join(', ') : 'nijednu adresu (izveštaj ide samo timu)'}.
-                Adrese menja vlasnik ili administrator.
+                {t('recipientsNote', {
+                  list: reportEmails.length ? reportEmails.join(', ') : t('noRecipients'),
+                })}
               </p>
             </>
           )}

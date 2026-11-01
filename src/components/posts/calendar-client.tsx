@@ -271,7 +271,9 @@ export function CalendarClient({ brandId, timezone }: { brandId: string; timezon
             </div>
           </div>
 
-          <div className="-mx-1 overflow-x-auto px-1">
+          {/* relative: oznake samo za čitač ekrana u ćelijama ostaju u okviru (ne šire stranu na telefonu);
+              tabIndex: mreža šira od okvira se skroluje i tastaturom */}
+          <div className="relative -mx-1 overflow-x-auto px-1" tabIndex={0}>
             <div className={cn('grid min-w-[44rem] grid-cols-7 gap-1.5', grid.isFetching && 'opacity-70')}>
               {weekdays.map((w) => (
                 <div key={w} className="px-1 pb-1 text-xs font-medium text-muted-foreground uppercase">

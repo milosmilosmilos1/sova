@@ -1,1 +1,837 @@
-{}
+{
+  "site": {
+    "demo": {
+      "domain": "grainbakery.co.uk",
+      "brand": "Grain Bakery",
+      "logo": "GRAIN",
+      "handle": "grainbakery",
+      "headline": "Bread like it used to be.",
+      "tones": {
+        "warm": "Warm",
+        "local": "Neighbourly",
+        "plain": "No jargon"
+      },
+      "week": "2–8 November",
+      "postTitle": "First-batch croissants",
+      "client": "Emma",
+      "placeholder": "yourbusiness.com",
+      "inputLabel": "Your website address",
+      "try": "Try it",
+      "start": "Start for free"
+    },
+    "hero": {
+      "pill": {
+        "open": "Open",
+        "closed": "In development",
+        "openText": "Registration is open",
+        "closedText": "Registration opens soon"
+      },
+      "title1": "Add your site,",
+      "title2": "Sova runs",
+      "title3": "your socials.",
+      "sub": "Sova learns your brand from your website, builds a strategy, writes posts, creates visuals, schedules and publishes them, then learns from the results.",
+      "freeTokens": "{count, plural, one {# free token} other {# free tokens}}",
+      "freeTrial": "Free to try",
+      "noCard": "No card needed",
+      "languages": "Writes in English, Ukrainian and Serbian",
+      "publishesTo": "Publishes to"
+    },
+    "heroDemo": {
+      "region": "Sova at work: an example",
+      "steps": {
+        "site": "Your website",
+        "brain": "Brand Brain",
+        "strategy": "Strategy",
+        "posts": "Posts and visuals",
+        "publish": "Publishing",
+        "results": "Results"
+      },
+      "state": {
+        "manual": "Click the steps",
+        "paused": "Paused",
+        "running": "Demo running"
+      },
+      "site": {
+        "title": "01 · READING THE WEBSITE",
+        "meta": "14 pages",
+        "pages": {
+          "home": "Home",
+          "offer": "Menu and prices",
+          "about": "About us",
+          "contact": "Contact and opening hours",
+          "blog": "Blog, 3 posts"
+        },
+        "done": "done",
+        "reading": "reading…"
+      },
+      "brand": {
+        "title": "02 · BRAND BRAIN",
+        "meta": "sample analysis",
+        "place": "Artisan bakery · Bristol",
+        "colours": "COLOURS",
+        "tone": "TONE",
+        "audience": "AUDIENCE",
+        "services": "SERVICES",
+        "audienceText": "Families and office workers, 25–45, Bristol and Clifton",
+        "list": {
+          "sourdough": "Sourdough bread",
+          "croissants": "Croissants",
+          "cakes": "Cakes to order",
+          "catering": "Catering"
+        },
+        "note": "Sova uses this profile in every post. You can change it any time."
+      },
+      "strategy": {
+        "title": "03 · STRATEGY",
+        "meta": "November 2026",
+        "headline": "12 posts, 3 networks",
+        "goal": "This month's goal: +15% profile visits and 40 cake orders through messages.",
+        "pillars": {
+          "products": "Products",
+          "behind": "Behind the scenes",
+          "tips": "Tips and recipes",
+          "offers": "Offers"
+        },
+        "rhythm": "SCHEDULE",
+        "slots": {
+          "mon": "Mon 08:00",
+          "wed": "Wed 19:00",
+          "fri": "Fri 08:00"
+        }
+      },
+      "posts": {
+        "title": "04 · POSTS AND VISUALS",
+        "meta": "4 of 12 ready",
+        "ready": "Ready",
+        "draft": "Draft",
+        "caption": "Good mornings smell like this. Croissants out of the oven at 7am.",
+        "tags": "#bristol #bakery"
+      },
+      "badges": {
+        "published": "Published",
+        "scheduled": "Scheduled",
+        "review": "Awaiting approval",
+        "draft": "Draft"
+      },
+      "publish": {
+        "title": "05 · PUBLISHING",
+        "rows": {
+          "ig": {
+            "when": "MON 08:00"
+          },
+          "fb": {
+            "when": "MON 08:05"
+          },
+          "tiktok": {
+            "when": "WED 19:00",
+            "title": "36 hours for one croissant"
+          },
+          "cakes": {
+            "when": "FRI 08:00",
+            "title": "Weekend cakes to order"
+          },
+          "hours": {
+            "when": "FRI 09:00",
+            "title": "Holiday opening hours"
+          },
+          "why": {
+            "when": "SUN 10:00",
+            "title": "Why a croissant takes 36 hours"
+          }
+        },
+        "timezone": "Time zone: London (GMT)"
+      },
+      "results": {
+        "title": "06 · RESULTS",
+        "meta": "October 2026",
+        "reach": "Reach",
+        "reachValue": "18.4K",
+        "engagement": "Engagement",
+        "engagementValue": "6.1%",
+        "engagementDelta": "+1.4 pts",
+        "followers": "Followers",
+        "from": "SEP",
+        "to": "OCT",
+        "insight": "Behind-the-scenes posts get 2.3× more reach. I'm planning more of them for December."
+      },
+      "approval": {
+        "title": "Emma approved 3 posts",
+        "meta": "Client · 2 min ago"
+      }
+    },
+    "networks": {
+      "title": "One calendar for every network",
+      "sub": "Write it once and Sova adapts the format, length and tone to each network. It publishes through the official APIs, with your approval or automatically. Pick a network and see for yourself.",
+      "preview": "POST PREVIEW",
+      "adapted": "The same post, adapted for {network}",
+      "officialApi": "Official API",
+      "textLength": "Text length",
+      "call": "Call",
+      "likes": "2.4K",
+      "share": "Share"
+    },
+    "platforms": {
+      "instagram": {
+        "name": "Instagram",
+        "format": "4:5 · photo",
+        "tags": "4 hashtags",
+        "handle": "grainbakery · Bristol",
+        "actions": "Like · Comment · Share",
+        "note": "A longer caption, 4 hashtags at the end and a 4:5 frame that fills the screen.",
+        "caption": "Good mornings smell like this. Our French-butter croissants come out of the oven at 7am – come by while they're warm.\n\n#bristol #bakery #croissant #breakfast"
+      },
+      "facebook": {
+        "name": "Facebook",
+        "format": "1.91:1 · photo",
+        "tags": "no hashtags",
+        "handle": "Grain Bakery · 2m",
+        "actions": "Like · Comment · Share",
+        "note": "Shorter copy, an invitation to reserve by message, no hashtags.",
+        "caption": "New at Grain: French-butter croissants, every morning from 7am. Message us to reserve yours and we'll keep them until 10."
+      },
+      "linkedin": {
+        "name": "LinkedIn",
+        "format": "1.91:1 · photo",
+        "tags": "3 hashtags",
+        "handle": "Grain Bakery · 1,204 followers",
+        "actions": "Like · Comment · Repost",
+        "note": "The story behind the business, a more professional tone and 3 hashtags.",
+        "caption": "Every croissant takes 36 hours of work. This month we brought in French butter and a new baking schedule, so the first batch is ready by 7am.\n\nSmall bakery, high standards. #craft #bristol #smallbusiness"
+      },
+      "tiktok": {
+        "name": "TikTok",
+        "format": "9:16 · video",
+        "tags": "3 hashtags",
+        "handle": "@grainbakery",
+        "videoTop": "For You",
+        "note": "A hook in the first second, short text over vertical video.",
+        "caption": "36 hours for one croissant. Watch till the end. #bakery #bristol #croissant"
+      },
+      "x": {
+        "name": "X",
+        "format": "16:9 · text and image",
+        "tags": "no hashtags",
+        "handle": "@grainbakery · 2m",
+        "actions": "Reply · Repost · Like",
+        "note": "Trimmed to fit 280 characters, with a touch of humour.",
+        "caption": "French-butter croissants, warm from 7am. Get here before 8 and the coffee's on us."
+      },
+      "youtube": {
+        "name": "YouTube Shorts",
+        "format": "9:16 · video",
+        "tags": "#Shorts",
+        "handle": "Grain Bakery",
+        "videoTop": "Shorts",
+        "note": "A title of up to 100 characters with the #Shorts tag.",
+        "caption": "How a croissant is made: 36 hours in 30 seconds #Shorts"
+      },
+      "pinterest": {
+        "name": "Pinterest",
+        "format": "2:3 · pin",
+        "tags": "keywords",
+        "handle": "Grain Bakery · Recipes",
+        "actions": "Save · Share",
+        "note": "A descriptive title with the keywords people search for.",
+        "caption": "Homemade sourdough bread: recipe and tips from Grain Bakery"
+      },
+      "google_business": {
+        "name": "Google Business Profile",
+        "format": "4:3 · update",
+        "tags": "no hashtags",
+        "handle": "42 Gloucester Road, Bristol",
+        "actions": "Rated 4.8 · 312 reviews",
+        "note": "Practical details, opening hours and a call button.",
+        "caption": "French-butter croissants every morning from 7am. Open 6:30am–8pm, Sundays until 2pm."
+      }
+    },
+    "features": {
+      "title": "Everything an agency does, <accent>for a fraction of the price</accent>",
+      "sub": "Six tools that work together, from the first read of your website to the monthly report.",
+      "cards": {
+        "brain": {
+          "title": "Brand Brain",
+          "text": "Reads your website and picks out your services, tone, audience, colours and facts, then uses them in every post."
+        },
+        "studio": {
+          "title": "AI Studio",
+          "text": "Copy for each network, written to its rules, plus images, template visuals, translation and hashtags."
+        },
+        "calendar": {
+          "title": "Calendar and approvals",
+          "text": "Drafts, comments, an approval link for your client and posts that go out on time, even when you change time zone."
+        },
+        "autopilot": {
+          "title": "Autopilot",
+          "text": "A weekly plan built from your strategy, with quality checks, a token budget and approval deadlines."
+        },
+        "analytics": {
+          "title": "Analytics and insights",
+          "text": "Reach, engagement and the best posting times for each network, plus weekly insights on what to do differently."
+        }
+      },
+      "brain": {
+        "nav": {
+          "offer": "Menu",
+          "about": "About",
+          "contact": "Contact"
+        },
+        "cta": "See the menu",
+        "profile": "BRAND PROFILE",
+        "done": "done",
+        "colours": "Colours",
+        "tone": "Tone",
+        "facts": "Facts",
+        "factsText": "Baking since 1998 · 20-year-old starter · Open from 6:30am"
+      },
+      "calendar": {
+        "client": "client",
+        "comment": "Fine by me, just move it to 9am.",
+        "approved": "Approved"
+      },
+      "agencies": {
+        "title": "For agencies and teams",
+        "text": "Several brands in one workspace, with roles, invitations and approvals for each client.",
+        "brandsLabel": "BRANDS",
+        "teamLabel": "TEAM · GRAIN BAKERY",
+        "invite": "Invite a team member",
+        "waiting": "{count, plural, one {# waiting} other {# waiting}}",
+        "allApproved": "All approved",
+        "brands": {
+          "bakery": {
+            "meta": "Bristol · 3 networks"
+          },
+          "gym": {
+            "name": "Forma Gym",
+            "meta": "Manchester · 4 networks"
+          },
+          "florist": {
+            "name": "Tulip Florist",
+            "meta": "Leeds · 2 networks"
+          },
+          "bistro": {
+            "name": "Corner Bistro",
+            "meta": "Glasgow · 5 networks"
+          }
+        },
+        "team": {
+          "owner": "Anna Peterson",
+          "editor": "Mark Ellis",
+          "client": "Emma Smith"
+        },
+        "roles": {
+          "owner": "Owner",
+          "editor": "Editor",
+          "client": "Client"
+        }
+      }
+    },
+    "featureDemos": {
+      "studio": {
+        "label": "Language of the text",
+        "options": {
+          "a": {
+            "label": "English",
+            "text": "Good mornings smell like this. Croissants come out of the oven at 7am – come by while they're warm.",
+            "tags": "#bristol #bakery #breakfast"
+          },
+          "b": {
+            "label": "Українська",
+            "text": "Ранок починається з аромату. Круасани виходять із печі о 7:00 – приходьте, поки теплі.",
+            "tags": "#бристоль #пекарня #сніданок"
+          },
+          "c": {
+            "label": "Srpski",
+            "text": "Jutro počinje mirisom. Kroasani izlaze iz peći u 7:00 – dođite dok su topli.",
+            "tags": "#bristol #pekara #doručak"
+          }
+        }
+      },
+      "autopilot": {
+        "name": "Autopilot",
+        "next": "Next post: Mon 08:00",
+        "manual": "Every post waits for your approval",
+        "toggle": "Turn Autopilot on or off",
+        "budget": "Token budget, November",
+        "rules": {
+          "quality": "Quality check before every post",
+          "limit": "No more than 3 posts a week",
+          "offers": "Offers and prices always wait for approval"
+        }
+      },
+      "reach": {
+        "label": "Reach, last 7 days",
+        "best": "Best time: Tuesday at 7pm"
+      }
+    },
+    "days": {
+      "short": {
+        "mon": "MON",
+        "tue": "TUE",
+        "wed": "WED",
+        "thu": "THU",
+        "fri": "FRI",
+        "sat": "SAT",
+        "sun": "SUN"
+      },
+      "long": {
+        "mon": "Monday",
+        "tue": "Tuesday",
+        "wed": "Wednesday",
+        "thu": "Thursday",
+        "fri": "Friday",
+        "sat": "Saturday",
+        "sun": "Sunday"
+      }
+    },
+    "how": {
+      "title": "How it works, in three steps",
+      "sub": "From your website address to your first post in a few minutes.",
+      "analyse": "Analyse",
+      "chips": {
+        "logo": "Logo",
+        "colours": "Colours",
+        "services": "Services",
+        "tone": "Tone",
+        "audience": "Audience"
+      },
+      "steps": {
+        "url": {
+          "title": "Enter your website URL",
+          "text": "Sova picks out your logo, colours, services, tone and audience by itself. You just review and correct."
+        },
+        "connect": {
+          "title": "Connect your networks",
+          "text": "Facebook, Instagram, LinkedIn, TikTok, X, YouTube, Pinterest and Google Business Profile."
+        },
+        "approve": {
+          "title": "Approve, or switch on Autopilot",
+          "text": "Sova publishes at the right time, tracks the results and adjusts next month's plan."
+        }
+      },
+      "connect": {
+        "count": "{count} of 8 networks connected",
+        "hint": "Click to connect"
+      },
+      "approveDemo": {
+        "when": "Instagram · Mon 08:00",
+        "edit": "Edit",
+        "approve": "Approve",
+        "approved": "Approved",
+        "scheduled": "Scheduled for Monday at 08:00.",
+        "link": "Your client gets an approval link."
+      }
+    },
+    "pricing": {
+      "title": "Simple pricing.",
+      "titleAccent": "Pay for work, not seats.",
+      "sub": "Tokens are used when the AI makes something. The calendar and analytics cost nothing.",
+      "unavailable": "Pricing isn't available right now. Refresh the page in a few minutes.",
+      "plans": {
+        "free": "Free",
+        "monthly": "Monthly",
+        "yearly": "Yearly"
+      },
+      "tokens": "{count, plural, one {# token} other {# tokens}}",
+      "popular": "Most popular",
+      "covers": "Covers your volume",
+      "regularPrice": "Regular price",
+      "introPrice": "Introductory price",
+      "introDiscount": "Introductory price, {discount}% off",
+      "start": "Get started",
+      "perMonth": "per month",
+      "perYear": "per year",
+      "free": {
+        "description": "{tokens, plural, one {# token} other {# tokens}} to try it out, {brands, plural, one {# brand} other {# brands}} and {networks, plural, one {# network} other {# networks}}.",
+        "tokens": "{count, plural, one {# token} other {# tokens}}, once",
+        "limits": "{brands, plural, one {# brand} other {# brands}}, {networks, plural, one {# network} other {# networks}}",
+        "calendar": "Calendar and publishing"
+      },
+      "monthly": {
+        "description": "{tokens, plural, one {# token} other {# tokens}} every month, up to {brands, plural, one {# brand} other {# brands}}, {networks, plural, one {# network} other {# networks}} and {members, plural, one {# team member} other {# team members}}.",
+        "tokens": "{count, plural, one {# token} other {# tokens}} every month",
+        "limits": "Up to {brands, plural, one {# brand} other {# brands}}, {networks, plural, one {# network} other {# networks}}",
+        "members": "{count, plural, one {# team member} other {# team members}}"
+      },
+      "yearly": {
+        "description": "{count, plural, one {# token} other {# tokens}} every month, paid a year in advance.",
+        "everything": "Everything in the Monthly plan",
+        "perMonth": "About {price} a month",
+        "saving": "{saving}% less than the monthly plan"
+      },
+      "calc": {
+        "title": "How many tokens do you need?",
+        "sub": "Move the sliders and the plan recommendation updates.",
+        "textPosts": "Text-only posts",
+        "imagePosts": "Posts with an image",
+        "hint": "{posts} × {cost, plural, one {# token} other {# tokens}}",
+        "imageNote": "Text {text, plural, one {# token} other {# tokens}} + image {image, plural, one {# token} other {# tokens}}",
+        "strategy": "Monthly strategy",
+        "need": "YOU NEED EACH MONTH",
+        "total": "{count, plural, one {<n>#</n> <w>token</w>} other {<n>#</n> <w>tokens</w>}}"
+      },
+      "rec": {
+        "freeTitle": "Free is enough",
+        "freeNote": "The {count, plural, one {# trial token covers} other {# trial tokens cover}} this volume.",
+        "planTitle": "Monthly or Yearly plan",
+        "planNote": "You'll have {count, plural, one {# token} other {# tokens}} a month left for extra posts.",
+        "topupTitle": "Plan + top-up",
+        "over": "{count, plural, one {# token} other {# tokens}} over the plan",
+        "need": "You'll need a top-up for {over}.",
+        "add": "Add {parts} tokens ({price}) to cover {over}."
+      },
+      "topups": {
+        "title": "Top-ups that never expire",
+        "sub": "Buy them only when you need them.",
+        "note": "Publishing, the calendar and analytics don't use tokens, except posts on X ({xPost, plural, one {# token} other {# tokens}}, or {withLink} with a link)."
+      }
+    },
+    "faq": {
+      "title": "Frequently asked questions",
+      "intro": "Can't find the answer? Write to us through the <link>Contact</link> page.",
+      "items": {
+        "tokens": {
+          "q": "What are tokens?",
+          "a": "Tokens are the unit of AI work. Writing a post costs {text, plural, one {# token} other {# tokens}}, an image {image} and a monthly strategy {strategy}. Publishing, the calendar and analytics don't use tokens, except posts on X: {xPost, plural, one {# token} other {# tokens}}, or {withLink} with a link."
+        },
+        "autopilot": {
+          "q": "Does Sova publish without me?",
+          "a": "Only if you want it to. By default, every post waits for your approval. When you switch on Autopilot, Sova publishes to plan, within the token budget and the rules you've set."
+        },
+        "cancel": {
+          "q": "Can I cancel my subscription?",
+          "a": "Yes, at any time, from the Billing page in the app. Your plan stays active until the end of the period you've paid for, and token top-ups you've bought never expire."
+        },
+        "data": {
+          "q": "What happens to my data?",
+          "a": "Your data is used only to work on your brand, and we don't sell it. We share it only with the processors listed in our <privacy>Privacy policy</privacy>, such as hosting, AI and payments. You can permanently delete your account and all your data on the <deletion>Data deletion</deletion> page."
+        },
+        "language": {
+          "q": "Which languages does Sova write in?",
+          "a": "English, Ukrainian and Serbian, with Serbian in both the Latin and Cyrillic alphabets. Sova gets the grammar right, follows your brand's tone and uses local expressions."
+        }
+      }
+    },
+    "finalCta": {
+      "title": "Let Sova run <accent>your social media</accent>",
+      "sub": "Enter your website and in a few minutes you'll have a brand profile, a strategy and your first posts.",
+      "noCard": "No card needed.",
+      "trialTokens": "{count, plural, one {# free token} other {# free tokens}} to try it.",
+      "closed": "The app is still in development. Registration opens soon."
+    }
+  },
+  "legal": {
+    "updated": "last updated: {date}",
+    "address": "Address: {address}.",
+    "privacy": {
+      "title": "Privacy policy",
+      "metaDescription": "How Sova collects, uses and protects personal data.",
+      "s1": {
+        "title": "1. Who the data controller is",
+        "text": "The data controller is <b>{company}</b>, the owner of the {product} platform available at {domain}. For any questions about data protection, write to <mail>{email}</mail>."
+      },
+      "s2": {
+        "title": "2. What data we process",
+        "items": {
+          "account": "<b>Account data:</b> name, email address, password (stored only as a hash by our authentication processor), language, time zone, notification settings.",
+          "brand": "<b>Brand data:</b> your website URL and the publicly available content on it (text, logo, colours, fonts, images, information about your services), descriptions you enter yourself, information about competitors you add.",
+          "social": "<b>Data from connected social networks:</b> the ID and name of the account or page, profile picture, access tokens the network issues to us when you approve the connection, your past posts with public metrics (reach, reactions, comments), metrics for posts Sova publishes on your behalf.",
+          "content": "<b>Content you create in Sova:</b> post text, photos and videos you upload, generated images, strategies, comments and approval decisions.",
+          "payment": "<b>Payment data:</b> processed by Stripe. We store only the customer ID, plan, subscription status and token history. Your card number never reaches us.",
+          "technical": "<b>Technical data:</b> IP address, browser and device type, access times, error logs, cookies needed for your session.",
+          "team": "<b>Team member and client data:</b> the email addresses of people you invite to your workspace and their decisions on approving posts."
+        }
+      },
+      "s3": {
+        "title": "3. Purposes and legal basis",
+        "items": {
+          "service": "Providing the service you asked for (website analysis, content creation, scheduling and publishing, analytics): performance of a contract.",
+          "security": "Account security, preventing abuse and fixing errors: legitimate interest.",
+          "billing": "Billing and accounting records: performance of a contract and legal obligation.",
+          "emails": "Emails about your account status, failed posts and approvals: performance of a contract. Marketing emails only with your consent, which you can withdraw at any time.",
+          "analytics": "Product usage analytics and non-essential cookies: consent."
+        }
+      },
+      "s4": {
+        "title": "4. Data from third-party platforms",
+        "p1": "When you connect Facebook, Instagram, LinkedIn, TikTok, X, YouTube, Pinterest or Google Business Profile, Sova gets access only to the data you approved during the connection. We use that data only for the features you asked for: publishing content on your behalf, importing past posts to learn about your brand, and showing metrics. We do not sell platform data, use it for advertising or share it with third parties other than the processors listed in section 5. Access tokens are stored encrypted (AES-256-GCM) and deleted as soon as you disconnect the account.",
+        "p2": "Sova's use of information received from Google APIs (YouTube, Google Business Profile, Google sign-in) adheres to the <policy>Google API Services User Data Policy</policy>, including the Limited Use requirements. Our use of data from Meta platforms complies with the Meta Platform Terms, and our use of data from TikTok complies with the TikTok Developer Terms."
+      },
+      "s5": {
+        "title": "5. Processors we entrust with data",
+        "processors": {
+          "supabase": "<b>Supabase</b>: database, authentication, file storage",
+          "vercel": "<b>Vercel</b>: application hosting and content delivery",
+          "gemini": "<b>Google (Gemini API)</b>: generating text and images, analysing website content and images",
+          "stripe": "<b>Stripe</b>: billing for subscriptions and token packs",
+          "resend": "<b>Resend</b>: sending transactional emails",
+          "upstash": "<b>Upstash</b>: rate limiting and temporary caching",
+          "inngest": "<b>Inngest</b>: background jobs (website analysis, publishing, metrics)",
+          "sentry": "<b>Sentry</b>: technical error tracking",
+          "posthog": "<b>PostHog</b>: product usage analytics",
+          "turnstile": "<b>Cloudflare Turnstile</b>: bot protection at sign-up",
+          "media": "<b>Unsplash and Canva</b>: photos and designs, only when you choose them"
+        },
+        "text": "We have a data processing agreement with each processor. Some of them process data in the United States; these transfers rely on Standard Contractual Clauses or the EU-US Data Privacy Framework."
+      },
+      "s6": {
+        "title": "6. Artificial intelligence",
+        "text": "We use the Google Gemini API to generate text and images and to analyse websites. We send Gemini the public content of your website, your brand description, your inputs and any photos you attach yourself. Under the terms of the paid Gemini API, Google does not use this data to train its models. Visuals made by artificial intelligence are labelled as AI-generated in the app, and where a network supports it, Sova also adds a label to the post itself."
+      },
+      "s7": {
+        "title": "7. How long we keep data",
+        "items": {
+          "account": "Account and brand data: while the account exists, and then for no more than 30 days after the account is deleted.",
+          "tokens": "Network access tokens: while the account is connected; they are deleted as soon as you disconnect.",
+          "logs": "Technical records (logs): up to 90 days.",
+          "invoices": "Payment data and invoices: for the period required by accounting regulations."
+        }
+      },
+      "s8": {
+        "title": "8. Your rights",
+        "p1": "Under the General Data Protection Regulation (GDPR) and the Law on Personal Data Protection of the Republic of Serbia, you have the right to access, rectification, erasure, restriction of processing, data portability, objection to processing and withdrawal of consent. Send your request to <mail>{email}</mail> and we will reply within 30 days. You also have the right to lodge a complaint with the Commissioner for Information of Public Importance and Personal Data Protection (Serbia) or with the supervisory authority in your country.",
+        "p2": "You can delete your account and all your data yourself, without contacting us. The process is described on the <deletion>Data deletion</deletion> page."
+      },
+      "s9": {
+        "title": "9. Cookies",
+        "text": "Essential cookies are used for logging in, protecting against abuse and remembering your language, and do not require consent. Usage analytics cookies are set only if you accept them. You can set your browser to refuse cookies, but logging in will not work without the essential ones."
+      },
+      "s10": {
+        "title": "10. Security",
+        "text": "Data travels encrypted (TLS). Access tokens are encrypted in the database, access to data is restricted by database-level policies so that each user sees only their own workspace, and staff access is logged. No system is completely secure; in the event of a data breach, we will notify you and the competent authority within the legal deadline."
+      },
+      "s11": {
+        "title": "11. Children",
+        "text": "Sova is intended for business users over the age of 18. We do not knowingly collect children's data."
+      },
+      "s12": {
+        "title": "12. Changes",
+        "text": "We will tell you about important changes to this policy by email or with a notice in the app at least 14 days before they take effect."
+      }
+    },
+    "terms": {
+      "title": "Terms of service",
+      "metaDescription": "The terms under which you use the Sova platform.",
+      "s1": {
+        "title": "1. Parties and acceptance",
+        "text": "You enter into these terms with <b>{company}</b> (“we”), the owner of the {product} platform. By registering an account, you confirm that you have read and accepted them. If you open an account on behalf of a company or agency, you confirm that you are authorised to bind it."
+      },
+      "s2": {
+        "title": "2. What Sova is",
+        "text": "Sova is software that helps you run social media: it analyses your website, suggests a strategy, generates text and visuals with the help of artificial intelligence, schedules and publishes content on the networks you connect, and shows the results. Sova is a tool; you decide what gets published."
+      },
+      "s3": {
+        "title": "3. Your account",
+        "items": {
+          "age": "You must be at least 18 years old and provide accurate information.",
+          "password": "You are responsible for keeping your password safe and for everything that happens under your account. We recommend two-factor authentication.",
+          "free": "One free account per person. Opening several free accounts to get extra tokens is not allowed.",
+          "team": "Team members and clients you invite to your workspace are bound by the same terms."
+        }
+      },
+      "s4": {
+        "title": "4. Connected social networks",
+        "text": "By connecting an account on a network, you authorise Sova to publish on your behalf content you have approved or content created in Autopilot mode that you switched on yourself, to import your past posts and to read metrics. You can withdraw this authorisation at any time in the app (Networks → Disconnect) or in the network's own settings. You must follow the rules of each network; we are not responsible for restrictions, rejections or suspensions a network applies to your account."
+      },
+      "s5": {
+        "title": "5. Your content and artificial intelligence",
+        "items": {
+          "yours": "Content you upload or create in Sova remains yours. You only give us permission to process, store and publish it on your behalf as far as the service needs in order to work.",
+          "accuracy": "Content generated by artificial intelligence may be inaccurate or inappropriate. Review it before publishing. Sova checks facts only against the information in your brand profile and does not guarantee accuracy.",
+          "responsibility": "You are responsible for everything you publish: copyright in photos, the accuracy of prices and claims, compliance with advertising regulations and network rules.",
+          "forbidden": "The following are prohibited: unlawful, offensive, misleading or discriminatory content; spam; content that infringes other people's rights; attempts to get around security measures or the limits of AI services.",
+          "thirdParty": "Photos from Unsplash and designs from Canva are subject to those services' terms, which you accept when you use them."
+        }
+      },
+      "s6": {
+        "title": "6. Tokens, plans and payment",
+        "items": {
+          "usage": "Actions that use artificial intelligence consume tokens. The price of each action is shown in the app before you confirm. Tokens are reserved before an action and charged only when it succeeds; a failed action uses no tokens.",
+          "allowance": "A free account gets a one-off amount of tokens after the email address is confirmed. Monthly and yearly plans get tokens for each billing period; unused subscription tokens do not carry over to the next period. Token packs bought separately do not expire.",
+          "renewal": "Subscriptions are charged in advance through Stripe and renew automatically until you cancel them. Cancellation takes effect at the end of the current period; you keep access until then.",
+          "prices": "Prices may change with at least 30 days' notice; the change applies from the next billing period.",
+          "refunds": "Used tokens cannot be refunded. For an unused subscription, you can ask for a refund within the first 14 days of your first purchase by writing to our support address.",
+          "value": "Tokens have no monetary value outside Sova and cannot be transferred between workspaces."
+        }
+      },
+      "s7": {
+        "title": "7. Availability and support",
+        "text": "We do our best to keep Sova running without interruption, but we do not guarantee availability. Sova depends on social network APIs, the Google Gemini service and other suppliers we have no control over; their outages, rule changes or withdrawal of access may disable certain features temporarily or permanently. If a post fails, Sova lets you know and offers a retry or manual publishing."
+      },
+      "s8": {
+        "title": "8. Intellectual property",
+        "text": "The software, design, the Sova name and the documentation belong to us or to our licensors. You may not copy, modify, decompile or resell Sova without written permission. We may freely use any feedback you give us."
+      },
+      "s9": {
+        "title": "9. Limitation of liability",
+        "text": "Sova is provided “as is”. To the extent permitted by law, we are not liable for indirect damage, lost profits, loss of data or the consequences of content you have published. Our total liability under these terms is limited to the amount you paid us in the 12 months before the event that caused the damage. Nothing in these terms excludes liability that cannot be excluded by law."
+      },
+      "s10": {
+        "title": "10. Termination",
+        "text": "You can delete your account at any time (the process is on the <deletion>Data deletion</deletion> page). We may suspend or close an account that breaches these terms, network rules or the law, with notice where reasonably possible. The provisions on content, liability and governing law continue to apply after termination."
+      },
+      "s11": {
+        "title": "11. Governing law",
+        "text": "These terms are governed by the law of the country where {company} is registered, subject to the mandatory consumer and personal data protection rules of your country of residence. We will first try to resolve any dispute by agreement."
+      },
+      "s12": {
+        "title": "12. Changes to these terms",
+        "text": "We will tell you about changes to these terms by email or in the app at least 14 days in advance. Continuing to use Sova after that period means you accept the changes."
+      },
+      "s13": {
+        "title": "13. Contact",
+        "text": "Questions about these terms: <mail>{email}</mail>."
+      }
+    },
+    "dataDeletion": {
+      "title": "Data deletion",
+      "metaDescription": "How to delete your account, disconnect a network or ask for your data to be deleted from Sova.",
+      "received": {
+        "title": "Your deletion request has been received.",
+        "text": "Confirmation code: <mono>{code}</mono>. Deletion is completed within 30 days. We will let you know at the email address linked to your account once it is done."
+      },
+      "s1": {
+        "title": "1. Deleting your whole account (in the app)",
+        "items": {
+          "login": "Log in to Sova.",
+          "open": "Open Settings → Privacy and data → Delete account.",
+          "confirm": "Type your email address to confirm and click “Delete account”.",
+          "result": "Sova immediately revokes the access tokens for all connected networks, cancels scheduled posts and deletes your data. Deletion from backups is completed within 30 days at the latest."
+        },
+        "note": "If you are the only owner of a workspace that has other members, first transfer ownership or delete the workspace; the app walks you through this step."
+      },
+      "s2": {
+        "title": "2. Disconnecting a single network",
+        "p1": "Open Networks, find the account and click “Disconnect”. Sova deletes the access token, imported posts and metrics for that account. Content already published stays on the network; you delete it directly on the network.",
+        "p2": "You can also disconnect from the network's side: Facebook and Instagram (Settings → Apps and websites), LinkedIn (Settings → App permissions), TikTok (Settings → Security → Apps), X (Settings → Connected apps), Google (myaccount.google.com → Security → Third-party apps), Pinterest (Settings → Security → Connected apps). Sova detects this and deletes the tokens."
+      },
+      "s3": {
+        "title": "3. Request by email",
+        "subject": "Data deletion",
+        "text": "If you can't log in, send an email from the address you registered with to <mail>{email}</mail> with the subject “Data deletion”. We will confirm your identity and delete your data within 30 days."
+      },
+      "s4": {
+        "title": "4. What is deleted and what stays",
+        "items": {
+          "deleted": "Deleted: your profile, workspaces you are the only owner of, brands, the brand profile and brand knowledge, connected accounts and tokens, imported and created posts, media, strategies, metrics, notifications.",
+          "kept": "Kept for the legal period: invoices and payment data we must keep under accounting regulations, as well as anonymised aggregate usage data that cannot identify you.",
+          "member": "If you are a member of someone else's workspace, your personal data is deleted, while the content you created for that workspace stays with its owner."
+        }
+      },
+      "s5": {
+        "title": "5. Automatic requests from Facebook and Instagram",
+        "text": "When you remove Sova in your Facebook or Instagram account settings, Meta automatically sends us a deletion request. Sova immediately deletes that account's data and gives you a confirmation code and a link to this page, where you can check the status."
+      }
+    }
+  },
+  "auth": {
+    "google": "Continue with Google",
+    "or": "or",
+    "email": "Email",
+    "password": "Password",
+    "passwordHint": "At least 10 characters.",
+    "sending": "Sending…",
+    "resendVerification": "Resend the confirmation email",
+    "login": {
+      "title": "Log in",
+      "description": "Welcome back to Sova.",
+      "deleted": "Your account has been deleted along with your data. Thank you for using Sova.",
+      "errors": {
+        "link": "The link is invalid or has expired. Log in or request a new link.",
+        "provider": "Logging in with an external account didn't work. Please try again.",
+        "google": "Google sign-in isn't available right now."
+      },
+      "pending": "Logging in…",
+      "submit": "Log in",
+      "magic": "Log in with an email link",
+      "forgot": "Forgotten your password?",
+      "magicPending": "Sending link…",
+      "magicSubmit": "Email me a login link",
+      "backToPassword": "Back to password login",
+      "noAccount": "Don't have an account?",
+      "createOne": "Create one"
+    },
+    "register": {
+      "metaTitle": "Sign up",
+      "title": "Create your account",
+      "description": "You get 50 free tokens once you confirm your email address.",
+      "closed": "Registration is closed at the moment. Please try again later.",
+      "fullName": "Full name",
+      "terms": "I accept the <terms>Terms of service</terms> and the <privacy>Privacy policy</privacy>.",
+      "pending": "Creating account…",
+      "submit": "Create account",
+      "haveAccount": "Already have an account?",
+      "login": "Log in"
+    },
+    "forgot": {
+      "title": "Forgotten password",
+      "description": "Enter your email and we'll send you a link to reset your password.",
+      "submit": "Send password reset link",
+      "back": "Back to log in"
+    },
+    "reset": {
+      "title": "New password",
+      "description": "Choose a new password for your account.",
+      "requestNew": "Request a new link",
+      "newPassword": "New password",
+      "confirm": "Repeat password",
+      "pending": "Saving…",
+      "submit": "Save new password"
+    },
+    "verify": {
+      "metaTitle": "Confirm your email",
+      "title": "Check your inbox",
+      "description": "We've sent you a link to confirm your email address. Click it to activate your account.",
+      "notArrived": "Not there? Check your spam folder or ask for a new email. The link is valid for 24 hours.",
+      "dev": "DEV: local emails arrive in Mailpit at <link>127.0.0.1:54324</link>."
+    }
+  },
+  "contact": {
+    "title": "Contact",
+    "metaDescription": "How to contact the Sova team: support, billing questions, privacy and data deletion.",
+    "support": {
+      "title": "Support and questions",
+      "text": "For questions about the app, billing and connecting networks, write to <mail>{email}</mail> in English or Serbian."
+    },
+    "privacy": {
+      "title": "Privacy and data deletion",
+      "text": "Send requests about personal data to <mail>{email}</mail>. You can also delete your account and data yourself; the instructions are on the <deletion>Data deletion</deletion> page."
+    },
+    "company": {
+      "title": "Company",
+      "text": "{product} is a product of {company}."
+    },
+    "address": "Address: {address}."
+  },
+  "botPage": {
+    "metaDescription": "What SovaBot is, when it reads websites and how to allow or block it.",
+    "what": {
+      "title": "What SovaBot is",
+      "text": "SovaBot is the website reader of the Sova app ({company}). It runs when a brand owner enters their website address in Sova, so that Sova can learn the brand's offer, tone and visual identity. SovaBot does not crawl the internet on its own and does not read websites nobody has entered."
+    },
+    "behaviour": {
+      "title": "How it behaves",
+      "items": {
+        "robots": "Respects robots.txt (User-agent token: SovaBot) and Crawl-delay.",
+        "pages": "Reads no more than 60 pages per analysis, 3 at a time, and pauses when the site asks it to.",
+        "sitemap": "After the first analysis, checks the sitemap and RSS once a week; does not fetch pages again unless the owner asks.",
+        "forms": "Does not fill in forms, log in or run JavaScript."
+      }
+    },
+    "block": {
+      "title": "How to block it",
+      "add": "Add this to robots.txt:",
+      "text": "Sova will then show the brand owner a message saying the site does not allow reading, and offer to enter the information manually. For questions, write to {email}."
+    }
+  },
+  "invitePage": {
+    "metaTitle": "Invitation",
+    "title": "Workspace invitation",
+    "description": "Someone has invited you to work with them in Sova.",
+    "signedIn": "You're logged in as <b>{email}</b>. The invitation is only valid for the address it was sent to.",
+    "pending": "Accepting…",
+    "accept": "Accept invitation",
+    "signedOut": "Log in or create an account with the email address the invitation was sent to.",
+    "login": "Log in",
+    "register": "Create account"
+  }
+}

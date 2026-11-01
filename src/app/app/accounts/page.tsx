@@ -1,12 +1,16 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 
 import { AccountsClient } from '@/components/accounts/accounts-client'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
 
-export const metadata: Metadata = { title: 'Mreže' }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('shell')
+  return { title: t('titles.accounts') }
+}
 
 export default async function AccountsPage({ searchParams }: PageProps<'/app/accounts'>) {
   const viewer = await getViewer()

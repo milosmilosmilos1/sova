@@ -1,1 +1,488 @@
-{}
+{
+  "shell": {
+    "home": "Sova, početna",
+    "workspace": "Radni prostor",
+    "brand": "Brend",
+    "mainNav": "Glavna navigacija",
+    "roles": {
+      "owner": "vlasnik",
+      "admin": "administrator",
+      "editor": "urednik",
+      "approver": "odobravalac",
+      "viewer": "posmatrač"
+    },
+    "groups": {
+      "work": "Rad",
+      "growth": "Plan i rast",
+      "content": "Sadržaj",
+      "settings": "Podešavanja"
+    },
+    "nav": {
+      "home": "Početna",
+      "flows": "Automatizuj objave",
+      "approvals": "Odobravanje",
+      "inbox": "Inbox",
+      "automations": "DM automatizacija",
+      "posts": "Objave",
+      "calendar": "Kalendar",
+      "plan": "Mesečni plan",
+      "strategy": "Strategija",
+      "analytics": "Analitika",
+      "autopilot": "Autopilot",
+      "studio": "AI Studio",
+      "gallery": "Galerija",
+      "brain": "Brain",
+      "accounts": "Mreže",
+      "team": "Tim",
+      "brandAccount": "Brend i nalog",
+      "ideas": "Predlozi i podrška",
+      "admin": "Admin"
+    },
+    "signOut": "Odjavite se",
+    "endImpersonation": "Završite impersonaciju",
+    "blocked": {
+      "title": "Nalog je blokiran",
+      "text": "Ako mislite da je ovo greška, javite se podršci."
+    },
+    "preview": {
+      "banner": "Pregled: još se uključuju {list}. Ostatak aplikacije radi.",
+      "ai": "AI tekst i slike",
+      "jobs": "zakazano objavljivanje i pozadinski poslovi",
+      "email": "emailovi",
+      "unsplash": "Unsplash fotografije",
+      "pexels": "Pexels video",
+      "canva": "Canva"
+    },
+    "titles": {
+      "accounts": "Mreže",
+      "posts": "Objave",
+      "newPost": "Nova objava",
+      "post": "Objava",
+      "studioTools": "Ručni alati Studija"
+    }
+  },
+  "team": {
+    "metaTitle": "Tim",
+    "title": "Tim",
+    "summary": "{count, plural, one {# član} few {# člana} other {# članova}} od {limit} dozvoljenih na planu {plan}.",
+    "roles": {
+      "owner": "Vlasnik",
+      "admin": "Administrator",
+      "editor": "Urednik",
+      "approver": "Odobravalac",
+      "viewer": "Posmatrač"
+    },
+    "members": {
+      "title": "Članovi",
+      "description": "Vlasnik ima sve, administrator sve osim naplate, urednik kreira, odobravalac odobrava, posmatrač gleda.",
+      "person": "Osoba",
+      "role": "Uloga",
+      "brands": "Brendovi",
+      "actions": "Radnje",
+      "roleFor": "Uloga za {email}",
+      "allBrands": "svi",
+      "noBrands": "nijedan",
+      "leave": "Napustite",
+      "remove": "Ukloni"
+    },
+    "transfer": {
+      "title": "Prenos vlasništva",
+      "description": "Vlasnik upravlja naplatom i može da obriše radni prostor. Posle prenosa ostajete administrator.",
+      "noMembers": "Prvo pozovite člana kome želite da prenesete vlasništvo.",
+      "newOwner": "Novi vlasnik",
+      "choose": "Izaberite člana…",
+      "confirm": "Razumem da novi vlasnik dobija naplatu, brisanje radnog prostora i prenos vlasništva, a ja postajem administrator.",
+      "submit": "Prenesi vlasništvo",
+      "pending": "Prenosim…",
+      "done": "Vlasništvo je preneto. Sada ste administrator.",
+      "failed": "Prenos nije uspeo."
+    },
+    "invite": {
+      "title": "Pozovite člana",
+      "description": "Pozivnica stiže emailom i važi 7 dana.",
+      "email": "Email osobe",
+      "role": "Uloga",
+      "roleOptions": {
+        "editor": "Urednik: kreira, menja i zakazuje sadržaj",
+        "approver": "Odobravalac (klijent): odobrava i komentariše",
+        "viewer": "Posmatrač: samo pregled i izveštaji",
+        "admin": "Administrator: sve osim naplate"
+      },
+      "brandAccess": "Pristup brendovima",
+      "brandAccessHint": "Ništa izabrano = svi brendovi.",
+      "submit": "Pošaljite pozivnicu",
+      "pending": "Šaljem pozivnicu…"
+    },
+    "invitations": {
+      "title": "Pozivnice na čekanju",
+      "empty": "Nema pozivnica na čekanju.",
+      "expires": "{role} · ističe {date}",
+      "revoke": "Opozovi"
+    }
+  },
+  "settings": {
+    "metaTitle": "Podešavanja",
+    "intro": "Profil, radni prostor i brendovi.",
+    "impersonation": "Izvoz i brisanje naloga nisu dostupni tokom impersonacije.",
+    "profile": {
+      "title": "Vaš profil",
+      "security": "Dvofaktorska zaštita i lozinka: <link>Bezbednost</link>",
+      "fullName": "Ime i prezime",
+      "timezone": "Vremenska zona",
+      "save": "Sačuvajte profil",
+      "saving": "Čuvam…"
+    },
+    "workspace": {
+      "title": "Radni prostor",
+      "plan": "Plan <badge>{plan}</badge> · do {brands, plural, one {# brenda} few {# brenda} other {# brendova}}, {networks, plural, one {# mreže} few {# mreže} other {# mreža}}, {members, plural, one {# člana} few {# člana} other {# članova}}.",
+      "readOnly": "{name} · {type}. Samo vlasnik i administrator menjaju podešavanja.",
+      "agency": "agencija",
+      "business": "biznis",
+      "name": "Naziv radnog prostora",
+      "type": "Tip",
+      "typeBusiness": "Jedan biznis",
+      "typeAgency": "Agencija",
+      "save": "Sačuvajte",
+      "saving": "Čuvam…"
+    },
+    "brands": {
+      "title": "Brendovi",
+      "description": "Svaki brend ima svoj Brand Brain, mreže i kalendar.",
+      "noWebsite": "bez sajta",
+      "scheduled": "{count, plural, one {# zakazana objava} few {# zakazane objave} other {# zakazanih objava}} (arhiviranje ih otkazuje)",
+      "archive": "Arhiviraj",
+      "limit": "Dostigli ste limit brendova za plan {plan}. <link>Nadogradite plan</link>.",
+      "name": "Naziv brenda",
+      "website": "Sajt",
+      "websitePlaceholder": "https://primer.rs",
+      "contentLocale": "Jezik sadržaja",
+      "timezone": "Vremenska zona brenda",
+      "add": "Dodajte brend",
+      "adding": "Dodajem…"
+    },
+    "brandTimezone": {
+      "save": "Sačuvaj zonu",
+      "saving": "Čuvam…",
+      "saved": "Zona je sačuvana.",
+      "savedShifted": "Zona je sačuvana; {count, plural, one {# zakazana objava zadržava} few {# zakazane objave zadržavaju} other {# zakazanih objava zadržava}} isto lokalno vreme.",
+      "failed": "Čuvanje nije uspelo.",
+      "keepLocal": "zadrži lokalno vreme {count, plural, one {# zakazane objave} few {# zakazane objave} other {# zakazanih objava}}"
+    },
+    "privacy": {
+      "title": "Privatnost i podaci",
+      "description": "Preuzmite sve svoje podatke ili trajno obrišite nalog.",
+      "export": "Preuzmi moje podatke (JSON)",
+      "exportHint": "Profil, radni prostori čiji ste vlasnik, objave, mediji (linkovi važe 7 dana), tokeni i obaveštenja.",
+      "open": "Obriši nalog…",
+      "warning": "Brisanje je trajno: brišu se nalog, radni prostori u kojima ste sami, njihove objave, mediji i veze sa mrežama. Ako ste vlasnik tima sa drugim članovima, prvo prenesite vlasništvo na strani Tim.",
+      "confirmEmail": "Za potvrdu upišite email {email}",
+      "password": "Lozinka",
+      "noPassword": "Nalog nema lozinku: brisanje je moguće u roku od 15 minuta posle prijave.",
+      "delete": "Trajno obriši nalog",
+      "deleting": "Brišem…",
+      "cancel": "Odustani",
+      "failed": "Brisanje nije uspelo."
+    },
+    "canva": {
+      "description": "Dizajne iz Sove otvarate u Canvi, dorađujete ih i vraćate u biblioteku brenda. Veza je lična (po korisniku).",
+      "connectedNotice": "Canva je povezana.",
+      "deniedNotice": "Povezivanje je otkazano u Canvi.",
+      "checking": "Proveravam vezu…",
+      "loadFailed": "Status Canve nije učitan.",
+      "notConfigured": "Canva integracija još nije podešena na serveru (ključevi aplikacije).",
+      "disabled": "Canva integracija je privremeno isključena.",
+      "connected": "povezano",
+      "autofill": "Autofill dostupan",
+      "noAutofill": "bez Autofill-a (besplatan plan)",
+      "disconnect": "Prekini vezu",
+      "expired": "veza je istekla",
+      "notConnected": "nije povezano",
+      "connect": "Poveži Canvu"
+    }
+  },
+  "security": {
+    "metaTitle": "Bezbednost",
+    "title": "Bezbednost",
+    "intro": "Dvofaktorska zaštita i lozinka.",
+    "impersonation": "Tokom impersonacije dvofaktorska zaštita se ne prikazuje i ne menja: panel bi radio nad vašim admin nalogom, ne nad korisnikovim.",
+    "totp": {
+      "title": "Dvofaktorska zaštita (TOTP)",
+      "description": "Kod iz aplikacije za autentifikaciju uz lozinku."
+    },
+    "password": {
+      "title": "Lozinka",
+      "text": "Promena lozinke ide kroz link na email: <link>zatražite link</link>."
+    },
+    "mfa": {
+      "loading": "Učitavam…",
+      "loadFailed": "Stanje zaštite nije učitano.",
+      "failed": "Radnja nije uspela.",
+      "enabled": "Dvofaktorska zaštita je uključena i potvrđena za ovu sesiju.",
+      "confirmDisable": "Isključiti dvofaktorsku zaštitu?",
+      "disabled": "Dvofaktorska zaštita je isključena.",
+      "codeLabel": "Kod iz aplikacije",
+      "confirm": "Potvrdite",
+      "adminRequired": "Admin panel traži dvofaktorsku zaštitu i potvrdu koda u ovoj sesiji.",
+      "on": "Dvofaktorska zaštita je <strong>uključena</strong>.",
+      "sessionVerified": "Ova sesija je potvrđena kodom.",
+      "sessionNotVerified": "Ova sesija još nije potvrđena kodom.",
+      "turnOff": "Isključite zaštitu",
+      "scan": "Skenirajte kod aplikacijom (Google Authenticator, 1Password, Authy…), pa unesite 6-cifreni kod.",
+      "qrAlt": "QR kod za aplikaciju za autentifikaciju",
+      "manual": "Ručni unos:",
+      "off": "Dvofaktorska zaštita je isključena. Preporučujemo je svima, a obavezna je za admin panel.",
+      "turnOn": "Uključite dvofaktorsku zaštitu",
+      "wrongCode": "Kod nije tačan. Proverite vreme na telefonu i pokušajte ponovo.",
+      "needCode": "Za ovu radnju prvo potvrdite kod iz aplikacije."
+    }
+  },
+  "onboarding": {
+    "metaTitle": "Početak",
+    "titleFirst": "Krenimo",
+    "titleNew": "Nov radni prostor",
+    "textFirst": "Prvo radni prostor i prvi brend. Analiza sajta, povezivanje mreža i strategija dolaze odmah posle.",
+    "textNew": "Svaki radni prostor ima svoj tim, brendove i tokene.",
+    "typeLegend": "Kakav nalog pravite?",
+    "types": {
+      "business": {
+        "title": "Jedan biznis",
+        "text": "Vodim mreže za svoju firmu ili svoj brend."
+      },
+      "agency": {
+        "title": "Agencija ili freelancer",
+        "text": "Vodim mreže za više klijenata, svaki je poseban brend."
+      }
+    },
+    "agencyName": "Naziv agencije",
+    "companyName": "Naziv firme",
+    "firstClient": "Prvi klijent (brend)",
+    "firstClientHint": "Možete dodati još brendova kasnije.",
+    "website": "Sajt brenda",
+    "websitePlaceholder": "https://primer.rs",
+    "websiteHint": "Sova od sajta uči brend. Ako sajta nema, ostavite prazno.",
+    "websiteShort": "Sajt",
+    "submit": "Napravite radni prostor",
+    "pending": "Pravim radni prostor…"
+  },
+  "notifications": {
+    "metaTitle": "Obaveštenja",
+    "title": "Obaveštenja",
+    "intro": "Odobravanja, objave i upozorenja.",
+    "introFor": "Odobravanja, objave i upozorenja za {workspace}.",
+    "settingsLink": "Podešavanja obaveštenja",
+    "bellUnread": "Obaveštenja, {count} nepročitanih",
+    "markRead": "Pročitano",
+    "loading": "Učitavam…",
+    "empty": "Još nema obaveštenja.",
+    "all": "Sva obaveštenja",
+    "unread": "{count} nepročitano",
+    "allRead": "Sve je pročitano.",
+    "markAllRead": "Označi sve kao pročitano",
+    "unreadDot": "nepročitano",
+    "ago": {
+      "now": "upravo",
+      "minutes": "pre {count} min",
+      "hours": "pre {count} h",
+      "days": "pre {count} d"
+    },
+    "prefs": {
+      "description": "Šta stiže u aplikaciju, a šta i na email. Važi za ovaj radni prostor.",
+      "type": "Tip",
+      "inApp": "U aplikaciji",
+      "email": "Email",
+      "saved": "Sačuvano.",
+      "inAppFor": "{label} u aplikaciji",
+      "emailFor": "{label} na email"
+    },
+    "types": {
+      "post_review_requested": {
+        "label": "Objava čeka odobrenje",
+        "description": "Urednik je poslao objavu na odobravanje."
+      },
+      "post_approved": {
+        "label": "Objava odobrena",
+        "description": "Vaša objava je odobrena."
+      },
+      "post_rejected": {
+        "label": "Objava odbijena",
+        "description": "Vaša objava je odbijena uz komentar."
+      },
+      "post_changes_requested": {
+        "label": "Traže se izmene",
+        "description": "Odobravalac traži izmene objave."
+      },
+      "post_published": {
+        "label": "Objava objavljena",
+        "description": "Objava je uspešno otišla na mrežu."
+      },
+      "post_failed": {
+        "label": "Objava nije uspela",
+        "description": "Mreža je odbila objavu ili su pokušaji potrošeni."
+      },
+      "post_needs_reauth": {
+        "label": "Nalog traži ponovno povezivanje",
+        "description": "Objava čeka jer je veza sa mrežom istekla."
+      },
+      "post_assisted_pending": {
+        "label": "Ručno objavljivanje",
+        "description": "Objava čeka da je neko ručno postavi na mrežu."
+      },
+      "workspace_ownership": {
+        "label": "Vlasništvo radnog prostora",
+        "description": "Neko vam je preneo vlasništvo nad radnim prostorom."
+      },
+      "account_expiring": {
+        "label": "Veza sa mrežom ističe",
+        "description": "LinkedIn veza traje 60 dana; povežite nalog ponovo pre isteka."
+      },
+      "post_rescheduled": {
+        "label": "Objava pomerena",
+        "description": "Termin je pomeren zbog dnevnog limita mreže."
+      },
+      "report_ready": {
+        "label": "Mesečni izveštaj",
+        "description": "PDF izveštaj za prethodni mesec je spreman."
+      },
+      "post_comment": {
+        "label": "Nov komentar",
+        "description": "Komentar člana tima ili klijenta na objavi."
+      },
+      "insights_ready": {
+        "label": "Novi uvidi iz analitike",
+        "description": "Nedeljni AI uvidi i predlozi za Inbox su spremni."
+      },
+      "autopilot_returned": {
+        "label": "Autopilot vratio objavu",
+        "description": "Nacrt nije prošao kontrolu kvaliteta i čeka doradu."
+      },
+      "flow_failed": {
+        "label": "Tok automatizacije nije uspeo",
+        "description": "Tok nije napravio nacrt: nema tokena, nema mreže za format ili servis nije odgovorio."
+      },
+      "autopilot_deadline": {
+        "label": "Rok za odobrenje",
+        "description": "Autopilot objava čeka odobrenje ili je zakazana posle roka."
+      },
+      "autopilot_skipped": {
+        "label": "Autopilot objava preskočena",
+        "description": "Objava nije odobrena na vreme ili je termin prošao."
+      },
+      "autopilot_budget_warning": {
+        "label": "Budžet Autopilota 80 %",
+        "description": "Autopilot je potrošio veći deo mesečnog budžeta tokena."
+      },
+      "autopilot_budget_stopped": {
+        "label": "Budžet Autopilota potrošen",
+        "description": "Autopilot je stao do sledećeg meseca ili povećanja budžeta."
+      },
+      "autopilot_weekly_report": {
+        "label": "Nedeljni izveštaj Autopilota",
+        "description": "Šta je objavljeno, rezultati i plan za narednu nedelju."
+      },
+      "autopilot_strategy": {
+        "label": "Autopilot i strategija",
+        "description": "Nova strategija ili Autopilot čeka strategiju."
+      },
+      "publish_watchdog_alarm": {
+        "label": "Objava kasni",
+        "description": "Zakazana objava kasni više od 15 minuta."
+      },
+      "billing_payment_failed": {
+        "label": "Plaćanje nije uspelo",
+        "description": "Kartica je odbijena pri obnovi pretplate; podsetnici do kraja roka."
+      },
+      "billing_subscription": {
+        "label": "Pretplata",
+        "description": "Pretplata je aktivirana, otkazana ili je završena."
+      },
+      "billing_tokens": {
+        "label": "Dopuna tokena",
+        "description": "Kupljeni tokeni su stigli na stanje."
+      },
+      "month_plan_ready": {
+        "label": "Mesečni plan je gotov",
+        "description": "Sova je napravila sve nacrte iz mesečnog plana."
+      }
+    }
+  },
+  "billing": {
+    "title": "Naplata",
+    "intro": "Plan, tokeni i plaćanja radnog prostora „{name}”.",
+    "paid": "Plaćanje je primljeno. Plan i tokeni se ažuriraju za nekoliko sekundi.",
+    "canceled": "Plaćanje je otkazano; ništa nije naplaćeno.",
+    "loadFailed": "Podaci o naplati nisu učitani.",
+    "notConfigured": "Plaćanje još nije uključeno na serveru (Stripe ključevi). Plan i tokeni rade kao i do sada.",
+    "ownerOnly": "Plaćanja vodi vlasnik radnog prostora.",
+    "blocked": "Rok za plaćanje je istekao: generisanje je zaustavljeno. Zakazane objave i dalje izlaze.",
+    "pastDue": "Plaćanje pretplate nije uspelo. Ažurirajte karticu do {date}; posle toga generisanje staje.",
+    "plan": "Plan",
+    "limits": "Do {brands, plural, one {# brenda} few {# brenda} other {# brendova}}, {networks, plural, one {# mreže} few {# mreže} other {# mreža}} i {members, plural, one {# člana} few {# člana} other {# članova}}.",
+    "loading": "Učitavam…",
+    "available": "Dostupno tokena: <strong>{count}</strong>",
+    "reserved": "(još {count} u radu)",
+    "subscription": "Pretplata: {status}.",
+    "subscriptionEnds": "Pretplata: {status}, završava se {date}.",
+    "subscriptionRenews": "Pretplata: {status}, sledeća obnova {date}.",
+    "status": {
+      "active": "aktivna",
+      "trialing": "probni period",
+      "past_due": "plaćanje nije uspelo",
+      "unpaid": "neplaćena",
+      "canceled": "završena",
+      "incomplete": "čeka prvo plaćanje",
+      "paused": "pauzirana"
+    },
+    "manage": "Upravljajte pretplatom i karticom",
+    "regularPrice": "Redovna cena",
+    "introPrice": "Uvodna cena",
+    "perYear": "{price} godišnje",
+    "perMonth": "{price} mesečno",
+    "aboutMonthly": "(oko {price} mesečno)",
+    "monthlyTokens": "{count, plural, one {# token} few {# tokena} other {# tokena}} svakog meseca, veći limiti brendova, mreža i članova.",
+    "subscribe": "Pretplatite se",
+    "planNames": {
+      "free": "Besplatno",
+      "monthly": "Mesečni",
+      "yearly": "Godišnji",
+      "vlasnik": "Vlasnik"
+    },
+    "topup": {
+      "title": "Dopuna tokena",
+      "description": "Kupljeni tokeni ne ističu i troše se posle tokena iz pretplate.",
+      "name": "{count, plural, one {# token} few {# tokena} other {# tokena}}"
+    },
+    "ledger": {
+      "title": "Istorija tokena",
+      "empty": "Još nema promena.",
+      "date": "Datum",
+      "change": "Promena",
+      "tokenChange": "Promena tokena",
+      "balance": "Stanje",
+      "more": "Prikaži starije",
+      "consume": "Potrošeno",
+      "expire": "Isteklo",
+      "refund": "Oduzeto posle povraćaja novca",
+      "supportGrant": "Dodela podrške",
+      "supportAdjust": "Izmena podrške",
+      "signup": "Poklon pri registraciji",
+      "subscription": "Pretplata",
+      "topup": "Dopuna",
+      "refunded": "Vraćeni tokeni",
+      "grant": "Dodela"
+    }
+  },
+  "charts": {
+    "chart": "Grafikon",
+    "table": "Tabela",
+    "empty": "Još nema podataka za ovaj period.",
+    "period": "Period",
+    "day": "Dan",
+    "columnAria": "{title}: najviše {value} ({label}). Strelicama birate stub.",
+    "trendAria": "{title}: od {from} do {to}. Strelicama birate dan."
+  },
+  "appStatus": {
+    "loadError": "Došlo je do greške pri učitavanju.",
+    "empty": "Još nema podataka",
+    "maintenance": "Sova je trenutno na održavanju. Neke funkcije mogu privremeno da ne rade."
+  }
+}

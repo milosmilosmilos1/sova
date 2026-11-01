@@ -3,7 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Trash2 } from 'lucide-react'
 import Link from 'next/link'
-import { useTranslations } from 'next-intl'
+import { useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { bulkRequest } from '@/components/shared/api-client'
@@ -15,6 +15,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { PLATFORMS } from '@/config/platforms'
+import { INTL_UI } from '@/i18n/config'
 import type { ApiResponse } from '@/lib/api/response'
 
 interface Item {
@@ -31,16 +32,17 @@ interface Item {
   updatedAt: string
 }
 
-const FILTERS: Array<[string, string]> = [
-  ['', 'Sve'],
-  ['draft', 'Nacrti'],
-  ['in_review', 'Na odobrenju'],
-  ['approved', 'Odobreno'],
-  ['scheduled,paused', 'Zakazano'],
-  ['published,partially_published', 'Objavljeno'],
-  ['failed', 'Neuspelo'],
-  ['rejected,canceled', 'Odbijeno i otkazano'],
-]
+/** Filter statusa: vrednost za API i ključ natpisa u `postsList.filters`. */
+const FILTERS = [
+  ['', 'all'],
+  ['draft', 'draft'],
+  ['in_review', 'in_review'],
+  ['approved', 'approved'],
+  ['scheduled,paused', 'scheduled'],
+  ['published,partially_published', 'published'],
+  ['failed', 'failed'],
+  ['rejected,canceled', 'rejected'],
+] as const
 
 async function api<T>(path: string): Promise<T> {
   const res = await fetch(path)
@@ -61,7 +63,11 @@ export function PostsListClient({
   initialStatus: string
 }) {
   const [status, setStatus] = useState(initialStatus)
+  const t = useTranslations('postsList')
   const tb = useTranslations('bulk')
+  const locale = useLocale()
+  const dateTime = (iso: string) =>
+    new Date(iso).toLocaleString(INTL_UI[locale], { dateStyle: 'medium', timeStyle: 'short' })
   const qc = useQueryClient()
   const posts = useQuery({
     queryKey: ['posts', brandId, status],
@@ -82,14 +88,12 @@ export function PostsListClient({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Objave</h1>
-          <p className="text-sm text-muted-foreground">
-            Brend: {brandName}. Nacrti, odobravanje, zakazivanje.
-          </p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('subtitle', { brand: brandName })}</p>
         </div>
         {canEdit ? (
           <Button nativeButton={false} render={<Link href="/app/posts/new" />}>
-            Nova objava
+            {t('newPost')}
           </Button>
         ) : null}
       </div>
@@ -101,11 +105,11 @@ export function PostsListClient({
             variant={status === value ? 'default' : 'outline'}
             onClick={() => setStatus(value)}
           >
-            {label}
+            {t(`filters.${label}`)}
           </Button>
         ))}
       </div>
-      {posts.isPending ? <p className="text-sm text-muted-foreground">Učitavam objave…</p> : null}
+      {posts.isPending ? <p className="text-sm text-muted-foreground">{t('loading')}</p> : null}
       {posts.isError ? (
         <p role="alert" className="text-sm text-destructive">
           {posts.error.message}
@@ -113,9 +117,7 @@ export function PostsListClient({
       ) : null}
       {posts.data && posts.data.items.length === 0 ? (
         <Card>
-          <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            Nema objava u ovom filteru.
-          </CardContent>
+          <CardContent className="py-8 text-center text-sm text-muted-foreground">{t('empty')}</CardContent>
         </Card>
       ) : null}
       {bulk.data ? (
@@ -155,7 +157,7 @@ export function PostsListClient({
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <span className="truncate font-medium">
-                      {p.title ?? p.masterText.slice(0, 60) ?? 'Bez naslova'}
+                      {p.title ?? p.masterText.slice(0, 60) ?? t('untitled')}
                     </span>
                     <Badge
                       variant={p.status === 'scheduled' || p.status === 'published' ? 'default' : 'secondary'}
@@ -170,15 +172,9 @@ export function PostsListClient({
                   </div>
                   <p className="truncate text-sm text-muted-foreground">{p.masterText.slice(0, 140)}</p>
                   <p className="text-xs text-muted-foreground">
-                    {p.scheduledFor
-                      ? `Termin: ${new Date(p.scheduledFor).toLocaleString('sr-Latn-RS', { dateStyle: 'medium', timeStyle: 'short' })}`
-                      : 'Bez termina'}{' '}
-                    · izmenjeno{' '}
-                    {new Date(p.updatedAt).toLocaleString('sr-Latn-RS', {
-                      dateStyle: 'medium',
-                      timeStyle: 'short',
-                    })}
-                    {p.mediaCount ? ` · ${p.mediaCount} medija` : ''}
+                    {p.scheduledFor ? t('when', { date: dateTime(p.scheduledFor) }) : t('noWhen')} ·{' '}
+                    {t('edited', { date: dateTime(p.updatedAt) })}
+                    {p.mediaCount ? ` · ${t('media', { count: p.mediaCount })}` : ''}
                   </p>
                 </div>
               </Link>

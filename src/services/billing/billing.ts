@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { INTL_UI, type AppLocale } from '@/i18n/config'
 import { getPaymentProvider } from '@/integrations/payments'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
@@ -166,6 +167,14 @@ export async function startSubscriptionCheckout(
 }
 
 /** Checkout za paket tokena (bez isteka). */
+/** Ime dopune na Stripe strani za plaćanje i na računu, na jeziku korisnika (D-130). */
+function topupName(planName: string, tokens: number, locale: AppLocale): string {
+  const count = new Intl.NumberFormat(INTL_UI[locale]).format(tokens)
+  if (locale === 'en') return `Sova tokens: ${count}`
+  if (locale === 'uk') return `Токени Sova: ${count}`
+  return `Sova tokeni: ${planName}`
+}
+
 export async function startTopupCheckout(
   viewer: Viewer,
   input: { workspaceId: string; planCode: string },
@@ -180,7 +189,7 @@ export async function startTopupCheckout(
     customerId,
     workspaceId: input.workspaceId,
     planCode: plan.code,
-    name: `Sova tokeni: ${plan.name}`,
+    name: topupName(plan.name, plan.tokens_per_period, viewer.profile.locale),
     amountCents: plan.price_cents,
     currency: plan.currency,
     successUrl: `${appUrl()}${billingPage}?checkout=success&session_id={CHECKOUT_SESSION_ID}`,

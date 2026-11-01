@@ -1,6 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
@@ -8,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
+import { INTL_UI } from '@/i18n/config'
 import type { ApiResponse } from '@/lib/api/response'
 
 interface PublicPost {
@@ -44,16 +46,15 @@ async function api<T>(path: string, init: RequestInit & { json?: unknown } = {})
   return data.data
 }
 
-const STATUS: Record<string, string> = {
-  in_review: 'čeka vašu odluku',
-  approved: 'odobreno',
-  rejected: 'odbijeno',
-  draft: 'vraćeno na doradu',
-  scheduled: 'zakazano',
-  published: 'objavljeno',
-}
-
 export function PublicApprovalClient({ token }: { token: string }) {
+  const t = useTranslations('publicApproval')
+  const locale = useLocale()
+  const dateTime = (iso: string) => new Date(iso).toLocaleString(INTL_UI[locale])
+  // natpis statusa ili odluke; nepoznata vrednost ostaje kakva jeste
+  const statusLabel = (value: string) => {
+    const key = `status.${value}` as 'status.in_review'
+    return t.has(key) ? t(key) : value
+  }
   const qc = useQueryClient()
   const view = useQuery({
     queryKey: ['public-approval', token],
@@ -88,11 +89,11 @@ export function PublicApprovalClient({ token }: { token: string }) {
   })
 
   if (view.isPending)
-    return <p className="mx-auto max-w-2xl p-6 text-sm text-muted-foreground">Učitavam objave…</p>
+    return <p className="mx-auto max-w-2xl p-6 text-sm text-muted-foreground">{t('loading')}</p>
   if (view.isError)
     return (
       <div className="mx-auto max-w-2xl p-6">
-        <h1 className="text-xl font-semibold">Link nije dostupan</h1>
+        <h1 className="text-xl font-semibold">{t('unavailable')}</h1>
         <p className="mt-2 text-sm text-muted-foreground">{view.error.message}</p>
       </div>
     )
@@ -100,17 +101,17 @@ export function PublicApprovalClient({ token }: { token: string }) {
   return (
     <div className="mx-auto max-w-2xl space-y-6 p-4 sm:p-6">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Objave za odobrenje · {v.brandName}</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t('title', { brand: v.brandName })}</h1>
         <p className="text-sm text-muted-foreground">
-          {v.clientLabel ? `Za: ${v.clientLabel}. ` : ''}Link važi do{' '}
-          {new Date(v.expiresAt).toLocaleString('sr-Latn-RS')}. Vaše odluke stižu timu odmah.
+          {v.clientLabel ? `${t('forClient', { client: v.clientLabel })} ` : ''}
+          {t('validUntil', { date: dateTime(v.expiresAt) })}
         </p>
         <div className="mt-3 max-w-xs">
           <Input
             value={name}
             onChange={(e) => setName(e.target.value)}
-            placeholder="Vaše ime (opciono)"
-            aria-label="Vaše ime (opciono)"
+            placeholder={t('name')}
+            aria-label={t('name')}
           />
         </div>
       </div>
@@ -118,9 +119,9 @@ export function PublicApprovalClient({ token }: { token: string }) {
         <Card key={p.id}>
           <CardHeader>
             <CardTitle className="flex flex-wrap items-center gap-2 text-base">
-              {p.title ?? 'Objava'}
+              {p.title ?? t('post')}
               <Badge variant={p.status === 'in_review' ? 'default' : 'secondary'}>
-                {STATUS[p.status] ?? p.status}
+                {statusLabel(p.status)}
               </Badge>
               {p.platforms.map((pl) => (
                 <Badge key={pl} variant="outline">
@@ -144,18 +145,25 @@ export function PublicApprovalClient({ token }: { token: string }) {
               </div>
             ) : null}
             <p className="whitespace-pre-wrap">{p.text}</p>
-            {p.firstComment ? <p className="text-muted-foreground">Prvi komentar: {p.firstComment}</p> : null}
-            {p.linkUrl ? <p className="text-muted-foreground">Link: {p.linkUrl}</p> : null}
+            {p.firstComment ? (
+              <p className="text-muted-foreground">{t('firstComment', { text: p.firstComment })}</p>
+            ) : null}
+            {p.linkUrl ? <p className="text-muted-foreground">{t('link', { url: p.linkUrl })}</p> : null}
             {p.scheduledFor ? (
-              <p className="text-muted-foreground">
-                Planirano: {new Date(p.scheduledFor).toLocaleString('sr-Latn-RS')}
-              </p>
+              <p className="text-muted-foreground">{t('planned', { date: dateTime(p.scheduledFor) })}</p>
             ) : null}
             {p.decided ? (
               <p className="rounded-md bg-muted p-2">
-                Odluka: {STATUS[p.decided.decision] ?? p.decided.decision} ·{' '}
-                {new Date(p.decided.at).toLocaleString('sr-Latn-RS')}
-                {p.decided.comment ? ` · „${p.decided.comment}”` : ''}
+                {p.decided.comment
+                  ? t('decisionComment', {
+                      decision: statusLabel(p.decided.decision),
+                      date: dateTime(p.decided.at),
+                      comment: p.decided.comment,
+                    })
+                  : t('decision', {
+                      decision: statusLabel(p.decided.decision),
+                      date: dateTime(p.decided.at),
+                    })}
               </p>
             ) : null}
             {p.comments.length ? (
@@ -163,7 +171,7 @@ export function PublicApprovalClient({ token }: { token: string }) {
                 {p.comments.map((c) => (
                   <p key={c.id} className="rounded-md bg-muted p-2">
                     <span className="text-xs text-muted-foreground">
-                      {c.author} · {new Date(c.createdAt).toLocaleString('sr-Latn-RS')}
+                      {c.author} · {dateTime(c.createdAt)}
                     </span>
                     <br />
                     {c.body}
@@ -175,8 +183,8 @@ export function PublicApprovalClient({ token }: { token: string }) {
               value={comments[p.id] ?? ''}
               onChange={(e) => setComments((c) => ({ ...c, [p.id]: e.target.value }))}
               rows={2}
-              placeholder="Komentar (obavezan za odbijanje ili izmene)"
-              aria-label="Komentar za tim"
+              placeholder={t('commentPlaceholder')}
+              aria-label={t('commentLabel')}
             />
             <div className="flex flex-wrap gap-2">
               {p.status === 'in_review' ? (
@@ -187,7 +195,7 @@ export function PublicApprovalClient({ token }: { token: string }) {
                     }
                     disabled={decide.isPending}
                   >
-                    Odobri
+                    {t('approve')}
                   </Button>
                   <Button
                     variant="outline"
@@ -196,7 +204,7 @@ export function PublicApprovalClient({ token }: { token: string }) {
                     }
                     disabled={decide.isPending || !comments[p.id]?.trim()}
                   >
-                    Traži izmene
+                    {t('requestChanges')}
                   </Button>
                   <Button
                     variant="outline"
@@ -206,7 +214,7 @@ export function PublicApprovalClient({ token }: { token: string }) {
                     }
                     disabled={decide.isPending || !comments[p.id]?.trim()}
                   >
-                    Odbij
+                    {t('reject')}
                   </Button>
                 </>
               ) : null}
@@ -215,7 +223,7 @@ export function PublicApprovalClient({ token }: { token: string }) {
                 onClick={() => comment.mutate(p.id)}
                 disabled={comment.isPending || !comments[p.id]?.trim()}
               >
-                Pošalji komentar
+                {t('sendComment')}
               </Button>
             </div>
             {decide.error || comment.error ? (

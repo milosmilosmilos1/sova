@@ -3,9 +3,18 @@ import type { ReactNode } from 'react'
 
 import { company } from '@/config/company'
 
-export function EmailLayout({ preview, children }: { preview: string; children: ReactNode }) {
+export function EmailLayout({
+  preview,
+  children,
+  lang = 'sr-Latn',
+}: {
+  preview: string
+  children: ReactNode
+  /** jezik mejla (D-130) */
+  lang?: string
+}) {
   return (
-    <Html lang="sr-Latn">
+    <Html lang={lang}>
       <Head />
       <Preview>{preview}</Preview>
       <Body

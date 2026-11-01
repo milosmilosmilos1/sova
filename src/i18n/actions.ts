@@ -20,6 +20,8 @@ export async function changeLocaleAction(locale: string): Promise<{ ok: boolean 
   if (viewer && !viewer.impersonation) {
     const { error } = await viewer.supabase.from('profiles').update({ locale }).eq('id', viewer.user.id)
     if (error) logger.warn('profile_locale_update_failed', { error: error.message })
+    // šabloni mejlova za prijavu i lozinku čitaju jezik iz podataka naloga (D-130)
+    await viewer.supabase.auth.updateUser({ data: { locale } }).catch(() => undefined)
   }
   revalidatePath('/', 'layout')
   return { ok: true }

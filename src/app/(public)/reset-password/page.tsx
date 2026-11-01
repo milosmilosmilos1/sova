@@ -1,13 +1,19 @@
 import type { Metadata } from 'next'
+import { getLocale, getTranslations } from 'next-intl/server'
 
 import { AuthCard } from '@/components/auth/auth-card'
 import { ResetPasswordForm } from '@/components/auth/simple-forms'
+import { publicMetadata } from '@/lib/seo'
 
-export const metadata: Metadata = { title: 'Nova lozinka' }
+export async function generateMetadata(): Promise<Metadata> {
+  const [locale, t] = await Promise.all([getLocale(), getTranslations('auth.reset')])
+  return publicMetadata({ locale, path: '/reset-password', title: t('title') })
+}
 
-export default function ResetPasswordPage() {
+export default async function ResetPasswordPage() {
+  const t = await getTranslations('auth.reset')
   return (
-    <AuthCard title="Nova lozinka" description="Izaberite novu lozinku za svoj nalog.">
+    <AuthCard title={t('title')} description={t('description')}>
       <ResetPasswordForm />
     </AuthCard>
   )

@@ -1,12 +1,16 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 
 import { StrategyClient } from '@/components/strategy/strategy-client'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
 
-export const metadata: Metadata = { title: 'Strategija' }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('strategy')
+  return { title: t('metaTitle') }
+}
 
 export default async function StrategyPage() {
   const viewer = await getViewer()

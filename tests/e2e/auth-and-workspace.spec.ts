@@ -65,12 +65,12 @@ test.describe.serial('registracija, potvrda emaila, onboarding, tim, nacrt, odja
     await page.getByLabel('Sajt brenda').fill('tangerineseo.rs')
     await page.getByRole('button', { name: 'Napravite radni prostor' }).click()
 
-    await expect(page).toHaveURL(/\/app$/)
-    // naziv firme je i naziv brenda, pa se traži u glavnom sadržaju (ne u <select> opcijama bočne trake)
-    const main = page.getByRole('main')
-    await expect(main.getByText(/Radni prostor/).first()).toContainText('E2E Firma')
-    await expect(main.getByText('50', { exact: true }).first()).toBeVisible()
-    await expect(main.getByText('E2E Firma').first()).toBeVisible()
+    // novi radni prostor ide na uvod u sedam koraka (D-112); naziv firme je i naziv brenda
+    await expect(page).toHaveURL(/\/app\/setup/)
+    await expect(page.getByRole('main').getByText('E2E Firma').first()).toBeVisible()
+    // 50 besplatnih tokena vidi se na Naplati
+    await page.goto('/app/billing')
+    await expect(page.getByRole('main').getByText('50', { exact: true }).first()).toBeVisible()
   })
 
   test('tim: pozivnica, limit plana, podešavanja', async ({ page }) => {

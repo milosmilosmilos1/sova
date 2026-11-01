@@ -25,7 +25,7 @@ export const CONNECT_PROVIDERS: Record<ConnectProviderKey, { label: string; plat
   meta: { label: 'Facebook i Instagram', platforms: ['facebook', 'instagram'] },
   linkedin: { label: 'LinkedIn', platforms: ['linkedin'] },
   tiktok: { label: 'TikTok', platforms: ['tiktok'] },
-  google_business: { label: 'Google poslovni profil', platforms: ['google_business'] },
+  google_business: { label: 'Google Business Profile', platforms: ['google_business'] },
   youtube: { label: 'YouTube', platforms: ['youtube'] },
   pinterest: { label: 'Pinterest', platforms: ['pinterest'] },
   x: { label: 'X', platforms: ['x'] },

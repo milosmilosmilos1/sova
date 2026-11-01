@@ -286,7 +286,7 @@ function SetupCard({
   const chip = (on: boolean) =>
     cn(
       'rounded-lg border px-3 py-2 text-sm',
-      on ? 'border-primary bg-primary/10 text-primary' : 'bg-background hover:bg-muted',
+      on ? 'border-primary bg-primary/10 text-accent-foreground' : 'bg-background hover:bg-muted',
     )
 
   if (!options.platforms.length)
@@ -611,7 +611,7 @@ function PlanBoard({
                       onClick={() => setMode(m)}
                       className={cn(
                         'rounded-md border px-2.5 py-1 text-xs',
-                        mode === m ? 'border-primary bg-primary/10 text-primary' : 'hover:bg-muted',
+                        mode === m ? 'border-primary bg-primary/10 text-accent-foreground' : 'hover:bg-muted',
                       )}
                     >
                       {t(`board.modes.${m}`)}
@@ -761,7 +761,7 @@ function PlanBoard({
                           <p className="line-clamp-2 text-sm text-muted-foreground">{i.brief}</p>
                         ) : null}
                         <p className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
-                          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-primary">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2 py-0.5 text-accent-foreground">
                             <Icon className="size-3.5" aria-hidden />
                             {t(`formats.${i.format}`)}
                           </span>

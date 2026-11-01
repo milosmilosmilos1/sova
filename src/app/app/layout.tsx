@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 
 import { AppShell } from '@/components/app/app-shell'
 import { isAppLocale, LOCALE_COOKIE } from '@/i18n/config'
@@ -8,22 +9,23 @@ import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { getCurrentWorkspace, listMemberships } from '@/lib/auth/workspace'
 import { configured, isPreview } from '@/lib/env'
-import { isFeatureEnabled } from '@/lib/flags'
 import { logger } from '@/lib/logger'
 import { listBrands } from '@/services/brands'
 
 export const metadata: Metadata = { robots: { index: false, follow: false } }
 
-/** Režim pregleda (D-101): šta još čeka svoj ključ, da korisnik ne misli da je greška. */
-function previewPending(): string[] {
+type PreviewItem = 'ai' | 'jobs' | 'email' | 'unsplash' | 'pexels' | 'canva'
+
+/** Režim pregleda (D-101): šta još čeka svoj ključ, da korisnik ne misli da je greška (tekst u shell.preview). */
+function previewPending(): PreviewItem[] {
   if (!isPreview) return []
-  const pending: string[] = []
-  if (!configured.gemini) pending.push('AI tekst i slike')
-  if (!configured.inngestCloud) pending.push('zakazano objavljivanje i pozadinski poslovi')
-  if (!configured.resend) pending.push('emailovi')
-  if (!configured.unsplash) pending.push('Unsplash fotografije')
-  if (!configured.pexels) pending.push('Pexels video')
-  if (!configured.canva) pending.push('Canva')
+  const pending: PreviewItem[] = []
+  if (!configured.gemini) pending.push('ai')
+  if (!configured.inngestCloud) pending.push('jobs')
+  if (!configured.resend) pending.push('email')
+  if (!configured.unsplash) pending.push('unsplash')
+  if (!configured.pexels) pending.push('pexels')
+  if (!configured.canva) pending.push('canva')
   return pending
 }
 
@@ -35,12 +37,13 @@ function previewPending(): string[] {
 export default async function AppLayout({ children }: LayoutProps<'/app'>) {
   const viewer = await getViewer()
   if (!viewer) redirect('/login?next=/app')
+  const t = await getTranslations('shell')
 
   if (viewer.profile.isBanned) {
     return (
       <main className="mx-auto max-w-md px-4 py-24 text-center">
-        <h1 className="text-xl font-semibold">Nalog je blokiran</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Ako mislite da je ovo greška, javite se podršci.</p>
+        <h1 className="text-xl font-semibold">{t('blocked.title')}</h1>
+        <p className="mt-2 text-sm text-muted-foreground">{t('blocked.text')}</p>
       </main>
     )
   }
@@ -50,7 +53,6 @@ export default async function AppLayout({ children }: LayoutProps<'/app'>) {
   const brands = current ? await listBrands(viewer, current.workspaceId) : []
   const currentBrand = current ? await getCurrentBrand(viewer, current.workspaceId) : null
   const pending = previewPending()
-  const showLocaleSwitcher = await isFeatureEnabled('ui_languages')
   // jezik izabran na javnom sajtu važi i za mejlove i obaveštenja: profil prati kolačić (D-130)
   const cookieLocale = (await cookies()).get(LOCALE_COOKIE)?.value
   if (!viewer.impersonation && isAppLocale(cookieLocale) && cookieLocale !== viewer.profile.locale) {
@@ -59,6 +61,7 @@ export default async function AppLayout({ children }: LayoutProps<'/app'>) {
       .update({ locale: cookieLocale })
       .eq('id', viewer.user.id)
     if (error) logger.warn('profile_locale_sync_failed', { error: error.message })
+    await viewer.supabase.auth.updateUser({ data: { locale: cookieLocale } }).catch(() => undefined)
   }
   const { count: waitingApprovals } = currentBrand
     ? await viewer.supabase
@@ -84,12 +87,11 @@ export default async function AppLayout({ children }: LayoutProps<'/app'>) {
       current={current}
       brands={brands}
       currentBrand={currentBrand}
-      showLocaleSwitcher={showLocaleSwitcher}
       waitingApprovals={waitingApprovals ?? 0}
     >
       {pending.length ? (
         <p role="status" className="mb-4 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
-          Pregled: još se uključuju {pending.join(', ')}. Ostatak aplikacije radi.
+          {t('preview.banner', { list: pending.map((item) => t(`preview.${item}`)).join(', ') })}
         </p>
       ) : null}
       {children}

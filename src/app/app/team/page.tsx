@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import { getLocale, getTranslations } from 'next-intl/server'
 
 import { AutoSubmitSelect } from '@/components/app/auto-submit-select'
 import { InviteForm } from '@/components/app/team-forms'
@@ -8,6 +9,7 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { INTL_UI } from '@/i18n/config'
 import { removeMemberAction, revokeInvitationAction, updateMemberAction } from '@/lib/auth/actions'
 import { getViewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
@@ -15,14 +17,9 @@ import { listBrands } from '@/services/brands'
 import { getWorkspacePlan } from '@/services/plans'
 import { listInvitations, listMembers, type PendingInvitation } from '@/services/team'
 
-export const metadata: Metadata = { title: 'Tim' }
-
-const ROLE_LABEL: Record<string, string> = {
-  owner: 'Vlasnik',
-  admin: 'Administrator',
-  editor: 'Urednik',
-  approver: 'Odobravalac',
-  viewer: 'Posmatrač',
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('team')
+  return { title: t('metaTitle') }
 }
 
 const ASSIGNABLE = ['admin', 'editor', 'approver', 'viewer'] as const
@@ -41,33 +38,37 @@ export default async function TeamPage() {
   ])
   let invitations: PendingInvitation[] = []
   if (isAdmin) invitations = await listInvitations(viewer, current.workspaceId)
+  const [t, tb, locale] = await Promise.all([
+    getTranslations('team'),
+    getTranslations('billing'),
+    getLocale(),
+  ])
+  // naziv plana iz baze se prevodi po kodu; nepoznat kod ostaje sa nazivom iz baze
+  const planKey = `planNames.${plan.code}` as 'planNames.free'
+  const planName = tb.has(planKey) ? tb(planKey) : plan.name
 
   return (
     <div className="space-y-8">
       <div>
-        <h1 className="text-2xl font-semibold tracking-tight">Tim</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
         <p className="text-sm text-muted-foreground">
-          {members.length} {members.length === 1 ? 'član' : 'članova'} od {plan.limits.members} dozvoljenih na
-          planu {plan.name}.
+          {t('summary', { count: members.length, limit: plan.limits.members, plan: planName })}
         </p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Članovi</CardTitle>
-          <CardDescription>
-            Vlasnik ima sve, administrator sve osim naplate, urednik kreira, odobravalac odobrava, posmatrač
-            gleda.
-          </CardDescription>
+          <CardTitle>{t('members.title')}</CardTitle>
+          <CardDescription>{t('members.description')}</CardDescription>
         </CardHeader>
         <CardContent>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Osoba</TableHead>
-                <TableHead>Uloga</TableHead>
-                <TableHead>Brendovi</TableHead>
-                <TableHead className="text-right">Radnje</TableHead>
+                <TableHead>{t('members.person')}</TableHead>
+                <TableHead>{t('members.role')}</TableHead>
+                <TableHead>{t('members.brands')}</TableHead>
+                <TableHead className="text-right">{t('members.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -88,19 +89,19 @@ export default async function TeamPage() {
                           <AutoSubmitSelect
                             name="role"
                             value={m.role}
-                            ariaLabel={`Uloga za ${m.email}`}
-                            options={ASSIGNABLE.map((r) => ({ value: r, label: ROLE_LABEL[r]! }))}
+                            ariaLabel={t('members.roleFor', { email: m.email })}
+                            options={ASSIGNABLE.map((r) => ({ value: r, label: t(`roles.${r}`) }))}
                           />
                         </form>
                       ) : (
-                        <Badge variant="secondary">{ROLE_LABEL[m.role]}</Badge>
+                        <Badge variant="secondary">{t(`roles.${m.role}`)}</Badge>
                       )}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
                       {m.allBrands
-                        ? 'svi'
+                        ? t('members.allBrands')
                         : m.brandIds.map((id) => brands.find((b) => b.id === id)?.name ?? '?').join(', ') ||
-                          'nijedan'}
+                          t('members.noBrands')}
                     </TableCell>
                     <TableCell className="text-right">
                       {canEdit || (isSelf && m.role !== 'owner') ? (
@@ -108,7 +109,7 @@ export default async function TeamPage() {
                           <input type="hidden" name="workspaceId" value={current.workspaceId} />
                           <input type="hidden" name="userId" value={m.userId} />
                           <Button type="submit" variant="ghost" size="sm">
-                            {isSelf ? 'Napustite' : 'Ukloni'}
+                            {isSelf ? t('members.leave') : t('members.remove')}
                           </Button>
                         </form>
                       ) : null}
@@ -124,10 +125,8 @@ export default async function TeamPage() {
       {current.role === 'owner' ? (
         <Card>
           <CardHeader>
-            <CardTitle>Prenos vlasništva</CardTitle>
-            <CardDescription>
-              Vlasnik upravlja naplatom i može da obriše radni prostor. Posle prenosa ostajete administrator.
-            </CardDescription>
+            <CardTitle>{t('transfer.title')}</CardTitle>
+            <CardDescription>{t('transfer.description')}</CardDescription>
           </CardHeader>
           <CardContent>
             <TransferOwnershipForm
@@ -136,7 +135,7 @@ export default async function TeamPage() {
                 .filter((m) => m.userId !== viewer.user.id)
                 .map((m) => ({
                   userId: m.userId,
-                  label: `${m.fullName ?? m.email} (${ROLE_LABEL[m.role]})`,
+                  label: `${m.fullName ?? m.email} (${t(`roles.${m.role}`)})`,
                 }))}
             />
           </CardContent>
@@ -147,8 +146,8 @@ export default async function TeamPage() {
         <div className="grid gap-6 lg:grid-cols-2">
           <Card>
             <CardHeader>
-              <CardTitle>Pozovite člana</CardTitle>
-              <CardDescription>Pozivnica stiže emailom i važi 7 dana.</CardDescription>
+              <CardTitle>{t('invite.title')}</CardTitle>
+              <CardDescription>{t('invite.description')}</CardDescription>
             </CardHeader>
             <CardContent>
               <InviteForm workspaceId={current.workspaceId} brands={brands} />
@@ -156,11 +155,11 @@ export default async function TeamPage() {
           </Card>
           <Card>
             <CardHeader>
-              <CardTitle>Pozivnice na čekanju</CardTitle>
+              <CardTitle>{t('invitations.title')}</CardTitle>
             </CardHeader>
             <CardContent>
               {invitations.length === 0 ? (
-                <p className="text-sm text-muted-foreground">Nema pozivnica na čekanju.</p>
+                <p className="text-sm text-muted-foreground">{t('invitations.empty')}</p>
               ) : (
                 <ul className="divide-y text-sm">
                   {invitations.map((inv) => (
@@ -168,15 +167,17 @@ export default async function TeamPage() {
                       <div>
                         <div className="font-medium">{inv.email}</div>
                         <div className="text-xs text-muted-foreground">
-                          {ROLE_LABEL[inv.role]} · ističe{' '}
-                          {new Date(inv.expiresAt).toLocaleDateString('sr-Latn-RS')}
+                          {t('invitations.expires', {
+                            role: t(`roles.${inv.role}`),
+                            date: new Date(inv.expiresAt).toLocaleDateString(INTL_UI[locale]),
+                          })}
                         </div>
                       </div>
                       <form action={revokeInvitationAction}>
                         <input type="hidden" name="workspaceId" value={current.workspaceId} />
                         <input type="hidden" name="invitationId" value={inv.id} />
                         <Button type="submit" variant="ghost" size="sm">
-                          Opozovi
+                          {t('invitations.revoke')}
                         </Button>
                       </form>
                     </li>

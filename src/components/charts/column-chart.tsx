@@ -1,10 +1,13 @@
 'use client'
 
+import { useLocale, useTranslations } from 'next-intl'
 import { useCallback, useEffect, useId, useMemo, useRef, useState, type KeyboardEvent } from 'react'
 
 import { cn } from 'cn'
 
-import { fullNumber, niceScale, tickFormatter, valueLabel } from './scale'
+import { INTL_UI } from '@/i18n/config'
+
+import { chartNumbers, niceScale } from './scale'
 
 /**
  * Stubičasti grafikon jedne serije (D-092): zbir po danu ili nedelji. Stub najviše 24 px, zaobljen
@@ -24,11 +27,6 @@ const PLOT_HEIGHT = 168
 const AXIS_BAND = 24
 const PAD = { top: 18, right: 12, left: 44 }
 const MAX_BAR = 24
-const usd = new Intl.NumberFormat('sr-Latn-RS', {
-  style: 'currency',
-  currency: 'USD',
-  maximumFractionDigits: 4,
-})
 
 /** Putanja stuba: zaobljen vrh, ravna osnova. */
 function barPath(x: number, w: number, top: number, base: number): string {
@@ -44,7 +42,7 @@ export function ColumnChart({
   bars,
   unit = 'count',
   dim = false,
-  emptyText = 'Još nema podataka za ovaj period.',
+  emptyText,
 }: {
   title: string
   description?: string
@@ -54,7 +52,10 @@ export function ColumnChart({
   dim?: boolean
   emptyText?: string
 }) {
-  const format = unit === 'usd' ? (v: number) => usd.format(v) : (v: number) => fullNumber.format(v)
+  const t = useTranslations('charts')
+  const locale = useLocale()
+  const numbers = useMemo(() => chartNumbers(INTL_UI[locale]), [locale])
+  const format = unit === 'usd' ? numbers.usd : numbers.full
   const ref = useRef<HTMLDivElement | null>(null)
   const observer = useRef<ResizeObserver | null>(null)
   const [width, setWidth] = useState(0)
@@ -83,8 +84,8 @@ export function ColumnChart({
     const y = (v: number) => PAD.top + PLOT_HEIGHT - (v / (scale.hi - scale.lo || 1)) * PLOT_HEIGHT
     const base = y(0)
     const maxIndex = bars.reduce((m, b, i) => (b.value > bars[m]!.value ? i : m), 0)
-    return { scale, slot, barW, xOf, y, base, maxIndex, tickLabel: tickFormatter(scale) }
-  }, [width, bars])
+    return { scale, slot, barW, xOf, y, base, maxIndex, tickLabel: numbers.tick(scale) }
+  }, [width, bars, numbers])
 
   const onKey = (e: KeyboardEvent) => {
     if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
@@ -115,21 +116,21 @@ export function ColumnChart({
             className="rounded-md border px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground"
             aria-pressed={asTable}
           >
-            {asTable ? 'Grafikon' : 'Tabela'}
+            {asTable ? t('chart') : t('table')}
           </button>
         ) : null}
       </div>
 
       {empty ? (
         <p className="grid h-[210px] place-items-center rounded-lg border border-dashed text-sm text-muted-foreground">
-          {emptyText}
+          {emptyText ?? t('empty')}
         </p>
       ) : asTable ? (
         <div className="max-h-[210px] overflow-y-auto rounded-lg border">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-card text-muted-foreground">
               <tr>
-                <th className="px-3 py-1.5 text-left font-normal">Period</th>
+                <th className="px-3 py-1.5 text-left font-normal">{t('period')}</th>
                 <th className="px-3 py-1.5 text-right font-normal">{title}</th>
               </tr>
             </thead>
@@ -154,7 +155,11 @@ export function ColumnChart({
               width={width}
               height={height}
               role="img"
-              aria-label={`${title}: najviše ${format(bars[geo.maxIndex]!.value)} (${bars[geo.maxIndex]!.longLabel}). Strelicama birate stub.`}
+              aria-label={t('columnAria', {
+                title,
+                value: format(bars[geo.maxIndex]!.value),
+                label: bars[geo.maxIndex]!.longLabel,
+              })}
               tabIndex={0}
               className="outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               onKeyDown={onKey}
@@ -211,7 +216,9 @@ export function ColumnChart({
                 textAnchor="middle"
                 className="pointer-events-none fill-foreground text-xs font-medium"
               >
-                {unit === 'usd' ? format(bars[geo.maxIndex]!.value) : valueLabel(bars[geo.maxIndex]!.value)}
+                {unit === 'usd'
+                  ? format(bars[geo.maxIndex]!.value)
+                  : numbers.value(bars[geo.maxIndex]!.value)}
               </text>
               {xLabels.map((i) => (
                 <text

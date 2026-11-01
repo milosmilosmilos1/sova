@@ -107,7 +107,7 @@ export const PLATFORMS: Record<SocialPlatform, PlatformConstraints> = {
     aiLabel: false,
   },
   google_business: {
-    label: 'Google poslovni profil',
+    label: 'Google Business Profile',
     textMax: 1500,
     hashtagsRecommended: 0,
     hashtagsMax: 0,

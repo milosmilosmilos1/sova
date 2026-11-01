@@ -1,4 +1,5 @@
 import { AlertCircle, Inbox, type LucideIcon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -32,6 +33,8 @@ export function AsyncState<T>({
   children,
   className,
 }: AsyncStateProps<T>) {
+  const t = useTranslations('appStatus')
+  const tc = useTranslations('common')
   if (status === 'loading') {
     return (
       <div className={cn('space-y-3', className)} aria-busy="true" aria-live="polite">
@@ -56,13 +59,13 @@ export function AsyncState<T>({
         )}
       >
         <AlertCircle className="size-8 text-destructive" aria-hidden />
-        <p className="font-medium">{error?.message ?? 'Došlo je do greške pri učitavanju.'}</p>
+        <p className="font-medium">{error?.message ?? t('loadError')}</p>
         {error?.requestId ? (
           <p className="font-mono text-xs text-muted-foreground">ID: {error.requestId}</p>
         ) : null}
         {onRetry ? (
           <Button variant="outline" onClick={onRetry}>
-            Pokušajte ponovo
+            {tc('retry')}
           </Button>
         ) : null}
       </div>
@@ -79,7 +82,7 @@ export function AsyncState<T>({
         )}
       >
         <Icon className="size-8 text-muted-foreground" aria-hidden />
-        <p className="font-medium">{empty?.title ?? 'Još nema podataka'}</p>
+        <p className="font-medium">{empty?.title ?? t('empty')}</p>
         {empty?.description ? (
           <p className="max-w-sm text-sm text-muted-foreground">{empty.description}</p>
         ) : null}

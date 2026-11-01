@@ -9,6 +9,9 @@ import {
   type NotificationType,
   type NotificationTypeDef,
 } from '@/config/notifications'
+import { EMAIL_COPY } from '@/emails/copy'
+import { isAppLocale, type AppLocale } from '@/i18n/config'
+import { translateServerText } from '@/i18n/server-text'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { requireMembership, type WorkspaceRole } from '@/lib/auth/workspace'
@@ -71,6 +74,9 @@ async function loadDisabled(
   return out
 }
 
+/** Jezik primaoca iz profila (D-130); obaveštenje u bazi ostaje na srpskom i prevodi se pri prikazu. */
+const localeOf = (value: unknown): AppLocale => (isAppLocale(value) ? value : 'sr-Latn')
+
 export async function notifyUsers(input: NotifyInput): Promise<number> {
   const ids = [...new Set(input.userIds.filter(Boolean))]
   if (!ids.length) return 0
@@ -96,20 +102,23 @@ export async function notifyUsers(input: NotifyInput): Promise<number> {
     if (emailIds.length) {
       const { data: profiles } = await admin
         .from('profiles')
-        .select('id, email, full_name')
+        .select('id, email, full_name, locale')
         .in('id', emailIds)
       for (const p of profiles ?? []) {
         if (!p.email) continue
+        const locale = localeOf(p.locale)
+        const title = translateServerText(input.title, locale)
         try {
           await sendEmail({
             to: p.email,
-            subject: input.title,
+            subject: title,
             react: createElement(NoticeEmail, {
-              title: input.title,
-              body: input.body ?? '',
+              title,
+              body: translateServerText(input.body ?? '', locale),
               ctaUrl: input.link ? `${env.NEXT_PUBLIC_APP_URL}${input.link}` : null,
-              ctaLabel: input.link ? 'Otvori u Sovi' : null,
+              ctaLabel: input.link ? EMAIL_COPY[locale].openInSova : null,
               recipientName: p.full_name,
+              locale,
             }),
             tags: { type: input.type },
           })
@@ -122,12 +131,20 @@ export async function notifyUsers(input: NotifyInput): Promise<number> {
   const def = NOTIFICATION_TYPES[input.type] as NotificationTypeDef
   if (input.push ?? def.pushDefault ?? false) {
     const pushIds = ids.filter((id) => !disabled.get(id)?.has('push'))
-    await sendPushToUsers(pushIds, {
-      title: input.title,
-      body: input.body ?? '',
-      url: input.link ?? '/app',
-      tag: input.type,
-    }).catch((error) => logger.warn('notification_push_failed', { type: input.type, error }))
+    // obaveštenje na telefonu na jeziku svakog primaoca: jedno slanje po jeziku
+    const { data: rows } = pushIds.length
+      ? await admin.from('profiles').select('id, locale').in('id', pushIds)
+      : { data: [] }
+    const byLocale = new Map<AppLocale, string[]>()
+    for (const r of rows ?? [])
+      byLocale.set(localeOf(r.locale), [...(byLocale.get(localeOf(r.locale)) ?? []), r.id])
+    for (const [locale, group] of byLocale)
+      await sendPushToUsers(group, {
+        title: translateServerText(input.title, locale),
+        body: translateServerText(input.body ?? '', locale),
+        url: input.link ?? '/app',
+        tag: input.type,
+      }).catch((error) => logger.warn('notification_push_failed', { type: input.type, error }))
   }
   return inApp.length
 }
@@ -204,6 +221,7 @@ export async function listNotifications(
     .is('read_at', null)
   if (opts.workspaceId) c = c.eq('workspace_id', opts.workspaceId)
   const { count } = await c
+  const locale = viewer.profile.locale
   return {
     unreadCount: count ?? 0,
     items: (data ?? []).map((n) => {
@@ -211,8 +229,8 @@ export async function listNotifications(
       return {
         id: n.id,
         type: n.type,
-        title: n.title,
-        body: n.body,
+        title: translateServerText(n.title, locale),
+        body: n.body ? translateServerText(n.body, locale) : n.body,
         link: typeof d.link === 'string' ? d.link : null,
         data: d,
         workspaceId: n.workspace_id,
@@ -263,10 +281,11 @@ export async function getNotificationPreferences(
   const rows = (data ?? []) as Array<Pick<PrefRow, 'type' | 'channel' | 'enabled'>>
   const find = (type: string, channel: NotificationChannel): boolean | null =>
     rows.find((r) => r.type === type && r.channel === channel)?.enabled ?? null
+  const locale = viewer.profile.locale
   return NOTIFICATION_TYPE_KEYS.map((type) => ({
     type,
-    label: NOTIFICATION_TYPES[type].label,
-    description: NOTIFICATION_TYPES[type].description,
+    label: translateServerText(NOTIFICATION_TYPES[type].label, locale),
+    description: translateServerText(NOTIFICATION_TYPES[type].description, locale),
     inApp: find(type, 'in_app') ?? true,
     email: find(type, 'email') ?? NOTIFICATION_TYPES[type].emailDefault,
   }))

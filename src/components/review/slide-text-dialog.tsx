@@ -218,7 +218,7 @@ function Editor({
               onClick={() => setIndex(i)}
               className={cn(
                 'rounded-full border px-3 py-1 text-xs',
-                i === index && 'border-primary bg-primary/10 text-primary',
+                i === index && 'border-primary bg-primary/10 text-accent-foreground',
               )}
             >
               {label(i)}

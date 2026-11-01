@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useLocale, useTranslations } from 'next-intl'
 import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from 'react'
 
 import { Badge } from '@/components/ui/badge'
@@ -20,7 +21,7 @@ import { readPinterestOptions } from '@/config/pinterest'
 import { readYouTubeOptions } from '@/config/youtube'
 import { PLATFORMS } from '@/config/platforms'
 import { readTikTokOptions } from '@/config/tiktok'
-import { targetStatusLabel } from '@/config/post-labels'
+import { INTL_UI, type AppLocale } from '@/i18n/config'
 import type { ApiResponse } from '@/lib/api/response'
 import type { WorkspaceRole } from '@/lib/auth/workspace'
 import { formatDuration, uploadMediaFile } from '@/lib/media/client-upload'
@@ -32,7 +33,6 @@ import {
   cropTarget,
   type AspectRange,
 } from '@/lib/media/crop'
-import { pluralSr } from '@/lib/plural'
 import { containsUrl } from '@/lib/x-text'
 import { wallClock, zonedToUtc } from '@/lib/zoned-time'
 
@@ -136,13 +136,14 @@ async function api<T>(path: string, init: RequestInit & { json?: unknown } = {})
 }
 
 function ErrorBox({ error }: { error: unknown }) {
+  const tc = useTranslations('common')
   if (!error) return null
   return (
     <div
       role="alert"
       className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
     >
-      {error instanceof Error ? error.message : 'Greška.'}
+      {error instanceof Error ? error.message : tc('error')}
     </div>
   )
 }
@@ -162,25 +163,15 @@ function fromLocalInput(value: string, timeZone: string): string | null {
 
 /** X je pay-per-use: objava sa linkom (i domenom bez https://) košta više (D-013, D-083). */
 function XCostNote({ withLink }: { withLink: boolean }) {
+  const t = useTranslations('postEditor')
   const cost = withLink ? 6 : 1
-  return (
-    <p className="mt-2 text-xs text-muted-foreground">
-      Objava na X troši {cost} {pluralSr(cost, 'token', 'tokena', 'tokena')}
-      {withLink ? ' jer ima link' : ''} (bez linka 1, sa linkom 6); naplaćuje se tek kad objava prođe.
-    </p>
-  )
+  return <p className="mt-2 text-xs text-muted-foreground">{t(withLink ? 'xCostLink' : 'xCost', { cost })}</p>
 }
 
-const ACTION_LABEL: Record<string, string> = {
-  submit: 'Pošalji na odobrenje',
-  withdraw: 'Povuci sa odobravanja',
-  schedule: 'Zakaži',
-  unschedule: 'Otkaži zakazivanje',
-  pause: 'Pauziraj',
-  resume: 'Nastavi',
-  cancel: 'Otkaži objavu',
-  restore: 'Vrati u nacrt',
-  delete: 'Obriši',
+/** Natpis odnosa po jeziku: `aspectLabel` piše decimalni zarez (1,91:1), a engleski traži tačku. */
+function ratioText(ratio: number, locale: AppLocale): string {
+  const label = aspectLabel(ratio)
+  return locale === 'en' ? label.replace(',', '.') : label
 }
 
 interface FormState {
@@ -292,6 +283,7 @@ export function PostEditor({
   postId: string | null
   role: WorkspaceRole
 }) {
+  const t = useTranslations('postEditor')
   const post = useQuery({
     queryKey: ['post', postId],
     queryFn: () => api<PostView>(`/api/posts/${postId}`),
@@ -300,7 +292,7 @@ export function PostEditor({
     refetchInterval: (q) =>
       q.state.data?.status === 'publishing' || q.state.data?.status === 'scheduled' ? 15_000 : false,
   })
-  if (postId && post.isPending) return <p className="text-sm text-muted-foreground">Učitavam objavu…</p>
+  if (postId && post.isPending) return <p className="text-sm text-muted-foreground">{t('loading')}</p>
   if (postId && post.isError) return <ErrorBox error={post.error} />
   const p = post.data ?? null
   return (
@@ -331,6 +323,8 @@ function EditorForm({
   role: WorkspaceRole
   post: PostView | null
 }) {
+  const t = useTranslations('postEditor')
+  const locale = useLocale()
   const router = useRouter()
   const qc = useQueryClient()
   const canEdit = ['owner', 'admin', 'editor'].includes(role)
@@ -597,16 +591,18 @@ function EditorForm({
       {/* min-w-0: dugačak sadržaj ne širi kolonu preko ekrana telefona */}
       <div className="min-w-0 space-y-4">
         <div className="flex flex-wrap items-center gap-2">
-          <h1 className="text-2xl font-semibold tracking-tight">{postId ? 'Objava' : 'Nova objava'}</h1>
-          {p ? <Badge>{p.statusLabel}</Badge> : <Badge variant="secondary">nacrt</Badge>}
-          {p ? <span className="text-xs text-muted-foreground">verzija {p.version}</span> : null}
+          <h1 className="text-2xl font-semibold tracking-tight">{postId ? t('titleEdit') : t('titleNew')}</h1>
+          {p ? <Badge>{p.statusLabel}</Badge> : <Badge variant="secondary">{t('draftBadge')}</Badge>}
+          {p ? (
+            <span className="text-xs text-muted-foreground">{t('version', { version: p.version })}</span>
+          ) : null}
           <span className="text-xs text-muted-foreground">
-            · {brandName} · zona {timezone}
+            {t('brandZone', { brand: brandName, timezone })}
           </span>
         </div>
         {p?.lockedAt ? (
           <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-            Objava se upravo objavljuje i ne može da se menja.
+            {t('locked')}
           </p>
         ) : null}
         {offerDraft && stored ? (
@@ -615,8 +611,9 @@ function EditorForm({
             className="flex flex-wrap items-center gap-3 rounded-md border border-sky-300 bg-sky-50 px-3 py-2 text-sm text-sky-950"
           >
             <span>
-              Imate nesačuvan nacrt od {new Date(stored.savedAt).toLocaleString('sr-Latn-RS')}
-              {p && stored.version !== p.version ? ' (napravljen na starijoj verziji objave)' : ''}.
+              {t(p && stored.version !== p.version ? 'draftOfferOld' : 'draftOffer', {
+                date: new Date(stored.savedAt).toLocaleString(INTL_UI[locale]),
+              })}
             </span>
             <Button
               size="sm"
@@ -626,7 +623,7 @@ function EditorForm({
                 setDraftDismissed(true)
               }}
             >
-              Vrati nacrt
+              {t('draftRestore')}
             </Button>
             <Button
               size="sm"
@@ -636,7 +633,7 @@ function EditorForm({
                 setDraftDismissed(true)
               }}
             >
-              Odbaci
+              {t('draftDiscard')}
             </Button>
           </div>
         ) : null}
@@ -644,14 +641,12 @@ function EditorForm({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Sadržaj</CardTitle>
-            <CardDescription>
-              Master tekst važi za sve mreže; po mreži možete upisati drugačiji tekst.
-            </CardDescription>
+            <CardTitle className="text-base">{t('content.title')}</CardTitle>
+            <CardDescription>{t('content.description')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="space-y-1">
-              <Label htmlFor="p-title">Interni naslov (opciono)</Label>
+              <Label htmlFor="p-title">{t('content.internalTitle')}</Label>
               <Input
                 id="p-title"
                 value={form.title}
@@ -661,7 +656,7 @@ function EditorForm({
               />
             </div>
             <div className="space-y-1">
-              <Label htmlFor="p-text">Tekst objave</Label>
+              <Label htmlFor="p-text">{t('content.text')}</Label>
               <Textarea
                 id="p-text"
                 value={form.masterText}
@@ -670,11 +665,13 @@ function EditorForm({
                 maxLength={20000}
                 disabled={!editable}
               />
-              <p className="text-xs text-muted-foreground">{form.masterText.length} karaktera</p>
+              <p className="text-xs text-muted-foreground">
+                {t('content.chars', { count: form.masterText.length })}
+              </p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div className="space-y-1">
-                <Label htmlFor="p-link">Link (opciono)</Label>
+                <Label htmlFor="p-link">{t('content.link')}</Label>
                 <Input
                   id="p-link"
                   value={form.linkUrl}
@@ -684,7 +681,7 @@ function EditorForm({
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="p-first">Prvi komentar (Instagram, Facebook i LinkedIn, opciono)</Label>
+                <Label htmlFor="p-first">{t('content.firstComment')}</Label>
                 <Input
                   id="p-first"
                   value={form.firstComment}
@@ -694,7 +691,7 @@ function EditorForm({
                 />
               </div>
               <div className="space-y-1">
-                <Label htmlFor="p-pillar">Stub sadržaja (opciono)</Label>
+                <Label htmlFor="p-pillar">{t('content.pillar')}</Label>
                 <select
                   id="p-pillar"
                   value={form.pillarId}
@@ -702,7 +699,7 @@ function EditorForm({
                   disabled={!editable}
                   className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 dark:bg-input/30"
                 >
-                  <option value="">Bez stuba</option>
+                  <option value="">{t('content.noPillar')}</option>
                   {(pillars.data?.pillars ?? [])
                     .filter((x) => x.isActive || x.id === form.pillarId)
                     .map((x) => (
@@ -713,7 +710,7 @@ function EditorForm({
                 </select>
               </div>
               <div className="space-y-1">
-                <Label htmlFor="p-campaign">Kampanja (opciono)</Label>
+                <Label htmlFor="p-campaign">{t('content.campaign')}</Label>
                 <select
                   id="p-campaign"
                   value={form.campaignId}
@@ -721,7 +718,7 @@ function EditorForm({
                   disabled={!editable}
                   className="h-8 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 disabled:opacity-50 dark:bg-input/30"
                 >
-                  <option value="">Bez kampanje</option>
+                  <option value="">{t('content.noCampaign')}</option>
                   {(campaigns.data?.campaigns ?? [])
                     .filter((x) => !x.endsOn || x.endsOn >= today || x.id === form.campaignId)
                     .map((x) => (
@@ -737,16 +734,12 @@ function EditorForm({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Mreže</CardTitle>
-            <CardDescription>
-              Izaberite naloge; za svaki možete prilagoditi tekst (limit po mreži se proverava pri slanju).
-            </CardDescription>
+            <CardTitle className="text-base">{t('networks.title')}</CardTitle>
+            <CardDescription>{t('networks.description')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {accounts.data && accounts.data.accounts.length === 0 ? (
-              <p className="text-sm text-muted-foreground">
-                Nema povezanih mreža. Povežite ih na strani „Mreže”.
-              </p>
+              <p className="text-sm text-muted-foreground">{t('networks.empty')}</p>
             ) : null}
             {accounts.data?.accounts.map((a) => {
               const sel = form.selected[a.id] ?? { on: false, text: '', options: {} }
@@ -767,16 +760,16 @@ function EditorForm({
                     <span className="font-medium">{a.name}</span>
                     <Badge variant="outline">{PLATFORMS[a.platform]?.label ?? a.platform}</Badge>
                     {a.status !== 'active' ? <Badge variant="secondary">{a.status}</Badge> : null}
-                    {a.assistedOnly ? <Badge variant="secondary">asistirano</Badge> : null}
+                    {a.assistedOnly ? <Badge variant="secondary">{t('networks.assisted')}</Badge> : null}
                     <span className="ml-auto text-xs text-muted-foreground">
-                      limit {PLATFORMS[a.platform]?.textMax} karaktera
+                      {t('networks.limit', { max: PLATFORMS[a.platform]?.textMax ?? 0 })}
                     </span>
                   </label>
                   {sel.on ? (
                     <Textarea
                       className="mt-2"
                       rows={3}
-                      placeholder="Prazno = master tekst"
+                      placeholder={t('networks.textPlaceholder')}
                       value={sel.text}
                       disabled={!editable}
                       onChange={(e) =>
@@ -808,10 +801,8 @@ function EditorForm({
                         }}
                       />
                       <span>
-                        Objavi kao priču (Story)
-                        <span className="block text-xs text-muted-foreground">
-                          Jedna uspravna slika ili video do 60 sekundi. Priča traje 24 sata i nema opis.
-                        </span>
+                        {t('networks.story')}
+                        <span className="block text-xs text-muted-foreground">{t('networks.storyHint')}</span>
                       </span>
                     </label>
                   ) : null}
@@ -890,19 +881,14 @@ function EditorForm({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Mediji</CardTitle>
-            <CardDescription>
-              Iz biblioteke brenda (Unsplash, Canva, šabloni iz Studija) ili otpremite fotografiju ili video
-              (MP4, MOV).
-            </CardDescription>
+            <CardTitle className="text-base">{t('media.title')}</CardTitle>
+            <CardDescription>{t('media.description')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
             {canReplace && p ? (
               <div className="space-y-2 rounded-md border p-3">
-                <p className="text-sm font-medium">Zamena medija bez otkazivanja termina</p>
-                <p className="text-xs text-muted-foreground">
-                  Novi fajl prolazi istu proveru za mreže kao pri zakazivanju, a termin ostaje isti.
-                </p>
+                <p className="text-sm font-medium">{t('media.replaceTitle')}</p>
+                <p className="text-xs text-muted-foreground">{t('media.replaceHint')}</p>
                 <ul className="flex flex-wrap gap-2">
                   {p.media.map((m, i) => {
                     const on = replacing === m.mediaAssetId
@@ -927,7 +913,7 @@ function EditorForm({
                           disabled={replaceMedia.isPending}
                           onClick={() => setReplacing(on ? null : m.mediaAssetId)}
                         >
-                          {on ? 'Odustani' : 'Zameni'}
+                          {on ? t('giveUp') : t('media.replace')}
                         </Button>
                       </li>
                     )
@@ -935,9 +921,7 @@ function EditorForm({
                 </ul>
                 {replacing ? (
                   <p role="status" className="text-sm">
-                    {replaceMedia.isPending
-                      ? 'Menjam medij…'
-                      : 'Izaberite novi medij iz biblioteke ispod ili otpremite fajl.'}
+                    {replaceMedia.isPending ? t('media.replacing') : t('media.replacePick')}
                   </p>
                 ) : null}
                 <ErrorBox error={replaceMedia.error} />
@@ -946,7 +930,7 @@ function EditorForm({
             {editable || replacing ? (
               <Input
                 type="file"
-                aria-label="Otpremi fotografiju ili video"
+                aria-label={t('media.upload')}
                 accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime"
                 disabled={upload.isPending || replaceMedia.isPending}
                 onChange={(e) => {
@@ -959,13 +943,15 @@ function EditorForm({
             {upload.isPending ? (
               <div className="space-y-1" role="status">
                 <p className="text-sm text-muted-foreground">
-                  Otpremam…{uploadProgress !== null ? ` ${Math.round(uploadProgress * 100)} %` : ''}
+                  {uploadProgress !== null
+                    ? t('media.uploadingPercent', { percent: Math.round(uploadProgress * 100) })
+                    : t('media.uploading')}
                 </p>
                 <progress
                   className="h-1.5 w-full"
                   max={1}
                   value={uploadProgress ?? undefined}
-                  aria-label="Napredak otpremanja"
+                  aria-label={t('media.uploadProgress')}
                 />
               </div>
             ) : null}
@@ -999,7 +985,7 @@ function EditorForm({
                           playsInline
                           preload="metadata"
                           className="aspect-square w-full bg-black object-cover"
-                          aria-label={m.altText || 'Video'}
+                          aria-label={m.altText || t('media.video')}
                         />
                         <span className="absolute right-1 bottom-1 rounded bg-black/70 px-1 text-[10px] text-white">
                           ▶ {formatDuration(m.durationMs)}
@@ -1024,7 +1010,7 @@ function EditorForm({
               })}
             </div>
             {library.data && library.data.length === 0 ? (
-              <p className="text-sm text-muted-foreground">Biblioteka je prazna.</p>
+              <p className="text-sm text-muted-foreground">{t('media.empty')}</p>
             ) : null}
             {editable
               ? aspectIssues.map((issue) => (
@@ -1052,15 +1038,13 @@ function EditorForm({
 
         <Card>
           <CardHeader>
-            <CardTitle className="text-base">Termin</CardTitle>
-            <CardDescription>
-              Vreme u zoni brenda ({timezone}). Zakazivanje je posebna radnja ispod.
-            </CardDescription>
+            <CardTitle className="text-base">{t('schedule.title')}</CardTitle>
+            <CardDescription>{t('schedule.description', { timezone })}</CardDescription>
           </CardHeader>
           <CardContent>
             <Input
               type="datetime-local"
-              aria-label="Termin objave"
+              aria-label={t('schedule.label')}
               value={form.when}
               onChange={(e) => set('when', e.target.value)}
               disabled={!canEdit}
@@ -1071,7 +1055,7 @@ function EditorForm({
         <div className="flex flex-wrap gap-2">
           {editable ? (
             <Button onClick={() => save.mutate()} disabled={save.isPending || !hasContent}>
-              {save.isPending ? 'Čuvam…' : postId ? 'Sačuvaj izmene' : 'Sačuvaj nacrt'}
+              {save.isPending ? t('saving') : postId ? t('saveChanges') : t('saveDraft')}
             </Button>
           ) : null}
           {p && actions.includes('submit') ? (
@@ -1080,7 +1064,7 @@ function EditorForm({
               onClick={() => action.mutate({ name: 'submit' })}
               disabled={action.isPending}
             >
-              {ACTION_LABEL.submit}
+              {t('actions.submit')}
             </Button>
           ) : null}
           {p && actions.includes('schedule') ? (
@@ -1095,19 +1079,19 @@ function EditorForm({
                 }
                 disabled={action.isPending || !form.when}
               >
-                {ACTION_LABEL.schedule}
+                {t('actions.schedule')}
               </Button>
               <Button
                 variant="outline"
                 onClick={() => action.mutate({ name: 'publish-now' })}
                 disabled={action.isPending}
               >
-                Objavi sada
+                {t('publishNow')}
               </Button>
             </>
           ) : null}
           {p
-            ? ['withdraw', 'unschedule', 'pause', 'resume', 'cancel', 'restore']
+            ? (['withdraw', 'unschedule', 'pause', 'resume', 'cancel', 'restore'] as const)
                 .filter((a) => actions.includes(a))
                 .map((a) => (
                   <Button
@@ -1116,7 +1100,7 @@ function EditorForm({
                     onClick={() => action.mutate({ name: a })}
                     disabled={action.isPending}
                   >
-                    {ACTION_LABEL[a]}
+                    {t(`actions.${a}`)}
                   </Button>
                 ))
             : null}
@@ -1126,7 +1110,7 @@ function EditorForm({
               onClick={() => action.mutate({ name: 'duplicate' })}
               disabled={action.isPending}
             >
-              Dupliraj
+              {t('duplicate')}
             </Button>
           ) : null}
           {p && actions.includes('delete') ? (
@@ -1136,7 +1120,7 @@ function EditorForm({
               onClick={() => del.mutate()}
               disabled={del.isPending}
             >
-              {ACTION_LABEL.delete}
+              {t('actions.delete')}
             </Button>
           ) : null}
         </div>
@@ -1146,31 +1130,29 @@ function EditorForm({
         (actions.includes('approve') || actions.includes('reject') || actions.includes('request_changes')) ? (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Odluka</CardTitle>
-              <CardDescription>
-                Odobrite, odbijte ili zatražite izmene (komentar je obavezan za odbijanje i izmene).
-              </CardDescription>
+              <CardTitle className="text-base">{t('decision.title')}</CardTitle>
+              <CardDescription>{t('decision.description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2">
               <Textarea
                 value={comment}
                 onChange={(e) => setComment(e.target.value)}
                 rows={2}
-                placeholder="Komentar za autora"
+                placeholder={t('decision.placeholder')}
               />
               <div className="flex flex-wrap gap-2">
                 <Button
                   onClick={() => action.mutate({ name: 'approve', extra: { comment: comment || undefined } })}
                   disabled={action.isPending}
                 >
-                  Odobri
+                  {t('decision.approve')}
                 </Button>
                 <Button
                   variant="outline"
                   onClick={() => action.mutate({ name: 'request-changes', extra: { comment } })}
                   disabled={action.isPending || !comment.trim()}
                 >
-                  Traži izmene
+                  {t('decision.requestChanges')}
                 </Button>
                 <Button
                   variant="outline"
@@ -1178,7 +1160,7 @@ function EditorForm({
                   onClick={() => action.mutate({ name: 'reject', extra: { comment } })}
                   disabled={action.isPending || !comment.trim()}
                 >
-                  Odbij
+                  {t('decision.reject')}
                 </Button>
               </div>
             </CardContent>
@@ -1190,21 +1172,23 @@ function EditorForm({
         {p ? (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Targeti</CardTitle>
+              <CardTitle className="text-base">{t('targets.title')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
-              {p.targets.map((t) => (
+              {p.targets.map((target) => (
                 <TargetCard
-                  key={t.id}
-                  t={t}
-                  media={p.media.filter((m) => !m.socialAccountId || m.socialAccountId === t.socialAccountId)}
+                  key={target.id}
+                  target={target}
+                  media={p.media.filter(
+                    (m) => !m.socialAccountId || m.socialAccountId === target.socialAccountId,
+                  )}
                   timezone={timezone}
                   canEdit={canEdit}
                   busy={targetAction.isPending}
-                  onRetry={() => targetAction.mutate({ targetId: t.id, name: 'retry' })}
+                  onRetry={() => targetAction.mutate({ targetId: target.id, name: 'retry' })}
                   onAssistedDone={(permalink) =>
                     targetAction.mutate({
-                      targetId: t.id,
+                      targetId: target.id,
                       name: 'assisted-done',
                       extra: { permalink: permalink || null },
                     })
@@ -1218,8 +1202,8 @@ function EditorForm({
         {p && p.status === 'in_review' && canEdit ? (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Javni link za klijenta</CardTitle>
-              <CardDescription>Klijent bez naloga vidi objavu i odlučuje. Link važi 7 dana.</CardDescription>
+              <CardTitle className="text-base">{t('approvalLink.title')}</CardTitle>
+              <CardDescription>{t('approvalLink.description')}</CardDescription>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <Button
@@ -1228,13 +1212,13 @@ function EditorForm({
                 onClick={() => makeLink.mutate()}
                 disabled={makeLink.isPending}
               >
-                Napravi link
+                {t('approvalLink.create')}
               </Button>
               {linkUrlCreated ? (
                 <Input
                   readOnly
                   value={linkUrlCreated}
-                  aria-label="Link za klijenta"
+                  aria-label={t('approvalLink.label')}
                   onFocus={(e) => e.currentTarget.select()}
                 />
               ) : null}
@@ -1245,7 +1229,7 @@ function EditorForm({
         {p ? (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Komentari</CardTitle>
+              <CardTitle className="text-base">{t('comments.title')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               {comments.data?.length ? (
@@ -1253,19 +1237,20 @@ function EditorForm({
                   <div key={c.id} className="rounded-md bg-muted p-2">
                     <p className="text-xs text-muted-foreground">
                       {c.authorName}
-                      {c.viaLink ? ' (klijent)' : ''} · {new Date(c.createdAt).toLocaleString('sr-Latn-RS')}
+                      {c.viaLink ? ` ${t('comments.client')}` : ''} ·{' '}
+                      {new Date(c.createdAt).toLocaleString(INTL_UI[locale])}
                     </p>
                     <p className="whitespace-pre-wrap">{c.body}</p>
                   </div>
                 ))
               ) : (
-                <p className="text-muted-foreground">Još nema komentara.</p>
+                <p className="text-muted-foreground">{t('comments.empty')}</p>
               )}
               <div className="flex gap-2">
                 <Input
                   value={comment}
                   onChange={(e) => setComment(e.target.value)}
-                  placeholder="Napišite komentar"
+                  placeholder={t('comments.placeholder')}
                 />
                 <Button
                   size="sm"
@@ -1273,7 +1258,7 @@ function EditorForm({
                   onClick={() => addComment.mutate()}
                   disabled={!comment.trim() || addComment.isPending}
                 >
-                  Pošalji
+                  {t('comments.send')}
                 </Button>
               </div>
               <ErrorBox error={addComment.error} />
@@ -1283,13 +1268,13 @@ function EditorForm({
         {p && versions.data?.length ? (
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Verzije</CardTitle>
+              <CardTitle className="text-base">{t('versions')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-1 text-xs text-muted-foreground">
               {versions.data.slice(0, 12).map((v) => (
                 <p key={v.version}>
                   v{v.version} · {v.change_summary ?? ''} ·{' '}
-                  {new Date(v.created_at).toLocaleString('sr-Latn-RS')}
+                  {new Date(v.created_at).toLocaleString(INTL_UI[locale])}
                 </p>
               ))}
             </CardContent>
@@ -1299,9 +1284,6 @@ function EditorForm({
     </div>
   )
 }
-
-const rangeLabel = (r: AspectRange) =>
-  r.min === r.max ? aspectLabel(r.min) : `${aspectLabel(r.min)} do ${aspectLabel(r.max)}`
 
 interface AspectIssue {
   id: string
@@ -1336,26 +1318,35 @@ function AspectIssueBox({
   onCancel: () => void
   onCrop: () => void
 }) {
+  const t = useTranslations('postEditor')
+  const locale = useLocale()
+  const ratio = (r: number) => ratioText(r, locale)
+  const rangeLabel = (r: AspectRange) =>
+    r.min === r.max ? ratio(r.min) : t('aspect.range', { min: ratio(r.min), max: ratio(r.max) })
   return (
     <div
       role="status"
       className="space-y-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-950"
     >
       <p>
-        Slika {issue.index + 1} ima odnos {aspectLabel(issue.ratio)}, a{' '}
-        {issue.bad
-          .map((pl) => `${PLATFORMS[pl].label} prima ${rangeLabel(PLATFORMS[pl].imageAspect)}`)
-          .join(', ')}
-        .
+        {t('aspect.issue', {
+          n: issue.index + 1,
+          ratio: ratio(issue.ratio),
+          list: issue.bad
+            .map((pl) =>
+              t('aspect.accepts', {
+                platform: PLATFORMS[pl].label,
+                range: rangeLabel(PLATFORMS[pl].imageAspect),
+              }),
+            )
+            .join(', '),
+        })}
       </p>
       {issue.target === null ? (
-        <p>
-          Izabrane mreže nemaju zajednički odnos stranica. Napravite posebnu objavu za mrežu koja traži
-          drugačiji format.
-        </p>
+        <p>{t('aspect.noCommon')}</p>
       ) : cropping === null ? (
         <Button size="sm" variant="outline" onClick={onStart}>
-          Iseci na {aspectLabel(issue.target)}
+          {t('aspect.crop', { ratio: ratio(issue.target) })}
         </Button>
       ) : (
         <div className="space-y-3">
@@ -1369,13 +1360,13 @@ function AspectIssueBox({
           />
           <div className="flex flex-wrap gap-2">
             <Button size="sm" onClick={onCrop} disabled={pending}>
-              {pending ? 'Sečem…' : `Iseci na ${aspectLabel(issue.target)}`}
+              {pending ? t('aspect.cropping') : t('aspect.crop', { ratio: ratio(issue.target) })}
             </Button>
             <Button size="sm" variant="ghost" onClick={onCancel} disabled={pending}>
-              Odustani
+              {t('giveUp')}
             </Button>
           </div>
-          <p className="text-xs">Isečak postaje nova slika u biblioteci; original ostaje netaknut.</p>
+          <p className="text-xs">{t('aspect.cropNote')}</p>
           <ErrorBox error={error} />
         </div>
       )}
@@ -1399,6 +1390,7 @@ function CropPreview({
   position: number
   onPosition: (position: number) => void
 }) {
+  const t = useTranslations('postEditor.aspect')
   const rect = cropRect(width, height, target, position)
   const acrossWidth = rect.width < width
   const pct = (v: number, of: number) => `${(v / of) * 100}%`
@@ -1426,7 +1418,7 @@ function CropPreview({
         />
       </div>
       <label className="flex items-center gap-3 text-xs">
-        <span className="shrink-0">{acrossWidth ? 'Levo – desno' : 'Gore – dole'}</span>
+        <span className="shrink-0">{acrossWidth ? t('horizontal') : t('vertical')}</span>
         <input
           type="range"
           min={0}
@@ -1435,7 +1427,7 @@ function CropPreview({
           value={Math.round(position * 100)}
           onChange={(e) => onPosition(Number(e.target.value) / 100)}
           className="w-full accent-primary"
-          aria-label="Položaj isečka"
+          aria-label={t('position')}
         />
       </label>
     </div>
@@ -1443,7 +1435,7 @@ function CropPreview({
 }
 
 function TargetCard({
-  t,
+  target,
   media,
   timezone,
   canEdit,
@@ -1451,7 +1443,7 @@ function TargetCard({
   onRetry,
   onAssistedDone,
 }: {
-  t: Target
+  target: Target
   media: Array<{ url: string | null; altText: string | null }>
   timezone: string
   canEdit: boolean
@@ -1459,79 +1451,80 @@ function TargetCard({
   onRetry: () => void
   onAssistedDone: (permalink: string) => void
 }) {
+  const t = useTranslations('postEditor')
+  const locale = useLocale()
   const [permalink, setPermalink] = useState('')
   const [copied, setCopied] = useState(false)
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(t.text)
+      await navigator.clipboard.writeText(target.text)
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch {
       setCopied(false)
     }
   }
-  const failed = t.status === 'failed' || t.status === 'needs_reauth'
-  const done = t.status === 'published' || t.status === 'assisted_done'
+  const failed = target.status === 'failed' || target.status === 'needs_reauth'
+  const done = target.status === 'published' || target.status === 'assisted_done'
+  // nepoznat status (novi u bazi) ostaje kakav jeste
+  const statusKey = `targetStatus.${target.status}` as 'targetStatus.pending'
   return (
     <div className="space-y-1 rounded-md border p-2">
       <div className="flex items-center justify-between gap-2">
-        <span className="truncate">{t.accountName ?? t.platform}</span>
+        <span className="truncate">{target.accountName ?? target.platform}</span>
         <Badge variant={failed ? 'destructive' : done ? 'default' : 'outline'}>
-          {targetStatusLabel(t.status)}
+          {t.has(statusKey) ? t(statusKey) : target.status}
         </Badge>
       </div>
-      {t.scheduledAt ? (
+      {target.scheduledAt ? (
         <p className="text-xs text-muted-foreground">
-          {new Date(t.scheduledAt).toLocaleString('sr-Latn-RS', { timeZone: timezone })}
+          {new Date(target.scheduledAt).toLocaleString(INTL_UI[locale], { timeZone: timezone })}
         </p>
       ) : null}
-      {t.permalink ? (
-        <a href={t.permalink} target="_blank" rel="noreferrer" className="text-xs underline">
-          Otvori objavu
+      {target.permalink ? (
+        <a href={target.permalink} target="_blank" rel="noreferrer" className="text-xs underline">
+          {t('targets.openPost')}
         </a>
       ) : null}
-      {t.lastErrorMessage ? <p className="text-xs text-destructive">{t.lastErrorMessage}</p> : null}
+      {target.lastErrorMessage ? <p className="text-xs text-destructive">{target.lastErrorMessage}</p> : null}
       {failed && canEdit ? (
         <div className="flex flex-wrap gap-2 pt-1">
           <Button size="sm" variant="outline" onClick={onRetry} disabled={busy}>
-            Pokušaj ponovo
+            {t('targets.retry')}
           </Button>
-          {t.status === 'needs_reauth' ? (
+          {target.status === 'needs_reauth' ? (
             <Button size="sm" variant="ghost" render={<Link href="/app/accounts" />} nativeButton={false}>
-              Mreže
+              {t('targets.accounts')}
             </Button>
           ) : null}
         </div>
       ) : null}
-      {t.status === 'assisted_pending' ? (
+      {target.status === 'assisted_pending' ? (
         <div className="space-y-2 pt-1 text-xs">
-          <p className="text-muted-foreground">
-            Ova mreža se objavljuje ručno: kopirajte tekst, preuzmite medije, objavite na mreži pa označite
-            ovde.
-          </p>
+          <p className="text-muted-foreground">{t('targets.assistedHint')}</p>
           <div className="flex flex-wrap gap-2">
             <Button size="sm" variant="outline" onClick={copy}>
-              {copied ? 'Kopirano' : 'Kopiraj tekst'}
+              {copied ? t('targets.copied') : t('targets.copy')}
             </Button>
             {media.map((m, i) =>
               m.url ? (
                 <a key={i} href={m.url} target="_blank" rel="noreferrer" className="self-center underline">
-                  Medij {i + 1}
+                  {t('targets.mediaItem', { n: i + 1 })}
                 </a>
               ) : null,
             )}
           </div>
           {canEdit ? (
             <div className="space-y-1">
-              <Label htmlFor={`permalink-${t.id}`}>Link objave na mreži (opciono)</Label>
+              <Label htmlFor={`permalink-${target.id}`}>{t('targets.permalink')}</Label>
               <Input
-                id={`permalink-${t.id}`}
+                id={`permalink-${target.id}`}
                 value={permalink}
                 onChange={(e) => setPermalink(e.target.value)}
                 placeholder="https://"
               />
               <Button size="sm" onClick={() => onAssistedDone(permalink.trim())} disabled={busy}>
-                Označi kao objavljeno
+                {t('targets.markDone')}
               </Button>
             </div>
           ) : null}
@@ -1547,12 +1540,12 @@ function QaReportBox({
 }: {
   report: { passed: boolean; checks: Array<{ name: string; ok: boolean; message: string }> }
 }) {
+  const t = useTranslations('postEditor.qa')
   const failed = report.checks.filter((c) => !c.ok)
   if (report.passed) {
     return (
       <p className="rounded-md border border-emerald-300 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">
-        Autopilot: nacrt je prošao kontrolu kvaliteta (dužina, zabranjene reči, pismo, sličnost, brojke iz
-        profila, vizual).
+        {t('passed')}
       </p>
     )
   }
@@ -1561,9 +1554,7 @@ function QaReportBox({
       role="status"
       className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900"
     >
-      <p className="font-medium">
-        Autopilot je vratio nacrt na doradu. Ispravite tekst pa ga pošaljite na odobrenje:
-      </p>
+      <p className="font-medium">{t('failed')}</p>
       <ul className="mt-1 list-disc space-y-0.5 pl-5">
         {failed.map((c) => (
           <li key={c.name}>{c.message}</li>

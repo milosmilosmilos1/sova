@@ -1,12 +1,16 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 
 import { AnalyticsClient } from '@/components/analytics/analytics-client'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
 
-export const metadata: Metadata = { title: 'Analitika' }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('analytics')
+  return { title: t('metaTitle') }
+}
 
 export default async function AnalyticsPage() {
   const viewer = await getViewer()

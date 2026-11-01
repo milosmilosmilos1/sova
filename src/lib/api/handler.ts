@@ -6,6 +6,7 @@ import { z } from 'zod'
 
 import { isAppLocale, LOCALE_COOKIE, type AppLocale } from '@/i18n/config'
 import { LOCALE_HEADER } from '@/i18n/paths'
+import { translateServerText } from '@/i18n/server-text'
 import { impersonationBlock } from '@/lib/auth/impersonation-core'
 import { getViewerFromRequest, type Viewer } from '@/lib/auth/viewer'
 import { env } from '@/lib/env'
@@ -85,6 +86,48 @@ export function requestLocale(req: NextRequest): AppLocale {
   if (isAppLocale(fromUrl)) return fromUrl
   const fromCookie = req.cookies.get(LOCALE_COOKIE)?.value
   return isAppLocale(fromCookie) ? fromCookie : 'sr-Latn'
+}
+
+/**
+ * Polja odgovora čiji tekst uvek piše server (greška posla, napomena, problem sadržaja, opis izmene):
+ * na izlazu idu na jeziku korisnika (D-130). Tekst korisnika (naslov, opis, poruka) se ne dira.
+ */
+const SERVER_TEXT_KEYS = new Set([
+  'error',
+  'lastError',
+  'lastErrorMessage',
+  'note',
+  'notes',
+  'problems',
+  'changeSummary',
+  'change_summary',
+  'warning',
+  'warnings',
+  'statusLabel',
+  'statusReason',
+  'reason',
+])
+
+function localizePayload(value: unknown, locale: AppLocale, key?: string, depth = 0): unknown {
+  if (depth > 8) return value
+  if (typeof value === 'string')
+    return key && SERVER_TEXT_KEYS.has(key) ? translateServerText(value, locale) : value
+  // niz nasleđuje ključ (npr. `notes: string[]`), a objekti u nizu imaju svoje ključeve
+  if (Array.isArray(value)) return value.map((v) => localizePayload(v, locale, key, depth + 1))
+  if (value && typeof value === 'object' && Object.getPrototypeOf(value) === Object.prototype) {
+    // napredak posla ({ phase, message, percent }) i provera kvaliteta ({ name, ok, message }):
+    // poruku piše server
+    const serverMessage = 'message' in value && ('phase' in value || ('ok' in value && 'name' in value))
+    return Object.fromEntries(
+      Object.entries(value).map(([k, v]) => [
+        k,
+        serverMessage && k === 'message' && typeof v === 'string'
+          ? translateServerText(v, locale)
+          : localizePayload(v, locale, k, depth + 1),
+      ]),
+    )
+  }
+  return value
 }
 
 function sameOrigin(req: NextRequest): boolean {
@@ -210,7 +253,7 @@ export function createHandler<TBody = undefined, TQuery = undefined, TParams = u
         if (!result.headers.has('x-request-id')) result.headers.set('x-request-id', requestId)
         return result
       }
-      return jsonOk(result, requestId)
+      return jsonOk(locale === 'sr-Latn' ? result : localizePayload(result, locale), requestId)
     } catch (error) {
       if (isApiError(error)) {
         if (error.status >= 500) log.error('api_error', { code: error.code, error })

@@ -131,7 +131,7 @@ sova/
 │   │   ├── auth/callback/
 │   │   ├── error.tsx, global-error.tsx, not-found.tsx, loading.tsx
 │   │   └── layout.tsx
-│   ├── proxy.ts                 sesija + redirect + admin gate + bezbednosni headeri
+│   ├── proxy.ts                 sesija + redirect + admin gate + bezbednosni headeri + jezik (/en, /uk; D-130)
 │   ├── components/
 │   │   ├── ui/                  shadcn/ui
 │   │   ├── shared/              AsyncState, ConfirmDialog, TokenBadge, ...
@@ -142,8 +142,10 @@ sova/
 │   │   ├── limits.ts            rate limit vrednosti, veličine fajlova
 │   │   └── models.ts            čita nazive modela iz env-a
 │   ├── i18n/
-│   │   ├── request.ts           next-intl
-│   │   └── messages/sr-Latn.json, en.json
+│   │   ├── request.ts           next-intl; spaja osnovne poruke i delove iz messages/parts/{a,b,c,d}
+│   │   ├── routing.ts, paths.ts jezik iz adrese, kolačića i pregledača; /kontakt ↔ /contact (D-130)
+│   │   ├── server-text.ts       prevod poruka servera iz server/{en,uk}.json (šabloni sa {0})
+│   │   └── messages/sr-Latn.json, en.json, uk.json
 │   ├── integrations/
 │   │   ├── types.ts             SocialProvider interfejs, NormalizedPost, NormalizedMetrics
 │   │   ├── registry.ts          platform → provider, feature flag provera

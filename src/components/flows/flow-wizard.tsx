@@ -423,7 +423,7 @@ export function FlowWizard({
                     <h2 className="text-sm font-medium">{t('daysLabel')}</h2>
                     <p className="text-xs text-muted-foreground">{t('daysHint')}</p>
                   </div>
-                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-primary">
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/10 px-2.5 py-1 text-xs font-medium text-accent-foreground">
                     <Check className="size-3.5" aria-hidden />
                     {t('alwaysReview')}
                   </span>
@@ -445,7 +445,9 @@ export function FlowWizard({
                         }
                         className={cn(
                           'rounded-lg border py-2 text-sm',
-                          on ? 'border-primary bg-primary/10 font-medium text-primary' : 'hover:bg-muted/50',
+                          on
+                            ? 'border-primary bg-primary/10 font-medium text-accent-foreground'
+                            : 'hover:bg-muted/50',
                         )}
                       >
                         {tf(dayKey(d))}

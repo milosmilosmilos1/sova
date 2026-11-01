@@ -1,35 +1,43 @@
-import type { Metadata } from 'next'
+import type { Metadata, Route } from 'next'
 import Link from 'next/link'
+import { getLocale, getTranslations } from 'next-intl/server'
 
 import { LegalPage, LegalSection } from '@/components/legal/legal-page'
 import { company } from '@/config/company'
+import { localePath } from '@/i18n/paths'
+import { publicMetadata } from '@/lib/seo'
 
-export const metadata: Metadata = {
-  title: 'Kontakt',
-  description: 'Kako da kontaktirate tim Sove: podrška, pitanja o naplati, privatnost i brisanje podataka.',
-  alternates: { canonical: '/kontakt' },
+export async function generateMetadata(): Promise<Metadata> {
+  const [locale, t] = await Promise.all([getLocale(), getTranslations('contact')])
+  return publicMetadata({ locale, path: '/kontakt', title: t('title'), description: t('metaDescription') })
 }
 
-export default function ContactPage() {
+/** Kontakt na jeziku strane (D-130). */
+export default async function ContactPage() {
+  const [locale, t] = await Promise.all([getLocale(), getTranslations('contact')])
   return (
-    <LegalPage title="Kontakt" titleEn="Contact" updated={false}>
-      <LegalSection title="Podrška i pitanja">
+    <LegalPage title={t('title')} titleEn="Contact" updated={false}>
+      <LegalSection title={t('support.title')}>
         <p>
-          Za pitanja o aplikaciji, naplati i povezivanju mreža pišite na{' '}
-          <a href={`mailto:${company.supportEmail}`}>{company.supportEmail}</a>, na srpskom ili engleskom.
+          {t.rich('support.text', {
+            mail: (chunks) => <a href={`mailto:${company.supportEmail}`}>{chunks}</a>,
+            email: company.supportEmail,
+          })}
         </p>
       </LegalSection>
-      <LegalSection title="Privatnost i brisanje podataka">
+      <LegalSection title={t('privacy.title')}>
         <p>
-          Zahteve u vezi sa ličnim podacima šaljite na{' '}
-          <a href={`mailto:${company.privacyEmail}`}>{company.privacyEmail}</a>. Nalog i podatke možete
-          obrisati i sami, uputstvo je na stranici <Link href="/data-deletion">Brisanje podataka</Link>.
+          {t.rich('privacy.text', {
+            mail: (chunks) => <a href={`mailto:${company.privacyEmail}`}>{chunks}</a>,
+            email: company.privacyEmail,
+            deletion: (chunks) => <Link href={localePath(locale, '/data-deletion') as Route}>{chunks}</Link>,
+          })}
         </p>
       </LegalSection>
-      <LegalSection title="Firma">
+      <LegalSection title={t('company.title')}>
         <p>
-          {company.productName} je proizvod firme {company.legalName}.
-          {company.address ? ` Adresa: ${company.address}.` : ''}
+          {t('company.text', { product: company.productName, company: company.legalName })}
+          {company.address ? ` ${t('address', { address: company.address })}` : ''}
         </p>
       </LegalSection>
     </LegalPage>

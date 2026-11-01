@@ -1,6 +1,4 @@
 /** Zajednička skala i format za grafikone (D-092). */
-const compact = new Intl.NumberFormat('sr-Latn-RS', { notation: 'compact', maximumFractionDigits: 1 })
-export const fullNumber = new Intl.NumberFormat('sr-Latn-RS')
 
 export interface Scale {
   lo: number
@@ -29,19 +27,24 @@ export function niceScale(min: number, max: number, zeroBaseline = true): Scale 
   return { lo, hi, step, ticks }
 }
 
-/** Podeoci se skraćuju (12 hilj.) tek kad korak ose to podnosi; inače se ponavljaju isti natpisi. */
-export function tickFormatter(scale: Scale): (v: number) => string {
-  return scale.step >= 1000 ? (v) => compact.format(v) : (v) => fullNumber.format(v)
+/** Brojevi i datumi grafikona na zadatom jeziku (D-130): `INTL_UI[locale]` ili jezik izveštaja. */
+export function chartNumbers(tag = 'sr-Latn-RS') {
+  const full = new Intl.NumberFormat(tag)
+  const compact = new Intl.NumberFormat(tag, { notation: 'compact', maximumFractionDigits: 1 })
+  const usd = new Intl.NumberFormat(tag, { style: 'currency', currency: 'USD', maximumFractionDigits: 4 })
+  const day = new Intl.DateTimeFormat(tag, { day: 'numeric', month: 'short', timeZone: 'UTC' })
+  return {
+    full: (v: number) => full.format(v),
+    usd: (v: number) => usd.format(v),
+    /** Podeoci se skraćuju (12 hilj.) tek kad korak ose to podnosi; inače se ponavljaju isti natpisi. */
+    tick: (scale: Scale) =>
+      scale.step >= 1000 ? (v: number) => compact.format(v) : (v: number) => full.format(v),
+    /** Vrednost na grafikonu: pun broj do 10.000, preko toga skraćen. */
+    value: (v: number) => (Math.abs(v) >= 10_000 ? compact.format(v) : full.format(v)),
+    /** dan iz `YYYY-MM-DD` (npr. „20. okt”) */
+    day: (iso: string) => day.format(new Date(`${iso}T12:00:00Z`)),
+  }
 }
 
-/** Vrednost na grafikonu: pun broj do 10.000, preko toga skraćen. */
-export function valueLabel(v: number): string {
-  return Math.abs(v) >= 10_000 ? compact.format(v) : fullNumber.format(v)
-}
-
-export const dayLabel = (iso: string) =>
-  new Date(`${iso}T12:00:00Z`).toLocaleDateString('sr-Latn-RS', {
-    day: 'numeric',
-    month: 'short',
-    timeZone: 'UTC',
-  })
+/** Dan na srpskom, za admin panel (ostaje na srpskom). */
+export const dayLabel = chartNumbers().day

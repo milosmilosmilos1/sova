@@ -1,12 +1,14 @@
 'use client'
 
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
 import { ThemeProvider } from 'next-themes'
 import { useState, type ReactNode } from 'react'
 
 import { Toaster } from '@/components/ui/sonner'
 
 export function Providers({ children, nonce }: { children: ReactNode; nonce?: string }) {
+  const t = useTranslations('common')
   const [queryClient] = useState(
     () =>
       new QueryClient({
@@ -25,7 +27,13 @@ export function Providers({ children, nonce }: { children: ReactNode; nonce?: st
     >
       <QueryClientProvider client={queryClient}>
         {children}
-        <Toaster richColors position="top-right" closeButton />
+        <Toaster
+          richColors
+          position="top-right"
+          closeButton
+          containerAriaLabel={t('toasts')}
+          toastOptions={{ closeButtonAriaLabel: t('closeToast') }}
+        />
       </QueryClientProvider>
     </ThemeProvider>
   )

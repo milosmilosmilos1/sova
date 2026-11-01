@@ -5,7 +5,10 @@ import { Fragment } from 'react'
 
 import { Document, Font, Page, renderToBuffer, StyleSheet, Text, View } from '@react-pdf/renderer'
 
-import { niceScale, tickFormatter, valueLabel } from '@/components/charts/scale'
+import { chartNumbers, niceScale } from '@/components/charts/scale'
+import type { AppLocale } from '@/i18n/config'
+
+import { REPORT_COPY, type ReportCopy } from './copy'
 
 /**
  * Mesečni izveštaj kao PDF (D-094): A4, Inter iz `src/lib/visuals/fonts` (latinica sa č, ć, đ i
@@ -52,6 +55,8 @@ export interface ReportFollowers {
 }
 
 export interface MonthlyReportData {
+  /** jezik izveštaja: jezik brenda (D-130) */
+  locale?: AppLocale
   brandName: string
   /** „oktobar 2026.” */
   month: string
@@ -89,17 +94,27 @@ function registerFonts(): void {
   fontsReady = true
 }
 
-const num = new Intl.NumberFormat('sr-Latn-RS')
-const signed = new Intl.NumberFormat('sr-Latn-RS', { signDisplay: 'exceptZero' })
-const fmtNum = (v: number | null) => (v === null ? '—' : num.format(v))
-const fmtRate = (v: number | null) =>
-  v === null ? '—' : `${(v * 100).toLocaleString('sr-Latn-RS', { maximumFractionDigits: 1 })} %`
-
-function deltaText(delta: number | null, previousMonth: string): string {
-  if (delta === null) return 'bez poređenja'
-  if (delta === 0) return `isto kao ${previousMonth}`
-  return `${delta > 0 ? '↑' : '↓'} ${Math.abs(delta).toLocaleString('sr-Latn-RS')} % u odnosu na ${previousMonth}`
+/** Brojevi, procenti i promene na jeziku izveštaja (engleski piše procenat bez razmaka). */
+function formats(copy: ReportCopy) {
+  const num = new Intl.NumberFormat(copy.intl)
+  const signed = new Intl.NumberFormat(copy.intl, { signDisplay: 'exceptZero' })
+  const pct = (value: string) => (copy.intl === 'en-GB' ? `${value}%` : `${value} %`)
+  return {
+    num: (v: number | null) => (v === null ? '—' : num.format(v)),
+    signed: (v: number) => signed.format(v),
+    rate: (v: number | null) =>
+      v === null ? '—' : pct((v * 100).toLocaleString(copy.intl, { maximumFractionDigits: 1 })),
+    delta: (delta: number | null, previousMonth: string) => {
+      if (delta === null) return copy.noComparison
+      if (delta === 0) return copy.same(previousMonth)
+      return copy.vs(
+        `${delta > 0 ? '↑' : '↓'} ${pct(Math.abs(delta).toLocaleString(copy.intl))}`,
+        previousMonth,
+      )
+    },
+  }
 }
+type Formats = ReturnType<typeof formats>
 
 const s = StyleSheet.create({
   page: {
@@ -234,10 +249,11 @@ const X_BAND = 16
 const MAX_BAR = 12
 
 /** Doseg po danu objave: stubovi od pravougaonika, zaobljen vrh, oznaka samo na najvišem. */
-function DailyColumns({ points }: { points: MonthlyReportData['daily'] }) {
+function DailyColumns({ points, intl }: { points: MonthlyReportData['daily']; intl: string }) {
+  const numbers = chartNumbers(intl)
   const max = Math.max(...points.map((p) => p.value))
   const scale = niceScale(0, max)
-  const tick = tickFormatter(scale)
+  const tick = numbers.tick(scale)
   const innerW = CONTENT_WIDTH - AXIS_LEFT
   const slot = innerW / points.length
   const barW = Math.max(2, Math.min(MAX_BAR, slot * 0.62))
@@ -303,7 +319,7 @@ function DailyColumns({ points }: { points: MonthlyReportData['daily'] }) {
           textAlign: 'center',
         }}
       >
-        {valueLabel(max)}
+        {numbers.value(max)}
       </Text>
       {labels.map((i) => (
         <Text
@@ -328,41 +344,41 @@ function DailyColumns({ points }: { points: MonthlyReportData['daily'] }) {
   )
 }
 
-function groupRows(rows: ReportRow[]): string[][] {
+function groupRows(rows: ReportRow[], f: Formats): string[][] {
   return rows.map((r) => [
     r.label,
-    fmtNum(r.posts),
-    fmtNum(r.reach),
-    fmtNum(r.engagement),
-    fmtRate(r.engagementRate),
+    f.num(r.posts),
+    f.num(r.reach),
+    f.num(r.engagement),
+    f.rate(r.engagementRate),
   ])
 }
 
-const GROUP_COLUMNS = (first: string): Column[] => [
+const GROUP_COLUMNS = (first: string, copy: ReportCopy): Column[] => [
   { title: first },
-  { title: 'Objave', width: 60, align: 'right' },
-  { title: 'Doseg', width: 80, align: 'right' },
-  { title: 'Angažovanje', width: 80, align: 'right' },
-  { title: 'Stopa', width: 60, align: 'right' },
+  { title: copy.columns.posts, width: 60, align: 'right' },
+  { title: copy.columns.reach, width: 80, align: 'right' },
+  { title: copy.columns.engagement, width: 80, align: 'right' },
+  { title: copy.columns.rate, width: 60, align: 'right' },
 ]
 
 export function MonthlyReportDocument({ data }: { data: MonthlyReportData }) {
   const reachTotal = data.daily.reduce((n, p) => n + p.value, 0)
+  const copy = REPORT_COPY[data.locale ?? 'sr-Latn']
+  const f = formats(copy)
   return (
     <Document
-      title={`Mesečni izveštaj · ${data.brandName} · ${data.month}`}
+      title={copy.docTitle(data.brandName, data.month)}
       author="Sova"
       creator="Sova"
       producer="Sova"
-      subject={`Društvene mreže za ${data.month}`}
-      language="sr-Latn"
+      subject={copy.subject(data.month)}
+      language={data.locale ?? 'sr-Latn'}
     >
       <Page size="A4" style={s.page}>
         <View style={s.footer} fixed>
-          <Text>
-            Sova · {data.brandName} · napravljeno {data.generatedAt}
-          </Text>
-          <Text render={({ pageNumber, totalPages }) => `strana ${pageNumber} od ${totalPages}`} />
+          <Text>{copy.footer(data.brandName, data.generatedAt)}</Text>
+          <Text render={({ pageNumber, totalPages }) => copy.page(pageNumber, totalPages)} />
         </View>
         <View style={s.header}>
           <View style={s.brandRow}>
@@ -377,7 +393,7 @@ export function MonthlyReportDocument({ data }: { data: MonthlyReportData }) {
             <Text style={s.logoText}>Sova</Text>
           </View>
           <View style={s.titleBlock}>
-            <Text style={s.title}>Mesečni izveštaj</Text>
+            <Text style={s.title}>{copy.title}</Text>
             <Text style={s.subtitle}>
               {data.brandName} · {data.month}
             </Text>
@@ -389,55 +405,53 @@ export function MonthlyReportDocument({ data }: { data: MonthlyReportData }) {
             <View key={k.label} style={s.kpi}>
               <Text style={s.kpiLabel}>{k.label}</Text>
               <Text style={s.kpiValue}>{k.value}</Text>
-              <Text style={s.kpiDelta}>{deltaText(k.delta, data.previousMonth)}</Text>
+              <Text style={s.kpiDelta}>{f.delta(k.delta, data.previousMonth)}</Text>
             </View>
           ))}
         </View>
 
         {data.empty ? (
-          <Text style={s.emptyBox}>
-            U ovom mesecu nije bilo objavljenih objava, pa nema dosega ni angažovanja za prikaz.
-          </Text>
+          <Text style={s.emptyBox}>{copy.empty}</Text>
         ) : (
           <>
             <View style={s.section} wrap={false}>
-              <Text style={s.sectionTitle}>Doseg po danu objave</Text>
+              <Text style={s.sectionTitle}>{copy.sections.daily}</Text>
               {reachTotal > 0 ? (
-                <DailyColumns points={data.daily} />
+                <DailyColumns points={data.daily} intl={copy.intl} />
               ) : (
-                <Text style={s.sectionNote}>
-                  Doseg još nije izmeren: mreže ga daju sat vremena posle objave, pa posle 24 sata, 7 i 30
-                  dana.
-                </Text>
+                <Text style={s.sectionNote}>{copy.notMeasured}</Text>
               )}
             </View>
 
             {data.platforms.length ? (
               <View style={s.section} wrap={false}>
-                <Text style={s.sectionTitle}>Po mreži</Text>
-                <Table columns={GROUP_COLUMNS('Mreža')} rows={groupRows(data.platforms)} />
+                <Text style={s.sectionTitle}>{copy.sections.platforms}</Text>
+                <Table
+                  columns={GROUP_COLUMNS(copy.columns.network, copy)}
+                  rows={groupRows(data.platforms, f)}
+                />
               </View>
             ) : null}
 
             {data.topPosts.length ? (
               <View style={s.section} wrap={false}>
-                <Text style={s.sectionTitle}>Najbolje objave</Text>
+                <Text style={s.sectionTitle}>{copy.sections.topPosts}</Text>
                 <Table
                   columns={[
-                    { title: 'Datum', width: 40 },
-                    { title: 'Mreža', width: 62 },
-                    { title: 'Objava' },
-                    { title: 'Doseg', width: 56, align: 'right' },
-                    { title: 'Angažovanje', width: 62, align: 'right' },
-                    { title: 'Stopa', width: 44, align: 'right' },
+                    { title: copy.columns.date, width: 40 },
+                    { title: copy.columns.network, width: 62 },
+                    { title: copy.columns.post },
+                    { title: copy.columns.reach, width: 56, align: 'right' },
+                    { title: copy.columns.engagement, width: 62, align: 'right' },
+                    { title: copy.columns.rate, width: 44, align: 'right' },
                   ]}
                   rows={data.topPosts.map((p) => [
                     p.date,
                     p.platform,
                     p.excerpt,
-                    fmtNum(p.reach),
-                    fmtNum(p.engagement),
-                    fmtRate(p.engagementRate),
+                    f.num(p.reach),
+                    f.num(p.engagement),
+                    f.rate(p.engagementRate),
                   ])}
                 />
               </View>
@@ -445,8 +459,8 @@ export function MonthlyReportDocument({ data }: { data: MonthlyReportData }) {
 
             {data.pillars.length ? (
               <View style={s.section} wrap={false}>
-                <Text style={s.sectionTitle}>Stubovi sadržaja</Text>
-                <Table columns={GROUP_COLUMNS('Stub')} rows={groupRows(data.pillars)} />
+                <Text style={s.sectionTitle}>{copy.sections.pillars}</Text>
+                <Table columns={GROUP_COLUMNS(copy.columns.pillar, copy)} rows={groupRows(data.pillars, f)} />
               </View>
             ) : null}
           </>
@@ -454,19 +468,19 @@ export function MonthlyReportDocument({ data }: { data: MonthlyReportData }) {
 
         {data.followers.length ? (
           <View style={s.section} wrap={false}>
-            <Text style={s.sectionTitle}>Pratioci</Text>
+            <Text style={s.sectionTitle}>{copy.sections.followers}</Text>
             <Table
               columns={[
-                { title: 'Nalog' },
-                { title: 'Početak meseca', width: 90, align: 'right' },
-                { title: 'Kraj meseca', width: 90, align: 'right' },
-                { title: 'Promena', width: 70, align: 'right' },
+                { title: copy.columns.account },
+                { title: copy.columns.monthStart, width: 90, align: 'right' },
+                { title: copy.columns.monthEnd, width: 90, align: 'right' },
+                { title: copy.columns.change, width: 70, align: 'right' },
               ]}
-              rows={data.followers.map((f) => [
-                f.account,
-                fmtNum(f.first),
-                fmtNum(f.last),
-                f.delta === null ? '—' : signed.format(f.delta),
+              rows={data.followers.map((r) => [
+                r.account,
+                f.num(r.first),
+                f.num(r.last),
+                r.delta === null ? '—' : f.signed(r.delta),
               ])}
             />
           </View>
@@ -474,7 +488,7 @@ export function MonthlyReportDocument({ data }: { data: MonthlyReportData }) {
 
         {data.insights.length ? (
           <View style={s.section} wrap={false}>
-            <Text style={s.sectionTitle}>Uvidi i preporuke</Text>
+            <Text style={s.sectionTitle}>{copy.sections.insights}</Text>
             {data.insights.map((i, n) => (
               <View key={n} style={s.insight} wrap={false}>
                 <Text style={s.insightClaim}>{i.claim}</Text>

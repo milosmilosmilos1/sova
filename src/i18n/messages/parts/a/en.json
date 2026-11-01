@@ -1,1 +1,488 @@
-{}
+{
+  "shell": {
+    "home": "Sova, home",
+    "workspace": "Workspace",
+    "brand": "Brand",
+    "mainNav": "Main navigation",
+    "roles": {
+      "owner": "owner",
+      "admin": "admin",
+      "editor": "editor",
+      "approver": "approver",
+      "viewer": "viewer"
+    },
+    "groups": {
+      "work": "Work",
+      "growth": "Planning and growth",
+      "content": "Content",
+      "settings": "Settings"
+    },
+    "nav": {
+      "home": "Home",
+      "flows": "Automate posts",
+      "approvals": "Approvals",
+      "inbox": "Inbox",
+      "automations": "DM automation",
+      "posts": "Posts",
+      "calendar": "Calendar",
+      "plan": "Monthly plan",
+      "strategy": "Strategy",
+      "analytics": "Analytics",
+      "autopilot": "Autopilot",
+      "studio": "AI Studio",
+      "gallery": "Gallery",
+      "brain": "Brain",
+      "accounts": "Networks",
+      "team": "Team",
+      "brandAccount": "Brand and account",
+      "ideas": "Ideas and support",
+      "admin": "Admin"
+    },
+    "signOut": "Log out",
+    "endImpersonation": "End impersonation",
+    "blocked": {
+      "title": "Account blocked",
+      "text": "If you think this is a mistake, please contact support."
+    },
+    "preview": {
+      "banner": "Preview: {list} not switched on yet. The rest of the app works.",
+      "ai": "AI text and images",
+      "jobs": "scheduled publishing and background jobs",
+      "email": "emails",
+      "unsplash": "Unsplash photos",
+      "pexels": "Pexels videos",
+      "canva": "Canva"
+    },
+    "titles": {
+      "accounts": "Networks",
+      "posts": "Posts",
+      "newPost": "New post",
+      "post": "Post",
+      "studioTools": "Studio manual tools"
+    }
+  },
+  "team": {
+    "metaTitle": "Team",
+    "title": "Team",
+    "summary": "{count, plural, one {# member} other {# members}} of {limit} allowed on the {plan} plan.",
+    "roles": {
+      "owner": "Owner",
+      "admin": "Admin",
+      "editor": "Editor",
+      "approver": "Approver",
+      "viewer": "Viewer"
+    },
+    "members": {
+      "title": "Members",
+      "description": "The owner has full access, an admin everything except billing, an editor creates, an approver approves, a viewer only views.",
+      "person": "Person",
+      "role": "Role",
+      "brands": "Brands",
+      "actions": "Actions",
+      "roleFor": "Role for {email}",
+      "allBrands": "all",
+      "noBrands": "none",
+      "leave": "Leave",
+      "remove": "Remove"
+    },
+    "transfer": {
+      "title": "Transfer ownership",
+      "description": "The owner manages billing and can delete the workspace. After the transfer you stay on as an admin.",
+      "noMembers": "First invite the member you want to transfer ownership to.",
+      "newOwner": "New owner",
+      "choose": "Choose a member…",
+      "confirm": "I understand that the new owner gets billing, workspace deletion and ownership transfer, and I become an admin.",
+      "submit": "Transfer ownership",
+      "pending": "Transferring…",
+      "done": "Ownership transferred. You are now an admin.",
+      "failed": "The transfer failed."
+    },
+    "invite": {
+      "title": "Invite a member",
+      "description": "The invitation arrives by email and is valid for 7 days.",
+      "email": "Email address",
+      "role": "Role",
+      "roleOptions": {
+        "editor": "Editor: creates, edits and schedules content",
+        "approver": "Approver (client): approves and comments",
+        "viewer": "Viewer: views content and reports only",
+        "admin": "Admin: everything except billing"
+      },
+      "brandAccess": "Brand access",
+      "brandAccessHint": "Nothing selected = all brands.",
+      "submit": "Send invitation",
+      "pending": "Sending invitation…"
+    },
+    "invitations": {
+      "title": "Pending invitations",
+      "empty": "No pending invitations.",
+      "expires": "{role} · expires {date}",
+      "revoke": "Revoke"
+    }
+  },
+  "settings": {
+    "metaTitle": "Settings",
+    "intro": "Profile, workspace and brands.",
+    "impersonation": "Data export and account deletion are not available during impersonation.",
+    "profile": {
+      "title": "Your profile",
+      "security": "Two-factor authentication and password: <link>Security</link>",
+      "fullName": "Full name",
+      "timezone": "Time zone",
+      "save": "Save profile",
+      "saving": "Saving…"
+    },
+    "workspace": {
+      "title": "Workspace",
+      "plan": "Plan <badge>{plan}</badge> · up to {brands, plural, one {# brand} other {# brands}}, {networks, plural, one {# network} other {# networks}}, {members, plural, one {# member} other {# members}}.",
+      "readOnly": "{name} · {type}. Only the owner and admins can change settings.",
+      "agency": "agency",
+      "business": "business",
+      "name": "Workspace name",
+      "type": "Type",
+      "typeBusiness": "Single business",
+      "typeAgency": "Agency",
+      "save": "Save",
+      "saving": "Saving…"
+    },
+    "brands": {
+      "title": "Brands",
+      "description": "Each brand has its own Brand Brain, networks and calendar.",
+      "noWebsite": "no website",
+      "scheduled": "{count, plural, one {# scheduled post} other {# scheduled posts}} (archiving cancels them)",
+      "archive": "Archive",
+      "limit": "You have reached the brand limit for the {plan} plan. <link>Upgrade your plan</link>.",
+      "name": "Brand name",
+      "website": "Website",
+      "websitePlaceholder": "https://example.com",
+      "contentLocale": "Content language",
+      "timezone": "Brand time zone",
+      "add": "Add brand",
+      "adding": "Adding…"
+    },
+    "brandTimezone": {
+      "save": "Save time zone",
+      "saving": "Saving…",
+      "saved": "Time zone saved.",
+      "savedShifted": "Time zone saved; {count, plural, one {# scheduled post keeps} other {# scheduled posts keep}} the same local time.",
+      "failed": "Saving failed.",
+      "keepLocal": "keep the local time of {count, plural, one {# scheduled post} other {# scheduled posts}}"
+    },
+    "privacy": {
+      "title": "Privacy and data",
+      "description": "Download all your data or delete your account for good.",
+      "export": "Download my data (JSON)",
+      "exportHint": "Profile, workspaces you own, posts, media (links valid for 7 days), tokens and notifications.",
+      "open": "Delete account…",
+      "warning": "Deletion is permanent: it removes your account, the workspaces where you are the only member, their posts, media and network connections. If you own a team with other members, first transfer ownership on the Team page.",
+      "confirmEmail": "To confirm, type your email {email}",
+      "password": "Password",
+      "noPassword": "This account has no password: you can delete it within 15 minutes of logging in.",
+      "delete": "Delete account for good",
+      "deleting": "Deleting…",
+      "cancel": "Cancel",
+      "failed": "Deletion failed."
+    },
+    "canva": {
+      "description": "Open designs from Sova in Canva, polish them and bring them back to the brand library. The connection is personal (per user).",
+      "connectedNotice": "Canva is connected.",
+      "deniedNotice": "The connection was cancelled in Canva.",
+      "checking": "Checking the connection…",
+      "loadFailed": "Couldn't load the Canva status.",
+      "notConfigured": "The Canva integration isn't set up on the server yet (app keys).",
+      "disabled": "The Canva integration is switched off for now.",
+      "connected": "connected",
+      "autofill": "Autofill available",
+      "noAutofill": "no Autofill (free plan)",
+      "disconnect": "Disconnect",
+      "expired": "connection expired",
+      "notConnected": "not connected",
+      "connect": "Connect Canva"
+    }
+  },
+  "security": {
+    "metaTitle": "Security",
+    "title": "Security",
+    "intro": "Two-factor authentication and password.",
+    "impersonation": "During impersonation, two-factor authentication is not shown or changed: the panel would act on your admin account, not the user's.",
+    "totp": {
+      "title": "Two-factor authentication (TOTP)",
+      "description": "A code from an authenticator app on top of your password."
+    },
+    "password": {
+      "title": "Password",
+      "text": "You change your password through an email link: <link>request a link</link>."
+    },
+    "mfa": {
+      "loading": "Loading…",
+      "loadFailed": "Couldn't load the protection status.",
+      "failed": "The action failed.",
+      "enabled": "Two-factor authentication is on and confirmed for this session.",
+      "confirmDisable": "Turn off two-factor authentication?",
+      "disabled": "Two-factor authentication is off.",
+      "codeLabel": "Code from the app",
+      "confirm": "Confirm",
+      "adminRequired": "The admin panel requires two-factor authentication and a confirmed code in this session.",
+      "on": "Two-factor authentication is <strong>on</strong>.",
+      "sessionVerified": "This session is confirmed with a code.",
+      "sessionNotVerified": "This session isn't confirmed with a code yet.",
+      "turnOff": "Turn off protection",
+      "scan": "Scan the code with an app (Google Authenticator, 1Password, Authy…), then enter the 6-digit code.",
+      "qrAlt": "QR code for the authenticator app",
+      "manual": "Manual entry:",
+      "off": "Two-factor authentication is off. We recommend it for everyone, and it is required for the admin panel.",
+      "turnOn": "Turn on two-factor authentication",
+      "wrongCode": "The code is incorrect. Check the time on your phone and try again.",
+      "needCode": "For this action, first confirm the code from the app."
+    }
+  },
+  "onboarding": {
+    "metaTitle": "Getting started",
+    "titleFirst": "Let's get started",
+    "titleNew": "New workspace",
+    "textFirst": "First the workspace and your first brand. Website analysis, connecting networks and the strategy come right after.",
+    "textNew": "Each workspace has its own team, brands and tokens.",
+    "typeLegend": "What kind of account are you creating?",
+    "types": {
+      "business": {
+        "title": "Single business",
+        "text": "I run social media for my own company or brand."
+      },
+      "agency": {
+        "title": "Agency or freelancer",
+        "text": "I run social media for several clients, each one a separate brand."
+      }
+    },
+    "agencyName": "Agency name",
+    "companyName": "Company name",
+    "firstClient": "First client (brand)",
+    "firstClientHint": "You can add more brands later.",
+    "website": "Brand website",
+    "websitePlaceholder": "https://example.com",
+    "websiteHint": "Sova learns the brand from its website. If there is no website, leave this empty.",
+    "websiteShort": "Website",
+    "submit": "Create workspace",
+    "pending": "Creating workspace…"
+  },
+  "notifications": {
+    "metaTitle": "Notifications",
+    "title": "Notifications",
+    "intro": "Approvals, posts and alerts.",
+    "introFor": "Approvals, posts and alerts for {workspace}.",
+    "settingsLink": "Notification settings",
+    "bellUnread": "Notifications, {count} unread",
+    "markRead": "Mark all read",
+    "loading": "Loading…",
+    "empty": "No notifications yet.",
+    "all": "All notifications",
+    "unread": "{count} unread",
+    "allRead": "All read.",
+    "markAllRead": "Mark all as read",
+    "unreadDot": "unread",
+    "ago": {
+      "now": "just now",
+      "minutes": "{count} min ago",
+      "hours": "{count} h ago",
+      "days": "{count} d ago"
+    },
+    "prefs": {
+      "description": "What reaches you in the app, and what also goes to email. Applies to this workspace.",
+      "type": "Type",
+      "inApp": "In the app",
+      "email": "Email",
+      "saved": "Saved.",
+      "inAppFor": "{label} in the app",
+      "emailFor": "{label} by email"
+    },
+    "types": {
+      "post_review_requested": {
+        "label": "Post awaiting approval",
+        "description": "An editor has sent a post for approval."
+      },
+      "post_approved": {
+        "label": "Post approved",
+        "description": "Your post has been approved."
+      },
+      "post_rejected": {
+        "label": "Post rejected",
+        "description": "Your post was rejected with a comment."
+      },
+      "post_changes_requested": {
+        "label": "Changes requested",
+        "description": "An approver is asking for changes to a post."
+      },
+      "post_published": {
+        "label": "Post published",
+        "description": "The post went out to the network."
+      },
+      "post_failed": {
+        "label": "Post failed",
+        "description": "The network rejected the post or all retries were used."
+      },
+      "post_needs_reauth": {
+        "label": "Account needs reconnecting",
+        "description": "A post is waiting because the network connection has expired."
+      },
+      "post_assisted_pending": {
+        "label": "Manual publishing",
+        "description": "A post is waiting for someone to put it on the network by hand."
+      },
+      "workspace_ownership": {
+        "label": "Workspace ownership",
+        "description": "Someone has transferred ownership of a workspace to you."
+      },
+      "account_expiring": {
+        "label": "Network connection expiring",
+        "description": "A LinkedIn connection lasts 60 days; reconnect the account before it expires."
+      },
+      "post_rescheduled": {
+        "label": "Post moved",
+        "description": "The slot was moved because of the network's daily limit."
+      },
+      "report_ready": {
+        "label": "Monthly report",
+        "description": "The PDF report for last month is ready."
+      },
+      "post_comment": {
+        "label": "New comment",
+        "description": "A comment on a post from a team member or client."
+      },
+      "insights_ready": {
+        "label": "New analytics insights",
+        "description": "Weekly AI insights and suggestions for the Inbox are ready."
+      },
+      "autopilot_returned": {
+        "label": "Autopilot returned a post",
+        "description": "A draft didn't pass the quality check and needs more work."
+      },
+      "flow_failed": {
+        "label": "Automation flow failed",
+        "description": "The flow didn't make a draft: no tokens, no network for the format, or a service didn't respond."
+      },
+      "autopilot_deadline": {
+        "label": "Approval deadline",
+        "description": "An Autopilot post is waiting for approval or is scheduled after the deadline."
+      },
+      "autopilot_skipped": {
+        "label": "Autopilot post skipped",
+        "description": "The post wasn't approved in time or its slot has passed."
+      },
+      "autopilot_budget_warning": {
+        "label": "Autopilot budget at 80%",
+        "description": "Autopilot has used most of its monthly token budget."
+      },
+      "autopilot_budget_stopped": {
+        "label": "Autopilot budget used up",
+        "description": "Autopilot has stopped until next month or until the budget is raised."
+      },
+      "autopilot_weekly_report": {
+        "label": "Autopilot weekly report",
+        "description": "What was published, the results and the plan for next week."
+      },
+      "autopilot_strategy": {
+        "label": "Autopilot and strategy",
+        "description": "A new strategy, or Autopilot is waiting for one."
+      },
+      "publish_watchdog_alarm": {
+        "label": "Post is late",
+        "description": "A scheduled post is more than 15 minutes late."
+      },
+      "billing_payment_failed": {
+        "label": "Payment failed",
+        "description": "The card was declined when renewing the subscription; reminders until the deadline."
+      },
+      "billing_subscription": {
+        "label": "Subscription",
+        "description": "The subscription was activated, cancelled or has ended."
+      },
+      "billing_tokens": {
+        "label": "Token top-up",
+        "description": "Purchased tokens have been added to your balance."
+      },
+      "month_plan_ready": {
+        "label": "Monthly plan is ready",
+        "description": "Sova has made all the drafts from the monthly plan."
+      }
+    }
+  },
+  "billing": {
+    "title": "Billing",
+    "intro": "Plan, tokens and payments for the “{name}” workspace.",
+    "paid": "Payment received. Your plan and tokens will update in a few seconds.",
+    "canceled": "Payment cancelled; nothing was charged.",
+    "loadFailed": "Couldn't load billing details.",
+    "notConfigured": "Payments aren't enabled on the server yet (Stripe keys). Your plan and tokens work as before.",
+    "ownerOnly": "Payments are handled by the workspace owner.",
+    "blocked": "The payment deadline has passed: generation has stopped. Scheduled posts still go out.",
+    "pastDue": "The subscription payment failed. Update your card by {date}; after that, generation stops.",
+    "plan": "Plan",
+    "limits": "Up to {brands, plural, one {# brand} other {# brands}}, {networks, plural, one {# network} other {# networks}} and {members, plural, one {# member} other {# members}}.",
+    "loading": "Loading…",
+    "available": "Tokens available: <strong>{count}</strong>",
+    "reserved": "({count} more in progress)",
+    "subscription": "Subscription: {status}.",
+    "subscriptionEnds": "Subscription: {status}, ends on {date}.",
+    "subscriptionRenews": "Subscription: {status}, next renewal on {date}.",
+    "status": {
+      "active": "active",
+      "trialing": "trial period",
+      "past_due": "payment failed",
+      "unpaid": "unpaid",
+      "canceled": "ended",
+      "incomplete": "waiting for the first payment",
+      "paused": "paused"
+    },
+    "manage": "Manage subscription and card",
+    "regularPrice": "Regular price",
+    "introPrice": "Introductory price",
+    "perYear": "{price} a year",
+    "perMonth": "{price} a month",
+    "aboutMonthly": "(about {price} a month)",
+    "monthlyTokens": "{count, plural, one {# token} other {# tokens}} every month, higher limits for brands, networks and members.",
+    "subscribe": "Subscribe",
+    "planNames": {
+      "free": "Free",
+      "monthly": "Monthly",
+      "yearly": "Yearly",
+      "vlasnik": "Owner"
+    },
+    "topup": {
+      "title": "Token top-up",
+      "description": "Purchased tokens don't expire and are used after your subscription tokens.",
+      "name": "{count, plural, one {# token} other {# tokens}}"
+    },
+    "ledger": {
+      "title": "Token history",
+      "empty": "No changes yet.",
+      "date": "Date",
+      "change": "Change",
+      "tokenChange": "Token change",
+      "balance": "Balance",
+      "more": "Show older",
+      "consume": "Used",
+      "expire": "Expired",
+      "refund": "Removed after a refund",
+      "supportGrant": "Added by support",
+      "supportAdjust": "Adjusted by support",
+      "signup": "Sign-up gift",
+      "subscription": "Subscription",
+      "topup": "Top-up",
+      "refunded": "Tokens returned",
+      "grant": "Added"
+    }
+  },
+  "charts": {
+    "chart": "Chart",
+    "table": "Table",
+    "empty": "No data for this period yet.",
+    "period": "Period",
+    "day": "Day",
+    "columnAria": "{title}: highest {value} ({label}). Use the arrow keys to pick a bar.",
+    "trendAria": "{title}: from {from} to {to}. Use the arrow keys to pick a day."
+  },
+  "appStatus": {
+    "loadError": "Something went wrong while loading.",
+    "empty": "No data yet",
+    "maintenance": "Sova is under maintenance right now. Some features may not work for a while."
+  }
+}

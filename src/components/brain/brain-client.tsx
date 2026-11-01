@@ -235,7 +235,7 @@ function SourceTile({
         <span
           className={cn(
             'grid size-9 shrink-0 place-items-center rounded-lg',
-            on ? 'bg-primary/10 text-primary' : 'bg-muted text-muted-foreground',
+            on ? 'bg-primary/10 text-accent-foreground' : 'bg-muted text-muted-foreground',
           )}
         >
           <Icon className="size-4" aria-hidden />

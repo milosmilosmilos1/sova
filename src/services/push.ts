@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { translateServerText } from '@/i18n/server-text'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { logger } from '@/lib/logger'
@@ -92,7 +93,10 @@ export async function sendTestPush(viewer: Viewer): Promise<{ sent: number }> {
   if (!pushKeys()) throw new ApiError('VALIDATION', 'Obaveštenja na uređaju još nisu podešena.')
   const sent = await sendPushToUsers([viewer.user.id], {
     title: 'Sova',
-    body: 'Obaveštenja na ovom uređaju rade. Ovde stižu nacrti koji čekaju odluku.',
+    body: translateServerText(
+      'Obaveštenja na ovom uređaju rade. Ovde stižu nacrti koji čekaju odluku.',
+      viewer.profile.locale,
+    ),
     url: '/app/approvals',
     tag: 'sova-test',
   })

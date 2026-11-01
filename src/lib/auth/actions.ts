@@ -332,6 +332,8 @@ export async function updateProfileAction(_prev: FormState, formData: FormData):
     .update({ full_name: fullName, locale, timezone })
     .eq('id', viewer.user.id)
   if (error) return errorState(error, { fullName, locale, timezone })
+  // šabloni mejlova za prijavu i lozinku čitaju jezik iz podataka naloga (D-130)
+  await viewer.supabase.auth.updateUser({ data: { locale } }).catch(() => undefined)
   const store = await cookies()
   store.set(LOCALE_COOKIE, locale, { path: '/', maxAge: 60 * 60 * 24 * 365, sameSite: 'lax' })
   revalidatePath('/app', 'layout')

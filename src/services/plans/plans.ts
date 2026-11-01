@@ -3,6 +3,8 @@ import 'server-only'
 import { toContentLocale } from '@/config/locales'
 import type { SocialPlatform } from '@/config/platforms'
 import { PLATFORM_FORMATS, POST_FORMATS, type PostFormat } from '@/config/post-formats'
+import type { AppLocale } from '@/i18n/config'
+import { translateServerText } from '@/i18n/server-text'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
@@ -81,7 +83,7 @@ export interface PlanPageView {
   }
 }
 
-function toView(plan: PlanRow, items: ItemRow[], timeZone: string): PlanView {
+function toView(plan: PlanRow, items: ItemRow[], timeZone: string, locale: AppLocale): PlanView {
   const { slots: _slots, ...settings } = planSettings(plan)
   const views = items
     .sort((a, b) => a.scheduled_for.localeCompare(b.scheduled_for) || a.position - b.position)
@@ -101,7 +103,8 @@ function toView(plan: PlanRow, items: ItemRow[], timeZone: string): PlanView {
         cta: i.cta,
         status: i.status as PlanItemView['status'],
         postId: i.post_id,
-        error: i.error,
+        // greška stavke je poruka servera na srpskom; korisnik je čita na svom jeziku (D-130)
+        error: i.error && translateServerText(i.error, locale),
       }
     })
   const counts = { planned: 0, generating: 0, done: 0, failed: 0 }
@@ -113,7 +116,7 @@ function toView(plan: PlanRow, items: ItemRow[], timeZone: string): PlanView {
     periodEnd: plan.period_end,
     status: plan.status as PlanView['status'],
     settings,
-    error: plan.error,
+    error: plan.error && translateServerText(plan.error, locale),
     tokensCharged: plan.tokens_charged,
     createdAt: plan.created_at,
     items: views,
@@ -141,13 +144,13 @@ async function loadPlanFor(viewer: Viewer, planId: string): Promise<{ plan: Plan
   return { plan, brand: await getBrand(viewer, plan.brand_id) }
 }
 
-async function planView(plan: PlanRow, brand: BrandRow): Promise<PlanView> {
+async function planView(plan: PlanRow, brand: BrandRow, locale: AppLocale): Promise<PlanView> {
   const { data: items, error } = await createSupabaseAdminClient()
     .from('month_plan_items')
     .select('*')
     .eq('plan_id', plan.id)
   if (error) throw mapDbError(error)
-  return toView(plan, items ?? [], brand.timezone)
+  return toView(plan, items ?? [], brand.timezone, locale)
 }
 
 export async function getPlanPage(viewer: Viewer, brandId: string): Promise<PlanPageView> {
@@ -173,7 +176,7 @@ export async function getPlanPage(viewer: Viewer, brandId: string): Promise<Plan
     return p ? [{ kind, ...p }] : []
   })
   return {
-    plan: latest ? await planView(latest, brand) : null,
+    plan: latest ? await planView(latest, brand, viewer.profile.locale) : null,
     options: {
       platforms,
       months,
@@ -194,7 +197,7 @@ export async function getPlanPage(viewer: Viewer, brandId: string): Promise<Plan
 
 export async function getPlan(viewer: Viewer, planId: string): Promise<PlanView> {
   const { plan, brand } = await loadPlanFor(viewer, planId)
-  return planView(plan, brand)
+  return planView(plan, brand, viewer.profile.locale)
 }
 
 /** Najbolja vremena iz aktivne strategije brenda (ako postoji), za termine plana. */
@@ -304,7 +307,7 @@ export async function requestPlan(viewer: Viewer, input: PlanRequestInput): Prom
     await admin.from('month_plans').delete().eq('id', plan.id)
     throw enqueueError
   }
-  return planView(plan, brand)
+  return planView(plan, brand, viewer.profile.locale)
 }
 
 function assertEditable(plan: PlanRow): void {
@@ -353,7 +356,7 @@ export async function updatePlanItem(
   }
   const { error } = await admin.from('month_plan_items').update(patch).eq('id', item.id)
   if (error) throw mapDbError(error)
-  return planView(plan, brand)
+  return planView(plan, brand, viewer.profile.locale)
 }
 
 /** Brisanje označenih stavki; napravljeni nacrti ostaju u Odobravanju. */
@@ -368,7 +371,7 @@ export async function deletePlanItems(viewer: Viewer, planId: string, ids: strin
     .in('id', ids)
     .neq('status', 'generating')
   if (error) throw mapDbError(error)
-  return planView(plan, brand)
+  return planView(plan, brand, viewer.profile.locale)
 }
 
 export async function deletePlan(viewer: Viewer, planId: string): Promise<void> {
@@ -431,5 +434,5 @@ export async function startPlanGeneration(
     await admin.from('month_plans').update({ status: plan.status }).eq('id', plan.id)
     throw enqueueError
   }
-  return planView(updated, brand)
+  return planView(updated, brand, viewer.profile.locale)
 }

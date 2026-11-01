@@ -30,8 +30,9 @@ test.describe.serial('objava od nacrta do kalendara i odobrenje klijenta', () =>
     await page.getByRole('button', { name: 'Zakaži' }).click()
     await expect(page.getByText('zakazano', { exact: true }).first()).toBeVisible()
 
+    // kalendar pokazuje objavu u mreži meseca i u listi narednih (D-115)
     await page.goto('/app/calendar')
-    await expect(page.getByText(text.slice(0, 40))).toBeVisible()
+    await expect(page.getByText(text.slice(0, 40)).first()).toBeVisible()
   })
 
   test('klijent bez naloga odobrava objavu preko javnog linka', async ({ page, browser }) => {

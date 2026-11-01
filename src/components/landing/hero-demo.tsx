@@ -10,6 +10,7 @@ import {
   faLock,
 } from '@fortawesome/free-solid-svg-icons'
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 import { useState, useSyncExternalStore, type ReactNode } from 'react'
 
 import { cn } from 'cn'
@@ -23,9 +24,10 @@ import { byKey } from './platforms'
  * Demo rada Sove u hero delu (D-098): šest koraka sa automatskim napredovanjem. Traka ispod
  * aktivnog koraka se puni za `stepSeconds`, a njen `animationend` prelazi na sledeći korak, pa
  * traka i promena koraka ne mogu da se raziđu. Prelaz mišem ili fokus u prozoru pauzira; klik na
- * korak skače na njega. Uz smanjeno kretanje nema automatskog napredovanja.
+ * korak skače na njega. Uz smanjeno kretanje nema automatskog napredovanja. Primer brenda je na
+ * jeziku strane (D-130).
  */
-const STEPS = ['Vaš sajt', 'Brand Brain', 'Strategija', 'Objave i vizuali', 'Objavljivanje', 'Rezultati']
+const STEPS = ['site', 'brain', 'strategy', 'posts', 'publish', 'results'] as const
 const STEP_SECONDS = 4.5
 
 const reducedMotionQuery = '(prefers-reduced-motion: reduce)'
@@ -68,16 +70,18 @@ function Chip({ children, outline }: { children: ReactNode; outline?: boolean })
 }
 
 function SitePanel({ domain }: { domain: string }) {
-  const pages: Array<[string, boolean]> = [
-    ['Početna', true],
-    ['Ponuda i cene', true],
-    ['O nama', true],
-    ['Kontakt i radno vreme', true],
-    ['Blog, 3 teksta', false],
+  const t = useTranslations('site.heroDemo.site')
+  const demo = useTranslations('site.demo')
+  const pages: Array<['home' | 'offer' | 'about' | 'contact' | 'blog', boolean]> = [
+    ['home', true],
+    ['offer', true],
+    ['about', true],
+    ['contact', true],
+    ['blog', false],
   ]
   return (
     <>
-      <PanelHead title="01 · ČITANJE SAJTA" meta="14 stranica" />
+      <PanelHead title={t('title')} meta={t('meta')} />
       <div className="overflow-hidden rounded-xl border border-l-line/14 bg-l-inner">
         <div className="flex items-center gap-2 border-b border-l-line/10 px-3 py-[9px] text-xs text-l-muted">
           <Fa icon={faLock} className="text-l-success" style={{ fontSize: 10 }} />
@@ -93,31 +97,31 @@ function SitePanel({ domain }: { domain: string }) {
           />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(6,10,19,0.1)_30%,rgba(6,10,19,0.75))]" />
           <div className="absolute bottom-3 left-3.5 text-[15px] font-semibold tracking-[-0.01em] text-white">
-            Hleb kakav se nekad pekao.
+            {demo('headline')}
           </div>
           <div className="absolute inset-x-0 top-0 h-[30%] border-b border-l-accent bg-[linear-gradient(180deg,transparent,rgba(61,169,252,0.32))] motion-safe:animate-l-scan motion-reduce:hidden" />
         </div>
       </div>
       <div className="mt-3 flex flex-col">
-        {pages.map(([name, done], i) => (
+        {pages.map(([page, done], i) => (
           <div
-            key={name}
+            key={page}
             className={cn(
               'flex items-center justify-between px-0.5 py-[9px] text-[13px]',
               i < pages.length - 1 && 'border-b border-l-line/8',
             )}
           >
-            <span className="text-l-text-2">{name}</span>
+            <span className="text-l-text-2">{t(`pages.${page}`)}</span>
             {done ? (
               <span className="flex items-center gap-1.5 text-[11.5px] text-l-success">
                 <Fa icon={faCheck} />
-                pročitano
+                {t('done')}
               </span>
             ) : (
               <span className="flex items-center gap-1.5 text-[11.5px] text-l-accent">
                 {/* pulsira samo ikona, tekst ostaje čitljiv (kontrast) */}
                 <Fa icon={faCircleNotch} className="motion-safe:animate-l-pulse-fast" />
-                čitam…
+                {t('reading')}
               </span>
             )}
           </div>
@@ -128,9 +132,11 @@ function SitePanel({ domain }: { domain: string }) {
 }
 
 function BrandPanel() {
+  const t = useTranslations('site.heroDemo.brand')
+  const demo = useTranslations('site.demo')
   return (
     <>
-      <PanelHead title="02 · BRAND BRAIN" meta="primer analize" />
+      <PanelHead title={t('title')} meta={t('meta')} />
       <div className="flex items-center gap-3 border-b border-l-line/10 pb-4">
         <Image
           src="/landing/hleb.jpg"
@@ -140,13 +146,13 @@ function BrandPanel() {
           className="size-[46px] rounded-xl bg-l-img object-cover"
         />
         <div>
-          <div className="text-[15.5px] font-semibold">Pekara Zrno</div>
-          <div className="mt-0.5 text-[12.5px] text-l-muted">Zanatska pekara · Novi Sad</div>
+          <div className="text-[15.5px] font-semibold">{demo('brand')}</div>
+          <div className="mt-0.5 text-[12.5px] text-l-muted">{t('place')}</div>
         </div>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-4">
         <div>
-          <div className={cn(small, 'mb-2')}>BOJE</div>
+          <div className={cn(small, 'mb-2')}>{t('colours')}</div>
           <div className="flex gap-1.5">
             {['#3B2416', '#C98B4B', '#F3E6D3', '#6E7F4F'].map((c, i) => (
               <span
@@ -161,55 +167,52 @@ function BrandPanel() {
           </div>
         </div>
         <div>
-          <div className={cn(small, 'mb-2')}>TON</div>
+          <div className={cn(small, 'mb-2')}>{t('tone')}</div>
           <div className="flex flex-wrap gap-[5px]">
-            <Chip>Topao</Chip>
-            <Chip>Domaći</Chip>
-            <Chip>Bez žargona</Chip>
+            <Chip>{demo('tones.warm')}</Chip>
+            <Chip>{demo('tones.local')}</Chip>
+            <Chip>{demo('tones.plain')}</Chip>
           </div>
         </div>
         <div className="col-span-2">
-          <div className={cn(small, 'mb-1.5')}>PUBLIKA</div>
-          <div className="text-[13.5px] leading-normal text-l-text-2">
-            Porodice i zaposleni, 25–45 godina, Novi Sad i Petrovaradin
-          </div>
+          <div className={cn(small, 'mb-1.5')}>{t('audience')}</div>
+          <div className="text-[13.5px] leading-normal text-l-text-2">{t('audienceText')}</div>
         </div>
         <div className="col-span-2">
-          <div className={cn(small, 'mb-2')}>USLUGE</div>
+          <div className={cn(small, 'mb-2')}>{t('services')}</div>
           <div className="flex flex-wrap gap-[5px]">
-            <Chip outline>Hleb na kvascu</Chip>
-            <Chip outline>Kroasani</Chip>
-            <Chip outline>Torte po porudžbini</Chip>
-            <Chip outline>Ketering</Chip>
+            <Chip outline>{t('list.sourdough')}</Chip>
+            <Chip outline>{t('list.croissants')}</Chip>
+            <Chip outline>{t('list.cakes')}</Chip>
+            <Chip outline>{t('list.catering')}</Chip>
           </div>
         </div>
       </div>
       <div className="mt-[18px] rounded-[10px] border border-l-accent/18 bg-l-accent/7 px-3 py-[11px] text-[12.5px] leading-[1.45] text-l-accent-pale">
-        Sova koristi ovaj profil u svakoj objavi. Možete ga izmeniti bilo kad.
+        {t('note')}
       </div>
     </>
   )
 }
 
 function StrategyPanel() {
-  const pillars: Array<[string, number, string]> = [
-    ['Proizvodi', 40, '#3DA9FC'],
-    ['Iza kulisa', 25, '#9B8CFF'],
-    ['Saveti i recepti', 20, '#45D19A'],
-    ['Akcije', 15, '#F2B552'],
+  const t = useTranslations('site.heroDemo.strategy')
+  const pillars: Array<['products' | 'behind' | 'tips' | 'offers', number, string]> = [
+    ['products', 40, '#3DA9FC'],
+    ['behind', 25, '#9B8CFF'],
+    ['tips', 20, '#45D19A'],
+    ['offers', 15, '#F2B552'],
   ]
   return (
     <>
-      <PanelHead title="03 · STRATEGIJA" meta="Novembar 2026" />
-      <div className="text-[22px] font-semibold tracking-[-0.025em]">12 objava, 3 mreže</div>
-      <div className="mt-1.5 text-[13.5px] leading-normal text-l-muted">
-        Cilj meseca: +15% poseta profilu i 40 porudžbina torti preko poruka.
-      </div>
+      <PanelHead title={t('title')} meta={t('meta')} />
+      <div className="text-[22px] font-semibold tracking-[-0.025em]">{t('headline')}</div>
+      <div className="mt-1.5 text-[13.5px] leading-normal text-l-muted">{t('goal')}</div>
       <div className="mt-5 flex flex-col gap-[13px]">
-        {pillars.map(([name, pct, color]) => (
-          <div key={name}>
+        {pillars.map(([pillar, pct, color]) => (
+          <div key={pillar}>
             <div className="mb-1.5 flex justify-between text-[13px]">
-              <span className="text-l-text-2">{name}</span>
+              <span className="text-l-text-2">{t(`pillars.${pillar}`)}</span>
               <span className={cn(mono, 'text-[11.5px] text-l-muted')}>{pct}%</span>
             </div>
             <div className="h-1.5 rounded-[3px] bg-l-chip">
@@ -218,15 +221,15 @@ function StrategyPanel() {
           </div>
         ))}
       </div>
-      <div className={cn(small, 'mt-[22px]')}>RITAM</div>
+      <div className={cn(small, 'mt-[22px]')}>{t('rhythm')}</div>
       <div className="mt-2 flex flex-wrap gap-1.5">
-        {['Pon 08:00', 'Sre 19:00', 'Pet 08:00'].map((t) => (
+        {(['mon', 'wed', 'fri'] as const).map((slot) => (
           <span
-            key={t}
+            key={slot}
             className="flex items-center gap-1.5 rounded-lg border border-l-line/12 bg-l-inner px-2.5 py-1.5 text-[12.5px] text-l-text-2"
           >
             <Fa icon={faClock} className="text-l-dim" style={{ fontSize: 11 }} />
-            {t}
+            {t(`slots.${slot}`)}
           </span>
         ))}
       </div>
@@ -235,14 +238,16 @@ function StrategyPanel() {
 }
 
 function PostsPanel() {
-  const thumbs: Array<[string, string, boolean]> = [
-    ['/landing/hleb.jpg', 'Spremno', true],
-    ['/landing/testo.jpg', 'Spremno', true],
-    ['/landing/vitrina.jpg', 'Nacrt', false],
+  const t = useTranslations('site.heroDemo.posts')
+  const demo = useTranslations('site.demo')
+  const thumbs: Array<[string, boolean]> = [
+    ['/landing/hleb.jpg', true],
+    ['/landing/testo.jpg', true],
+    ['/landing/vitrina.jpg', false],
   ]
   return (
     <>
-      <PanelHead title="04 · OBJAVE I VIZUALI" meta="4 od 12 spremno" />
+      <PanelHead title={t('title')} meta={t('meta')} />
       <div className="flex gap-3">
         <div className="min-w-0 flex-1 overflow-hidden rounded-xl bg-white text-l-social-ink">
           <div className="flex items-center gap-2 px-2.5 py-2">
@@ -253,7 +258,7 @@ function PostsPanel() {
               height={24}
               className="size-6 rounded-full object-cover"
             />
-            <span className="text-xs font-semibold">pekarazrno</span>
+            <span className="text-xs font-semibold">{demo('handle')}</span>
             <Fa icon={faInstagram} className="ml-auto" style={{ fontSize: 14, color: '#E1306C' }} />
           </div>
           <div className="relative h-[220px] bg-[#E5E7EB]">
@@ -266,12 +271,11 @@ function PostsPanel() {
             />
           </div>
           <div className="px-2.5 pt-[9px] pb-[11px] text-[11.5px] leading-[1.45] text-[#1F2937]">
-            <b>pekarazrno</b> Jutro počinje mirisom. Kroasani izlaze iz peći u 7:00.{' '}
-            <span className="text-[#00376B]">#novisad #pekara</span>
+            <b>{demo('handle')}</b> {t('caption')} <span className="text-[#00376B]">{t('tags')}</span>
           </div>
         </div>
         <div className="flex w-[92px] flex-none flex-col gap-2">
-          {thumbs.map(([src, badge, ready]) => (
+          {thumbs.map(([src, ready]) => (
             <div key={src} className="relative flex-1 overflow-hidden rounded-[10px] bg-l-img">
               <Image src={src} alt="" fill sizes="92px" className="object-cover" />
               <span
@@ -280,7 +284,7 @@ function PostsPanel() {
                   ready ? 'text-l-success' : 'text-l-warning',
                 )}
               >
-                {badge}
+                {ready ? t('ready') : t('draft')}
               </span>
             </div>
           ))}
@@ -291,34 +295,43 @@ function PostsPanel() {
 }
 
 const STATUS = {
-  published: { text: 'Objavljeno', cls: 'bg-l-success/12 text-l-success' },
-  scheduled: { text: 'Zakazano', cls: 'bg-l-accent/12 text-l-accent-soft' },
-  review: { text: 'Čeka odobrenje', cls: 'bg-l-warning/13 text-l-warning' },
-  draft: { text: 'Nacrt', cls: 'bg-l-line/10 text-l-muted' },
+  published: 'bg-l-success/12 text-l-success',
+  scheduled: 'bg-l-accent/12 text-l-accent-soft',
+  review: 'bg-l-warning/13 text-l-warning',
+  draft: 'bg-l-line/10 text-l-muted',
 } as const
 
+type PublishRow = 'ig' | 'fb' | 'tiktok' | 'cakes' | 'hours' | 'why'
+
 function PublishPanel() {
-  const rows: Array<[string, Parameters<typeof byKey>[0], string, keyof typeof STATUS]> = [
-    ['PON 08:00', 'instagram', 'Kroasani iz prve ture', 'published'],
-    ['PON 08:05', 'facebook', 'Kroasani iz prve ture', 'published'],
-    ['SRE 19:00', 'tiktok', '36 sati za jedan kroasan', 'scheduled'],
-    ['PET 08:00', 'instagram', 'Vikend torte po porudžbini', 'review'],
-    ['PET 09:00', 'google_business', 'Radno vreme za praznik', 'scheduled'],
-    ['NED 10:00', 'linkedin', 'Zašto 36 sati za kroasan', 'draft'],
+  const t = useTranslations('site.heroDemo')
+  const demo = useTranslations('site.demo')
+  const rows: Array<[PublishRow, Parameters<typeof byKey>[0], keyof typeof STATUS]> = [
+    ['ig', 'instagram', 'published'],
+    ['fb', 'facebook', 'published'],
+    ['tiktok', 'tiktok', 'scheduled'],
+    ['cakes', 'instagram', 'review'],
+    ['hours', 'google_business', 'scheduled'],
+    ['why', 'linkedin', 'draft'],
   ]
+  // ista objava na Instagramu i Facebooku nosi naslov primera objave
+  const title = (row: PublishRow) =>
+    row === 'ig' || row === 'fb' ? demo('postTitle') : t(`publish.rows.${row}.title`)
   return (
     <>
-      <PanelHead title="05 · OBJAVLJIVANJE" meta="2–8. novembar" tight />
+      <PanelHead title={t('publish.title')} meta={demo('week')} tight />
       <div className="flex flex-col">
-        {rows.map(([when, key, title, status], i) => (
+        {rows.map(([row, key, status], i) => (
           <div
-            key={when}
+            key={row}
             className={cn(
               'flex items-center gap-2.5 py-3',
               i < rows.length - 1 && 'border-b border-l-line/8',
             )}
           >
-            <span className={cn(mono, 'w-16 flex-none text-[11px] text-l-dim')}>{when}</span>
+            <span className={cn(mono, 'w-16 flex-none text-[11px] text-l-dim')}>
+              {t(`publish.rows.${row}.when`)}
+            </span>
             <PlatformTile
               p={byKey(key)}
               size={24}
@@ -327,33 +340,32 @@ function PublishPanel() {
               googleSize={12}
               shadowOffset={1}
             />
-            <span className="min-w-0 flex-1 truncate text-[13px]">{title}</span>
-            <span
-              className={cn('rounded-full px-2 py-[3px] text-[11px] whitespace-nowrap', STATUS[status].cls)}
-            >
-              {STATUS[status].text}
+            <span className="min-w-0 flex-1 truncate text-[13px]">{title(row)}</span>
+            <span className={cn('rounded-full px-2 py-[3px] text-[11px] whitespace-nowrap', STATUS[status])}>
+              {t(`badges.${status}`)}
             </span>
           </div>
         ))}
       </div>
       <div className="mt-2.5 flex items-center gap-[7px] text-xs text-l-dim">
         <Fa icon={faEarthEurope} style={{ fontSize: 11 }} />
-        Vremenska zona: Beograd (CET)
+        {t('publish.timezone')}
       </div>
     </>
   )
 }
 
 function ResultsPanel() {
+  const t = useTranslations('site.heroDemo.results')
   const stats: Array<[string, string, string]> = [
-    ['Doseg', '18,4 hilj.', '+32%'],
-    ['Angažovanje', '6,1%', '+1,4 p.p.'],
-    ['Pratioci', '+214', '+18%'],
+    [t('reach'), t('reachValue'), '+32%'],
+    [t('engagement'), t('engagementValue'), t('engagementDelta')],
+    [t('followers'), '+214', '+18%'],
   ]
   const bars = [34, 42, 38, 55, 49, 66, 72, 96]
   return (
     <>
-      <PanelHead title="06 · REZULTATI" meta="Oktobar 2026" />
+      <PanelHead title={t('title')} meta={t('meta')} />
       <div className="grid grid-cols-3 gap-2">
         {stats.map(([name, value, delta]) => (
           <div key={name} className="rounded-[10px] border border-l-line/10 bg-l-inner p-3">
@@ -376,18 +388,20 @@ function ResultsPanel() {
         ))}
       </div>
       <div className={cn(mono, 'mt-1.5 flex justify-between text-[10px] text-l-dim')}>
-        <span>SEP</span>
-        <span>OKT</span>
+        <span>{t('from')}</span>
+        <span>{t('to')}</span>
       </div>
       <div className="mt-3.5 flex gap-2.5 rounded-[10px] border border-l-accent/18 bg-l-accent/7 p-3 text-[12.5px] leading-[1.45] text-l-accent-pale">
         <Fa icon={faLightbulb} className="mt-0.5" style={{ fontSize: 13 }} />
-        <span>Objave iza kulisa imaju 2,3× veći doseg. U decembru ih planiram više.</span>
+        <span>{t('insight')}</span>
       </div>
     </>
   )
 }
 
 export function HeroDemo() {
+  const t = useTranslations('site.heroDemo')
+  const demo = useTranslations('site.demo')
   const { domain, run } = useDemo()
   const autoplay = !useReducedMotion()
   const [step, setStep] = useState(0)
@@ -406,13 +420,13 @@ export function HeroDemo() {
     setCycle((c) => c + 1)
   }
   const next = () => go((step + 1) % STEPS.length)
-  const status = !autoplay ? 'Kliknite korake' : paused ? 'Pauzirano' : 'Demo u toku'
+  const status = !autoplay ? t('state.manual') : paused ? t('state.paused') : t('state.running')
 
   return (
     <div className="relative min-w-0 flex-[1.15_1_520px]">
       <div
         role="region"
-        aria-label="Primer rada Sove"
+        aria-label={t('region')}
         onMouseEnter={() => setPaused(true)}
         onMouseLeave={() => setPaused(false)}
         onFocus={() => setPaused(true)}
@@ -430,7 +444,7 @@ export function HeroDemo() {
               height={24}
               className="size-6 rounded-[7px] bg-l-img object-cover"
             />
-            <span className="text-[13.5px] font-semibold">Pekara Zrno</span>
+            <span className="text-[13.5px] font-semibold">{demo('brand')}</span>
             <Fa icon={faChevronDown} className="text-l-dim" style={{ fontSize: 9 }} />
           </div>
           <div className="flex items-center gap-2 text-xs text-l-muted">
@@ -461,7 +475,7 @@ export function HeroDemo() {
                   >
                     0{i + 1}
                   </span>
-                  <span className="flex-1">{name}</span>
+                  <span className="flex-1">{t(`steps.${name}`)}</span>
                   {done ? <Fa icon={faCheck} className="text-l-success" style={{ fontSize: 10 }} /> : null}
                   {active && autoplay ? (
                     <span
@@ -499,8 +513,8 @@ export function HeroDemo() {
           className="size-8 rounded-full bg-l-img object-cover"
         />
         <div>
-          <div className="text-[13px] font-medium">Jelena je odobrila 3 objave</div>
-          <div className="mt-px text-[11.5px] text-l-dim">Klijent · pre 2 min</div>
+          <div className="text-[13px] font-medium">{t('approval.title')}</div>
+          <div className="mt-px text-[11.5px] text-l-dim">{t('approval.meta')}</div>
         </div>
         <span className="ml-1 flex size-[22px] items-center justify-center rounded-full bg-l-success">
           <Fa icon={faCheck} className="text-l-on-accent" style={{ fontSize: 10 }} />

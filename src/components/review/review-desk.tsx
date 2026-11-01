@@ -224,7 +224,7 @@ export function ReviewDesk({
               )}
             >
               {t(`tabs.${k}`)}
-              <span className={cn('rounded-full px-1.5 text-xs', tab === k ? 'bg-white/20' : 'bg-muted')}>
+              <span className={cn('rounded-full px-1.5 text-xs', tab === k ? 'bg-black/20' : 'bg-muted')}>
                 {list.data?.counts[k] ?? 0}
               </span>
             </button>
@@ -708,7 +708,7 @@ function DetailForm({
                   onClick={() => setNetTab('base')}
                   className={cn(
                     'rounded-full border px-3 py-1 text-xs',
-                    netTab === 'base' && 'border-primary bg-primary/10 text-primary',
+                    netTab === 'base' && 'border-primary bg-primary/10 text-accent-foreground',
                   )}
                 >
                   {t('panel.base')}
@@ -722,7 +722,7 @@ function DetailForm({
                     onClick={() => setNetTab(tg.socialAccountId)}
                     className={cn(
                       'rounded-full border px-3 py-1 text-xs',
-                      netTab === tg.socialAccountId && 'border-primary bg-primary/10 text-primary',
+                      netTab === tg.socialAccountId && 'border-primary bg-primary/10 text-accent-foreground',
                     )}
                   >
                     {PLATFORMS[tg.platform]?.label ?? tg.platform}

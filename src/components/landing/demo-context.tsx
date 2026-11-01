@@ -1,6 +1,7 @@
 'use client'
 
 import { faArrowRight, faGlobe } from '@fortawesome/free-solid-svg-icons'
+import { useTranslations } from 'next-intl'
 import {
   createContext,
   useCallback,
@@ -13,12 +14,13 @@ import {
 
 import { cn } from 'cn'
 
-import { cleanDomain, DEMO_DOMAIN } from './demo-domain'
+import { cleanDomain } from './demo-domain'
 import { Fa } from './icons'
 
 /**
  * Demo prikaz u hero delu i dve forme za adresu dele stanje (D-098): unos adrese pokreće demo
- * od prvog koraka sa tom adresom. Nema poziva serveru; ostatak demoa je primer brenda.
+ * od prvog koraka sa tom adresom. Nema poziva serveru; ostatak demoa je primer brenda, na jeziku
+ * strane (D-130).
  */
 interface DemoValue {
   domain: string
@@ -30,7 +32,8 @@ interface DemoValue {
 const DemoContext = createContext<DemoValue | null>(null)
 
 export function DemoProvider({ children }: { children: ReactNode }) {
-  const [domain, setDomain] = useState(DEMO_DOMAIN)
+  const t = useTranslations('site.demo')
+  const [domain, setDomain] = useState(() => t('domain'))
   const [run, setRun] = useState(0)
   const start = useCallback((input: string) => {
     const clean = cleanDomain(input)
@@ -49,6 +52,7 @@ export function useDemo(): DemoValue {
 
 /** Forma „unesite sajt”: u hero delu sa prefiksom https://, na dnu strane sa skrolom na demo. */
 export function UrlForm({ variant }: { variant: 'hero' | 'cta' }) {
+  const t = useTranslations('site.demo')
   const { start } = useDemo()
   const [value, setValue] = useState('')
   const hero = variant === 'hero'
@@ -75,8 +79,8 @@ export function UrlForm({ variant }: { variant: 'hero' | 'cta' }) {
       <input
         value={value}
         onChange={(e) => setValue(e.target.value)}
-        placeholder="vasafirma.rs"
-        aria-label="Adresa vašeg sajta"
+        placeholder={t('placeholder')}
+        aria-label={t('inputLabel')}
         inputMode="url"
         autoCapitalize="none"
         autoComplete="off"
@@ -90,7 +94,7 @@ export function UrlForm({ variant }: { variant: 'hero' | 'cta' }) {
         type="submit"
         className="flex h-11 cursor-pointer items-center gap-2 rounded-[10px] bg-l-accent px-[18px] text-[14.5px] font-semibold whitespace-nowrap text-l-on-accent transition-colors duration-200 hover:bg-l-accent-hover"
       >
-        {hero ? 'Isprobajte' : 'Počnite besplatno'}
+        {hero ? t('try') : t('start')}
         <Fa icon={faArrowRight} style={{ fontSize: 12 }} />
       </button>
     </form>

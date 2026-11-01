@@ -34,7 +34,6 @@ export function SetupWizard({
   canEdit,
   canAdmin,
   emailVerified,
-  showUiLocale,
   initialStep,
   pendingState,
   notice,
@@ -47,7 +46,6 @@ export function SetupWizard({
   canEdit: boolean
   canAdmin: boolean
   emailVerified: boolean
-  showUiLocale: boolean
   initialStep: number
   pendingState: string | null
   notice: string | null
@@ -168,13 +166,7 @@ export function SetupWizard({
         <Card>
           <CardContent className="pt-6">
             {name === 'welcome' ? (
-              <StepWelcome
-                brandId={brandId}
-                contentLocale={contentLocale}
-                showUiLocale={showUiLocale}
-                canEdit={canEdit}
-                onNext={next}
-              />
+              <StepWelcome brandId={brandId} contentLocale={contentLocale} canEdit={canEdit} onNext={next} />
             ) : name === 'networks' ? (
               <StepNetworks
                 brandId={brandId}

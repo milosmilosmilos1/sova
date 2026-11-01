@@ -1,248 +1,185 @@
-import type { Metadata } from 'next'
+import type { Metadata, Route } from 'next'
 import Link from 'next/link'
+import { getLocale, getTranslations } from 'next-intl/server'
+import type { ReactNode } from 'react'
 
 import { LegalList, LegalPage, LegalSection } from '@/components/legal/legal-page'
 import { company } from '@/config/company'
+import { localePath } from '@/i18n/paths'
+import { publicMetadata } from '@/lib/seo'
 
-export const metadata: Metadata = {
-  title: 'Politika privatnosti',
-  description: 'Kako Sova prikuplja, koristi i štiti podatke o ličnosti.',
+export async function generateMetadata(): Promise<Metadata> {
+  const [locale, t] = await Promise.all([getLocale(), getTranslations('legal.privacy')])
+  return publicMetadata({ locale, path: '/privacy', title: t('title'), description: t('metaDescription') })
 }
 
-const processors = [
-  ['Supabase', 'baza podataka, autentifikacija, skladište fajlova'],
-  ['Vercel', 'hosting aplikacije i isporuka sadržaja'],
-  ['Google (Gemini API)', 'generisanje teksta i slika, analiza sadržaja sajta i slika'],
-  ['Stripe', 'naplata pretplata i paketa tokena'],
-  ['Resend', 'slanje transakcionih emailova'],
-  ['Upstash', 'ograničavanje broja zahteva i privremeni keš'],
-  ['Inngest', 'pozadinski poslovi (analiza sajta, objavljivanje, metrike)'],
-  ['Sentry', 'praćenje tehničkih grešaka'],
-  ['PostHog', 'analitika korišćenja proizvoda'],
-  ['Cloudflare Turnstile', 'zaštita od botova pri registraciji'],
-  ['Unsplash i Canva', 'fotografije i dizajni, samo kad ih vi izaberete'],
+const DATA = ['account', 'brand', 'social', 'content', 'payment', 'technical', 'team'] as const
+const PURPOSES = ['service', 'security', 'billing', 'emails', 'analytics'] as const
+const PROCESSORS = [
+  'supabase',
+  'vercel',
+  'gemini',
+  'stripe',
+  'resend',
+  'upstash',
+  'inngest',
+  'sentry',
+  'posthog',
+  'turnstile',
+  'media',
 ] as const
+const RETENTION = ['account', 'tokens', 'logs', 'invoices'] as const
 
-export default function PrivacyPage() {
+const strong = (chunks: ReactNode) => <strong>{chunks}</strong>
+
+/**
+ * Politika privatnosti na jeziku strane (D-130). Srpska strana ima i kratak sažetak na engleskom
+ * (za recenzente mreža); engleska i ukrajinska strana imaju ceo tekst na svom jeziku.
+ */
+export default async function PrivacyPage() {
+  const [locale, t, tl] = await Promise.all([
+    getLocale(),
+    getTranslations('legal.privacy'),
+    getTranslations('legal'),
+  ])
+  const mail = (chunks: ReactNode) => <a href={`mailto:${company.privacyEmail}`}>{chunks}</a>
+  const deletion = (chunks: ReactNode) => (
+    <Link href={localePath(locale, '/data-deletion') as Route}>{chunks}</Link>
+  )
   return (
-    <LegalPage title="Politika privatnosti" titleEn="Privacy Policy">
-      <LegalSection title="1. Ko je rukovalac podacima">
+    <LegalPage title={t('title')} titleEn="Privacy Policy">
+      <LegalSection title={t('s1.title')}>
         <p>
-          Rukovalac podacima je <strong>{company.legalName}</strong>, vlasnik platforme {company.productName}{' '}
-          dostupne na {company.domain}. Za sva pitanja o zaštiti podataka pišite na{' '}
-          <a href={`mailto:${company.privacyEmail}`}>{company.privacyEmail}</a>.
-          {company.address ? ` Adresa: ${company.address}.` : ''}
+          {t.rich('s1.text', {
+            b: strong,
+            mail,
+            company: company.legalName,
+            product: company.productName,
+            domain: company.domain,
+            email: company.privacyEmail,
+          })}
+          {company.address ? ` ${tl('address', { address: company.address })}` : ''}
         </p>
       </LegalSection>
 
-      <LegalSection title="2. Koje podatke obrađujemo">
-        <LegalList
-          items={[
-            <>
-              <strong>Podaci o nalogu:</strong> ime, email adresa, lozinka (čuva se samo kao heš kod našeg
-              obrađivača za autentifikaciju), jezik, vremenska zona, podešavanja obaveštenja.
-            </>,
-            <>
-              <strong>Podaci o brendu:</strong> URL sajta i javno dostupan sadržaj sa njega (tekstovi, logo,
-              boje, fontovi, slike, podaci o uslugama), opisi koje sami unesete, podaci o konkurentima koje
-              dodate.
-            </>,
-            <>
-              <strong>Podaci sa povezanih društvenih mreža:</strong> identifikator i naziv naloga ili
-              stranice, slika profila, pristupni tokeni koje nam mreža izda kad odobrite povezivanje, vaše
-              ranije objave sa javnim metrikama (doseg, reakcije, komentari), metrike objava koje Sova objavi
-              u vaše ime.
-            </>,
-            <>
-              <strong>Sadržaj koji kreirate u Sovi:</strong> tekstovi objava, fotografije i video koje
-              otpremite, generisane slike, strategije, komentari i odluke o odobravanju.
-            </>,
-            <>
-              <strong>Podaci o plaćanju:</strong> obrađuje ih Stripe. Mi čuvamo samo identifikator kupca,
-              plan, status pretplate i istoriju tokena. Broj kartice nikad ne dolazi do nas.
-            </>,
-            <>
-              <strong>Tehnički podaci:</strong> IP adresa, tip pregledača i uređaja, vreme pristupa, zapisi o
-              greškama, kolačići neophodni za sesiju.
-            </>,
-            <>
-              <strong>Podaci članova tima i klijenata:</strong> email adrese osoba koje pozovete u radni
-              prostor i njihove odluke o odobravanju objava.
-            </>,
-          ]}
-        />
+      <LegalSection title={t('s2.title')}>
+        <LegalList items={DATA.map((key) => t.rich(`s2.items.${key}`, { b: strong }))} />
       </LegalSection>
 
-      <LegalSection title="3. Svrhe i pravni osnov">
-        <LegalList
-          items={[
-            'Pružanje usluge koju ste zatražili (analiza sajta, kreiranje sadržaja, zakazivanje i objavljivanje, analitika): izvršenje ugovora.',
-            'Bezbednost naloga, sprečavanje zloupotrebe i otklanjanje grešaka: legitimni interes.',
-            'Naplata i računovodstvena evidencija: izvršenje ugovora i zakonska obaveza.',
-            'Emailovi o stanju naloga, neuspelim objavama i odobrenjima: izvršenje ugovora. Marketinški emailovi samo uz vašu saglasnost, koju možete povući u svakom trenutku.',
-            'Analitika korišćenja proizvoda i kolačići koji nisu neophodni: saglasnost.',
-          ]}
-        />
+      <LegalSection title={t('s3.title')}>
+        <LegalList items={PURPOSES.map((key) => t(`s3.items.${key}`))} />
       </LegalSection>
 
-      <LegalSection title="4. Podaci sa platformi trećih strana">
+      <LegalSection title={t('s4.title')}>
+        <p>{t('s4.p1')}</p>
         <p>
-          Kad povežete Facebook, Instagram, LinkedIn, TikTok, X, YouTube, Pinterest ili Google poslovni
-          profil, Sova dobija pristup isključivo onim podacima koje ste odobrili u toku povezivanja. Te
-          podatke koristimo samo za funkcije koje ste tražili: objavljivanje sadržaja u vaše ime, uvoz ranijih
-          objava radi učenja o brendu i prikaz metrika. Podatke sa platformi ne prodajemo, ne koristimo za
-          oglašavanje i ne delimo sa trećim stranama osim obrađivača iz odeljka 5. Pristupni tokeni se čuvaju
-          šifrovani (AES-256-GCM) i brišu se čim prekinete vezu sa nalogom.
-        </p>
-        <p>
-          Korišćenje podataka dobijenih preko Google API-ja (YouTube, Google poslovni profil, Google prijava)
-          u skladu je sa{' '}
-          <a
-            href="https://developers.google.com/terms/api-services-user-data-policy"
-            rel="noreferrer"
-            target="_blank"
-          >
-            Google API Services User Data Policy
-          </a>
-          , uključujući zahteve o ograničenoj upotrebi (Limited Use). Korišćenje podataka sa Meta platformi u
-          skladu je sa Meta Platform Terms, a sa TikToka sa TikTok Developer Terms.
+          {t.rich('s4.p2', {
+            policy: (chunks) => (
+              <a
+                href="https://developers.google.com/terms/api-services-user-data-policy"
+                rel="noreferrer"
+                target="_blank"
+              >
+                {chunks}
+              </a>
+            ),
+          })}
         </p>
       </LegalSection>
 
-      <LegalSection title="5. Obrađivači kojima poveravamo podatke">
-        <LegalList
-          items={processors.map(([name, purpose]) => (
-            <>
-              <strong>{name}</strong>: {purpose}
-            </>
-          ))}
-        />
-        <p>
-          Sa svakim obrađivačem imamo ugovor o obradi podataka. Neki od njih obrađuju podatke u Sjedinjenim
-          Američkim Državama; prenos se zasniva na standardnim ugovornim klauzulama ili EU-US Data Privacy
-          Framework-u.
-        </p>
+      <LegalSection title={t('s5.title')}>
+        <LegalList items={PROCESSORS.map((key) => t.rich(`s5.processors.${key}`, { b: strong }))} />
+        <p>{t('s5.text')}</p>
       </LegalSection>
 
-      <LegalSection title="6. Veštačka inteligencija">
-        <p>
-          Za generisanje teksta i slika i za analizu sajta koristimo Google Gemini API. Gemini-ju šaljemo
-          javni sadržaj vašeg sajta, opis brenda, vaše unose i fotografije koje sami priložite. Po uslovima
-          plaćenog Gemini API-ja, Google te podatke ne koristi za treniranje svojih modela. Vizuali koje
-          napravi veštačka inteligencija su u aplikaciji označeni kao AI generisani, a tamo gde mreža to
-          podržava, Sova postavlja i oznaku na samoj objavi.
-        </p>
+      <LegalSection title={t('s6.title')}>
+        <p>{t('s6.text')}</p>
       </LegalSection>
 
-      <LegalSection title="7. Koliko dugo čuvamo podatke">
-        <LegalList
-          items={[
-            'Podatke naloga i brenda: dok nalog postoji, a zatim najviše 30 dana posle brisanja naloga.',
-            'Pristupne tokene mreža: dok je nalog povezan; brišu se odmah po prekidu veze.',
-            'Tehničke zapise (logove): do 90 dana.',
-            'Podatke o plaćanju i fakture: u roku koji propisuju računovodstveni propisi.',
-          ]}
-        />
+      <LegalSection title={t('s7.title')}>
+        <LegalList items={RETENTION.map((key) => t(`s7.items.${key}`))} />
       </LegalSection>
 
-      <LegalSection title="8. Vaša prava">
-        <p>
-          Po Opštoj uredbi o zaštiti podataka (GDPR) i Zakonu o zaštiti podataka o ličnosti Republike Srbije
-          imate pravo na pristup, ispravku, brisanje, ograničenje obrade, prenosivost podataka, prigovor na
-          obradu i povlačenje saglasnosti. Zahtev pošaljite na{' '}
-          <a href={`mailto:${company.privacyEmail}`}>{company.privacyEmail}</a> i odgovorićemo u roku od 30
-          dana. Imate pravo i na pritužbu Povereniku za informacije od javnog značaja i zaštitu podataka o
-          ličnosti (Srbija) ili nadzornom organu u svojoj zemlji.
-        </p>
-        <p>
-          Nalog i sve podatke možete obrisati sami, bez kontakta sa nama. Postupak je opisan na strani{' '}
-          <Link href="/data-deletion">Brisanje podataka</Link>.
-        </p>
+      <LegalSection title={t('s8.title')}>
+        <p>{t.rich('s8.p1', { mail, email: company.privacyEmail })}</p>
+        <p>{t.rich('s8.p2', { deletion })}</p>
       </LegalSection>
 
-      <LegalSection title="9. Kolačići">
-        <p>
-          Neophodni kolačići služe za prijavu, zaštitu od zloupotrebe i pamćenje jezika i ne traže saglasnost.
-          Kolačići za analitiku korišćenja postavljaju se samo ako ih prihvatite. Pregledač možete podesiti da
-          odbija kolačiće, ali bez neophodnih kolačića prijava ne radi.
-        </p>
+      <LegalSection title={t('s9.title')}>
+        <p>{t('s9.text')}</p>
       </LegalSection>
 
-      <LegalSection title="10. Bezbednost">
-        <p>
-          Podaci putuju šifrovano (TLS). Pristupni tokeni su šifrovani u bazi, pristup podacima je ograničen
-          politikama na nivou baze tako da svaki korisnik vidi samo svoj radni prostor, a pristup osoblja je
-          zabeležen u evidenciji. Ni jedan sistem nije potpuno bezbedan; u slučaju povrede podataka
-          obavestićemo vas i nadležni organ u zakonskom roku.
-        </p>
+      <LegalSection title={t('s10.title')}>
+        <p>{t('s10.text')}</p>
       </LegalSection>
 
-      <LegalSection title="11. Deca">
-        <p>
-          Sova je namenjena poslovnim korisnicima starijim od 18 godina. Ne prikupljamo svesno podatke dece.
-        </p>
+      <LegalSection title={t('s11.title')}>
+        <p>{t('s11.text')}</p>
       </LegalSection>
 
-      <LegalSection title="12. Izmene">
-        <p>
-          O važnim izmenama ove politike obavestićemo vas emailom ili obaveštenjem u aplikaciji najmanje 14
-          dana pre stupanja na snagu.
-        </p>
+      <LegalSection title={t('s12.title')}>
+        <p>{t('s12.text')}</p>
       </LegalSection>
 
-      <hr />
+      {locale === 'sr-Latn' ? (
+        <>
+          <hr />
 
-      <LegalSection title="Privacy Policy (English summary)">
-        <p>
-          <strong>{company.legalName}</strong> operates {company.productName} ({company.domain}). Contact for
-          privacy matters: <a href={`mailto:${company.privacyEmail}`}>{company.privacyEmail}</a>.
-        </p>
-        <LegalList
-          items={[
-            <>
-              <strong>Data we process:</strong> account data (name, email, hashed password, preferences);
-              brand data (your website URL and its public content); data from social accounts you connect
-              (account IDs and names, access tokens, your past posts and public metrics, metrics of posts
-              published by Sova); content you create in Sova; billing identifiers (card details stay with
-              Stripe); technical logs; team members&apos; and clients&apos; emails and approval decisions.
-            </>,
-            <>
-              <strong>Purposes and legal bases:</strong> providing the service (contract), security and abuse
-              prevention (legitimate interest), billing (contract and legal obligation), product analytics and
-              non-essential cookies (consent).
-            </>,
-            <>
-              <strong>Third-party platform data:</strong> used only for the features you request (publishing
-              on your behalf, importing history, showing metrics). Never sold, never used for advertising.
-              Tokens are stored encrypted (AES-256-GCM) and deleted when you disconnect. Sova&apos;s use of
-              information received from Google APIs adheres to the Google API Services User Data Policy,
-              including the Limited Use requirements.
-            </>,
-            <>
-              <strong>Processors:</strong> Supabase, Vercel, Google Gemini API, Stripe, Resend, Upstash,
-              Inngest, Sentry, PostHog, Cloudflare Turnstile, Unsplash and Canva (only when you choose them).
-              Transfers to the US rely on Standard Contractual Clauses or the EU-US Data Privacy Framework.
-            </>,
-            <>
-              <strong>AI:</strong> your website content, brand description, inputs and uploaded photos are
-              sent to the Google Gemini API to generate content. Paid Gemini API data is not used to train
-              Google&apos;s models. AI-generated visuals are labelled.
-            </>,
-            <>
-              <strong>Retention:</strong> account and brand data while the account exists plus up to 30 days;
-              tokens until disconnection; logs up to 90 days; invoices as required by law.
-            </>,
-            <>
-              <strong>Your rights:</strong> access, rectification, erasure, restriction, portability,
-              objection and withdrawal of consent under the GDPR and the Serbian Personal Data Protection Act.
-              You can delete your account yourself; see <Link href="/data-deletion">Data deletion</Link>.
-            </>,
-            <>
-              <strong>Children:</strong> the service is for business users aged 18 and over.
-            </>,
-          ]}
-        />
-      </LegalSection>
+          <LegalSection title="Privacy Policy (English summary)">
+            <p>
+              <strong>{company.legalName}</strong> operates {company.productName} ({company.domain}). Contact
+              for privacy matters: <a href={`mailto:${company.privacyEmail}`}>{company.privacyEmail}</a>.
+            </p>
+            <LegalList
+              items={[
+                <>
+                  <strong>Data we process:</strong> account data (name, email, hashed password, preferences);
+                  brand data (your website URL and its public content); data from social accounts you connect
+                  (account IDs and names, access tokens, your past posts and public metrics, metrics of posts
+                  published by Sova); content you create in Sova; billing identifiers (card details stay with
+                  Stripe); technical logs; team members&apos; and clients&apos; emails and approval decisions.
+                </>,
+                <>
+                  <strong>Purposes and legal bases:</strong> providing the service (contract), security and
+                  abuse prevention (legitimate interest), billing (contract and legal obligation), product
+                  analytics and non-essential cookies (consent).
+                </>,
+                <>
+                  <strong>Third-party platform data:</strong> used only for the features you request
+                  (publishing on your behalf, importing history, showing metrics). Never sold, never used for
+                  advertising. Tokens are stored encrypted (AES-256-GCM) and deleted when you disconnect.
+                  Sova&apos;s use of information received from Google APIs adheres to the Google API Services
+                  User Data Policy, including the Limited Use requirements.
+                </>,
+                <>
+                  <strong>Processors:</strong> Supabase, Vercel, Google Gemini API, Stripe, Resend, Upstash,
+                  Inngest, Sentry, PostHog, Cloudflare Turnstile, Unsplash and Canva (only when you choose
+                  them). Transfers to the US rely on Standard Contractual Clauses or the EU-US Data Privacy
+                  Framework.
+                </>,
+                <>
+                  <strong>AI:</strong> your website content, brand description, inputs and uploaded photos are
+                  sent to the Google Gemini API to generate content. Paid Gemini API data is not used to train
+                  Google&apos;s models. AI-generated visuals are labelled.
+                </>,
+                <>
+                  <strong>Retention:</strong> account and brand data while the account exists plus up to 30
+                  days; tokens until disconnection; logs up to 90 days; invoices as required by law.
+                </>,
+                <>
+                  <strong>Your rights:</strong> access, rectification, erasure, restriction, portability,
+                  objection and withdrawal of consent under the GDPR and the Serbian Personal Data Protection
+                  Act. You can delete your account yourself; see{' '}
+                  <Link href="/data-deletion">Data deletion</Link>.
+                </>,
+                <>
+                  <strong>Children:</strong> the service is for business users aged 18 and over.
+                </>,
+              ]}
+            />
+          </LegalSection>
+        </>
+      ) : null}
     </LegalPage>
   )
 }

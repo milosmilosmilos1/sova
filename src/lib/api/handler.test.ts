@@ -131,4 +131,26 @@ describe('createHandler', () => {
     expect(res.status).toBe(201)
     await expect(res.text()).resolves.toBe('plain')
   })
+
+  it('greška i polja koja piše server idu na jeziku korisnika; tekst korisnika ostaje (D-130)', async () => {
+    const failing = createHandler({ auth: 'none' }, async () => {
+      throw new ApiError('INSUFFICIENT_TOKENS')
+    })
+    const fail = (await (
+      await failing(req('/api/x', { headers: { cookie: 'sova_locale=en' } }), routeCtx)
+    ).json()) as { error: { message: string } }
+    expect(fail.error.message).toBe(
+      "You don't have enough tokens for this. Top up your tokens and try again.",
+    )
+
+    const ok = createHandler({ auth: 'none' }, async () => ({
+      notes: ['Termin je prošao.'],
+      items: [{ title: 'Termin je prošao.', error: 'Termin je prošao.' }],
+    }))
+    const body = (await (
+      await ok(req('/api/x', { headers: { cookie: 'sova_locale=uk' } }), routeCtx)
+    ).json()) as { data: { notes: string[]; items: Array<{ title: string; error: string }> } }
+    expect(body.data.notes).toEqual(['Час минув.'])
+    expect(body.data.items[0]).toEqual({ title: 'Termin je prošao.', error: 'Час минув.' })
+  })
 })

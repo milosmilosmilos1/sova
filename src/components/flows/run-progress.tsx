@@ -54,7 +54,7 @@ export function RunProgress({
             {t('badge')}
           </p>
           <DialogTitle className="mt-2 text-xl font-semibold">{t('title')}</DialogTitle>
-          <DialogDescription className="mt-1 text-sm text-primary-foreground/85">
+          <DialogDescription className="mt-1 text-sm text-primary-foreground">
             {t('text', { name: flowName })}
           </DialogDescription>
         </div>

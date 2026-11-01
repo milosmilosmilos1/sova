@@ -3,6 +3,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bell } from 'lucide-react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 
 import { NotificationRow, fetchNotifications, markRead } from '@/components/app/notifications-list'
 import { Button } from '@/components/ui/button'
@@ -10,6 +11,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 
 /** Zvono u navigaciji: broj nepročitanih (osvežava se na minut) i poslednjih 8 obaveštenja. */
 export function NotificationsBell({ workspaceId }: { workspaceId: string | null }) {
+  const t = useTranslations('notifications')
   const qc = useQueryClient()
   const page = useQuery({
     queryKey: ['notifications', workspaceId, 8],
@@ -26,7 +28,7 @@ export function NotificationsBell({ workspaceId }: { workspaceId: string | null 
     <Popover>
       <PopoverTrigger
         className="relative inline-flex size-9 items-center justify-center rounded-md hover:bg-sidebar-accent"
-        aria-label={unread ? `Obaveštenja, ${unread} nepročitanih` : 'Obaveštenja'}
+        aria-label={unread ? t('bellUnread', { count: unread }) : t('title')}
       >
         <Bell className="size-4" aria-hidden />
         {unread ? (
@@ -37,7 +39,7 @@ export function NotificationsBell({ workspaceId }: { workspaceId: string | null 
       </PopoverTrigger>
       <PopoverContent align="end" className="w-80 p-0">
         <div className="flex items-center justify-between border-b px-3 py-2">
-          <p className="text-sm font-medium">Obaveštenja</p>
+          <p className="text-sm font-medium">{t('title')}</p>
           {unread ? (
             <Button
               size="sm"
@@ -45,17 +47,17 @@ export function NotificationsBell({ workspaceId }: { workspaceId: string | null 
               onClick={() => read.mutate({ all: true, workspaceId })}
               disabled={read.isPending}
             >
-              Pročitano
+              {t('markRead')}
             </Button>
           ) : null}
         </div>
         <div className="max-h-80 overflow-y-auto">
           {page.isPending ? (
-            <p className="p-3 text-xs text-muted-foreground">Učitavam…</p>
+            <p className="p-3 text-xs text-muted-foreground">{t('loading')}</p>
           ) : page.isError ? (
             <p className="p-3 text-xs text-destructive">{page.error.message}</p>
           ) : page.data.items.length === 0 ? (
-            <p className="p-3 text-xs text-muted-foreground">Još nema obaveštenja.</p>
+            <p className="p-3 text-xs text-muted-foreground">{t('empty')}</p>
           ) : (
             <ul className="divide-y">
               {page.data.items.map((n) => (
@@ -72,7 +74,7 @@ export function NotificationsBell({ workspaceId }: { workspaceId: string | null 
         </div>
         <div className="border-t px-3 py-2 text-right">
           <Link href="/app/notifications" className="text-xs underline">
-            Sva obaveštenja
+            {t('all')}
           </Link>
         </div>
       </PopoverContent>

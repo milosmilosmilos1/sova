@@ -10,7 +10,9 @@
     "cancel": "Otkaži",
     "errorId": "ID greške za podršku: {id}",
     "error": "Greška.",
-    "timeout": "Server nije stigao da završi na vreme. Osvežite stranicu da vidite šta je urađeno, pa pokušajte ponovo."
+    "timeout": "Server nije stigao da završi na vreme. Osvežite stranicu da vidite šta je urađeno, pa pokušajte ponovo.",
+    "toasts": "Obaveštenja",
+    "closeToast": "Zatvori obaveštenje"
   },
   "nav": {
     "login": "Prijava",
@@ -691,6 +693,7 @@
       "site": "Sajt",
       "siteHint": "Prva analiza je besplatna i traje minut ili dva.",
       "siteUrl": "Adresa sajta",
+      "siteUrlPlaceholder": "https://primer.rs",
       "analyze": "Analiziraj sajt",
       "analyzeAgain": "Analiziraj ponovo",
       "running": "Analiza u toku…",

@@ -20,17 +20,15 @@ export const optionClass = (selected: boolean) =>
     selected ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted/50',
   )
 
-/** Korak 1: jezik aplikacije (iza flaga dok svi ekrani nisu prevedeni) i jezik objava brenda. */
+/** Korak 1: jezik aplikacije i jezik objava brenda. */
 export function StepWelcome({
   brandId,
   contentLocale,
-  showUiLocale,
   canEdit,
   onNext,
 }: {
   brandId: string
   contentLocale: ContentLocale
-  showUiLocale: boolean
   canEdit: boolean
   onNext: () => void
 }) {
@@ -56,32 +54,30 @@ export function StepWelcome({
         <p className="text-sm text-muted-foreground">{t('text')}</p>
       </div>
 
-      {showUiLocale ? (
-        <fieldset className="space-y-2">
-          <legend className="text-sm font-medium">{tl('label')}</legend>
-          <p className="text-xs text-muted-foreground">{t('uiLocaleHint')}</p>
-          <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label={tl('label')}>
-            {locales.map((l) => (
-              <button
-                key={l}
-                type="button"
-                role="radio"
-                aria-checked={uiLocale === l}
-                disabled={uiPending}
-                className={optionClass(uiLocale === l)}
-                onClick={() =>
-                  startUi(async () => {
-                    await changeLocaleAction(l)
-                    router.refresh()
-                  })
-                }
-              >
-                <span className="font-medium">{tl(l)}</span>
-              </button>
-            ))}
-          </div>
-        </fieldset>
-      ) : null}
+      <fieldset className="space-y-2">
+        <legend className="text-sm font-medium">{tl('label')}</legend>
+        <p className="text-xs text-muted-foreground">{t('uiLocaleHint')}</p>
+        <div className="grid gap-2 sm:grid-cols-3" role="radiogroup" aria-label={tl('label')}>
+          {locales.map((l) => (
+            <button
+              key={l}
+              type="button"
+              role="radio"
+              aria-checked={uiLocale === l}
+              disabled={uiPending}
+              className={optionClass(uiLocale === l)}
+              onClick={() =>
+                startUi(async () => {
+                  await changeLocaleAction(l)
+                  router.refresh()
+                })
+              }
+            >
+              <span className="font-medium">{tl(l)}</span>
+            </button>
+          ))}
+        </div>
+      </fieldset>
 
       <fieldset className="space-y-2">
         <legend className="text-sm font-medium">{tc('label')}</legend>

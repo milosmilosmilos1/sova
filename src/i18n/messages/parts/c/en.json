@@ -1,1 +1,675 @@
-{}
+{
+  "analytics": {
+    "metaTitle": "Analytics",
+    "title": "Analytics",
+    "subtitle": "{brand} · time zone {timezone}. Post metrics arrive 1 h, 24 h, 7 and 30 days after publishing; account metrics every morning.",
+    "period": "Period",
+    "days": "{count, plural, one {# day} other {# days}}",
+    "generate": "Generate insights",
+    "generating": "Analysing…",
+    "notCreated": "No insights were created.",
+    "loading": "Loading…",
+    "percent": "{value}%",
+    "delta": {
+      "none": "no comparison",
+      "value": "{value}% compared with the previous period"
+    },
+    "stats": {
+      "posts": "Published",
+      "withMetrics": "{count} with metrics",
+      "reach": "Reach",
+      "engagement": "Engagement",
+      "engagementHint": "reactions + comments + shares + saves",
+      "rate": "Engagement rate",
+      "rateHint": "engagement / reach"
+    },
+    "chart": {
+      "title": "Reach and engagement by publishing day",
+      "description": "Each post counts on the day it went out, with its latest metrics snapshot ({timezone}).",
+      "reachWeek": "Reach per week",
+      "reachDay": "Reach per day",
+      "engagementWeek": "Engagement per week",
+      "engagementDay": "Engagement per day",
+      "weekOf": "week of {date}",
+      "empty": "No data for this period yet."
+    },
+    "byNetwork": "By network",
+    "byNetworkEmpty": "No published posts in this period.",
+    "byPillar": "By content pillar",
+    "byPillarEmpty": "Posts in this period have no pillar assigned (assign one in the strategy or when creating a post).",
+    "top": {
+      "title": "Top posts",
+      "description": "By engagement from the reference snapshot (the longest horizon)."
+    },
+    "followers": {
+      "title": "Followers",
+      "account": "Account",
+      "start": "Start",
+      "end": "End",
+      "change": "Change",
+      "empty": "No daily account metrics for this period yet."
+    },
+    "insights": {
+      "title": "AI insights",
+      "description": "Automatically every week (Sunday evening) or on request; each insight lists the posts it is based on.",
+      "period": "Period {from} – {to}",
+      "confidence": "confidence {value}%",
+      "evidence": "{count, plural, one {# post as evidence} other {# posts as evidence}}",
+      "suggestion": "suggestion: {title}",
+      "empty": "No insights yet. You need at least 3 posts with metrics in the period."
+    },
+    "allPosts": "All posts in the period",
+    "cols": {
+      "posts": "Posts",
+      "reach": "Reach",
+      "engagement": "Engagement",
+      "rate": "Rate",
+      "date": "Date",
+      "network": "Network",
+      "post": "Post",
+      "breakdown": "Reactions / comm. / shares / saves",
+      "snapshot": "Snapshot"
+    },
+    "postsEmpty": "No posts with metrics in this period.",
+    "onNetwork": "on the network",
+    "refresh": "Refresh"
+  },
+  "reports": {
+    "title": "Monthly report (PDF)",
+    "description": "The same numbers as on this page, for the whole calendar month in the brand's time zone and compared with the previous month. On the morning of the 1st, the report for the previous month arrives on its own: to the owner and admins as a notification, and to the client by email if addresses are entered below.",
+    "month": "Month",
+    "currentMonth": "{month} (in progress)",
+    "create": "Create PDF",
+    "creating": "Creating PDF…",
+    "sentToClient": "sent to the client at {count, plural, one {# address} other {# addresses}}",
+    "sentToTeam": "sent to the team",
+    "created": "created {when}",
+    "download": "Download",
+    "empty": "No reports created yet.",
+    "recipientsLabel": "The client receives the report at (up to 5 addresses)",
+    "placeholder": "client@company.com, director@company.com",
+    "saving": "Saving…",
+    "hint": "Separate addresses with commas. An empty field means the report goes to the team only.",
+    "saved": "Saved.",
+    "recipientsTitle": "The client receives the report at",
+    "noRecipients": "no address (the report goes to the team only)",
+    "recipientsNote": "{list}. Only the owner or an admin can change the addresses."
+  },
+  "autopilot": {
+    "metaTitle": "Autopilot",
+    "title": "Autopilot",
+    "loading": "Loading…",
+    "subtitle": "{brand} · time zone {timezone}. The weekly run on Mondays at 06:00 prepares the week from {from} to {to}.",
+    "resume": "Resume",
+    "pauseAll": "Pause everything",
+    "runNow": "Prepare next week now",
+    "runStarted": "The run for the week of {date} has started; drafts will arrive in a few minutes.",
+    "paused": "The brand is paused: Autopilot is not running and scheduled posts are on hold. “Resume” puts posts whose time has not passed back in the queue.",
+    "pausedSince": "The brand has been paused since {date}: Autopilot is not running and scheduled posts are on hold. “Resume” puts posts whose time has not passed back in the queue.",
+    "budget": {
+      "title": "Budget for {month}",
+      "of": "/ {count, plural, one {# token} other {# tokens}}",
+      "unlimited": "/ no token limit",
+      "progress": "Budget used",
+      "stopped": "The budget is used up: Autopilot will not create new drafts until next month or until the budget is raised.",
+      "warning": "{percent}% used; the owners have been warned.",
+      "unlimitedText": "No separate limit; the workspace token balance is used.",
+      "remaining": "{count, plural, one {# token} other {# tokens}} left. Post text 2, visual 2, strategy 20."
+    },
+    "strategy": {
+      "label": "Active strategy",
+      "none": "No active strategy",
+      "active": "Drafts are made from this strategy's themes, pillars and time slots.",
+      "auto": "At levels 2 and 3, Autopilot creates the strategy itself on the next run.",
+      "manual": "At level 1, Autopilot waits for you to create and activate a strategy.",
+      "link": "Strategy"
+    },
+    "runs": {
+      "title": "Recent runs",
+      "kind": "Type",
+      "period": "Period from",
+      "status": "Status",
+      "result": "Result",
+      "tokens": "Tokens",
+      "weekly": "weekly",
+      "monthly": "monthly",
+      "empty": "No runs yet."
+    },
+    "runStatus": {
+      "running": "running",
+      "succeeded": "done",
+      "partial": "partial",
+      "skipped": "skipped",
+      "failed": "failed"
+    },
+    "summary": {
+      "planned": "{count, plural, one {# draft} other {# drafts}}",
+      "submitted": "{count} awaiting approval",
+      "scheduled": "{count} scheduled",
+      "returned": "{count} returned",
+      "budgetStopped": "budget used up",
+      "suggested": "strategy suggestion in the Inbox",
+      "strategyCreated": "strategy created"
+    },
+    "settings": {
+      "title": "Automation level",
+      "description": "Set per brand. The owner and admins can change it.",
+      "levelsLabel": "Autopilot level",
+      "current": "current",
+      "soon": "soon",
+      "budget": "Monthly budget (tokens)",
+      "noLimit": "no limit",
+      "deadline": "Approval deadline (hours before the slot)",
+      "unapproved": "Unapproved after the deadline (level 2+)",
+      "skip": "skip",
+      "publish": "publish",
+      "adminOnly": "Only the owner and admins can change these settings."
+    },
+    "saved": "Saved.",
+    "saving": "Saving…",
+    "levels": {
+      "0": {
+        "label": "Manual",
+        "description": "Sova helps only when you ask. No automatic drafts."
+      },
+      "1": {
+        "label": "Copilot",
+        "description": "Every week Sova prepares drafts for the following week; everything goes for approval."
+      },
+      "2": {
+        "label": "Autopilot with approval",
+        "description": "Sova creates the strategy, calendar and content; posts go for approval. Those not approved by the deadline are skipped or published, depending on your setting."
+      },
+      "3": {
+        "label": "Full autopilot",
+        "description": "Sova plans, creates and publishes without approval on the accounts you choose and sends a weekly report. It must be switched on explicitly and switches off with one click."
+      }
+    },
+    "level3": {
+      "warning": "Full autopilot publishes without approval.",
+      "text": "Choose the accounts where Sova may publish on its own; other accounts still go for approval. It switches off with one click (choose another level or “Pause everything”).",
+      "accounts": "Accounts",
+      "confirm": "To confirm, type the brand name “{brand}”"
+    },
+    "content": {
+      "title": "Content",
+      "description": "The language and post types Autopilot creates. Gemini writes the text with hashtags, photos come from Unsplash and videos from Pexels.",
+      "formats": "Post types",
+      "mix": "AI mixes types",
+      "mixHint": "The chosen types take turns through the week, with images and carousels more often. Off: always the first chosen type the network accepts.",
+      "pickOne": "Choose at least one type."
+    }
+  },
+  "suggestions": {
+    "embeddedTitle": "Content suggestions",
+    "title": "Suggestions inbox",
+    "subtitle": "{brand}: ideas from your blog, website changes, holidays and results. Accepting one creates a draft you polish before publishing.",
+    "statusLabel": "Suggestion status",
+    "tabs": {
+      "new": "New",
+      "accepted": "Accepted",
+      "dismissed": "Dismissed",
+      "expired": "Expired"
+    },
+    "source": {
+      "blog": "Blog",
+      "site_change": "Website change",
+      "holiday": "Holiday",
+      "analytics": "Analytics",
+      "insight": "AI insight",
+      "evergreen": "Evergreen",
+      "manual": "Manual"
+    },
+    "loading": "Loading…",
+    "emptyNew": "No new suggestions. They come from your blog, holidays and analytics.",
+    "empty": "Nothing here.",
+    "score": "score {score}",
+    "validUntil": "valid until {date}",
+    "accept": "Accept",
+    "dismiss": "Dismiss",
+    "openDraft": "Open draft"
+  },
+  "strategy": {
+    "metaTitle": "Strategy",
+    "title": "Strategy",
+    "subtitle": "{brand} · time zone {timezone}. AI creates a plan for the period; you polish it, activate it and turn it into a calendar.",
+    "close": "Close",
+    "new": "New strategy",
+    "job": {
+      "failed": "Generation failed: {error}. Your tokens have been refunded.",
+      "error": "error",
+      "running": "Creating the strategy (up to 2 minutes)…",
+      "ok": "OK"
+    },
+    "versions": "Versions",
+    "loading": "Loading…",
+    "loadingStrategy": "Loading the strategy…",
+    "empty": "No strategy yet. Click “New strategy” — you need at least one connected network or a choice of networks.",
+    "status": {
+      "draft": "draft",
+      "active": "active",
+      "archived": "archived"
+    },
+    "listMeta": "v{version} · {weeks} wk",
+    "assumptionsTag": "assumptions",
+    "percent": "{value}%",
+    "form": {
+      "description": "20 tokens. Uses the brand profile, imported post history (when there is any), holidays and your goals. Networks: the brand's active accounts.",
+      "start": "Period start",
+      "duration": "Duration",
+      "weeks": "{count, plural, one {# week} other {# weeks}}",
+      "postsPerWeek": "Posts per week (optional)",
+      "goals": "Goals (one per line, up to 5)",
+      "goalsPlaceholder": "More service enquiries\nBrand awareness in your city",
+      "notes": "Notes (optional)",
+      "submit": "Generate strategy"
+    },
+    "calendar": {
+      "created": "Created {count, plural, one {# draft} other {# drafts}}",
+      "duplicate": "{count, plural, one {# already exists} other {# already exist}}",
+      "past": "{count} in the past",
+      "noAccount": "{count} without an account for the network"
+    },
+    "detail": {
+      "meta": "version {version} · {weeks, plural, one {# week} other {# weeks}} · {perWeek, plural, one {# post} other {# posts}} a week · {planned, plural, one {# draft} other {# drafts}} from the strategy",
+      "assumptions": "Part of the plan is based on assumptions (there is not enough post history yet). Check the times marked “assumption” after the first few weeks."
+    },
+    "activate": "Activate",
+    "backToDraft": "Back to draft",
+    "archive": "Archive",
+    "makeCalendar": "Create calendar ({count, plural, one {# draft} other {# drafts}})",
+    "openCalendar": "Open calendar",
+    "goals": "Goals",
+    "networks": "Networks",
+    "perWeekValue": "{count} a week",
+    "weeklyThemes": "Weekly themes",
+    "cols": {
+      "week": "Wk",
+      "theme": "Theme",
+      "angle": "Angle",
+      "pillar": "Pillar",
+      "campaign": "Campaign"
+    },
+    "bestTimes": "Best times",
+    "bestTimesHint": "The brand's local time. “data” = from post history, “assumption” = until data arrives.",
+    "source": {
+      "data": "data",
+      "assumption": "assumption"
+    },
+    "hashtags": {
+      "title": "Hashtags",
+      "core": "Core:",
+      "niche": "Topical:",
+      "local": "Local:",
+      "avoid": "Avoid:"
+    },
+    "assumptions": "Assumptions",
+    "pillars": {
+      "title": "Content pillars",
+      "description": "The share shows how many posts in the period belong to the pillar.",
+      "delete": "Delete pillar {name}",
+      "empty": "No pillars yet.",
+      "new": "New pillar",
+      "placeholder": "e.g. Education",
+      "share": "Share %"
+    },
+    "add": "Add",
+    "delete": "Delete",
+    "campaigns": {
+      "title": "Campaigns",
+      "empty": "No campaigns in this period.",
+      "new": "New campaign",
+      "from": "From",
+      "to": "To"
+    }
+  },
+  "brandBrain": {
+    "title": "Website and brand profile",
+    "subtitle": "Brand: {brand}. Sova reads the website and builds a profile it uses every time it generates content.",
+    "notFound": "not found",
+    "yes": "yes",
+    "no": "no",
+    "analysis": {
+      "title": "Website analysis",
+      "description": "The first analysis is free; each one after that costs tokens. Sova reads at most as many pages as your plan allows.",
+      "url": "Website address",
+      "placeholder": "https://example.com",
+      "running": "Analysis in progress…",
+      "again": "Analyse again",
+      "start": "Analyse website",
+      "verifyEmail": "Confirm your email to start the analysis.",
+      "viewOnly": "Your role can only view the profile.",
+      "pages": "{fetched}/{found} pages · {status}",
+      "readPages": "Pages read ({count})"
+    },
+    "profile": {
+      "missing": "There is no profile yet. Run a website analysis, or enter the details by hand once the profile has been created.",
+      "version": "version {version}",
+      "source": "source: {source}",
+      "confidence": "overall confidence {value}%",
+      "chunks": "{count, plural, one {# knowledge snippet} other {# knowledge snippets}}",
+      "closeEdit": "Close editing",
+      "edit": "Edit key fields"
+    },
+    "generated": {
+      "ai": "AI",
+      "heuristic": "without AI (heuristics)",
+      "manual": "manual"
+    },
+    "confidence": {
+      "high": "high",
+      "medium": "medium",
+      "low": "low"
+    },
+    "field": {
+      "confidence": "confidence: {level}",
+      "lockedTitle": "Edited by hand; the analysis does not change this field",
+      "locked": "locked",
+      "unlock": "unlock",
+      "source": "source: {count, plural, one {# page} other {# pages}}"
+    },
+    "identity": {
+      "title": "Identity",
+      "name": "Name",
+      "tagline": "Tagline",
+      "description": "Description",
+      "industry": "Industry",
+      "location": "Location",
+      "contentLocale": "Content language"
+    },
+    "offer": {
+      "title": "Offer",
+      "services": "Services",
+      "products": "Products",
+      "differentiators": "What makes it different",
+      "prices": "Prices from the website"
+    },
+    "voice": {
+      "title": "Brand voice",
+      "tone": "Tone",
+      "address": "Form of address",
+      "informal": "informal (casual “you”)",
+      "formal": "formal (polite “you”)",
+      "emoji": "Emoji",
+      "samples": "Sample phrases",
+      "forbidden": "Banned words",
+      "hashtags": "Hashtags"
+    },
+    "audience": {
+      "title": "Audience and facts",
+      "segments": "Segments",
+      "pains": "Audience pain points",
+      "market": "Market",
+      "facts": "Facts (allowed in posts)"
+    },
+    "visual": {
+      "title": "Visuals",
+      "logo": "Logo",
+      "logoAlt": "Brand logo",
+      "logoMissing": "not found",
+      "colors": "Colours",
+      "fonts": "Fonts",
+      "fontsValue": "headings: {headings} → {mappedHeadings}; body: {body} → {mappedBody}",
+      "photoStyle": "Photo style",
+      "photoDetails": "light: {lighting} · mood: {mood} · people: {people}",
+      "notAssessed": "not assessed"
+    },
+    "colors": {
+      "primary": "primary",
+      "secondary": "secondary",
+      "accent": "accent",
+      "light": "light",
+      "dark": "dark"
+    },
+    "contact": {
+      "title": "Contact, social media and content",
+      "email": "Email",
+      "phone": "Phone",
+      "address": "Address",
+      "social": "Social media",
+      "blogTopics": "Blog topics",
+      "pillars": "Content pillars"
+    },
+    "versions": {
+      "title": "Profile versions",
+      "description": "Every analysis and every manual edit creates a new version. You can restore an older one.",
+      "confidence": "confidence {value}%",
+      "current": "current",
+      "restore": "Restore this version"
+    },
+    "edit": {
+      "title": "Manual edits",
+      "description": "Edited fields are locked: future analyses will not change them until you unlock them.",
+      "brandDescription": "Brand description",
+      "tone": "Tone (adjectives, comma-separated)",
+      "emoji": "Emoji are allowed",
+      "forbidden": "Banned words (comma-separated)",
+      "services": "Services (one per line)",
+      "facts": "Facts allowed in posts (one per line)",
+      "saving": "Saving…",
+      "save": "Save as a new version"
+    }
+  },
+  "studioTools": {
+    "title": "Studio manual tools",
+    "back": "← Back to the chat with Sova",
+    "brand": "Brand: {brand}",
+    "balance": {
+      "loading": "Loading balance…",
+      "error": "Could not load the token balance.",
+      "available": "{count, plural, one {<b>#</b> token available} other {<b>#</b> tokens available}}",
+      "reserved": "({count} reserved)"
+    },
+    "tabs": {
+      "compose": "New post",
+      "text": "Post text ({price})",
+      "template": "Template visual ({price})",
+      "unsplash": "Unsplash photos",
+      "pexels": "Pexels videos and photos",
+      "canva": "From Canva ({price})",
+      "photo": "Image from a photo ({price})",
+      "prompt": "Image from a prompt ({price})"
+    },
+    "upload": {
+      "label": "Photo (JPG, PNG, WebP, up to 20 MB)",
+      "uploading": "Uploading…",
+      "alt": "Uploaded photo",
+      "remove": "Remove"
+    },
+    "networks": "Networks",
+    "topic": "What is the post about?",
+    "goal": "Goal",
+    "goals": {
+      "engagement": "Engagement",
+      "awareness": "Brand awareness",
+      "sales": "Sale or enquiry",
+      "education": "Education"
+    },
+    "cta": "Call to action (optional)",
+    "format": "Format",
+    "generate": "GENERATE",
+    "generating": "Generating…",
+    "sending": "Sending…",
+    "saving": "Saving…",
+    "loading": "Loading…",
+    "search": "Search",
+    "queued": "Queued for processing…",
+    "noResults": "No results for “{query}”.",
+    "charged": "charged {count, plural, one {# token} other {# tokens}}",
+    "addToLibrary": "ADD TO LIBRARY",
+    "addedToLibrary": "Added to the brand library.",
+    "formats": {
+      "text": {
+        "label": "Text only",
+        "hint": "A post without an image, for Facebook, LinkedIn and X."
+      },
+      "image": {
+        "label": "Image",
+        "hint": "One photo or visual with text below it."
+      },
+      "carousel": {
+        "label": "Carousel",
+        "hint": "Several photos in one post that people swipe through."
+      },
+      "video": {
+        "label": "Video (Reels)",
+        "hint": "A short vertical video with a caption."
+      },
+      "story": {
+        "label": "Story",
+        "hint": "A vertical image or video that lasts 24 hours, with no caption."
+      },
+      "link": {
+        "label": "Link",
+        "hint": "Text with a link and a page preview."
+      }
+    },
+    "text": {
+      "title": "Post text",
+      "description": "With or without a photo. One request gives a version for each network you choose.",
+      "topicPlaceholder": "E.g. a new air conditioner cleaning service, 20% off until the end of the month for existing customers",
+      "variants": "Variants per network",
+      "model": "Model {model}",
+      "photo": "Photo: {description}",
+      "firstComment": "First comment: {text}"
+    },
+    "image": {
+      "photoTitle": "Image from a photo",
+      "promptTitle": "Image from a prompt",
+      "photoDescription": "Upload your photo and describe the post you want in one field.",
+      "promptDescription": "Describe the visual; the brand style and colours are added automatically once Brand Brain is filled in.",
+      "photoPrompt": "What kind of post do you want?",
+      "promptLabel": "Image description",
+      "quality": "Quality",
+      "standard": "Standard (8 tokens)",
+      "premium": "Premium, text on the image (15 tokens)",
+      "waiting": "Waiting for the job…",
+      "refreshing": "{message} (refreshes every 2 s)",
+      "failed": "Generation failed.",
+      "alt": "AI-generated image",
+      "generated": "AI-generated · model {model}"
+    },
+    "templates": {
+      "auto": "Automatic",
+      "photo-overlay": "Photo with a headline",
+      "solid": "Brand colour and message",
+      "split": "Photo beside the text",
+      "announcement": "Framed announcement"
+    },
+    "unsplash": {
+      "placeholder": "E.g. air conditioner, office, coffee",
+      "searching": "Searching Unsplash…",
+      "notConfigured": "Unsplash is not set up; upload your own photo or create a visual without an image.",
+      "photoAlt": "Unsplash photo",
+      "selected": "Selected: {attribution}",
+      "remove": "remove"
+    },
+    "visual": {
+      "title": "Template visual",
+      "description": "Colours, fonts and the logo come from the Brand Brain profile. A photo from Unsplash (AI picks the best one), your own photo or no image. 2 tokens.",
+      "headline": "Headline on the image",
+      "headlinePlaceholder": "E.g. Air conditioner service from £49",
+      "subtext": "Subheading (optional)",
+      "ctaPlaceholder": "Book an appointment",
+      "template": "Template",
+      "image": "Image",
+      "sources": {
+        "unsplash": "Unsplash photo",
+        "asset": "My photo",
+        "none": "No image"
+      },
+      "unsplashHint": "Pick a photo or leave it empty: Sova searches by the headline and AI picks the best one.",
+      "queryPlaceholder": "Term for the automatic search (optional)",
+      "submit": "CREATE VISUAL",
+      "failed": "The visual was not created.",
+      "templateUsed": "Template {template}"
+    },
+    "canva": {
+      "prompt": "Want to polish it in Canva? <link>Connect Canva</link>.",
+      "opening": "Opening Canva…",
+      "edit": "Polish in Canva (2)",
+      "importing": "Importing…",
+      "importDesign": "Import the finished design from Canva (2)",
+      "designAlt": "Design from Canva"
+    },
+    "unsplashPanel": {
+      "title": "Photo from Unsplash",
+      "description": "Free photos, no AI and no tokens. The chosen photo goes into the brand library with the author's name, and you pick it from the library in a post.",
+      "reused": "The photo is already in the library."
+    },
+    "canvaImport": {
+      "title": "Import from Canva",
+      "description": "Make a post or video in Canva with its templates, photos and footage, then import it here into the brand library. Image or video, {price, plural, one {# token} other {# tokens}}, no AI.",
+      "checking": "Checking the Canva connection…",
+      "notConfigured": "Canva is not set up on the server.",
+      "disabled": "Canva is currently switched off.",
+      "connect": "<link>Connect Canva</link> to see your designs here.",
+      "searchPlaceholder": "Search by design name (optional)",
+      "searchLabel": "Search Canva designs",
+      "loading": "Loading designs…",
+      "noResults": "No designs for “{query}”.",
+      "empty": "You have no designs in Canva yet.",
+      "noThumb": "No thumbnail",
+      "untitled": "Untitled",
+      "more": "More designs",
+      "importingImage": "Importing image…",
+      "asImage": "IMPORT AS IMAGE ({price})",
+      "asVideo": "IMPORT AS VIDEO ({price})",
+      "hint": "The image is the first page of the design at its own size. Canva makes the video, which takes from half a minute to a few minutes; you can leave the page and the video will arrive in the library.",
+      "saved": "Saved in the brand library.",
+      "videoFailed": "The video was not imported.",
+      "videoLabel": "Video from Canva",
+      "videoDone": "The video is in the brand library"
+    },
+    "pexels": {
+      "title": "Videos and photos from Pexels",
+      "description": "Free footage and photos, no AI and no tokens. What you choose goes into the brand library with the author's name, and you pick it from the library in a post. For Reels and stories, choose vertical clips.",
+      "kind": "Type",
+      "video": "Video",
+      "photo": "Photos",
+      "placeholder": "E.g. nightlife, coffee, office, city night",
+      "searchLabel": "Search Pexels",
+      "credit": "Footage and photos come from <link>Pexels</link>. Search works best with English terms.",
+      "searching": "Searching Pexels…",
+      "notConfigured": "Pexels is not switched on yet. Waiting for the key.",
+      "videoAlt": "Clip from Pexels",
+      "photoAlt": "Photo from Pexels",
+      "duration": "{seconds} s",
+      "vertical": "vertical",
+      "downloading": "Downloading the clip…",
+      "reused": "Already in the library."
+    },
+    "compose": {
+      "title": "New post",
+      "description": "Choose the networks, language and post type, or let AI choose. Sova writes the text with hashtags, finds a photo or video and creates a draft for you to review and schedule.",
+      "language": "Language",
+      "format": "Post type",
+      "formatAuto": "AI chooses (mixes types)",
+      "source": "Photo or video",
+      "sourceAuto": "AI chooses (Unsplash for photos, Pexels for video)",
+      "sourceTemplate": "Template visual ({count, plural, one {# token} other {# tokens}})",
+      "look": "Look",
+      "lookDesign": "Design in the brand style",
+      "lookPhoto": "Photo only",
+      "closeStyles": "Close styles",
+      "changeStyle": "Change style",
+      "slidesHint": "Gemini writes the slides and the chosen style draws them in the brand colours. You pay only for the text, not the slides.",
+      "autoDesigned": "AI chooses between a single post and a carousel, depending on how much the topic has to say.",
+      "autoAmong": "AI chooses the type that suits the topic best, from: {list}.",
+      "noCommon": "The chosen networks have no post type in common. Create separate posts.",
+      "noPexels": "Pexels is not switched on yet, so add video from Canva or the library.",
+      "noUnsplash": "Unsplash is not switched on yet.",
+      "topicPlaceholder": "E.g. Friday at the club: guest DJ, free entry until midnight",
+      "ctaPlaceholder": "Message us to book a table",
+      "link": "Link (empty = brand website)",
+      "hashtags": "Hashtags",
+      "creating": "Creating the post…",
+      "submit": "CREATE POST ({count, plural, one {# token} other {# tokens}})",
+      "created": "Created: <b>{format}</b>",
+      "accounts": "accounts: {count}",
+      "open": "Open the draft and schedule",
+      "videoLabel": "Video for the post",
+      "visualAlt": "Visual for the post"
+    }
+  }
+}

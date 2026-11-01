@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 
 import { BrandAccountHeader } from '@/components/brand/brand-account-header'
 import { CanvaCard } from '@/components/app/canva-card'
@@ -15,16 +16,19 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { toContentLocale } from '@/config/locales'
 import { deleteBrandAction } from '@/lib/auth/actions'
 import { getViewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
-import { pluralSr } from '@/lib/plural'
 import { authProviders } from '@/services/account'
 import { listBrands } from '@/services/brands'
 import { getWorkspacePlan } from '@/services/plans'
 import { countScheduledPosts } from '@/services/posts/publisher'
 
-export const metadata: Metadata = { title: 'Podešavanja' }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('settings')
+  return { title: t('metaTitle') }
+}
 
 export default async function SettingsPage({ searchParams }: PageProps<'/app/settings'>) {
   const viewer = await getViewer()
@@ -44,17 +48,25 @@ export default async function SettingsPage({ searchParams }: PageProps<'/app/set
   )
   const isAdmin = ADMIN_ROLES.includes(current.role)
   const canEdit = EDIT_ROLES.includes(current.role)
+  const [t, tb, tc] = await Promise.all([
+    getTranslations('settings'),
+    getTranslations('billing'),
+    getTranslations('contentLocale'),
+  ])
+  // naziv plana iz baze se prevodi po kodu; nepoznat kod ostaje sa nazivom iz baze
+  const planKey = `planNames.${plan.code}` as 'planNames.free'
+  const planName = tb.has(planKey) ? tb(planKey) : plan.name
 
   return (
     <div className="space-y-8">
       <div className="space-y-3">
         <BrandAccountHeader />
-        <p className="text-sm text-muted-foreground">Profil, radni prostor i brendovi.</p>
+        <p className="text-sm text-muted-foreground">{t('intro')}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Vaš profil</CardTitle>
+          <CardTitle>{t('profile.title')}</CardTitle>
           <CardDescription>{viewer.user.email}</CardDescription>
         </CardHeader>
         <CardContent>
@@ -64,20 +76,28 @@ export default async function SettingsPage({ searchParams }: PageProps<'/app/set
             timezone={viewer.profile.timezone}
           />
           <p className="mt-4 text-sm text-muted-foreground">
-            Dvofaktorska zaštita i lozinka:{' '}
-            <Link href="/app/settings/security" className="underline">
-              Bezbednost
-            </Link>
+            {t.rich('profile.security', {
+              link: (chunks) => (
+                <Link href="/app/settings/security" className="underline">
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
         </CardContent>
       </Card>
 
       <Card>
         <CardHeader>
-          <CardTitle>Radni prostor</CardTitle>
+          <CardTitle>{t('workspace.title')}</CardTitle>
           <CardDescription>
-            Plan <Badge variant="secondary">{plan.name}</Badge> · do {plan.limits.brands} brenda,{' '}
-            {plan.limits.social_accounts} mreža, {plan.limits.members} člana.
+            {t.rich('workspace.plan', {
+              plan: planName,
+              brands: plan.limits.brands,
+              networks: plan.limits.social_accounts,
+              members: plan.limits.members,
+              badge: (chunks) => <Badge variant="secondary">{chunks}</Badge>,
+            })}
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -85,8 +105,10 @@ export default async function SettingsPage({ searchParams }: PageProps<'/app/set
             <WorkspaceForm workspaceId={current.workspaceId} name={current.name} type={current.type} />
           ) : (
             <p className="text-sm text-muted-foreground">
-              {current.name} · {current.type === 'agency' ? 'agencija' : 'biznis'}. Samo vlasnik i
-              administrator menjaju podešavanja.
+              {t('workspace.readOnly', {
+                name: current.name,
+                type: current.type === 'agency' ? t('workspace.agency') : t('workspace.business'),
+              })}
             </p>
           )}
         </CardContent>
@@ -96,8 +118,8 @@ export default async function SettingsPage({ searchParams }: PageProps<'/app/set
 
       <Card>
         <CardHeader>
-          <CardTitle>Brendovi</CardTitle>
-          <CardDescription>Svaki brend ima svoj Brand Brain, mreže i kalendar.</CardDescription>
+          <CardTitle>{t('brands.title')}</CardTitle>
+          <CardDescription>{t('brands.description')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
           <ul className="divide-y">
@@ -106,9 +128,10 @@ export default async function SettingsPage({ searchParams }: PageProps<'/app/set
                 <div>
                   <div className="font-medium">{b.name}</div>
                   <div className="text-xs text-muted-foreground">
-                    {b.website_url ?? 'bez sajta'} · {b.content_locale} · {b.timezone}
+                    {b.website_url ?? t('brands.noWebsite')} · {tc(toContentLocale(b.content_locale))} ·{' '}
+                    {b.timezone}
                     {scheduledCounts[b.id]
-                      ? ` · ${scheduledCounts[b.id]} ${pluralSr(scheduledCounts[b.id] ?? 0, 'zakazana objava', 'zakazane objave', 'zakazanih objava')} (arhiviranje ih otkazuje)`
+                      ? ` · ${t('brands.scheduled', { count: scheduledCounts[b.id] ?? 0 })}`
                       : ''}
                   </div>
                   {canEdit ? (
@@ -123,7 +146,7 @@ export default async function SettingsPage({ searchParams }: PageProps<'/app/set
                   <form action={deleteBrandAction}>
                     <input type="hidden" name="brandId" value={b.id} />
                     <Button type="submit" variant="ghost" size="sm">
-                      Arhiviraj
+                      {t('brands.archive')}
                     </Button>
                   </form>
                 ) : null}
@@ -135,11 +158,14 @@ export default async function SettingsPage({ searchParams }: PageProps<'/app/set
               <CreateBrandForm workspaceId={current.workspaceId} />
             ) : (
               <p className="text-sm text-muted-foreground">
-                Dostigli ste limit brendova za plan {plan.name}.{' '}
-                <Link href="/app/billing" className="underline">
-                  Nadogradite plan
-                </Link>
-                .
+                {t.rich('brands.limit', {
+                  plan: planName,
+                  link: (chunks) => (
+                    <Link href="/app/billing" className="underline">
+                      {chunks}
+                    </Link>
+                  ),
+                })}
               </p>
             )
           ) : null}
@@ -151,9 +177,7 @@ export default async function SettingsPage({ searchParams }: PageProps<'/app/set
       <PrivacyCard
         email={viewer.user.email}
         hasPassword={auth.providers.includes('email')}
-        disabledReason={
-          viewer.impersonation ? 'Izvoz i brisanje naloga nisu dostupni tokom impersonacije.' : null
-        }
+        disabledReason={viewer.impersonation ? t('impersonation') : null}
       />
     </div>
   )

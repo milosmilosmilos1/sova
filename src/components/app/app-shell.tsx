@@ -21,6 +21,7 @@ import {
   Workflow,
 } from 'lucide-react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 
 import { ImpersonationBanner } from '@/components/admin/impersonation-banner'
@@ -47,21 +48,12 @@ export interface ShellViewer {
   impersonation: { readOnly: boolean; expiresAt: string } | null
 }
 
-const ROLE_LABEL: Record<Membership['role'], string> = {
-  owner: 'vlasnik',
-  admin: 'administrator',
-  editor: 'urednik',
-  approver: 'odobravalac',
-  viewer: 'posmatrač',
-}
-
 export function AppShell({
   viewer,
   memberships,
   current,
   brands,
   currentBrand,
-  showLocaleSwitcher = false,
   waitingApprovals = 0,
   children,
 }: {
@@ -70,12 +62,11 @@ export function AppShell({
   current: Membership | null
   brands: BrandSummary[]
   currentBrand: BrandSummary | null
-  /** izbor jezika interfejsa (D-108); prekidač ui_languages dok se svi ekrani ne prevedu */
-  showLocaleSwitcher?: boolean
   /** broj nacrta koji čekaju odluku (D-108), značka uz „Odobravanje” */
   waitingApprovals?: number
   children: ReactNode
 }) {
+  const t = useTranslations('shell')
   return (
     <>
       <AuthSync />
@@ -89,7 +80,7 @@ export function AppShell({
       <div className="flex min-h-full flex-1 flex-col md:flex-row">
         <aside className="flex w-full flex-col gap-5 border-b border-sidebar-border bg-sidebar p-4 text-sidebar-foreground md:sticky md:top-0 md:h-screen md:w-64 md:overflow-y-auto md:border-r md:border-b-0">
           <div className="flex items-center justify-between">
-            <Link href="/app" aria-label="Sova, početna">
+            <Link href="/app" aria-label={t('home')}>
               <SovaLogo />
             </Link>
             <NotificationsBell workspaceId={current?.workspaceId ?? null} />
@@ -102,7 +93,7 @@ export function AppShell({
                 <AutoSubmitSelect
                   name="workspaceId"
                   value={current.workspaceId}
-                  ariaLabel="Radni prostor"
+                  ariaLabel={t('workspace')}
                   options={memberships.map((m) => ({ value: m.workspaceId, label: m.name }))}
                 />
               </form>
@@ -112,103 +103,103 @@ export function AppShell({
                   <AutoSubmitSelect
                     name="brandId"
                     value={currentBrand.id}
-                    ariaLabel="Brend"
+                    ariaLabel={t('brand')}
                     options={brands.map((b) => ({ value: b.id, label: b.name }))}
                   />
                 </form>
               ) : null}
               <p className="truncate px-1 text-xs text-muted-foreground">
-                {ROLE_LABEL[current.role]}
+                {t(`roles.${current.role}`)}
                 {currentBrand ? ` · ${currentBrand.name}` : ''}
               </p>
             </div>
           ) : null}
 
-          <nav className="flex gap-1 overflow-x-auto md:flex-col md:gap-4" aria-label="Glavna navigacija">
-            <NavGroup label="Rad">
+          <nav className="flex gap-1 overflow-x-auto md:flex-col md:gap-4" aria-label={t('mainNav')}>
+            <NavGroup label={t('groups.work')}>
               <NavLink href="/app" exact>
                 <Home aria-hidden />
-                Početna
+                {t('nav.home')}
               </NavLink>
               <NavLink href="/app/flows">
                 <Workflow aria-hidden />
-                Automatizuj objave
+                {t('nav.flows')}
               </NavLink>
               <NavLink href="/app/approvals">
                 <CheckCircle2 aria-hidden />
-                Odobravanje
+                {t('nav.approvals')}
                 {waitingApprovals ? <Badge className="ml-auto">{waitingApprovals}</Badge> : null}
               </NavLink>
               <NavLink href="/app/inbox">
                 <Inbox aria-hidden />
-                Inbox
+                {t('nav.inbox')}
               </NavLink>
               <NavLink href="/app/automations">
                 <MessageCircleReply aria-hidden />
-                DM automatizacija
+                {t('nav.automations')}
               </NavLink>
               <NavLink href="/app/posts">
                 <FileText aria-hidden />
-                Objave
+                {t('nav.posts')}
               </NavLink>
               <NavLink href="/app/calendar">
                 <CalendarDays aria-hidden />
-                Kalendar
+                {t('nav.calendar')}
               </NavLink>
             </NavGroup>
-            <NavGroup label="Plan i rast">
+            <NavGroup label={t('groups.growth')}>
               <NavLink href="/app/plan">
                 <CalendarRange aria-hidden />
-                Mesečni plan
+                {t('nav.plan')}
               </NavLink>
               <NavLink href="/app/strategy">
                 <Target aria-hidden />
-                Strategija
+                {t('nav.strategy')}
               </NavLink>
               <NavLink href="/app/analytics">
                 <TrendingUp aria-hidden />
-                Analitika
+                {t('nav.analytics')}
               </NavLink>
               <NavLink href="/app/autopilot">
                 <Bot aria-hidden />
-                Autopilot
+                {t('nav.autopilot')}
               </NavLink>
             </NavGroup>
-            <NavGroup label="Sadržaj">
+            <NavGroup label={t('groups.content')}>
               <NavLink href="/app/studio">
                 <Sparkles aria-hidden />
-                AI Studio
+                {t('nav.studio')}
               </NavLink>
               <NavLink href="/app/gallery">
                 <Images aria-hidden />
-                Galerija
+                {t('nav.gallery')}
               </NavLink>
               <NavLink href="/app/brain">
                 <Brain aria-hidden />
-                Brain
+                {t('nav.brain')}
               </NavLink>
             </NavGroup>
-            <NavGroup label="Podešavanja">
+            <NavGroup label={t('groups.settings')}>
               <NavLink href="/app/accounts">
                 <Share2 aria-hidden />
-                Mreže
+                {t('nav.accounts')}
               </NavLink>
               <NavLink href="/app/team">
                 <Users aria-hidden />
-                Tim
+                {t('nav.team')}
               </NavLink>
               <NavLink href="/app/brand" also={['/app/billing', '/app/settings']}>
                 <Settings aria-hidden />
-                Brend i nalog
+                {t('nav.brandAccount')}
               </NavLink>
               <NavLink href="/app/ideas">
                 <Lightbulb aria-hidden />
-                Predlozi i podrška
+                {t('nav.ideas')}
               </NavLink>
               {viewer.platformRole === 'platform_admin' && !viewer.impersonation ? (
                 <NavLink href="/admin">
                   <ShieldCheck aria-hidden />
-                  Admin
+                  {t('nav.admin')}
                   {!viewer.mfaVerified ? <Badge variant="outline">MFA</Badge> : null}
                 </NavLink>
               ) : null}
@@ -216,7 +207,7 @@ export function AppShell({
           </nav>
 
           <div className="mt-auto space-y-3 border-t border-sidebar-border pt-4">
-            {showLocaleSwitcher ? <LocaleSwitcher /> : null}
+            <LocaleSwitcher />
             <div className="flex items-center gap-3 text-sm">
               <span
                 aria-hidden
@@ -231,12 +222,12 @@ export function AppShell({
               <form action={signOutAction}>
                 <button
                   type="submit"
-                  title={viewer.impersonation ? 'Završite impersonaciju' : 'Odjavite se'}
+                  title={viewer.impersonation ? t('endImpersonation') : t('signOut')}
                   className="grid size-8 place-items-center rounded-md text-muted-foreground transition-colors hover:bg-sidebar-accent hover:text-foreground"
                 >
                   <LogOut className="size-4" aria-hidden />
                   <span className="sr-only">
-                    {viewer.impersonation ? 'Završite impersonaciju' : 'Odjavite se'}
+                    {viewer.impersonation ? t('endImpersonation') : t('signOut')}
                   </span>
                 </button>
               </form>

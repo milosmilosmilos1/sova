@@ -1,1 +1,675 @@
-{}
+{
+  "analytics": {
+    "metaTitle": "Analitika",
+    "title": "Analitika",
+    "subtitle": "{brand} · zona {timezone}. Metrike objava stižu 1 h, 24 h, 7 i 30 dana posle objave; metrike naloga svakog jutra.",
+    "period": "Period",
+    "days": "{count, plural, one {# dan} few {# dana} other {# dana}}",
+    "generate": "Generiši uvide",
+    "generating": "Analiziram…",
+    "notCreated": "Uvidi nisu napravljeni.",
+    "loading": "Učitavam…",
+    "percent": "{value} %",
+    "delta": {
+      "none": "bez poređenja",
+      "value": "{value} % u odnosu na prethodni period"
+    },
+    "stats": {
+      "posts": "Objavljeno",
+      "withMetrics": "{count} sa metrikama",
+      "reach": "Doseg",
+      "engagement": "Angažovanje",
+      "engagementHint": "reakcije + komentari + deljenja + čuvanja",
+      "rate": "Stopa angažovanja",
+      "rateHint": "angažovanje / doseg"
+    },
+    "chart": {
+      "title": "Doseg i angažovanje po danu objave",
+      "description": "Svaka objava se računa na dan kad je izašla, sa poslednjim snimkom metrika ({timezone}).",
+      "reachWeek": "Doseg po nedelji",
+      "reachDay": "Doseg po danu",
+      "engagementWeek": "Angažovanje po nedelji",
+      "engagementDay": "Angažovanje po danu",
+      "weekOf": "nedelja od {date}",
+      "empty": "Još nema podataka za ovaj period."
+    },
+    "byNetwork": "Po mreži",
+    "byNetworkEmpty": "Nema objavljenih objava u periodu.",
+    "byPillar": "Po stubu sadržaja",
+    "byPillarEmpty": "Objave u periodu nemaju dodeljen stub (dodelite ga u strategiji ili pri izradi).",
+    "top": {
+      "title": "Najbolje objave",
+      "description": "Po angažovanju iz merodavnog snimka (najduži horizont)."
+    },
+    "followers": {
+      "title": "Pratioci",
+      "account": "Nalog",
+      "start": "Početak",
+      "end": "Kraj",
+      "change": "Promena",
+      "empty": "Još nema dnevnih metrika naloga za ovaj period."
+    },
+    "insights": {
+      "title": "AI uvidi",
+      "description": "Nedeljno automatski (nedeljom uveče) ili na zahtev; svaki uvid navodi objave na kojima se zasniva.",
+      "period": "Period {from} – {to}",
+      "confidence": "pouzdanost {value} %",
+      "evidence": "{count, plural, one {# objava kao dokaz} few {# objave kao dokaz} other {# objava kao dokaz}}",
+      "suggestion": "predlog: {title}",
+      "empty": "Još nema uvida. Treba bar 3 objave sa metrikama u periodu."
+    },
+    "allPosts": "Sve objave u periodu",
+    "cols": {
+      "posts": "Objave",
+      "reach": "Doseg",
+      "engagement": "Angažovanje",
+      "rate": "Stopa",
+      "date": "Datum",
+      "network": "Mreža",
+      "post": "Objava",
+      "breakdown": "Reakcije / kom. / delj. / čuv.",
+      "snapshot": "Snimak"
+    },
+    "postsEmpty": "Nema objava sa metrikama u periodu.",
+    "onNetwork": "na mreži",
+    "refresh": "Osveži"
+  },
+  "reports": {
+    "title": "Mesečni izveštaj (PDF)",
+    "description": "Isti brojevi kao na ovoj strani, za ceo kalendarski mesec u zoni brenda i uz poređenje sa prethodnim mesecom. Prvog u mesecu ujutru izveštaj za prethodni mesec stiže sam: vlasniku i administratorima kao obaveštenje, a klijentu emailom ako su adrese upisane ispod.",
+    "month": "Mesec",
+    "currentMonth": "{month} (u toku)",
+    "create": "Napravi PDF",
+    "creating": "Pravim PDF…",
+    "sentToClient": "poslat klijentu na {count, plural, one {# adresu} few {# adrese} other {# adresa}}",
+    "sentToTeam": "poslat timu",
+    "created": "napravljen {when}",
+    "download": "Preuzmi",
+    "empty": "Još nema napravljenih izveštaja.",
+    "recipientsLabel": "Klijent dobija izveštaj na (do 5 adresa)",
+    "placeholder": "klijent@firma.rs, direktor@firma.rs",
+    "saving": "Čuvam…",
+    "hint": "Adrese odvojite zarezom. Prazno polje znači da izveštaj ide samo timu.",
+    "saved": "Sačuvano.",
+    "recipientsTitle": "Klijent dobija izveštaj na",
+    "noRecipients": "nijednu adresu (izveštaj ide samo timu)",
+    "recipientsNote": "{list}. Adrese menja vlasnik ili administrator."
+  },
+  "autopilot": {
+    "metaTitle": "Autopilot",
+    "title": "Autopilot",
+    "loading": "Učitavam…",
+    "subtitle": "{brand} · zona {timezone}. Nedeljni prolaz ponedeljkom u 06:00 priprema nedelju od {from} do {to}.",
+    "resume": "Nastavi",
+    "pauseAll": "Pauziraj sve",
+    "runNow": "Pripremi narednu nedelju sada",
+    "runStarted": "Prolaz za nedelju od {date} je pokrenut; nacrti stižu za nekoliko minuta.",
+    "paused": "Brend je pauziran: Autopilot ne radi i zakazane objave stoje. „Nastavi” vraća u red objave čiji termin nije prošao.",
+    "pausedSince": "Brend je pauziran od {date}: Autopilot ne radi i zakazane objave stoje. „Nastavi” vraća u red objave čiji termin nije prošao.",
+    "budget": {
+      "title": "Budžet za {month}",
+      "of": "/ {count, plural, one {# token} few {# tokena} other {# tokena}}",
+      "unlimited": "/ bez limita tokena",
+      "progress": "Potrošnja budžeta",
+      "stopped": "Budžet je potrošen: Autopilot ne pravi nove nacrte do sledećeg meseca ili povećanja budžeta.",
+      "warning": "Potrošeno {percent} %; upozorenje je poslato vlasnicima.",
+      "unlimitedText": "Bez posebnog limita; troši se stanje tokena radnog prostora.",
+      "remaining": "Preostalo {count, plural, one {# token} few {# tokena} other {# tokena}}. Tekst objave 2, vizual 2, strategija 20."
+    },
+    "strategy": {
+      "label": "Aktivna strategija",
+      "none": "Nema aktivne strategije",
+      "active": "Nacrti se prave iz tema, stubova i termina ove strategije.",
+      "auto": "Na nivou 2 i 3 Autopilot sam pravi strategiju pri sledećem prolazu.",
+      "manual": "Na nivou 1 Autopilot čeka da napravite i aktivirate strategiju.",
+      "link": "Strategija"
+    },
+    "runs": {
+      "title": "Poslednji prolazi",
+      "kind": "Vrsta",
+      "period": "Period od",
+      "status": "Status",
+      "result": "Rezultat",
+      "tokens": "Tokeni",
+      "weekly": "nedeljni",
+      "monthly": "mesečni",
+      "empty": "Još nema prolaza."
+    },
+    "runStatus": {
+      "running": "u toku",
+      "succeeded": "gotovo",
+      "partial": "delimično",
+      "skipped": "preskočeno",
+      "failed": "neuspelo"
+    },
+    "summary": {
+      "planned": "{count, plural, one {# nacrt} few {# nacrta} other {# nacrta}}",
+      "submitted": "{count} na odobrenju",
+      "scheduled": "{count} zakazano",
+      "returned": "{count} vraćeno",
+      "budgetStopped": "budžet potrošen",
+      "suggested": "predlog strategije u Inbox-u",
+      "strategyCreated": "strategija napravljena"
+    },
+    "settings": {
+      "title": "Nivo automatizacije",
+      "description": "Bira se po brendu. Menjaju vlasnik i administrator.",
+      "levelsLabel": "Nivo Autopilota",
+      "current": "trenutno",
+      "soon": "uskoro",
+      "budget": "Mesečni budžet (tokeni)",
+      "noLimit": "bez limita",
+      "deadline": "Rok za odobrenje (sati pre termina)",
+      "unapproved": "Neodobrene posle roka (nivo 2+)",
+      "skip": "preskoči",
+      "publish": "objavi",
+      "adminOnly": "Podešavanja menjaju vlasnik i administrator."
+    },
+    "saved": "Sačuvano.",
+    "saving": "Čuvam…",
+    "levels": {
+      "0": {
+        "label": "Ručno",
+        "description": "Sova pomaže samo na zahtev. Nema automatskih nacrta."
+      },
+      "1": {
+        "label": "Kopilot",
+        "description": "Svake nedelje Sova pripremi nacrte za narednu nedelju; sve ide na odobrenje."
+      },
+      "2": {
+        "label": "Autopilot sa odobrenjem",
+        "description": "Sova pravi strategiju, kalendar i sadržaj; objave idu na odobrenje. Neodobrene do roka se preskaču ili objavljuju, po podešavanju."
+      },
+      "3": {
+        "label": "Pun autopilot",
+        "description": "Sova planira, kreira i objavljuje bez odobrenja na izabranim nalozima i šalje nedeljni izveštaj. Uključuje se izričito, isključuje jednim klikom."
+      }
+    },
+    "level3": {
+      "warning": "Pun autopilot objavljuje bez odobrenja.",
+      "text": "Izaberite naloge na kojima Sova sme da objavljuje sama; ostali nalozi i dalje idu na odobrenje. Isključuje se jednim klikom (izbor drugog nivoa ili „Pauziraj sve”).",
+      "accounts": "Nalozi",
+      "confirm": "Za potvrdu upišite naziv brenda „{brand}”"
+    },
+    "content": {
+      "title": "Sadržaj",
+      "description": "Jezik i vrste objava koje Autopilot pravi. Tekst sa heštegovima piše Gemini, fotografije dolaze sa Unsplash-a, a video sa Pexels-a.",
+      "formats": "Vrste objava",
+      "mix": "AI meša vrste",
+      "mixHint": "Kroz nedelju se smenjuju izabrane vrste, a slika i karusel dolaze češće. Isključeno: uvek prva izabrana vrsta koju mreža prima.",
+      "pickOne": "Izaberite bar jednu vrstu."
+    }
+  },
+  "suggestions": {
+    "embeddedTitle": "Predlozi sadržaja",
+    "title": "Inbox predloga",
+    "subtitle": "{brand}: ideje iz bloga, promena na sajtu, praznika i rezultata. Prihvatanjem nastaje nacrt koji doterujete pre objave.",
+    "statusLabel": "Status predloga",
+    "tabs": {
+      "new": "Novi",
+      "accepted": "Prihvaćeni",
+      "dismissed": "Odbačeni",
+      "expired": "Istekli"
+    },
+    "source": {
+      "blog": "Blog",
+      "site_change": "Promena sajta",
+      "holiday": "Praznik",
+      "analytics": "Analitika",
+      "insight": "AI uvid",
+      "evergreen": "Evergreen",
+      "manual": "Ručno"
+    },
+    "loading": "Učitavam…",
+    "emptyNew": "Nema novih predloga. Stižu iz bloga, praznika i analitike.",
+    "empty": "Prazno.",
+    "score": "ocena {score}",
+    "validUntil": "važi do {date}",
+    "accept": "Prihvati",
+    "dismiss": "Odbaci",
+    "openDraft": "Otvori nacrt"
+  },
+  "strategy": {
+    "metaTitle": "Strategija",
+    "title": "Strategija",
+    "subtitle": "{brand} · zona {timezone}. AI pravi plan za period; vi ga doterujete, aktivirate i pretvarate u kalendar.",
+    "close": "Zatvori",
+    "new": "Nova strategija",
+    "job": {
+      "failed": "Generisanje nije uspelo: {error}. Tokeni su vraćeni.",
+      "error": "greška",
+      "running": "Strategija se pravi (do 2 minuta)…",
+      "ok": "U redu"
+    },
+    "versions": "Verzije",
+    "loading": "Učitavam…",
+    "loadingStrategy": "Učitavam strategiju…",
+    "empty": "Još nema strategije. Kliknite „Nova strategija” — treba vam bar jedna povezana mreža ili izbor mreža.",
+    "status": {
+      "draft": "nacrt",
+      "active": "aktivna",
+      "archived": "arhivirana"
+    },
+    "listMeta": "v{version} · {weeks} ned.",
+    "assumptionsTag": "pretpostavke",
+    "percent": "{value} %",
+    "form": {
+      "description": "20 tokena. Koristi profil brenda, uvezenu istoriju objava (kad je ima), praznike i vaše ciljeve. Mreže: aktivni nalozi brenda.",
+      "start": "Početak perioda",
+      "duration": "Trajanje",
+      "weeks": "{count, plural, one {# nedelja} few {# nedelje} other {# nedelja}}",
+      "postsPerWeek": "Objava nedeljno (opciono)",
+      "goals": "Ciljevi (jedan po redu, do 5)",
+      "goalsPlaceholder": "Više upita za servis\nPrepoznatljivost u Beogradu",
+      "notes": "Napomene (opciono)",
+      "submit": "Generiši strategiju"
+    },
+    "calendar": {
+      "created": "Napravljeno {count, plural, one {# nacrt} few {# nacrta} other {# nacrta}}",
+      "duplicate": "{count} već postoji",
+      "past": "{count} u prošlosti",
+      "noAccount": "{count} bez naloga za mrežu"
+    },
+    "detail": {
+      "meta": "verzija {version} · {weeks, plural, one {# nedelja} few {# nedelje} other {# nedelja}} · {perWeek, plural, one {# objava} few {# objave} other {# objava}} nedeljno · {planned, plural, one {# nacrt} few {# nacrta} other {# nacrta}} iz strategije",
+      "assumptions": "Deo plana su pretpostavke (nema dovoljno istorije objava). Vremena označena „pretpostavka” proverite posle prvih nedelja."
+    },
+    "activate": "Aktiviraj",
+    "backToDraft": "Vrati u nacrt",
+    "archive": "Arhiviraj",
+    "makeCalendar": "Napravi kalendar ({count, plural, one {# nacrt} few {# nacrta} other {# nacrta}})",
+    "openCalendar": "Otvori kalendar",
+    "goals": "Ciljevi",
+    "networks": "Mreže",
+    "perWeekValue": "{count} nedeljno",
+    "weeklyThemes": "Nedeljne teme",
+    "cols": {
+      "week": "Ned.",
+      "theme": "Tema",
+      "angle": "Ugao",
+      "pillar": "Stub",
+      "campaign": "Kampanja"
+    },
+    "bestTimes": "Najbolja vremena",
+    "bestTimesHint": "Lokalno vreme brenda. „podaci” = iz istorije objava, „pretpostavka” = dok ne stignu podaci.",
+    "source": {
+      "data": "podaci",
+      "assumption": "pretpostavka"
+    },
+    "hashtags": {
+      "title": "Hashtagovi",
+      "core": "Stalni:",
+      "niche": "Tematski:",
+      "local": "Lokalni:",
+      "avoid": "Izbegavati:"
+    },
+    "assumptions": "Pretpostavke",
+    "pillars": {
+      "title": "Stubovi sadržaja",
+      "description": "Udeo govori koliko objava u periodu pripada stubu.",
+      "delete": "Obriši stub {name}",
+      "empty": "Još nema stubova.",
+      "new": "Nov stub",
+      "placeholder": "npr. Edukacija",
+      "share": "Udeo %"
+    },
+    "add": "Dodaj",
+    "delete": "Obriši",
+    "campaigns": {
+      "title": "Kampanje",
+      "empty": "Nema kampanja u ovom periodu.",
+      "new": "Nova kampanja",
+      "from": "Od",
+      "to": "Do"
+    }
+  },
+  "brandBrain": {
+    "title": "Sajt i profil brenda",
+    "subtitle": "Brend: {brand}. Sova čita sajt i pravi profil koji koristi pri svakom generisanju.",
+    "notFound": "nije pronađeno",
+    "yes": "da",
+    "no": "ne",
+    "analysis": {
+      "title": "Analiza sajta",
+      "description": "Prva analiza je besplatna, svaka sledeća košta tokene. Čita se najviše onoliko strana koliko plan dozvoljava.",
+      "url": "Adresa sajta",
+      "placeholder": "https://primer.rs",
+      "running": "Analiza u toku…",
+      "again": "Analiziraj ponovo",
+      "start": "Analiziraj sajt",
+      "verifyEmail": "Potvrdite email da biste pokrenuli analizu.",
+      "viewOnly": "Vaša uloga može samo da gleda profil.",
+      "pages": "{fetched}/{found} strana · {status}",
+      "readPages": "Pročitane strane ({count})"
+    },
+    "profile": {
+      "missing": "Profil još ne postoji. Pokrenite analizu sajta, ili unesite podatke ručno kad se profil napravi.",
+      "version": "verzija {version}",
+      "source": "izvor: {source}",
+      "confidence": "ukupna pouzdanost {value}%",
+      "chunks": "{count, plural, one {# odlomak znanja} few {# odlomka znanja} other {# odlomaka znanja}}",
+      "closeEdit": "Zatvori izmene",
+      "edit": "Izmeni ključna polja"
+    },
+    "generated": {
+      "ai": "AI",
+      "heuristic": "bez AI (heuristika)",
+      "manual": "ručno"
+    },
+    "confidence": {
+      "high": "visoka",
+      "medium": "srednja",
+      "low": "niska"
+    },
+    "field": {
+      "confidence": "pouzdanost: {level}",
+      "lockedTitle": "Ručno izmenjeno; analiza ne menja ovo polje",
+      "locked": "zaključano",
+      "unlock": "otključaj",
+      "source": "izvor: {count, plural, one {# strana} few {# strane} other {# strana}}"
+    },
+    "identity": {
+      "title": "Identitet",
+      "name": "Naziv",
+      "tagline": "Slogan",
+      "description": "Opis",
+      "industry": "Delatnost",
+      "location": "Lokacija",
+      "contentLocale": "Jezik sadržaja"
+    },
+    "offer": {
+      "title": "Ponuda",
+      "services": "Usluge",
+      "products": "Proizvodi",
+      "differentiators": "Po čemu se razlikuje",
+      "prices": "Cene sa sajta"
+    },
+    "voice": {
+      "title": "Glas brenda",
+      "tone": "Ton",
+      "address": "Obraćanje",
+      "informal": "ti (neformalno)",
+      "formal": "vi (persiranje)",
+      "emoji": "Emoji",
+      "samples": "Primeri fraza",
+      "forbidden": "Zabranjene reči",
+      "hashtags": "Hashtagovi"
+    },
+    "audience": {
+      "title": "Publika i činjenice",
+      "segments": "Segmenti",
+      "pains": "Problemi publike",
+      "market": "Tržište",
+      "facts": "Činjenice (smeju u objave)"
+    },
+    "visual": {
+      "title": "Vizuali",
+      "logo": "Logo",
+      "logoAlt": "Logo brenda",
+      "logoMissing": "nije pronađen",
+      "colors": "Boje",
+      "fonts": "Fontovi",
+      "fontsValue": "naslovi: {headings} → {mappedHeadings}; tekst: {body} → {mappedBody}",
+      "photoStyle": "Stil fotografija",
+      "photoDetails": "svetlo: {lighting} · atmosfera: {mood} · ljudi: {people}",
+      "notAssessed": "nije procenjen"
+    },
+    "colors": {
+      "primary": "primarna",
+      "secondary": "sekundarna",
+      "accent": "akcenat",
+      "light": "svetla",
+      "dark": "tamna"
+    },
+    "contact": {
+      "title": "Kontakt, mreže i sadržaj",
+      "email": "Email",
+      "phone": "Telefon",
+      "address": "Adresa",
+      "social": "Društvene mreže",
+      "blogTopics": "Teme sa bloga",
+      "pillars": "Stubovi sadržaja"
+    },
+    "versions": {
+      "title": "Verzije profila",
+      "description": "Svaka analiza i svaka ručna izmena prave novu verziju. Starija može da se vrati.",
+      "confidence": "pouzdanost {value}%",
+      "current": "trenutna",
+      "restore": "Vrati ovu verziju"
+    },
+    "edit": {
+      "title": "Ručne izmene",
+      "description": "Izmenjena polja se zaključavaju: buduće analize ih ne menjaju dok ih ne otključate.",
+      "brandDescription": "Opis brenda",
+      "tone": "Ton (pridevi, zarezom)",
+      "emoji": "Emoji su dozvoljeni",
+      "forbidden": "Zabranjene reči (zarezom)",
+      "services": "Usluge (jedna po redu)",
+      "facts": "Činjenice koje smeju u objave (jedna po redu)",
+      "saving": "Čuvam…",
+      "save": "Sačuvaj kao novu verziju"
+    }
+  },
+  "studioTools": {
+    "title": "Ručni alati Studija",
+    "back": "← Nazad na razgovor sa Sovom",
+    "brand": "Brend: {brand}",
+    "balance": {
+      "loading": "Učitavam stanje…",
+      "error": "Stanje tokena nije učitano.",
+      "available": "{count, plural, one {<b>#</b> token dostupan} few {<b>#</b> tokena dostupna} other {<b>#</b> tokena dostupno}}",
+      "reserved": "({count} rezervisano)"
+    },
+    "tabs": {
+      "compose": "Nova objava",
+      "text": "Tekst za objavu ({price})",
+      "template": "Vizual iz šablona ({price})",
+      "unsplash": "Unsplash fotografije",
+      "pexels": "Pexels video i fotografije",
+      "canva": "Iz Canve ({price})",
+      "photo": "Slika iz fotografije ({price})",
+      "prompt": "Slika iz prompta ({price})"
+    },
+    "upload": {
+      "label": "Fotografija (JPG, PNG, WebP, do 20 MB)",
+      "uploading": "Otpremam…",
+      "alt": "Otpremljena fotografija",
+      "remove": "Ukloni"
+    },
+    "networks": "Mreže",
+    "topic": "O čemu je objava?",
+    "goal": "Cilj",
+    "goals": {
+      "engagement": "Angažovanje",
+      "awareness": "Svest o brendu",
+      "sales": "Prodaja ili upit",
+      "education": "Edukacija"
+    },
+    "cta": "Poziv na akciju (opciono)",
+    "format": "Format",
+    "generate": "GENERIŠI",
+    "generating": "Generišem…",
+    "sending": "Šaljem…",
+    "saving": "Čuvam…",
+    "loading": "Učitavam…",
+    "search": "Traži",
+    "queued": "U redu za obradu…",
+    "noResults": "Nema rezultata za „{query}”.",
+    "charged": "naplaćeno {count, plural, one {# token} few {# tokena} other {# tokena}}",
+    "addToLibrary": "DODAJ U BIBLIOTEKU",
+    "addedToLibrary": "Dodato u biblioteku brenda.",
+    "formats": {
+      "text": {
+        "label": "Samo tekst",
+        "hint": "Objava bez slike, za Facebook, LinkedIn i X."
+      },
+      "image": {
+        "label": "Slika",
+        "hint": "Jedna fotografija ili vizual sa tekstom ispod."
+      },
+      "carousel": {
+        "label": "Karusel",
+        "hint": "Više fotografija u jednoj objavi, prevlače se."
+      },
+      "video": {
+        "label": "Video (Reels)",
+        "hint": "Kratak vertikalan video sa opisom."
+      },
+      "story": {
+        "label": "Priča (Story)",
+        "hint": "Vertikalna slika ili video koji traje 24 sata, bez opisa."
+      },
+      "link": {
+        "label": "Link",
+        "hint": "Tekst sa linkom i pregledom stranice."
+      }
+    },
+    "text": {
+      "title": "Tekst za objavu",
+      "description": "Sa fotografijom ili bez nje. Jedan zahtev daje verziju za svaku izabranu mrežu.",
+      "topicPlaceholder": "Npr. nova usluga čišćenja klima uređaja, popust 20 % do kraja meseca za stare klijente",
+      "variants": "Varijanti po mreži",
+      "model": "Model {model}",
+      "photo": "Fotografija: {description}",
+      "firstComment": "Prvi komentar: {text}"
+    },
+    "image": {
+      "photoTitle": "Slika iz fotografije",
+      "promptTitle": "Slika iz prompta",
+      "photoDescription": "Otpremite svoju fotografiju i u jedno polje opišite kakvu objavu želite.",
+      "promptDescription": "Opišite vizual; stil i boje brenda se dodaju automatski kad Brand Brain bude popunjen.",
+      "photoPrompt": "Kakvu objavu želite?",
+      "promptLabel": "Opis slike",
+      "quality": "Kvalitet",
+      "standard": "Standard (8 tokena)",
+      "premium": "Premium, tekst na slici (15 tokena)",
+      "waiting": "Čekam posao…",
+      "refreshing": "{message} (osvežava se svake 2 s)",
+      "failed": "Generisanje nije uspelo.",
+      "alt": "AI generisana slika",
+      "generated": "AI generisano · model {model}"
+    },
+    "templates": {
+      "auto": "Automatski",
+      "photo-overlay": "Fotografija sa naslovom",
+      "solid": "Boja brenda i poruka",
+      "split": "Fotografija pored teksta",
+      "announcement": "Najava sa okvirom"
+    },
+    "unsplash": {
+      "placeholder": "Npr. klima uređaj, kancelarija, kafa",
+      "searching": "Tražim na Unsplash-u…",
+      "notConfigured": "Unsplash nije podešen; otpremite svoju fotografiju ili napravite vizual bez slike.",
+      "photoAlt": "Unsplash fotografija",
+      "selected": "Izabrano: {attribution}",
+      "remove": "ukloni"
+    },
+    "visual": {
+      "title": "Vizual iz šablona",
+      "description": "Boje, fontovi i logo dolaze iz Brand Brain profila. Fotografija sa Unsplash-a (AI bira najbolju), vaša fotografija ili bez slike. 2 tokena.",
+      "headline": "Naslov na slici",
+      "headlinePlaceholder": "Npr. Servis klime od 2.990 din.",
+      "subtext": "Podnaslov (opciono)",
+      "ctaPlaceholder": "Zakažite termin",
+      "template": "Šablon",
+      "image": "Slika",
+      "sources": {
+        "unsplash": "Unsplash fotografija",
+        "asset": "Moja fotografija",
+        "none": "Bez slike"
+      },
+      "unsplashHint": "Izaberite fotografiju ili ostavite prazno: Sova pretražuje po naslovu i AI bira najbolju.",
+      "queryPlaceholder": "Pojam za automatsku pretragu (opciono)",
+      "submit": "NAPRAVI VIZUAL",
+      "failed": "Vizual nije napravljen.",
+      "templateUsed": "Šablon {template}"
+    },
+    "canva": {
+      "prompt": "Želite da doradite u Canvi? <link>Povežite Canvu</link>.",
+      "opening": "Otvaram Canvu…",
+      "edit": "Doradi u Canvi (2)",
+      "importing": "Uvozim…",
+      "importDesign": "Uvezi gotov dizajn iz Canve (2)",
+      "designAlt": "Dizajn iz Canve"
+    },
+    "unsplashPanel": {
+      "title": "Fotografija sa Unsplash-a",
+      "description": "Besplatne fotografije, bez AI-ja i bez tokena. Izabrana fotografija ide u biblioteku brenda sa imenom autora, a u objavi je birate iz biblioteke.",
+      "reused": "Fotografija je već u biblioteci."
+    },
+    "canvaImport": {
+      "title": "Uvoz iz Canve",
+      "description": "Napravite objavu ili video u Canvi, sa njihovim šablonima, fotografijama i snimcima, pa ga ovde uvezite u biblioteku brenda. Slika ili video, {price, plural, one {# token} few {# tokena} other {# tokena}}, bez AI-ja.",
+      "checking": "Proveravam vezu sa Canvom…",
+      "notConfigured": "Canva nije podešena na serveru.",
+      "disabled": "Canva je trenutno isključena.",
+      "connect": "<link>Povežite Canvu</link> da biste ovde videli svoje dizajne.",
+      "searchPlaceholder": "Pretraga po nazivu dizajna (opciono)",
+      "searchLabel": "Pretraga Canva dizajna",
+      "loading": "Učitavam dizajne…",
+      "noResults": "Nema dizajna za „{query}”.",
+      "empty": "U Canvi još nemate dizajne.",
+      "noThumb": "Bez sličice",
+      "untitled": "Bez naziva",
+      "more": "Još dizajna",
+      "importingImage": "Uvozim sliku…",
+      "asImage": "UVEZI KAO SLIKU ({price})",
+      "asVideo": "UVEZI KAO VIDEO ({price})",
+      "hint": "Slika je prva strana dizajna u njegovoj veličini. Video pravi Canva, od pola minuta do nekoliko minuta; možete da napustite stranicu, video stiže u biblioteku.",
+      "saved": "Sačuvano u biblioteci brenda.",
+      "videoFailed": "Video nije uvezen.",
+      "videoLabel": "Video iz Canve",
+      "videoDone": "Video je u biblioteci brenda"
+    },
+    "pexels": {
+      "title": "Video i fotografije sa Pexels-a",
+      "description": "Besplatni snimci i fotografije, bez AI-ja i bez tokena. Izabrano ide u biblioteku brenda sa imenom autora, a u objavi ga birate iz biblioteke. Za Reels i priče birajte uspravne snimke.",
+      "kind": "Vrsta",
+      "video": "Video",
+      "photo": "Fotografije",
+      "placeholder": "Npr. nightlife, coffee, klima, city night",
+      "searchLabel": "Pretraga Pexels-a",
+      "credit": "Snimci i fotografije stižu sa <link>Pexels-a</link>. Pretraga najbolje radi sa pojmovima na engleskom.",
+      "searching": "Tražim na Pexels-u…",
+      "notConfigured": "Pexels još nije uključen. Čeka se ključ.",
+      "videoAlt": "Snimak sa Pexels-a",
+      "photoAlt": "Fotografija sa Pexels-a",
+      "duration": "{seconds} s",
+      "vertical": "uspravno",
+      "downloading": "Preuzimam snimak…",
+      "reused": "Već je u biblioteci."
+    },
+    "compose": {
+      "title": "Nova objava",
+      "description": "Izaberite mreže, jezik i vrstu objave, ili prepustite AI-ju da bira. Sova napiše tekst sa heštegovima, nađe fotografiju ili video i napravi nacrt koji pregledate i zakažete.",
+      "language": "Jezik",
+      "format": "Vrsta objave",
+      "formatAuto": "AI bira (meša vrste)",
+      "source": "Fotografija ili video",
+      "sourceAuto": "AI bira (Unsplash za fotografije, Pexels za video)",
+      "sourceTemplate": "Vizual iz šablona ({count, plural, one {# token} few {# tokena} other {# tokena}})",
+      "look": "Izgled",
+      "lookDesign": "Dizajn u stilu brenda",
+      "lookPhoto": "Samo fotografija",
+      "closeStyles": "Zatvori stilove",
+      "changeStyle": "Promeni stil",
+      "slidesHint": "Slajdove piše Gemini, a crta ih izabrani stil u bojama brenda. Za slajdove se ne plaća, samo tekst.",
+      "autoDesigned": "AI bira između jedne objave i karusela, po tome koliko tema ima da kaže.",
+      "autoAmong": "AI bira vrstu koja najbolje nosi temu, među: {list}.",
+      "noCommon": "Izabrane mreže nemaju zajedničku vrstu objave. Napravite posebne objave.",
+      "noPexels": "Pexels još nije uključen, pa video dodajte iz Canve ili biblioteke.",
+      "noUnsplash": "Unsplash još nije uključen.",
+      "topicPlaceholder": "Npr. petak u klubu: gostujući DJ, ulaz do ponoći besplatan",
+      "ctaPlaceholder": "Rezervišite sto porukom",
+      "link": "Link (prazno = sajt brenda)",
+      "hashtags": "Heštegovi",
+      "creating": "Pravim objavu…",
+      "submit": "NAPRAVI OBJAVU ({count, plural, one {# token} few {# tokena} other {# tokena}})",
+      "created": "Napravljeno: <b>{format}</b>",
+      "accounts": "nalozi: {count}",
+      "open": "Otvori nacrt i zakaži",
+      "videoLabel": "Video uz objavu",
+      "visualAlt": "Vizual uz objavu"
+    }
+  }
+}

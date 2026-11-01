@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl'
 import type { CSSProperties } from 'react'
 
 import { cn } from 'cn'
@@ -16,7 +17,7 @@ export function tiktokGlyph(offset: number): CSSProperties {
 
 /**
  * Pločica mreže u bojama brenda. Veličine iz dizajna: 28/13 (hero), 38/18 (izbor mreže),
- * 48/21 (povezivanje), 24/12 (raspored objava).
+ * 48/21 (povezivanje), 24/12 (raspored objava). Naziv mreže u oblačiću je na jeziku strane (D-130).
  */
 export function PlatformTile({
   p,
@@ -39,9 +40,10 @@ export function PlatformTile({
   /** Googleov „G” kad odstupa od glyph + 1 (raspored objava, kalendar) */
   googleSize?: number
 }) {
+  const t = useTranslations('site.platforms')
   return (
     <span
-      title={p.name}
+      title={t(`${p.key}.name`)}
       className={cn('flex flex-none items-center justify-center', p.tile === 'ig' && 'l-ig', className)}
       style={{
         width: size,

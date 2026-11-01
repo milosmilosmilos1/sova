@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { INTL_UI, type AppLocale } from '@/i18n/config'
+import { translateServerText } from '@/i18n/server-text'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
@@ -44,14 +46,25 @@ export const SOURCE_LABEL: Record<SuggestionRow['source'], string> = {
   manual: 'Ručno',
 }
 
-function toView(r: SuggestionRow): SuggestionView {
+/** Naslov i tekst predloga na jeziku korisnika (D-130); praznik se sastavlja iz imena i datuma. */
+function toView(r: SuggestionRow, locale: AppLocale): SuggestionView {
+  const p = (r.payload as { date?: unknown; name?: unknown } | null) ?? {}
+  const holiday = r.source === 'holiday' && typeof p.name === 'string' && typeof p.date === 'string'
+  const day = holiday
+    ? new Intl.DateTimeFormat(INTL_UI[locale], { day: 'numeric', month: 'short', timeZone: 'UTC' }).format(
+        new Date(`${p.date as string}T12:00:00Z`),
+      )
+    : ''
   return {
     id: r.id,
     brandId: r.brand_id,
     source: r.source,
     kind: r.kind,
-    title: r.title,
-    body: r.body,
+    title:
+      holiday && locale !== 'sr-Latn'
+        ? `${translateServerText(p.name as string, locale)} (${day})`
+        : translateServerText(r.title, locale),
+    body: r.body ? translateServerText(r.body, locale) : r.body,
     payload: (r.payload as Record<string, Json>) ?? {},
     evidence: (r.evidence as Record<string, Json> | null) ?? null,
     score: r.score === null ? null : Number(r.score),
@@ -89,10 +102,13 @@ export async function listSuggestions(
       .eq('status', s)
     counts[s] = count ?? 0
   }
-  return { items: (data ?? []).map(toView), counts }
+  return { items: (data ?? []).map((r) => toView(r, viewer.profile.locale)), counts }
 }
 
-async function loadForEdit(viewer: Viewer, id: string): Promise<SuggestionRow> {
+async function loadForEdit(
+  viewer: Viewer,
+  id: string,
+): Promise<{ row: SuggestionRow; contentLocale: string }> {
   const row = unwrap(
     await viewer.supabase.from('suggestions').select('*').eq('id', id).maybeSingle(),
     'Predlog ne postoji ili nemate pristup.',
@@ -100,7 +116,7 @@ async function loadForEdit(viewer: Viewer, id: string): Promise<SuggestionRow> {
   const brand = await getBrand(viewer, row.brand_id)
   await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
   if (row.status !== 'new') throw new ApiError('CONFLICT', 'Predlog je već obrađen.')
-  return row
+  return { row, contentLocale: brand.content_locale }
 }
 
 export interface AcceptResult {
@@ -110,17 +126,27 @@ export interface AcceptResult {
   redirect: string
 }
 
-function draftFor(row: SuggestionRow): { title: string; text: string; linkUrl?: string } {
+/** Nacrt iz predloga; tekst nacrta je sadržaj, pa ide na jeziku objava brenda (D-130). */
+function draftFor(
+  row: SuggestionRow,
+  contentLocale: string,
+): { title: string; text: string; linkUrl?: string } {
+  const locale: AppLocale = contentLocale === 'en' || contentLocale === 'uk' ? contentLocale : 'sr-Latn'
+  const tr = (s: string) => translateServerText(s, locale)
   const p = (row.payload as Record<string, Json>) ?? {}
   const url = typeof p.url === 'string' ? p.url : undefined
   if (row.kind === 'new_blog_post') {
-    const t = typeof p.title === 'string' && p.title ? p.title : row.title
-    return { title: t.slice(0, 200), text: `${t}\n\n${row.body ?? ''}`.trim(), linkUrl: url }
+    const t = typeof p.title === 'string' && p.title ? p.title : tr(row.title)
+    return { title: t.slice(0, 200), text: `${t}\n\n${tr(row.body ?? '')}`.trim(), linkUrl: url }
   }
   if (row.kind === 'repeat_format' && typeof p.text === 'string' && p.text) {
-    return { title: row.title.slice(0, 200), text: `Nova objava u formatu koji je radio:\n\n${p.text}` }
+    return {
+      title: tr(row.title).slice(0, 200),
+      text: `${tr('Nova objava u formatu koji je radio:')}\n\n${p.text}`,
+    }
   }
-  return { title: row.title.slice(0, 200), text: [row.title, row.body].filter(Boolean).join('\n\n') }
+  const title = tr(row.title)
+  return { title: title.slice(0, 200), text: [title, row.body && tr(row.body)].filter(Boolean).join('\n\n') }
 }
 
 export async function acceptSuggestion(
@@ -128,13 +154,13 @@ export async function acceptSuggestion(
   id: string,
   edits: { title?: string; text?: string },
 ): Promise<AcceptResult> {
-  const row = await loadForEdit(viewer, id)
+  const { row, contentLocale } = await loadForEdit(viewer, id)
   let postId: string | null = null
   let redirect = '/app/inbox'
   if (row.kind === 'profile_update') redirect = '/app/brand'
   else if (row.kind === 'strategy_proposal' || row.kind === 'strategy_tweak') redirect = '/app/strategy'
   else {
-    const draft = draftFor(row)
+    const draft = draftFor(row, contentLocale)
     const post = await createPost(viewer, {
       brandId: row.brand_id,
       title: edits.title ?? draft.title,
@@ -164,7 +190,7 @@ export async function acceptSuggestion(
   if (error) throw mapDbError(error)
   if (!data) throw new ApiError('CONFLICT', 'Predlog je u međuvremenu obrađen.')
   logger.info('suggestion_accepted', { id, kind: row.kind, postId, by: viewer.user.id })
-  return { suggestion: toView(data), postId, redirect }
+  return { suggestion: toView(data, viewer.profile.locale), postId, redirect }
 }
 
 export async function dismissSuggestion(viewer: Viewer, id: string): Promise<SuggestionView> {
@@ -178,7 +204,7 @@ export async function dismissSuggestion(viewer: Viewer, id: string): Promise<Sug
     .maybeSingle()
   if (error) throw mapDbError(error)
   if (!data) throw new ApiError('CONFLICT', 'Predlog je u međuvremenu obrađen.')
-  return toView(data)
+  return toView(data, viewer.profile.locale)
 }
 
 export async function countNewSuggestions(viewer: Viewer, brandId: string): Promise<number> {

@@ -1,11 +1,14 @@
 'use client'
 
+import type { Route } from 'next'
 import Link from 'next/link'
+import { useLocale, useTranslations } from 'next-intl'
 import { useActionState, useState } from 'react'
 
 import { FormMessage, SubmitButton, TextField } from '@/components/forms/form-parts'
 import { Button } from '@/components/ui/button'
 import { Separator } from '@/components/ui/separator'
+import { localePath } from '@/i18n/paths'
 import { googleSignInAction, magicLinkAction, signInAction } from '@/lib/auth/actions'
 import { initialFormState } from '@/lib/auth/form-state'
 
@@ -18,6 +21,10 @@ export function LoginForm({
   googleEnabled: boolean
   initialError?: string
 }) {
+  const t = useTranslations('auth')
+  const locale = useLocale()
+  // linkovi ka javnim stranama nose jezik strane (D-130)
+  const href = (path: string) => localePath(locale, path) as Route
   const [mode, setMode] = useState<'password' | 'magic'>('password')
   const [passwordState, passwordAction] = useActionState(signInAction, initialFormState)
   const [magicState, magicAction] = useActionState(magicLinkAction, initialFormState)
@@ -37,14 +44,14 @@ export function LoginForm({
         <form action={googleSignInAction}>
           {next ? <input type="hidden" name="next" value={next} /> : null}
           <Button type="submit" variant="outline" className="w-full">
-            Nastavite sa Google nalogom
+            {t('google')}
           </Button>
         </form>
       ) : null}
 
       {googleEnabled ? (
         <div className="flex items-center gap-3 text-xs text-muted-foreground">
-          <Separator className="flex-1" /> ili <Separator className="flex-1" />
+          <Separator className="flex-1" /> {t('or')} <Separator className="flex-1" />
         </div>
       ) : null}
 
@@ -54,7 +61,7 @@ export function LoginForm({
           <FormMessage state={passwordState} />
           <TextField
             name="email"
-            label="Email"
+            label={t('email')}
             type="email"
             state={passwordState}
             required
@@ -62,7 +69,7 @@ export function LoginForm({
           />
           <TextField
             name="password"
-            label="Lozinka"
+            label={t('password')}
             type="password"
             state={passwordState}
             required
@@ -72,14 +79,14 @@ export function LoginForm({
             <p className="text-sm">
               <Link
                 className="underline"
-                href={`/verify-email?email=${encodeURIComponent(passwordState.values.email)}`}
+                href={href(`/verify-email?email=${encodeURIComponent(passwordState.values.email)}`)}
               >
-                Pošaljite ponovo email za potvrdu
+                {t('resendVerification')}
               </Link>
             </p>
           ) : null}
-          <SubmitButton pendingText="Prijavljujem…" className="w-full">
-            Prijavite se
+          <SubmitButton pendingText={t('login.pending')} className="w-full">
+            {t('login.submit')}
           </SubmitButton>
           <div className="flex items-center justify-between text-sm">
             <button
@@ -87,13 +94,13 @@ export function LoginForm({
               className="text-muted-foreground underline-offset-4 hover:underline"
               onClick={() => setMode('magic')}
             >
-              Prijava linkom na email
+              {t('login.magic')}
             </button>
             <Link
-              href="/forgot-password"
+              href={href('/forgot-password')}
               className="text-muted-foreground underline-offset-4 hover:underline"
             >
-              Zaboravili ste lozinku?
+              {t('login.forgot')}
             </Link>
           </div>
         </form>
@@ -105,14 +112,14 @@ export function LoginForm({
             <>
               <TextField
                 name="email"
-                label="Email"
+                label={t('email')}
                 type="email"
                 state={magicState}
                 required
                 autoComplete="email"
               />
-              <SubmitButton pendingText="Šaljem link…" className="w-full">
-                Pošaljite mi link za prijavu
+              <SubmitButton pendingText={t('login.magicPending')} className="w-full">
+                {t('login.magicSubmit')}
               </SubmitButton>
             </>
           ) : null}
@@ -121,18 +128,18 @@ export function LoginForm({
             className="text-sm text-muted-foreground underline-offset-4 hover:underline"
             onClick={() => setMode('password')}
           >
-            Nazad na prijavu lozinkom
+            {t('login.backToPassword')}
           </button>
         </form>
       )}
 
       <p className="text-center text-sm text-muted-foreground">
-        Nemate nalog?{' '}
+        {t('login.noAccount')}{' '}
         <Link
-          href={next ? `/register?next=${encodeURIComponent(next)}` : '/register'}
+          href={href(next ? `/register?next=${encodeURIComponent(next)}` : '/register')}
           className="font-medium text-foreground underline-offset-4 hover:underline"
         >
-          Napravite ga
+          {t('login.createOne')}
         </Link>
       </p>
     </div>

@@ -590,7 +590,7 @@ function Stat({
       <span
         className={cn(
           'grid size-9 shrink-0 place-items-center rounded-lg',
-          warn && value ? 'bg-amber-100 text-amber-800' : 'bg-primary/10 text-primary',
+          warn && value ? 'bg-amber-100 text-amber-800' : 'bg-primary/10 text-accent-foreground',
         )}
       >
         <Icon className="size-4" aria-hidden />

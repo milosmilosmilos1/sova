@@ -14,14 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { PLATFORM_KEYS, PLATFORMS, type SocialPlatform } from '@/config/platforms'
-import {
-  FORMAT_HINT,
-  FORMAT_LABEL,
-  formatsForPlatforms,
-  mediaNeed,
-  type PostFormat,
-  type PostFormatChoice,
-} from '@/config/post-formats'
+import { formatsForPlatforms, mediaNeed, type PostFormat, type PostFormatChoice } from '@/config/post-formats'
 import type { ApiResponse } from '@/lib/api/response'
 import {
   PHOTO_SOURCES,
@@ -125,13 +118,14 @@ async function api<T>(
 }
 
 function ErrorBox({ error }: { error: unknown }) {
+  const tc = useTranslations('common')
   if (!error) return null
   return (
     <div
       role="alert"
       className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
     >
-      {error instanceof Error ? error.message : 'Greška.'}
+      {error instanceof Error ? error.message : tc('error')}
     </div>
   )
 }
@@ -156,6 +150,7 @@ export function StudioClient({
   /** AI slike kroz Gemini; podrazumevano isključene (D-104) */
   aiImages: boolean
 }) {
+  const t = useTranslations('studioTools')
   const queryClient = useQueryClient()
   const balance = useQuery({
     queryKey: ['tokens', workspaceId],
@@ -171,18 +166,23 @@ export function StudioClient({
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <Link href="/app/studio" className="text-sm text-primary hover:underline">
-            ← Nazad na razgovor sa Sovom
+            {t('back')}
           </Link>
-          <h1 className="text-2xl font-semibold tracking-tight">Ručni alati Studija</h1>
-          <p className="text-sm text-muted-foreground">Brend: {brandName}</p>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
+          <p className="text-sm text-muted-foreground">{t('brand', { brand: brandName })}</p>
         </div>
         <div className="rounded-md border px-3 py-2 text-sm">
-          {balance.isPending ? 'Učitavam stanje…' : null}
-          {balance.isError ? <span className="text-destructive">Stanje tokena nije učitano.</span> : null}
+          {balance.isPending ? t('balance.loading') : null}
+          {balance.isError ? <span className="text-destructive">{t('balance.error')}</span> : null}
           {balance.data ? (
             <>
-              <strong>{balance.data.balance.available}</strong> tokena dostupno
-              {balance.data.balance.reserved ? ` (${balance.data.balance.reserved} rezervisano)` : ''}
+              {t.rich('balance.available', {
+                count: balance.data.balance.available,
+                b: (chunks) => <strong>{chunks}</strong>,
+              })}
+              {balance.data.balance.reserved
+                ? ` ${t('balance.reserved', { count: balance.data.balance.reserved })}`
+                : ''}
             </>
           ) : null}
         </div>
@@ -191,30 +191,30 @@ export function StudioClient({
       <Tabs defaultValue="compose">
         <TabsList className="max-w-full flex-wrap justify-start group-data-horizontal/tabs:h-auto">
           <TabsTrigger value="compose" className="flex-none">
-            Nova objava
+            {t('tabs.compose')}
           </TabsTrigger>
           <TabsTrigger value="text" className="flex-none">
-            Tekst za objavu ({balance.data?.prices.text ?? 2})
+            {t('tabs.text', { price: balance.data?.prices.text ?? 2 })}
           </TabsTrigger>
           <TabsTrigger value="template" className="flex-none">
-            Vizual iz šablona ({balance.data?.prices.visual_template ?? 2})
+            {t('tabs.template', { price: balance.data?.prices.visual_template ?? 2 })}
           </TabsTrigger>
           <TabsTrigger value="unsplash" className="flex-none">
-            Unsplash fotografije
+            {t('tabs.unsplash')}
           </TabsTrigger>
           <TabsTrigger value="pexels" className="flex-none">
-            Pexels video i fotografije
+            {t('tabs.pexels')}
           </TabsTrigger>
           <TabsTrigger value="canva" className="flex-none">
-            Iz Canve ({balance.data?.prices.canva_export ?? 2})
+            {t('tabs.canva', { price: balance.data?.prices.canva_export ?? 2 })}
           </TabsTrigger>
           {aiImages ? (
             <>
               <TabsTrigger value="photo" className="flex-none">
-                Slika iz fotografije ({balance.data?.prices.image_standard ?? 8})
+                {t('tabs.photo', { price: balance.data?.prices.image_standard ?? 8 })}
               </TabsTrigger>
               <TabsTrigger value="prompt" className="flex-none">
-                Slika iz prompta ({balance.data?.prices.image_standard ?? 8})
+                {t('tabs.prompt', { price: balance.data?.prices.image_standard ?? 8 })}
               </TabsTrigger>
             </>
           ) : null}
@@ -272,6 +272,7 @@ function PhotoUpload({
   value: UploadResult | null
   onChange: (asset: UploadResult | null) => void
 }) {
+  const t = useTranslations('studioTools')
   const upload = useMutation({
     // pravo u skladište (D-082); Vercel funkcija ne prima telo veće od 4,5 MB
     mutationFn: (file: File): Promise<UploadResult> => uploadMediaFile(file, { brandId }),
@@ -279,7 +280,7 @@ function PhotoUpload({
   })
   return (
     <div className="space-y-2">
-      <Label htmlFor={`photo-${brandId}`}>Fotografija (JPG, PNG, WebP, do 20 MB)</Label>
+      <Label htmlFor={`photo-${brandId}`}>{t('upload.label')}</Label>
       <Input
         id={`photo-${brandId}`}
         type="file"
@@ -290,18 +291,14 @@ function PhotoUpload({
           if (f) upload.mutate(f)
         }}
       />
-      {upload.isPending ? <p className="text-sm text-muted-foreground">Otpremam…</p> : null}
+      {upload.isPending ? <p className="text-sm text-muted-foreground">{t('upload.uploading')}</p> : null}
       <ErrorBox error={upload.error} />
       {value ? (
         <div className="flex items-center gap-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src={value.url}
-            alt="Otpremljena fotografija"
-            className="h-24 rounded-md border object-cover"
-          />
+          <img src={value.url} alt={t('upload.alt')} className="h-24 rounded-md border object-cover" />
           <Button type="button" variant="ghost" size="sm" onClick={() => onChange(null)}>
-            Ukloni
+            {t('upload.remove')}
           </Button>
         </div>
       ) : null}
@@ -310,6 +307,7 @@ function PhotoUpload({
 }
 
 function TextPanel({ brandId, onDone }: { brandId: string; onDone: () => void }) {
+  const t = useTranslations('studioTools')
   const [platforms, setPlatforms] = useState<string[]>(['instagram', 'facebook'])
   const [topic, setTopic] = useState('')
   const [goal, setGoal] = useState('engagement')
@@ -338,14 +336,12 @@ function TextPanel({ brandId, onDone }: { brandId: string; onDone: () => void })
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Tekst za objavu</CardTitle>
-        <CardDescription>
-          Sa fotografijom ili bez nje. Jedan zahtev daje verziju za svaku izabranu mrežu.
-        </CardDescription>
+        <CardTitle>{t('text.title')}</CardTitle>
+        <CardDescription>{t('text.description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <fieldset className="flex flex-wrap gap-3">
-          <legend className="mb-1 text-sm font-medium">Mreže</legend>
+          <legend className="mb-1 text-sm font-medium">{t('networks')}</legend>
           {PLATFORM_KEYS.map((p) => (
             <label key={p} className="flex items-center gap-1.5 text-sm">
               <input
@@ -361,33 +357,33 @@ function TextPanel({ brandId, onDone }: { brandId: string; onDone: () => void })
           ))}
         </fieldset>
         <div className="space-y-1.5">
-          <Label htmlFor="topic">O čemu je objava?</Label>
+          <Label htmlFor="topic">{t('topic')}</Label>
           <Textarea
             id="topic"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             rows={4}
             maxLength={2000}
-            placeholder="Npr. nova usluga čišćenja klima uređaja, popust 20 % do kraja meseca za stare klijente"
+            placeholder={t('text.topicPlaceholder')}
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="goal">Cilj</Label>
+            <Label htmlFor="goal">{t('goal')}</Label>
             <select
               id="goal"
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
               className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
             >
-              <option value="engagement">Angažovanje</option>
-              <option value="awareness">Svest o brendu</option>
-              <option value="sales">Prodaja ili upit</option>
-              <option value="education">Edukacija</option>
+              <option value="engagement">{t('goals.engagement')}</option>
+              <option value="awareness">{t('goals.awareness')}</option>
+              <option value="sales">{t('goals.sales')}</option>
+              <option value="education">{t('goals.education')}</option>
             </select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="variants">Varijanti po mreži</Label>
+            <Label htmlFor="variants">{t('text.variants')}</Label>
             <select
               id="variants"
               value={variants}
@@ -405,19 +401,19 @@ function TextPanel({ brandId, onDone }: { brandId: string; onDone: () => void })
           disabled={generate.isPending || platforms.length === 0 || topic.trim().length < 3}
           onClick={() => generate.mutate()}
         >
-          {generate.isPending ? 'Generišem…' : 'GENERIŠI'}
+          {generate.isPending ? t('generating') : t('generate')}
         </Button>
         <ErrorBox error={generate.error} />
         {generate.data ? (
           <div className="space-y-3">
             <p className="text-xs text-muted-foreground">
-              Model {generate.data.model}
-              {generate.data.fallbackUsed ? ' (fallback)' : ''} · naplaćeno {generate.data.tokensCharged}{' '}
-              tokena
+              {t('text.model', { model: generate.data.model })}
+              {generate.data.fallbackUsed ? ' (fallback)' : ''} ·{' '}
+              {t('charged', { count: generate.data.tokensCharged })}
             </p>
             {generate.data.output.image_description ? (
               <p className="rounded-md bg-muted px-3 py-2 text-sm">
-                Fotografija: {generate.data.output.image_description}
+                {t('text.photo', { description: generate.data.output.image_description })}
               </p>
             ) : null}
             <div className="grid gap-3 md:grid-cols-2">
@@ -440,7 +436,9 @@ function TextPanel({ brandId, onDone }: { brandId: string; onDone: () => void })
                       <p className="text-muted-foreground">{v.hashtags.join(' ')}</p>
                     ) : null}
                     {v.first_comment ? (
-                      <p className="text-xs text-muted-foreground">Prvi komentar: {v.first_comment}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {t('text.firstComment', { text: v.first_comment })}
+                      </p>
                     ) : null}
                     <p className="text-xs text-muted-foreground">Alt: {v.alt_text}</p>
                     {val && !val.ok ? (
@@ -468,6 +466,7 @@ function ImagePanel({
   mode: 'photo' | 'prompt'
   onDone: () => void
 }) {
+  const t = useTranslations('studioTools')
   const [prompt, setPrompt] = useState('')
   const [aspect, setAspect] = useState<(typeof ASPECTS)[number]>('1:1')
   const [quality, setQuality] = useState<'standard' | 'premium'>('standard')
@@ -517,17 +516,17 @@ function ImagePanel({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>{mode === 'photo' ? 'Slika iz fotografije' : 'Slika iz prompta'}</CardTitle>
+        <CardTitle>{mode === 'photo' ? t('image.photoTitle') : t('image.promptTitle')}</CardTitle>
         <CardDescription>
-          {mode === 'photo'
-            ? 'Otpremite svoju fotografiju i u jedno polje opišite kakvu objavu želite.'
-            : 'Opišite vizual; stil i boje brenda se dodaju automatski kad Brand Brain bude popunjen.'}
+          {mode === 'photo' ? t('image.photoDescription') : t('image.promptDescription')}
         </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {mode === 'photo' ? <PhotoUpload brandId={brandId} value={photo} onChange={setPhoto} /> : null}
         <div className="space-y-1.5">
-          <Label htmlFor={`prompt-${mode}`}>{mode === 'photo' ? 'Kakvu objavu želite?' : 'Opis slike'}</Label>
+          <Label htmlFor={`prompt-${mode}`}>
+            {mode === 'photo' ? t('image.photoPrompt') : t('image.promptLabel')}
+          </Label>
           <Textarea
             id={`prompt-${mode}`}
             value={prompt}
@@ -538,7 +537,7 @@ function ImagePanel({
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor={`aspect-${mode}`}>Format</Label>
+            <Label htmlFor={`aspect-${mode}`}>{t('format')}</Label>
             <select
               id={`aspect-${mode}`}
               value={aspect}
@@ -553,44 +552,45 @@ function ImagePanel({
             </select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor={`quality-${mode}`}>Kvalitet</Label>
+            <Label htmlFor={`quality-${mode}`}>{t('image.quality')}</Label>
             <select
               id={`quality-${mode}`}
               value={quality}
               onChange={(e) => setQuality(e.target.value as 'standard' | 'premium')}
               className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
             >
-              <option value="standard">Standard (8 tokena)</option>
-              <option value="premium">Premium, tekst na slici (15 tokena)</option>
+              <option value="standard">{t('image.standard')}</option>
+              <option value="premium">{t('image.premium')}</option>
             </select>
           </div>
         </div>
         <Button disabled={!canStart} onClick={() => start.mutate()}>
-          {start.isPending ? 'Šaljem…' : 'GENERIŠI'}
+          {start.isPending ? t('sending') : t('generate')}
         </Button>
         <ErrorBox error={start.error} />
         {jobId ? (
           <div className="space-y-2">
-            {job.isPending ? <p className="text-sm text-muted-foreground">Čekam posao…</p> : null}
+            {job.isPending ? <p className="text-sm text-muted-foreground">{t('image.waiting')}</p> : null}
             <ErrorBox error={job.error} />
             {job.data && (job.data.status === 'queued' || job.data.status === 'running') ? (
               <p className="text-sm text-muted-foreground" aria-live="polite">
-                {job.data.progress?.message ?? 'U redu za obradu…'} (osvežava se svake 2 s)
+                {t('image.refreshing', { message: job.data.progress?.message ?? t('queued') })}
               </p>
             ) : null}
             {job.data?.status === 'failed' ? (
-              <ErrorBox error={new Error(job.data.errorMessage ?? 'Generisanje nije uspelo.')} />
+              <ErrorBox error={new Error(job.data.errorMessage ?? t('image.failed'))} />
             ) : null}
             {job.data?.status === 'succeeded' && job.data.assetUrl ? (
               <figure className="space-y-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={job.data.assetUrl}
-                  alt="AI generisana slika"
+                  alt={t('image.alt')}
                   className="max-h-[480px] rounded-lg border"
                 />
                 <figcaption className="text-xs text-muted-foreground">
-                  AI generisano · model {job.data.model} · naplaćeno {job.data.tokensCharged} tokena
+                  {t('image.generated', { model: job.data.model ?? '' })} ·{' '}
+                  {t('charged', { count: job.data.tokensCharged })}
                 </figcaption>
                 <CanvaActions workspaceId={workspaceId} brandId={brandId} assetId={job.data.assetId} />
               </figure>
@@ -602,13 +602,7 @@ function ImagePanel({
   )
 }
 
-const TEMPLATES = [
-  ['auto', 'Automatski'],
-  ['photo-overlay', 'Fotografija sa naslovom'],
-  ['solid', 'Boja brenda i poruka'],
-  ['split', 'Fotografija pored teksta'],
-  ['announcement', 'Najava sa okvirom'],
-] as const
+const TEMPLATES = ['auto', 'photo-overlay', 'solid', 'split', 'announcement'] as const
 const TEMPLATE_ASPECTS = ['1:1', '4:5', '9:16', '16:9', '3:4'] as const
 
 function UnsplashPicker({
@@ -618,6 +612,7 @@ function UnsplashPicker({
   value: { id: string; attribution: string } | null
   onChange: (v: { id: string; attribution: string } | null) => void
 }) {
+  const t = useTranslations('studioTools')
   const [query, setQuery] = useState('')
   const [submitted, setSubmitted] = useState('')
   const search = useQuery({
@@ -632,7 +627,7 @@ function UnsplashPicker({
         <Input
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          placeholder="Npr. klima uređaj, kancelarija, kafa"
+          placeholder={t('unsplash.placeholder')}
           onKeyDown={(e) => e.key === 'Enter' && setSubmitted(query.trim())}
         />
         <Button
@@ -641,20 +636,18 @@ function UnsplashPicker({
           onClick={() => setSubmitted(query.trim())}
           disabled={query.trim().length < 2}
         >
-          Traži
+          {t('search')}
         </Button>
       </div>
       {search.isPending && submitted ? (
-        <p className="text-sm text-muted-foreground">Tražim na Unsplash-u…</p>
+        <p className="text-sm text-muted-foreground">{t('unsplash.searching')}</p>
       ) : null}
       <ErrorBox error={search.error} />
       {search.data && !search.data.configured ? (
-        <p className="text-sm text-muted-foreground">
-          Unsplash nije podešen; otpremite svoju fotografiju ili napravite vizual bez slike.
-        </p>
+        <p className="text-sm text-muted-foreground">{t('unsplash.notConfigured')}</p>
       ) : null}
       {search.data?.configured && search.data.results.length === 0 ? (
-        <p className="text-sm text-muted-foreground">Nema rezultata za „{submitted}”.</p>
+        <p className="text-sm text-muted-foreground">{t('noResults', { query: submitted })}</p>
       ) : null}
       {search.data?.results.length ? (
         <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
@@ -669,7 +662,7 @@ function UnsplashPicker({
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={p.thumb}
-                  alt={p.alt ?? 'Unsplash fotografija'}
+                  alt={p.alt ?? t('unsplash.photoAlt')}
                   className="aspect-square w-full object-cover"
                   loading="lazy"
                 />
@@ -700,9 +693,9 @@ function UnsplashPicker({
       ) : null}
       {value ? (
         <p className="text-xs text-muted-foreground">
-          Izabrano: {value.attribution}{' '}
+          {t('unsplash.selected', { attribution: value.attribution })}{' '}
           <button type="button" className="underline" onClick={() => onChange(null)}>
-            ukloni
+            {t('unsplash.remove')}
           </button>
         </p>
       ) : null}
@@ -719,11 +712,12 @@ function VisualPanel({
   brandId: string
   onDone: () => void
 }) {
+  const t = useTranslations('studioTools')
   const [headline, setHeadline] = useState('')
   const [subtext, setSubtext] = useState('')
   const [cta, setCta] = useState('')
   const [aspect, setAspect] = useState<(typeof TEMPLATE_ASPECTS)[number]>('1:1')
-  const [template, setTemplate] = useState<(typeof TEMPLATES)[number][0]>('auto')
+  const [template, setTemplate] = useState<(typeof TEMPLATES)[number]>('auto')
   const [source, setSource] = useState<'unsplash' | 'asset' | 'none'>('unsplash')
   const [unsplashQuery, setUnsplashQuery] = useState('')
   const [picked, setPicked] = useState<{ id: string; attribution: string } | null>(null)
@@ -783,26 +777,23 @@ function VisualPanel({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Vizual iz šablona</CardTitle>
-        <CardDescription>
-          Boje, fontovi i logo dolaze iz Brand Brain profila. Fotografija sa Unsplash-a (AI bira najbolju),
-          vaša fotografija ili bez slike. 2 tokena.
-        </CardDescription>
+        <CardTitle>{t('visual.title')}</CardTitle>
+        <CardDescription>{t('visual.description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="vt-headline">Naslov na slici</Label>
+          <Label htmlFor="vt-headline">{t('visual.headline')}</Label>
           <Input
             id="vt-headline"
             value={headline}
             onChange={(e) => setHeadline(e.target.value)}
             maxLength={120}
-            placeholder="Npr. Servis klime od 2.990 din."
+            placeholder={t('visual.headlinePlaceholder')}
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="vt-subtext">Podnaslov (opciono)</Label>
+            <Label htmlFor="vt-subtext">{t('visual.subtext')}</Label>
             <Input
               id="vt-subtext"
               value={subtext}
@@ -811,17 +802,17 @@ function VisualPanel({
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="vt-cta">Poziv na akciju (opciono)</Label>
+            <Label htmlFor="vt-cta">{t('cta')}</Label>
             <Input
               id="vt-cta"
               value={cta}
               onChange={(e) => setCta(e.target.value)}
               maxLength={40}
-              placeholder="Zakažite termin"
+              placeholder={t('visual.ctaPlaceholder')}
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="vt-aspect">Format</Label>
+            <Label htmlFor="vt-aspect">{t('format')}</Label>
             <select
               id="vt-aspect"
               value={aspect}
@@ -836,31 +827,25 @@ function VisualPanel({
             </select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="vt-template">Šablon</Label>
+            <Label htmlFor="vt-template">{t('visual.template')}</Label>
             <select
               id="vt-template"
               value={template}
-              onChange={(e) => setTemplate(e.target.value as (typeof TEMPLATES)[number][0])}
+              onChange={(e) => setTemplate(e.target.value as (typeof TEMPLATES)[number])}
               className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
             >
-              {TEMPLATES.map(([id, label]) => (
+              {TEMPLATES.map((id) => (
                 <option key={id} value={id}>
-                  {label}
+                  {t(`templates.${id}`)}
                 </option>
               ))}
             </select>
           </div>
         </div>
         <fieldset className="space-y-2">
-          <legend className="text-sm font-medium">Slika</legend>
+          <legend className="text-sm font-medium">{t('visual.image')}</legend>
           <div className="flex flex-wrap gap-3 text-sm">
-            {(
-              [
-                ['unsplash', 'Unsplash fotografija'],
-                ['asset', 'Moja fotografija'],
-                ['none', 'Bez slike'],
-              ] as const
-            ).map(([v, label]) => (
+            {(['unsplash', 'asset', 'none'] as const).map((v) => (
               <label key={v} className="flex items-center gap-1.5">
                 <input
                   type="radio"
@@ -869,21 +854,19 @@ function VisualPanel({
                   checked={source === v}
                   onChange={() => setSource(v)}
                 />
-                {label}
+                {t(`visual.sources.${v}`)}
               </label>
             ))}
           </div>
           {source === 'unsplash' ? (
             <div className="space-y-2">
-              <p className="text-xs text-muted-foreground">
-                Izaberite fotografiju ili ostavite prazno: Sova pretražuje po naslovu i AI bira najbolju.
-              </p>
+              <p className="text-xs text-muted-foreground">{t('visual.unsplashHint')}</p>
               <UnsplashPicker value={picked} onChange={setPicked} />
               {!picked ? (
                 <Input
                   value={unsplashQuery}
                   onChange={(e) => setUnsplashQuery(e.target.value)}
-                  placeholder="Pojam za automatsku pretragu (opciono)"
+                  placeholder={t('visual.queryPlaceholder')}
                 />
               ) : null}
             </div>
@@ -891,25 +874,26 @@ function VisualPanel({
           {source === 'asset' ? <PhotoUpload brandId={brandId} value={photo} onChange={setPhoto} /> : null}
         </fieldset>
         <Button disabled={!canStart} onClick={() => start.mutate()}>
-          {start.isPending ? 'Šaljem…' : 'NAPRAVI VIZUAL'}
+          {start.isPending ? t('sending') : t('visual.submit')}
         </Button>
         <ErrorBox error={start.error} />
         {jobId ? (
           <div className="space-y-2">
             {job.data && (job.data.status === 'queued' || job.data.status === 'running') ? (
               <p className="text-sm text-muted-foreground" aria-live="polite">
-                {job.data.progress?.message ?? 'U redu za obradu…'}
+                {job.data.progress?.message ?? t('queued')}
               </p>
             ) : null}
             {job.data?.status === 'failed' ? (
-              <ErrorBox error={new Error(job.data.errorMessage ?? 'Vizual nije napravljen.')} />
+              <ErrorBox error={new Error(job.data.errorMessage ?? t('visual.failed'))} />
             ) : null}
             {job.data?.status === 'succeeded' && job.data.assetUrl ? (
               <figure className="space-y-2">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={job.data.assetUrl} alt={headline} className="max-h-[560px] rounded-lg border" />
                 <figcaption className="text-xs text-muted-foreground">
-                  Šablon {job.data.output?.template} · naplaćeno {job.data.tokensCharged} tokena
+                  {t('visual.templateUsed', { template: job.data.output?.template ?? '' })} ·{' '}
+                  {t('charged', { count: job.data.tokensCharged })}
                   {job.data.output?.attribution ? ` · ${job.data.output.attribution}` : ''}
                   {job.data.output?.notes?.length ? ` · ${job.data.output.notes.join(' ')}` : ''}
                 </figcaption>
@@ -932,6 +916,7 @@ function CanvaActions({
   brandId: string
   assetId: string | null
 }) {
+  const t = useTranslations('studioTools')
   const status = useQuery({
     queryKey: ['canva-status', workspaceId],
     queryFn: () => api<CanvaStatus>(`/api/canva/status?workspaceId=${workspaceId}`),
@@ -961,14 +946,16 @@ function CanvaActions({
   if (!status.data.connected) {
     return (
       <p className="text-xs text-muted-foreground">
-        Želite da doradite u Canvi?{' '}
-        <a
-          className="underline"
-          href={`/api/integrations/canva/connect?workspaceId=${workspaceId}&redirectTo=/app/studio`}
-        >
-          Povežite Canvu
-        </a>
-        .
+        {t.rich('canva.prompt', {
+          link: (chunks) => (
+            <a
+              className="underline"
+              href={`/api/integrations/canva/connect?workspaceId=${workspaceId}&redirectTo=/app/studio`}
+            >
+              {chunks}
+            </a>
+          ),
+        })}
       </p>
     )
   }
@@ -981,7 +968,7 @@ function CanvaActions({
         onClick={() => design.mutate()}
         disabled={design.isPending || !assetId}
       >
-        {design.isPending ? 'Otvaram Canvu…' : 'Doradi u Canvi (2)'}
+        {design.isPending ? t('canva.opening') : t('canva.edit')}
       </Button>
       {designId ? (
         <Button
@@ -991,13 +978,13 @@ function CanvaActions({
           onClick={() => exp.mutate()}
           disabled={exp.isPending}
         >
-          {exp.isPending ? 'Uvozim…' : 'Uvezi gotov dizajn iz Canve (2)'}
+          {exp.isPending ? t('canva.importing') : t('canva.importDesign')}
         </Button>
       ) : null}
       <ErrorBox error={design.error ?? exp.error} />
       {exp.data ? (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={exp.data.asset.url} alt="Dizajn iz Canve" className="max-h-64 rounded-md border" />
+        <img src={exp.data.asset.url} alt={t('canva.designAlt')} className="max-h-64 rounded-md border" />
       ) : null}
     </div>
   )
@@ -1013,6 +1000,7 @@ interface UnsplashSelected {
 
 /** Fotografija bez šablona i bez AI-ja (D-104): kopija ide u biblioteku, objava je bira odande. */
 function UnsplashPanel({ brandId }: { brandId: string }) {
+  const t = useTranslations('studioTools')
   const [picked, setPicked] = useState<{ id: string; attribution: string } | null>(null)
   const select = useMutation({
     mutationFn: (photoId: string) =>
@@ -1021,11 +1009,8 @@ function UnsplashPanel({ brandId }: { brandId: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Fotografija sa Unsplash-a</CardTitle>
-        <CardDescription>
-          Besplatne fotografije, bez AI-ja i bez tokena. Izabrana fotografija ide u biblioteku brenda sa
-          imenom autora, a u objavi je birate iz biblioteke.
-        </CardDescription>
+        <CardTitle>{t('unsplashPanel.title')}</CardTitle>
+        <CardDescription>{t('unsplashPanel.description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <UnsplashPicker
@@ -1036,7 +1021,7 @@ function UnsplashPanel({ brandId }: { brandId: string }) {
           }}
         />
         <Button disabled={!picked || select.isPending} onClick={() => picked && select.mutate(picked.id)}>
-          {select.isPending ? 'Čuvam…' : 'DODAJ U BIBLIOTEKU'}
+          {select.isPending ? t('saving') : t('addToLibrary')}
         </Button>
         <ErrorBox error={select.error} />
         {select.data ? (
@@ -1044,11 +1029,11 @@ function UnsplashPanel({ brandId }: { brandId: string }) {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img
               src={select.data.url}
-              alt={select.data.altText ?? 'Fotografija sa Unsplash-a'}
+              alt={select.data.altText ?? t('unsplashPanel.title')}
               className="max-h-80 rounded-lg border"
             />
             <figcaption className="text-xs text-muted-foreground">
-              {select.data.reused ? 'Fotografija je već u biblioteci.' : 'Dodato u biblioteku brenda.'}
+              {select.data.reused ? t('unsplashPanel.reused') : t('addedToLibrary')}
               {select.data.attribution ? ` ${select.data.attribution.text}` : ''}
             </figcaption>
           </figure>
@@ -1079,6 +1064,7 @@ function CanvaImportPanel({
   price: number
   onDone: () => void
 }) {
+  const t = useTranslations('studioTools')
   const status = useQuery({
     queryKey: ['canva-status', workspaceId],
     queryFn: () => api<CanvaStatus>(`/api/canva/status?workspaceId=${workspaceId}`),
@@ -1154,32 +1140,32 @@ function CanvaImportPanel({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Uvoz iz Canve</CardTitle>
-        <CardDescription>
-          Napravite objavu ili video u Canvi, sa njihovim šablonima, fotografijama i snimcima, pa ga ovde
-          uvezite u biblioteku brenda. Slika ili video, {price} tokena, bez AI-ja.
-        </CardDescription>
+        <CardTitle>{t('canvaImport.title')}</CardTitle>
+        <CardDescription>{t('canvaImport.description', { price })}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {status.isPending ? (
-          <p className="text-sm text-muted-foreground">Proveravam vezu sa Canvom…</p>
+          <p className="text-sm text-muted-foreground">{t('canvaImport.checking')}</p>
         ) : null}
         <ErrorBox error={status.error} />
         {status.data && !status.data.configured ? (
-          <p className="text-sm text-muted-foreground">Canva nije podešena na serveru.</p>
+          <p className="text-sm text-muted-foreground">{t('canvaImport.notConfigured')}</p>
         ) : null}
         {status.data?.configured && !status.data.enabled ? (
-          <p className="text-sm text-muted-foreground">Canva je trenutno isključena.</p>
+          <p className="text-sm text-muted-foreground">{t('canvaImport.disabled')}</p>
         ) : null}
         {status.data?.configured && status.data.enabled && !status.data.connected ? (
           <p className="text-sm">
-            <a
-              className="underline"
-              href={`/api/integrations/canva/connect?workspaceId=${workspaceId}&redirectTo=/app/studio`}
-            >
-              Povežite Canvu
-            </a>{' '}
-            da biste ovde videli svoje dizajne.
+            {t.rich('canvaImport.connect', {
+              link: (chunks) => (
+                <a
+                  className="underline"
+                  href={`/api/integrations/canva/connect?workspaceId=${workspaceId}&redirectTo=/app/studio`}
+                >
+                  {chunks}
+                </a>
+              ),
+            })}
           </p>
         ) : null}
         {connected ? (
@@ -1188,19 +1174,21 @@ function CanvaImportPanel({
               <Input
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                placeholder="Pretraga po nazivu dizajna (opciono)"
-                aria-label="Pretraga Canva dizajna"
+                placeholder={t('canvaImport.searchPlaceholder')}
+                aria-label={t('canvaImport.searchLabel')}
                 onKeyDown={(e) => e.key === 'Enter' && setSubmitted(query.trim())}
               />
               <Button type="button" variant="outline" onClick={() => setSubmitted(query.trim())}>
-                Traži
+                {t('search')}
               </Button>
             </div>
-            {designs.isPending ? <p className="text-sm text-muted-foreground">Učitavam dizajne…</p> : null}
+            {designs.isPending ? (
+              <p className="text-sm text-muted-foreground">{t('canvaImport.loading')}</p>
+            ) : null}
             <ErrorBox error={designs.error} />
             {designs.data && items.length === 0 ? (
               <p className="text-sm text-muted-foreground">
-                {submitted ? `Nema dizajna za „${submitted}”.` : 'U Canvi još nemate dizajne.'}
+                {submitted ? t('canvaImport.noResults', { query: submitted }) : t('canvaImport.empty')}
               </p>
             ) : null}
             {items.length ? (
@@ -1226,11 +1214,11 @@ function CanvaImportPanel({
                         />
                       ) : (
                         <span className="flex aspect-square items-center justify-center text-xs text-muted-foreground">
-                          Bez sličice
+                          {t('canvaImport.noThumb')}
                         </span>
                       )}
                     </span>
-                    <span className="block truncate text-xs">{d.title ?? 'Bez naziva'}</span>
+                    <span className="block truncate text-xs">{d.title ?? t('canvaImport.untitled')}</span>
                   </button>
                 ))}
               </div>
@@ -1243,45 +1231,42 @@ function CanvaImportPanel({
                 onClick={() => designs.fetchNextPage()}
                 disabled={designs.isFetchingNextPage}
               >
-                {designs.isFetchingNextPage ? 'Učitavam…' : 'Još dizajna'}
+                {designs.isFetchingNextPage ? t('loading') : t('canvaImport.more')}
               </Button>
             ) : null}
             {selected ? (
               <div className="space-y-3 rounded-md border p-3">
-                <p className="text-sm font-medium">{selected.title ?? 'Bez naziva'}</p>
+                <p className="text-sm font-medium">{selected.title ?? t('canvaImport.untitled')}</p>
                 <div className="flex flex-wrap gap-2">
                   <Button onClick={() => image.mutate(selected.id)} disabled={busy}>
-                    {image.isPending ? 'Uvozim sliku…' : `UVEZI KAO SLIKU (${price})`}
+                    {image.isPending ? t('canvaImport.importingImage') : t('canvaImport.asImage', { price })}
                   </Button>
                   <Button variant="outline" onClick={() => video.mutate(selected.id)} disabled={busy}>
-                    {video.isPending ? 'Šaljem…' : `UVEZI KAO VIDEO (${price})`}
+                    {video.isPending ? t('sending') : t('canvaImport.asVideo', { price })}
                   </Button>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Slika je prva strana dizajna u njegovoj veličini. Video pravi Canva, od pola minuta do
-                  nekoliko minuta; možete da napustite stranicu, video stiže u biblioteku.
-                </p>
+                <p className="text-xs text-muted-foreground">{t('canvaImport.hint')}</p>
                 <ErrorBox error={image.error ?? video.error} />
                 {image.data ? (
                   <figure className="space-y-2">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={image.data.asset.url}
-                      alt={selected.title ?? 'Dizajn iz Canve'}
+                      alt={selected.title ?? t('canva.designAlt')}
                       className="max-h-80 rounded-lg border"
                     />
                     <figcaption className="text-xs text-muted-foreground">
-                      Sačuvano u biblioteci brenda.
+                      {t('canvaImport.saved')}
                     </figcaption>
                   </figure>
                 ) : null}
                 {videoRunning ? (
                   <p className="text-sm text-muted-foreground" aria-live="polite">
-                    {job.data?.progress?.message ?? 'U redu za obradu…'}
+                    {job.data?.progress?.message ?? t('queued')}
                   </p>
                 ) : null}
                 {job.data?.status === 'failed' ? (
-                  <ErrorBox error={new Error(job.data.errorMessage ?? 'Video nije uvezen.')} />
+                  <ErrorBox error={new Error(job.data.errorMessage ?? t('canvaImport.videoFailed'))} />
                 ) : null}
                 {job.data?.status === 'succeeded' && job.data.assetUrl ? (
                   <figure className="space-y-2">
@@ -1291,10 +1276,10 @@ function CanvaImportPanel({
                       playsInline
                       preload="metadata"
                       className="max-h-[480px] rounded-lg border bg-black"
-                      aria-label={selected.title ?? 'Video iz Canve'}
+                      aria-label={selected.title ?? t('canvaImport.videoLabel')}
                     />
                     <figcaption className="text-xs text-muted-foreground">
-                      Video je u biblioteci brenda · naplaćeno {job.data.tokensCharged} tokena
+                      {t('canvaImport.videoDone')} · {t('charged', { count: job.data.tokensCharged })}
                     </figcaption>
                   </figure>
                 ) : null}
@@ -1327,6 +1312,7 @@ interface PexelsSelected {
 
 /** Pexels (D-107): video snimci i fotografije bez AI-ja i bez tokena; kopija ide u biblioteku brenda. */
 function PexelsPanel({ brandId }: { brandId: string }) {
+  const t = useTranslations('studioTools')
   const [kind, setKind] = useState<'video' | 'photo'>('video')
   const [query, setQuery] = useState('')
   const [submitted, setSubmitted] = useState('')
@@ -1353,20 +1339,12 @@ function PexelsPanel({ brandId }: { brandId: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Video i fotografije sa Pexels-a</CardTitle>
-        <CardDescription>
-          Besplatni snimci i fotografije, bez AI-ja i bez tokena. Izabrano ide u biblioteku brenda sa imenom
-          autora, a u objavi ga birate iz biblioteke. Za Reels i priče birajte uspravne snimke.
-        </CardDescription>
+        <CardTitle>{t('pexels.title')}</CardTitle>
+        <CardDescription>{t('pexels.description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="flex flex-wrap gap-3 text-sm" role="radiogroup" aria-label="Vrsta">
-          {(
-            [
-              ['video', 'Video'],
-              ['photo', 'Fotografije'],
-            ] as const
-          ).map(([v, label]) => (
+        <div className="flex flex-wrap gap-3 text-sm" role="radiogroup" aria-label={t('pexels.kind')}>
+          {(['video', 'photo'] as const).map((v) => (
             <label key={v} className="flex items-center gap-1.5">
               <input
                 type="radio"
@@ -1377,7 +1355,7 @@ function PexelsPanel({ brandId }: { brandId: string }) {
                   choose(null)
                 }}
               />
-              {label}
+              {t(`pexels.${v}`)}
             </label>
           ))}
         </div>
@@ -1385,8 +1363,8 @@ function PexelsPanel({ brandId }: { brandId: string }) {
           <Input
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Npr. nightlife, coffee, klima, city night"
-            aria-label="Pretraga Pexels-a"
+            placeholder={t('pexels.placeholder')}
+            aria-label={t('pexels.searchLabel')}
             onKeyDown={(e) => e.key === 'Enter' && setSubmitted(query.trim())}
           />
           <Button
@@ -1395,31 +1373,33 @@ function PexelsPanel({ brandId }: { brandId: string }) {
             onClick={() => setSubmitted(query.trim())}
             disabled={query.trim().length < 2}
           >
-            Traži
+            {t('search')}
           </Button>
         </div>
         {/* Pexels traži vidljiv link ka Pexels-u uz svaku pretragu, pored imena autora */}
         <p className="text-xs text-muted-foreground">
-          Snimci i fotografije stižu sa{' '}
-          <a
-            href="https://www.pexels.com"
-            target="_blank"
-            rel="noreferrer"
-            className="underline underline-offset-2"
-          >
-            Pexels-a
-          </a>
-          . Pretraga najbolje radi sa pojmovima na engleskom.
+          {t.rich('pexels.credit', {
+            link: (chunks) => (
+              <a
+                href="https://www.pexels.com"
+                target="_blank"
+                rel="noreferrer"
+                className="underline underline-offset-2"
+              >
+                {chunks}
+              </a>
+            ),
+          })}
         </p>
         {search.isPending && submitted ? (
-          <p className="text-sm text-muted-foreground">Tražim na Pexels-u…</p>
+          <p className="text-sm text-muted-foreground">{t('pexels.searching')}</p>
         ) : null}
         <ErrorBox error={search.error} />
         {search.data && !search.data.configured ? (
-          <p className="text-sm text-muted-foreground">Pexels još nije uključen. Čeka se ključ.</p>
+          <p className="text-sm text-muted-foreground">{t('pexels.notConfigured')}</p>
         ) : null}
         {search.data?.configured && search.data.results.length === 0 ? (
-          <p className="text-sm text-muted-foreground">Nema rezultata za „{submitted}”.</p>
+          <p className="text-sm text-muted-foreground">{t('noResults', { query: submitted })}</p>
         ) : null}
         {search.data?.results.length ? (
           <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
@@ -1435,13 +1415,14 @@ function PexelsPanel({ brandId }: { brandId: string }) {
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={p.thumb}
-                    alt={p.kind === 'video' ? 'Snimak sa Pexels-a' : 'Fotografija sa Pexels-a'}
+                    alt={p.kind === 'video' ? t('pexels.videoAlt') : t('pexels.photoAlt')}
                     className="aspect-square w-full object-cover"
                     loading="lazy"
                   />
                   {p.durationSec !== null ? (
                     <span className="absolute right-1 bottom-1 rounded bg-black/70 px-1.5 text-[11px] text-white">
-                      {p.durationSec} s{p.height > p.width ? ' · uspravno' : ''}
+                      {t('pexels.duration', { seconds: p.durationSec })}
+                      {p.height > p.width ? ` · ${t('pexels.vertical')}` : ''}
                     </span>
                   ) : null}
                 </button>
@@ -1471,9 +1452,9 @@ function PexelsPanel({ brandId }: { brandId: string }) {
         <Button disabled={!picked || select.isPending} onClick={() => picked && select.mutate(picked)}>
           {select.isPending
             ? picked?.kind === 'video'
-              ? 'Preuzimam snimak…'
-              : 'Čuvam…'
-            : 'DODAJ U BIBLIOTEKU'}
+              ? t('pexels.downloading')
+              : t('saving')
+            : t('addToLibrary')}
         </Button>
         <ErrorBox error={select.error} />
         {select.data ? (
@@ -1485,18 +1466,14 @@ function PexelsPanel({ brandId }: { brandId: string }) {
                 playsInline
                 preload="metadata"
                 className="max-h-[420px] rounded-lg border bg-black"
-                aria-label="Snimak sa Pexels-a"
+                aria-label={t('pexels.videoAlt')}
               />
             ) : (
               // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={select.data.url}
-                alt="Fotografija sa Pexels-a"
-                className="max-h-80 rounded-lg border"
-              />
+              <img src={select.data.url} alt={t('pexels.photoAlt')} className="max-h-80 rounded-lg border" />
             )}
             <figcaption className="text-xs text-muted-foreground">
-              {select.data.reused ? 'Već je u biblioteci.' : 'Dodato u biblioteku brenda.'}
+              {select.data.reused ? t('pexels.reused') : t('addedToLibrary')}
               {select.data.attribution ? ` ${select.data.attribution.text}` : ''}
             </figcaption>
           </figure>
@@ -1506,12 +1483,7 @@ function PexelsPanel({ brandId }: { brandId: string }) {
   )
 }
 
-const COMPOSE_LOCALES = [
-  ['sr-Latn', 'Srpski, latinica'],
-  ['sr-Cyrl', 'Srpski, ćirilica'],
-  ['en', 'Engleski'],
-  ['uk', 'Ukrajinski'],
-] as const
+const COMPOSE_LOCALES = ['sr-Latn', 'sr-Cyrl', 'en', 'uk'] as const
 
 interface ComposeView {
   postId: string
@@ -1551,6 +1523,8 @@ function ComposePanel({
   prices: Record<string, number> | undefined
   onDone: () => void
 }) {
+  const t = useTranslations('studioTools')
+  const tl = useTranslations('contentLocale')
   const [platforms, setPlatforms] = useState<SocialPlatform[]>(['instagram', 'facebook'])
   const [locale, setLocale] = useState(brandLocale)
   const [format, setFormat] = useState<PostFormatChoice>('auto')
@@ -1620,15 +1594,12 @@ function ComposePanel({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Nova objava</CardTitle>
-        <CardDescription>
-          Izaberite mreže, jezik i vrstu objave, ili prepustite AI-ju da bira. Sova napiše tekst sa
-          heštegovima, nađe fotografiju ili video i napravi nacrt koji pregledate i zakažete.
-        </CardDescription>
+        <CardTitle>{t('compose.title')}</CardTitle>
+        <CardDescription>{t('compose.description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <fieldset className="flex flex-wrap gap-3">
-          <legend className="mb-1 text-sm font-medium">Mreže</legend>
+          <legend className="mb-1 text-sm font-medium">{t('networks')}</legend>
           {PLATFORM_KEYS.map((p) => (
             <label key={p} className="flex items-center gap-1.5 text-sm">
               <input
@@ -1646,72 +1617,78 @@ function ComposePanel({
 
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="compose-locale">Jezik</Label>
+            <Label htmlFor="compose-locale">{t('compose.language')}</Label>
             <select
               id="compose-locale"
               value={locale}
               onChange={(e) => setLocale(e.target.value)}
               className={selectClass}
             >
-              {COMPOSE_LOCALES.map(([v, label]) => (
+              {COMPOSE_LOCALES.map((v) => (
                 <option key={v} value={v}>
-                  {label}
+                  {tl(v)}
                 </option>
               ))}
             </select>
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="compose-format">Vrsta objave</Label>
+            <Label htmlFor="compose-format">{t('compose.format')}</Label>
             <select
               id="compose-format"
               value={chosen}
               onChange={(e) => setFormat(e.target.value as PostFormatChoice)}
               className={selectClass}
             >
-              <option value="auto">AI bira (meša vrste)</option>
+              <option value="auto">{t('compose.formatAuto')}</option>
               {allowed.map((f) => (
                 <option key={f} value={f}>
-                  {FORMAT_LABEL[f]}
+                  {t(`formats.${f}.label`)}
                 </option>
               ))}
             </select>
           </div>
           {needsVisual && !designed ? (
             <div className="space-y-1.5">
-              <Label htmlFor="compose-source">Fotografija ili video</Label>
+              <Label htmlFor="compose-source">{t('compose.source')}</Label>
               <select
                 id="compose-source"
                 value={source}
                 onChange={(e) => setSource(e.target.value as typeof source)}
                 className={selectClass}
               >
-                <option value="auto">AI bira (Unsplash za fotografije, Pexels za video)</option>
+                <option value="auto">{t('compose.sourceAuto')}</option>
                 <option value="unsplash">Unsplash</option>
                 <option value="pexels">Pexels</option>
-                <option value="template">Vizual iz šablona ({prices?.visual_template ?? 2} tokena)</option>
+                <option value="template">
+                  {t('compose.sourceTemplate', { count: prices?.visual_template ?? 2 })}
+                </option>
               </select>
             </div>
           ) : null}
           <div className="space-y-1.5">
-            <Label htmlFor="compose-goal">Cilj</Label>
+            <Label htmlFor="compose-goal">{t('goal')}</Label>
             <select
               id="compose-goal"
               value={goal}
               onChange={(e) => setGoal(e.target.value)}
               className={selectClass}
             >
-              <option value="engagement">Angažovanje</option>
-              <option value="awareness">Svest o brendu</option>
-              <option value="sales">Prodaja ili upit</option>
-              <option value="education">Edukacija</option>
+              <option value="engagement">{t('goals.engagement')}</option>
+              <option value="awareness">{t('goals.awareness')}</option>
+              <option value="sales">{t('goals.sales')}</option>
+              <option value="education">{t('goals.education')}</option>
             </select>
           </div>
         </div>
 
         {designable ? (
           <section className="space-y-3 rounded-lg border p-3">
-            <div className="flex flex-wrap items-center gap-2" role="radiogroup" aria-label="Izgled">
-              <span className="text-sm font-medium">Izgled</span>
+            <div
+              className="flex flex-wrap items-center gap-2"
+              role="radiogroup"
+              aria-label={t('compose.look')}
+            >
+              <span className="text-sm font-medium">{t('compose.look')}</span>
               {(['design', 'photo'] as const).map((v) => (
                 <button
                   key={v}
@@ -1721,7 +1698,7 @@ function ComposePanel({
                   onClick={() => setLook(v)}
                   className={`rounded-md border px-3 py-1.5 text-sm ${look === v ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted/50'}`}
                 >
-                  {v === 'design' ? 'Dizajn u stilu brenda' : 'Samo fotografija'}
+                  {v === 'design' ? t('compose.lookDesign') : t('compose.lookPhoto')}
                 </button>
               ))}
             </div>
@@ -1750,7 +1727,7 @@ function ComposePanel({
                     onClick={() => setPickerOpen((o) => !o)}
                     aria-expanded={pickerOpen}
                   >
-                    {pickerOpen ? 'Zatvori stilove' : 'Promeni stil'}
+                    {pickerOpen ? t('compose.closeStyles') : t('compose.changeStyle')}
                   </Button>
                 </div>
                 {pickerOpen ? (
@@ -1801,10 +1778,7 @@ function ComposePanel({
                     </select>
                   </div>
                 </div>
-                <p className="text-xs text-muted-foreground">
-                  Slajdove piše Gemini, a crta ih izabrani stil u bojama brenda. Za slajdove se ne plaća, samo
-                  tekst.
-                </p>
+                <p className="text-xs text-muted-foreground">{t('compose.slidesHint')}</p>
               </>
             ) : null}
           </section>
@@ -1812,43 +1786,43 @@ function ComposePanel({
 
         <p className="text-xs text-muted-foreground">
           {chosen === 'auto' && designed
-            ? 'AI bira između jedne objave i karusela, po tome koliko tema ima da kaže.'
+            ? t('compose.autoDesigned')
             : chosen === 'auto'
               ? allowed.length
-                ? `AI bira vrstu koja najbolje nosi temu, među: ${allowed.map((f) => FORMAT_LABEL[f]).join(', ')}.`
-                : 'Izabrane mreže nemaju zajedničku vrstu objave. Napravite posebne objave.'
-              : FORMAT_HINT[chosen]}
+                ? t('compose.autoAmong', { list: allowed.map((f) => t(`formats.${f}.label`)).join(', ') })
+                : t('compose.noCommon')
+              : t(`formats.${chosen}.hint`)}
           {wantsVideo && !sources.pexels && source !== 'template' && source !== 'unsplash'
-            ? ' Pexels još nije uključen, pa video dodajte iz Canve ili biblioteke.'
+            ? ` ${t('compose.noPexels')}`
             : ''}
-          {needsVisual && source === 'unsplash' && !sources.unsplash ? ' Unsplash još nije uključen.' : ''}
+          {needsVisual && source === 'unsplash' && !sources.unsplash ? ` ${t('compose.noUnsplash')}` : ''}
         </p>
 
         <div className="space-y-1.5">
-          <Label htmlFor="compose-topic">O čemu je objava?</Label>
+          <Label htmlFor="compose-topic">{t('topic')}</Label>
           <Textarea
             id="compose-topic"
             value={topic}
             onChange={(e) => setTopic(e.target.value)}
             rows={4}
             maxLength={2000}
-            placeholder="Npr. petak u klubu: gostujući DJ, ulaz do ponoći besplatan"
+            placeholder={t('compose.topicPlaceholder')}
           />
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
           <div className="space-y-1.5">
-            <Label htmlFor="compose-cta">Poziv na akciju (opciono)</Label>
+            <Label htmlFor="compose-cta">{t('cta')}</Label>
             <Input
               id="compose-cta"
               value={cta}
               onChange={(e) => setCta(e.target.value)}
               maxLength={200}
-              placeholder="Rezervišite sto porukom"
+              placeholder={t('compose.ctaPlaceholder')}
             />
           </div>
           {chosen === 'link' ? (
             <div className="space-y-1.5">
-              <Label htmlFor="compose-link">Link (prazno = sajt brenda)</Label>
+              <Label htmlFor="compose-link">{t('compose.link')}</Label>
               <Input
                 id="compose-link"
                 type="url"
@@ -1866,14 +1840,14 @@ function ComposePanel({
             checked={hashtags}
             onChange={(e) => setHashtags(e.target.checked)}
           />
-          Heštegovi
+          {t('compose.hashtags')}
         </label>
 
         <Button
           disabled={run.isPending || topic.trim().length < 3 || !platforms.length || !allowed.length}
           onClick={() => run.mutate()}
         >
-          {run.isPending ? 'Pravim objavu…' : `NAPRAVI OBJAVU (${cost} tokena)`}
+          {run.isPending ? t('compose.creating') : t('compose.submit', { count: cost })}
         </Button>
         <ErrorBox error={run.error} />
 
@@ -1881,11 +1855,15 @@ function ComposePanel({
           <div className="space-y-4 rounded-md border p-4">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <p className="text-sm">
-                Napravljeno: <strong>{FORMAT_LABEL[run.data.format]}</strong> · naplaćeno{' '}
-                {run.data.tokensCharged} tokena{run.data.targets ? ` · nalozi: ${run.data.targets}` : ''}
+                {t.rich('compose.created', {
+                  format: t(`formats.${run.data.format}.label`),
+                  b: (chunks) => <strong>{chunks}</strong>,
+                })}{' '}
+                · {t('charged', { count: run.data.tokensCharged })}
+                {run.data.targets ? ` · ${t('compose.accounts', { count: run.data.targets })}` : ''}
               </p>
               <Button nativeButton={false} render={<a href={`/app/posts/${run.data.postId}`} />}>
-                Otvori nacrt i zakaži
+                {t('compose.open')}
               </Button>
             </div>
             {run.data.media.length ? (
@@ -1899,13 +1877,13 @@ function ComposePanel({
                         playsInline
                         preload="metadata"
                         className="w-full rounded-md border bg-black"
-                        aria-label="Video uz objavu"
+                        aria-label={t('compose.videoLabel')}
                       />
                     ) : (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
                         src={m.url}
-                        alt="Vizual uz objavu"
+                        alt={t('compose.visualAlt')}
                         className="w-full rounded-md border object-cover"
                       />
                     )}

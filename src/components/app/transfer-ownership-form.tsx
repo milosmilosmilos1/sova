@@ -1,6 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -14,6 +15,7 @@ export function TransferOwnershipForm({
   workspaceId: string
   members: Array<{ userId: string; label: string }>
 }) {
+  const t = useTranslations('team.transfer')
   const router = useRouter()
   const [userId, setUserId] = useState('')
   const [confirmed, setConfirmed] = useState(false)
@@ -31,30 +33,25 @@ export function TransferOwnershipForm({
       })
       const data = (await res.json()) as ApiResponse<{ transferred: boolean }>
       if (!data.ok) throw new Error(data.error.message)
-      setMessage({ ok: true, text: 'Vlasništvo je preneto. Sada ste administrator.' })
+      setMessage({ ok: true, text: t('done') })
       router.refresh()
     } catch (e) {
-      setMessage({ ok: false, text: e instanceof Error ? e.message : 'Prenos nije uspeo.' })
+      setMessage({ ok: false, text: e instanceof Error ? e.message : t('failed') })
     } finally {
       setBusy(false)
     }
   }
 
-  if (!members.length)
-    return (
-      <p className="text-sm text-muted-foreground">
-        Prvo pozovite člana kome želite da prenesete vlasništvo.
-      </p>
-    )
+  if (!members.length) return <p className="text-sm text-muted-foreground">{t('noMembers')}</p>
   return (
     <div className="space-y-3 text-sm">
       <select
         className="h-9 w-full max-w-sm rounded-md border bg-background px-2"
         value={userId}
         onChange={(e) => setUserId(e.target.value)}
-        aria-label="Novi vlasnik"
+        aria-label={t('newOwner')}
       >
-        <option value="">Izaberite člana…</option>
+        <option value="">{t('choose')}</option>
         {members.map((m) => (
           <option key={m.userId} value={m.userId}>
             {m.label}
@@ -68,13 +65,10 @@ export function TransferOwnershipForm({
           checked={confirmed}
           onChange={(e) => setConfirmed(e.target.checked)}
         />
-        <span>
-          Razumem da novi vlasnik dobija naplatu, brisanje radnog prostora i prenos vlasništva, a ja postajem
-          administrator.
-        </span>
+        <span>{t('confirm')}</span>
       </label>
       <Button variant="outline" disabled={busy || !userId || !confirmed} onClick={() => void transfer()}>
-        {busy ? 'Prenosim…' : 'Prenesi vlasništvo'}
+        {busy ? t('pending') : t('submit')}
       </Button>
       {message ? (
         <p

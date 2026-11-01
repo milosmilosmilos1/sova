@@ -144,7 +144,8 @@ export function VoiceForm({
         })}
       </div>
 
-      <fieldset className="space-y-2">
+      {/* fieldset po difoltu ne ide ispod širine sadržaja; min-w-0 da duga tema ne širi stranu na telefonu */}
+      <fieldset className="min-w-0 space-y-2">
         <legend className="text-sm font-medium">{t('topics.label')}</legend>
         <p className="text-xs text-muted-foreground">{t('topics.hint', { max: VOICE_TOPICS_MAX })}</p>
         {value.topics.length ? (
@@ -154,7 +155,7 @@ export function VoiceForm({
                 key={x}
                 className="flex max-w-full items-center gap-1 rounded-full border bg-card py-1 pr-1 pl-3 text-sm"
               >
-                <span className="truncate">{x}</span>
+                <span className="min-w-0 truncate">{x}</span>
                 <button
                   type="button"
                   disabled={disabled}

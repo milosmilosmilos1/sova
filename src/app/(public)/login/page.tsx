@@ -1,37 +1,41 @@
 import type { Metadata } from 'next'
+import { getLocale, getTranslations } from 'next-intl/server'
 
 import { SignedOutBroadcast } from '@/components/app/auth-sync'
 import { AuthCard } from '@/components/auth/auth-card'
 import { LoginForm } from '@/components/auth/login-form'
 import { configured } from '@/lib/env'
 import { nextPathSchema } from '@/lib/schemas/auth'
+import { publicMetadata } from '@/lib/seo'
 
-export const metadata: Metadata = { title: 'Prijava' }
-
-const ERRORS: Record<string, string> = {
-  link: 'Link je nevažeći ili je istekao. Prijavite se ili zatražite nov link.',
-  provider: 'Prijava preko spoljnog naloga nije uspela. Pokušajte ponovo.',
-  google: 'Google prijava trenutno nije dostupna.',
+export async function generateMetadata(): Promise<Metadata> {
+  const [locale, t] = await Promise.all([getLocale(), getTranslations('auth.login')])
+  return publicMetadata({ locale, path: '/login', title: t('title') })
 }
 
+/** Greške iz adrese (`?error=`); nepoznata greška se prikazuje kao nevažeći link. */
+const ERRORS = ['link', 'provider', 'google'] as const
+type LoginError = (typeof ERRORS)[number]
+const isLoginError = (value: string): value is LoginError => (ERRORS as readonly string[]).includes(value)
+
 export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
-  const params = await searchParams
+  const [params, t] = await Promise.all([searchParams, getTranslations('auth.login')])
   const next = nextPathSchema.parse(typeof params.next === 'string' ? params.next : undefined)
   const errorKey = typeof params.error === 'string' ? params.error : undefined
   const deleted = params.nalog === 'obrisan'
   const signedOut = params.odjava === '1' || deleted
   return (
-    <AuthCard title="Prijava" description="Dobro došli nazad u Sovu.">
+    <AuthCard title={t('title')} description={t('description')}>
       {signedOut ? <SignedOutBroadcast /> : null}
       {deleted ? (
         <p role="status" className="mb-4 rounded-md border px-3 py-2 text-sm">
-          Nalog je obrisan zajedno sa vašim podacima. Hvala što ste koristili Sovu.
+          {t('deleted')}
         </p>
       ) : null}
       <LoginForm
         next={next}
         googleEnabled={configured.google}
-        initialError={errorKey ? (ERRORS[errorKey] ?? ERRORS.link) : undefined}
+        initialError={errorKey ? t(`errors.${isLoginError(errorKey) ? errorKey : 'link'}`) : undefined}
       />
     </AuthCard>
   )

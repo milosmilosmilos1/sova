@@ -423,7 +423,7 @@ export default async function AppHomePage({ searchParams }: PageProps<'/app'>) {
                   <span
                     className={cn(
                       'text-[11px] uppercase',
-                      isToday ? 'text-primary-foreground/80' : 'text-muted-foreground',
+                      isToday ? 'text-primary-foreground' : 'text-muted-foreground',
                     )}
                   >
                     {format.dateTime(d, { weekday: 'short', timeZone: 'UTC' })}
@@ -432,7 +432,7 @@ export default async function AppHomePage({ searchParams }: PageProps<'/app'>) {
                   <span
                     className={cn(
                       'text-[11px]',
-                      isToday ? 'text-primary-foreground/80' : 'text-muted-foreground',
+                      isToday ? 'text-primary-foreground' : 'text-muted-foreground',
                     )}
                   >
                     {count || '·'}

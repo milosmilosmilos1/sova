@@ -1,1 +1,352 @@
-{}
+{
+  "postEditor": {
+    "loading": "Učitavam objavu…",
+    "xCost": "Objava na X troši {cost, plural, one {# token} few {# tokena} other {# tokena}} (bez linka 1, sa linkom 6); naplaćuje se tek kad objava prođe.",
+    "xCostLink": "Objava na X troši {cost, plural, one {# token} few {# tokena} other {# tokena}} jer ima link (bez linka 1, sa linkom 6); naplaćuje se tek kad objava prođe.",
+    "actions": {
+      "submit": "Pošalji na odobrenje",
+      "withdraw": "Povuci sa odobravanja",
+      "schedule": "Zakaži",
+      "unschedule": "Otkaži zakazivanje",
+      "pause": "Pauziraj",
+      "resume": "Nastavi",
+      "cancel": "Otkaži objavu",
+      "restore": "Vrati u nacrt",
+      "delete": "Obriši"
+    },
+    "titleNew": "Nova objava",
+    "titleEdit": "Objava",
+    "draftBadge": "nacrt",
+    "version": "verzija {version}",
+    "brandZone": "· {brand} · zona {timezone}",
+    "locked": "Objava se upravo objavljuje i ne može da se menja.",
+    "draftOffer": "Imate nesačuvan nacrt od {date}.",
+    "draftOfferOld": "Imate nesačuvan nacrt od {date} (napravljen na starijoj verziji objave).",
+    "draftRestore": "Vrati nacrt",
+    "draftDiscard": "Odbaci",
+    "content": {
+      "title": "Sadržaj",
+      "description": "Master tekst važi za sve mreže; po mreži možete upisati drugačiji tekst.",
+      "internalTitle": "Interni naslov (opciono)",
+      "text": "Tekst objave",
+      "chars": "{count} karaktera",
+      "link": "Link (opciono)",
+      "firstComment": "Prvi komentar (Instagram, Facebook i LinkedIn, opciono)",
+      "pillar": "Stub sadržaja (opciono)",
+      "noPillar": "Bez stuba",
+      "campaign": "Kampanja (opciono)",
+      "noCampaign": "Bez kampanje"
+    },
+    "networks": {
+      "title": "Mreže",
+      "description": "Izaberite naloge; za svaki možete prilagoditi tekst (limit po mreži se proverava pri slanju).",
+      "empty": "Nema povezanih mreža. Povežite ih na strani „Mreže”.",
+      "assisted": "asistirano",
+      "limit": "limit {max} karaktera",
+      "textPlaceholder": "Prazno = master tekst",
+      "story": "Objavi kao priču (Story)",
+      "storyHint": "Jedna uspravna slika ili video do 60 sekundi. Priča traje 24 sata i nema opis."
+    },
+    "media": {
+      "title": "Mediji",
+      "description": "Iz biblioteke brenda (Unsplash, Canva, šabloni iz Studija) ili otpremite fotografiju ili video (MP4, MOV).",
+      "replaceTitle": "Zamena medija bez otkazivanja termina",
+      "replaceHint": "Novi fajl prolazi istu proveru za mreže kao pri zakazivanju, a termin ostaje isti.",
+      "replace": "Zameni",
+      "replacing": "Menjam medij…",
+      "replacePick": "Izaberite novi medij iz biblioteke ispod ili otpremite fajl.",
+      "upload": "Otpremi fotografiju ili video",
+      "uploading": "Otpremam…",
+      "uploadingPercent": "Otpremam… {percent} %",
+      "uploadProgress": "Napredak otpremanja",
+      "video": "Video",
+      "empty": "Biblioteka je prazna."
+    },
+    "schedule": {
+      "title": "Termin",
+      "description": "Vreme u zoni brenda ({timezone}). Zakazivanje je posebna radnja ispod.",
+      "label": "Termin objave"
+    },
+    "saving": "Čuvam…",
+    "saveChanges": "Sačuvaj izmene",
+    "saveDraft": "Sačuvaj nacrt",
+    "publishNow": "Objavi sada",
+    "duplicate": "Dupliraj",
+    "giveUp": "Odustani",
+    "decision": {
+      "title": "Odluka",
+      "description": "Odobrite, odbijte ili zatražite izmene (komentar je obavezan za odbijanje i izmene).",
+      "placeholder": "Komentar za autora",
+      "approve": "Odobri",
+      "requestChanges": "Traži izmene",
+      "reject": "Odbij"
+    },
+    "targets": {
+      "title": "Targeti",
+      "openPost": "Otvori objavu",
+      "retry": "Pokušaj ponovo",
+      "accounts": "Mreže",
+      "assistedHint": "Ova mreža se objavljuje ručno: kopirajte tekst, preuzmite medije, objavite na mreži pa označite ovde.",
+      "copied": "Kopirano",
+      "copy": "Kopiraj tekst",
+      "mediaItem": "Medij {n}",
+      "permalink": "Link objave na mreži (opciono)",
+      "markDone": "Označi kao objavljeno"
+    },
+    "targetStatus": {
+      "pending": "čeka",
+      "scheduled": "zakazano",
+      "paused": "pauzirano",
+      "needs_reauth": "traži ponovno povezivanje",
+      "publishing": "objavljuje se",
+      "published": "objavljeno",
+      "failed": "neuspelo",
+      "canceled": "otkazano",
+      "deleted_externally": "obrisano na mreži",
+      "assisted_pending": "čeka ručno objavljivanje",
+      "assisted_done": "ručno objavljeno"
+    },
+    "approvalLink": {
+      "title": "Javni link za klijenta",
+      "description": "Klijent bez naloga vidi objavu i odlučuje. Link važi 7 dana.",
+      "create": "Napravi link",
+      "label": "Link za klijenta"
+    },
+    "comments": {
+      "title": "Komentari",
+      "client": "(klijent)",
+      "empty": "Još nema komentara.",
+      "placeholder": "Napišite komentar",
+      "send": "Pošalji"
+    },
+    "versions": "Verzije",
+    "aspect": {
+      "range": "{min} do {max}",
+      "accepts": "{platform} prima {range}",
+      "issue": "Slika {n} ima odnos {ratio}, a {list}.",
+      "noCommon": "Izabrane mreže nemaju zajednički odnos stranica. Napravite posebnu objavu za mrežu koja traži drugačiji format.",
+      "crop": "Iseci na {ratio}",
+      "cropping": "Sečem…",
+      "cropNote": "Isečak postaje nova slika u biblioteci; original ostaje netaknut.",
+      "horizontal": "Levo – desno",
+      "vertical": "Gore – dole",
+      "position": "Položaj isečka"
+    },
+    "qa": {
+      "passed": "Autopilot: nacrt je prošao kontrolu kvaliteta (dužina, zabranjene reči, pismo, sličnost, brojke iz profila, vizual).",
+      "failed": "Autopilot je vratio nacrt na doradu. Ispravite tekst pa ga pošaljite na odobrenje:"
+    }
+  },
+  "postPanels": {
+    "titlePlaceholder": "Naslov (do 100 znakova)",
+    "tiktok": {
+      "loading": "Učitavam podešavanja TikTok naloga…",
+      "loadError": "TikTok podešavanja nisu učitana.",
+      "target": "Objava ide na TikTok nalog <b>{name}</b>.",
+      "targetUser": "Objava ide na TikTok nalog <b>{name}</b> (@{username}).",
+      "maxDuration": "Najduži video za ovaj nalog: {seconds} s.",
+      "privacy": "Ko može da vidi objavu",
+      "choose": "Izaberite…",
+      "privacyLevel": {
+        "PUBLIC_TO_EVERYONE": "Svi",
+        "MUTUAL_FOLLOW_FRIENDS": "Prijatelji (međusobno praćenje)",
+        "FOLLOWER_OF_CREATOR": "Pratioci",
+        "SELF_ONLY": "Samo ja"
+      },
+      "notForBranded": "(nije dostupno za brendirani sadržaj)",
+      "allow": "Dozvolite korisnicima",
+      "comments": "Komentare",
+      "disabledInTiktok": "isključeno u podešavanjima TikTok naloga",
+      "commercial": "Otkrij komercijalni sadržaj",
+      "commercialHint": "objava promoviše brend, proizvod ili uslugu",
+      "yourBrand": "Vaš brend",
+      "yourBrandHint": "promovišete sopstveni posao; objava dobija oznaku „Promotivni sadržaj”",
+      "branded": "Brendirani sadržaj",
+      "brandedHint": "plaćena saradnja sa drugim brendom; objava dobija oznaku „Plaćeno partnerstvo”",
+      "consent": "Objavljivanjem prihvatam TikTok-ovu <music>Potvrdu o korišćenju muzike</music>.",
+      "consentBranded": "Objavljivanjem prihvatam TikTok-ovu <music>Potvrdu o korišćenju muzike</music> i <branded>Politiku brendiranog sadržaja</branded>.",
+      "processing": "TikTok obrađuje objavu posle termina; na profilu se pojavljuje za nekoliko minuta.",
+      "problems": {
+        "privacy": "izaberite ko može da vidi objavu.",
+        "commercialType": "uz komercijalni sadržaj označite „Vaš brend”, „Brendirani sadržaj” ili oba.",
+        "brandedPrivate": "brendirani sadržaj ne može biti vidljiv samo vama.",
+        "consent": "potvrdite saglasnost sa TikTok pravilima o korišćenju muzike."
+      }
+    },
+    "pinterest": {
+      "board": "Tabla",
+      "loadingBoards": "Učitavam table…",
+      "chooseBoard": "Izaberite tablu",
+      "secret": "(tajna)",
+      "pinTitle": "Naslov pina",
+      "loadError": "Table nisu učitane.",
+      "noBoards": "Napravite tablu na Pinterest-u pa osvežite stranu.",
+      "hint": "Pinterest traži da svaki pin izaberete sami, pa ga Autopilot ne objavljuje. Opis pina je tekst objave (do 800 znakova), a link je link objave."
+    },
+    "youtube": {
+      "intro": "Short je vertikalan ili kvadratan video do 3 minuta; tekst objave ide u opis videa.",
+      "videoTitle": "Naslov videa",
+      "privacy": "Privatnost",
+      "privacyOptions": {
+        "public": "Javno",
+        "unlisted": "Nelistano (samo sa linkom)",
+        "private": "Privatno"
+      },
+      "madeForKids": "Da li je video namenjen deci?",
+      "kidsNo": "Ne, nije namenjen deci",
+      "kidsYes": "Da, namenjen je deci",
+      "problems": {
+        "titleRequired": "YouTube video traži naslov (do 100 znakova).",
+        "titleTooLong": "Naslov YouTube videa može imati najviše 100 znakova.",
+        "angleBrackets": "YouTube ne dozvoljava znake < i > u naslovu i opisu.",
+        "descriptionTooLong": "Opis YouTube videa može imati najviše 5.000 bajtova.",
+        "madeForKids": "Izaberite da li je video namenjen deci (obavezna izjava za YouTube)."
+      }
+    },
+    "gbp": {
+      "topic": "Vrsta objave",
+      "topics": {
+        "STANDARD": "Obična objava",
+        "EVENT": "Događaj",
+        "OFFER": "Ponuda"
+      },
+      "button": "Dugme",
+      "actions": {
+        "NONE": "Bez dugmeta",
+        "LEARN_MORE": "Saznajte više",
+        "BOOK": "Rezervišite",
+        "ORDER": "Poručite",
+        "SHOP": "Kupite",
+        "SIGN_UP": "Prijavite se",
+        "CALL": "Pozovite"
+      },
+      "buttonUrl": "Adresa dugmeta",
+      "emptyIsPostLink": "prazno = link objave",
+      "callHint": "Dugme poziva broj telefona sa profila.",
+      "titleOffer": "Naslov ponude",
+      "titleEvent": "Naslov događaja",
+      "start": "Početak",
+      "end": "Kraj",
+      "coupon": "Kupon (opciono)",
+      "redeemUrl": "Link za ponudu (opciono)",
+      "terms": "Uslovi ponude (opciono)",
+      "localTime": "Vreme je lokalno vreme lokacije na Google mapama.",
+      "problems": {
+        "ctaLink": "Dugme na Google poslovnom profilu traži link: upišite link objave ili adresu dugmeta.",
+        "title": "Događaj i ponuda na Google poslovnom profilu traže naslov.",
+        "dates": "Događaj i ponuda traže početak i kraj (datum i sat).",
+        "endAfterStart": "Kraj događaja mora biti posle početka."
+      }
+    }
+  },
+  "postsList": {
+    "title": "Objave",
+    "subtitle": "Brend: {brand}. Nacrti, odobravanje, zakazivanje.",
+    "newPost": "Nova objava",
+    "filters": {
+      "all": "Sve",
+      "draft": "Nacrti",
+      "in_review": "Na odobrenju",
+      "approved": "Odobreno",
+      "scheduled": "Zakazano",
+      "published": "Objavljeno",
+      "failed": "Neuspelo",
+      "rejected": "Odbijeno i otkazano"
+    },
+    "loading": "Učitavam objave…",
+    "empty": "Nema objava u ovom filteru.",
+    "untitled": "Bez naslova",
+    "when": "Termin: {date}",
+    "noWhen": "Bez termina",
+    "edited": "izmenjeno {date}",
+    "media": "{count} medija"
+  },
+  "publicApproval": {
+    "metaTitle": "Odobravanje objava",
+    "loading": "Učitavam objave…",
+    "unavailable": "Link nije dostupan",
+    "title": "Objave za odobrenje · {brand}",
+    "forClient": "Za: {client}.",
+    "validUntil": "Link važi do {date}. Vaše odluke stižu timu odmah.",
+    "name": "Vaše ime (opciono)",
+    "post": "Objava",
+    "status": {
+      "in_review": "čeka vašu odluku",
+      "approved": "odobreno",
+      "rejected": "odbijeno",
+      "draft": "vraćeno na doradu",
+      "scheduled": "zakazano",
+      "published": "objavljeno",
+      "changes_requested": "traže se izmene"
+    },
+    "firstComment": "Prvi komentar: {text}",
+    "link": "Link: {url}",
+    "planned": "Planirano: {date}",
+    "decision": "Odluka: {decision} · {date}",
+    "decisionComment": "Odluka: {decision} · {date} · „{comment}”",
+    "commentPlaceholder": "Komentar (obavezan za odbijanje ili izmene)",
+    "commentLabel": "Komentar za tim",
+    "approve": "Odobri",
+    "requestChanges": "Traži izmene",
+    "reject": "Odbij",
+    "sendComment": "Pošalji komentar"
+  },
+  "accounts": {
+    "title": "Mreže",
+    "subtitle": "Brend: {brand}. Povezani nalozi na koje Sova objavljuje i sa kojih uvozi istoriju.",
+    "emptyNotice": {
+      "meta": "Facebook nije vratio nijednu stranicu. Proverite da ste administrator stranice i da je Instagram nalog poslovni i povezan sa stranicom.",
+      "linkedin": "LinkedIn nije vratio nijedan nalog.",
+      "tiktok": "TikTok nije vratio nalog.",
+      "google_business": "Google nije vratio nijednu lokaciju. Proverite da ste vlasnik ili menadžer poslovnog profila i da je profil verifikovan.",
+      "youtube": "Google nalog nema YouTube kanal. Napravite kanal na YouTube-u pa povežite ponovo.",
+      "pinterest": "Pinterest nije vratio nalog.",
+      "x": "X nije vratio nalog."
+    },
+    "viaFacebook": "prijava preko Facebook-a",
+    "status": {
+      "active": "aktivno",
+      "needs_reauth": "treba ponovo povezati",
+      "disabled": "isključeno",
+      "revoked": "opozvano"
+    },
+    "connectTitle": "Povežite mrežu",
+    "connectAdmin": "Kliknite mrežu, prijavite se na njoj i dozvolite Sovi pristup. Lozinku unosite samo na stranici mreže, Sova je ne vidi.",
+    "connectMember": "Mreže povezuje vlasnik ili administrator radnog prostora.",
+    "tile": {
+      "connectMore": "Povezano: {count}, dodaj još",
+      "connect": "Poveži",
+      "connected": "Povezano: {count}",
+      "byAdmin": "Povezuje administrator",
+      "off": "Privremeno isključeno",
+      "soon": "Uskoro"
+    },
+    "adminNote": "Za administratora platforme: „Uskoro” znači da na serveru nema ključeva aplikacije.",
+    "adminNoteMissing": "Za administratora platforme: „Uskoro” znači da na serveru nema ključeva aplikacije ({list}).",
+    "adminFlagged": "Isključeno feature flagom: {list}.",
+    "denied": "Povezivanje je otkazano na mreži.",
+    "pickTitle": "Izaberite naloge",
+    "pickDescription": "Mreža je vratila ove naloge (stranice, profile). Štiklirajte one na koje Sova sme da objavljuje.",
+    "pickOne": "Izaberi {name}",
+    "followers": "{count} pratilaca",
+    "readOnly": "bez prava objavljivanja (samo čitanje)",
+    "connecting": "Povezujem…",
+    "connectSelected": "Poveži izabrane ({count})",
+    "loading": "Učitavam naloge…",
+    "empty": "Još nema povezanih mreža.",
+    "emptyAdmin": "Kliknite mrežu iznad da počnete.",
+    "emptyMember": "Vlasnik ili administrator povezuje mreže.",
+    "assisted": "asistirano objavljivanje",
+    "imported": "{count} uvezenih objava",
+    "synced": "sinhronizovano {date}",
+    "linkedinExpiry": "Veza važi do {date}; LinkedIn traži ponovno povezivanje na 60 dana.",
+    "sync": "Sinhronizuj",
+    "hideHistory": "Sakrij istoriju",
+    "history": "Istorija objava",
+    "reconnect": "Poveži ponovo",
+    "disconnect": "Prekini vezu",
+    "historyLoading": "Učitavam…",
+    "historyEmpty": "Još nema uvezenih objava (uvoz traje do minut posle povezivanja).",
+    "metrics": "{likes} sviđanja, {comments} komentara"
+  }
+}

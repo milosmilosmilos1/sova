@@ -3,9 +3,12 @@ import 'server-only'
 import { randomUUID } from 'node:crypto'
 import { createElement } from 'react'
 
-import { dayLabel } from '@/components/charts/scale'
+import { chartNumbers } from '@/components/charts/scale'
 import { PLATFORMS } from '@/config/platforms'
+import { EMAIL_COPY } from '@/emails/copy'
 import { MonthlyReportEmail } from '@/emails/monthly-report'
+import type { AppLocale } from '@/i18n/config'
+import { translateServerText } from '@/i18n/server-text'
 import { ANALYTICS_TARGET_STATUSES, pctDelta } from '@/lib/analytics/aggregate'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
@@ -13,12 +16,11 @@ import { requireMembership } from '@/lib/auth/workspace'
 import { sendEmail } from '@/lib/email/send'
 import { logger } from '@/lib/logger'
 import { pluralSr } from '@/lib/plural'
+import { REPORT_COPY } from '@/lib/reports/copy'
 import { renderMonthlyReport, type MonthlyReportData } from '@/lib/reports/monthly-document'
 import {
   isMonthlyReportDue,
   monthBounds,
-  monthLabel,
-  monthName,
   monthOf,
   previousMonth,
   shiftMonth,
@@ -43,10 +45,27 @@ type ReportRow = Database['public']['Tables']['reports']['Row']
 const BUCKET = 'exports'
 /** izveštaj može da se napravi za poslednjih 12 meseci, kao opseg analitike */
 const MONTHS_BACK = 12
-const num = new Intl.NumberFormat('sr-Latn-RS')
+/** Jezik izveštaja je jezik brenda (D-130); ćirilica ide kao srpski latinicom. */
+export function reportLocale(contentLocale: string | null | undefined): AppLocale {
+  return contentLocale === 'en' || contentLocale === 'uk' ? contentLocale : 'sr-Latn'
+}
 
-const fmtRate = (v: number | null) =>
-  v === null ? '—' : `${(v * 100).toLocaleString('sr-Latn-RS', { maximumFractionDigits: 1 })} %`
+/** „oktobar 2026.”, „October 2026”, „жовтень 2026 р.” */
+export function reportMonthLabel(month: ReportMonth, locale: AppLocale): string {
+  const [y, m] = month.split('-').map(Number)
+  return REPORT_COPY[locale].monthLabel(y!, m!)
+}
+
+function formatsFor(locale: AppLocale) {
+  const copy = REPORT_COPY[locale]
+  const num = new Intl.NumberFormat(copy.intl)
+  const pct = (value: string) => (copy.intl === 'en-GB' ? `${value}%` : `${value} %`)
+  return {
+    num,
+    rate: (v: number | null) =>
+      v === null ? '—' : pct((v * 100).toLocaleString(copy.intl, { maximumFractionDigits: 1 })),
+  }
+}
 
 /** Kraći tekst za tabelu: seče na granici reči, sa trotačkom. */
 function clip(text: string, max: number): string {
@@ -73,8 +92,8 @@ function slug(text: string): string {
   )
 }
 
-export function reportFileName(brandName: string, month: ReportMonth): string {
-  return `izvestaj-${slug(brandName)}-${month}.pdf`
+export function reportFileName(brandName: string, month: ReportMonth, locale: AppLocale = 'sr-Latn'): string {
+  return `${REPORT_COPY[locale].fileStem}-${slug(brandName)}-${month}.pdf`
 }
 
 export interface ReportView {
@@ -98,14 +117,19 @@ export function toReportData(
     timeZone: string
     insights: Array<{ claim: string; recommendation: string }>
     now: Date
+    locale?: AppLocale
   },
 ): MonthlyReportData {
-  const day = new Intl.DateTimeFormat('sr-Latn-RS', {
+  const locale = input.locale ?? 'sr-Latn'
+  const copy = REPORT_COPY[locale]
+  const { num, rate: fmtRate } = formatsFor(locale)
+  const days = chartNumbers(copy.intl)
+  const day = new Intl.DateTimeFormat(copy.intl, {
     day: 'numeric',
     month: 'numeric',
     timeZone: input.timeZone,
   })
-  const today = new Intl.DateTimeFormat('sr-Latn-RS', {
+  const today = new Intl.DateTimeFormat(copy.intl, {
     day: 'numeric',
     month: 'numeric',
     year: 'numeric',
@@ -118,27 +142,29 @@ export function toReportData(
     engagement: r.engagement,
     engagementRate: r.engagementRate,
   })
+  const previous = Number(shiftMonth(input.month, -1).slice(5, 7))
   return {
+    locale,
     brandName: input.brandName,
-    month: monthLabel(input.month),
-    previousMonth: monthName(shiftMonth(input.month, -1)),
+    month: reportMonthLabel(input.month, locale),
+    previousMonth: copy.monthForComparison(previous),
     generatedAt: today.format(input.now),
     kpis: [
-      { label: 'Objave', value: num.format(o.totals.posts), delta: o.deltas.posts },
-      { label: 'Doseg', value: num.format(o.totals.reach), delta: o.deltas.reach },
+      { label: copy.kpi.posts, value: num.format(o.totals.posts), delta: o.deltas.posts },
+      { label: copy.kpi.reach, value: num.format(o.totals.reach), delta: o.deltas.reach },
       {
-        label: 'Prikazi',
+        label: copy.kpi.impressions,
         value: num.format(o.totals.impressions),
         delta: pctDelta(o.totals.impressions, o.previous.impressions),
       },
-      { label: 'Angažovanje', value: num.format(o.totals.engagement), delta: o.deltas.engagement },
+      { label: copy.kpi.engagement, value: num.format(o.totals.engagement), delta: o.deltas.engagement },
       {
-        label: 'Stopa angažovanja',
+        label: copy.kpi.rate,
         value: fmtRate(o.totals.engagementRate),
         delta: o.deltas.engagementRate,
       },
     ],
-    daily: o.daily.map((d) => ({ date: d.date, label: dayLabel(d.date), value: d.reach })),
+    daily: o.daily.map((d) => ({ date: d.date, label: days.day(d.date), value: d.reach })),
     platforms: o.perPlatform.map((r) => group(r, r.platformLabel)),
     pillars: o.perPillar.map((r) => group(r)),
     topPosts: o.topPosts.slice(0, 5).map((p) => ({
@@ -150,7 +176,7 @@ export function toReportData(
       engagementRate: p.engagementRate,
     })),
     followers: o.followers.map((f) => ({
-      account: [f.name ?? 'Nalog', f.platform ? PLATFORMS[f.platform]?.label : null]
+      account: [f.name ?? copy.accountFallback, f.platform ? PLATFORMS[f.platform]?.label : null]
         .filter(Boolean)
         .join(' · '),
       first: f.first,
@@ -158,7 +184,7 @@ export function toReportData(
       delta: f.delta,
     })),
     insights: input.insights.slice(0, 5),
-    notes: o.notes,
+    notes: o.notes.map((n) => translateServerText(n, locale)),
     empty: o.totals.posts === 0,
   }
 }
@@ -199,6 +225,7 @@ interface ReportBrand {
   name: string
   timezone: string
   report_emails: string[]
+  content_locale: string
 }
 
 interface Generated {
@@ -220,7 +247,7 @@ export async function generateMonthlyReport(input: {
   const admin = createSupabaseAdminClient()
   const { data: brand } = await admin
     .from('brands')
-    .select('id, workspace_id, name, timezone, report_emails')
+    .select('id, workspace_id, name, timezone, report_emails, content_locale')
     .eq('id', input.brandId)
     .is('deleted_at', null)
     .maybeSingle()
@@ -237,6 +264,7 @@ export async function generateMonthlyReport(input: {
     timeZone: brand.timezone,
     insights: await loadInsights(brand.id, bounds),
     now,
+    locale: reportLocale(brand.content_locale),
   })
   const pdf = await renderMonthlyReport(data)
   // nov naziv pri svakom pravljenju: stari link ne sme da vrati stari fajl iz keša
@@ -286,19 +314,26 @@ export async function generateMonthlyReport(input: {
   return { row: saved.data, pdf, data, brand, totals: overview.totals }
 }
 
-async function toView(row: ReportRow, brandName: string): Promise<ReportView> {
+/** Izveštaj u aplikaciji: mesec na jeziku korisnika, fajl na jeziku brenda (D-130). */
+async function toView(
+  row: ReportRow,
+  brand: { name: string; content_locale: string },
+  locale: AppLocale,
+): Promise<ReportView> {
   const month = row.period_start.slice(0, 7)
   let url: string | null = null
   if (row.storage_path) {
     const { data } = await createSupabaseAdminClient()
       .storage.from(BUCKET)
-      .createSignedUrl(row.storage_path, 3600, { download: reportFileName(brandName, month) })
+      .createSignedUrl(row.storage_path, 3600, {
+        download: reportFileName(brand.name, month, reportLocale(brand.content_locale)),
+      })
     url = data?.signedUrl ?? null
   }
   return {
     id: row.id,
     month,
-    monthLabel: monthLabel(month),
+    monthLabel: reportMonthLabel(month, locale),
     status: row.status,
     url,
     sentTo: row.sent_to,
@@ -322,7 +357,7 @@ export async function createReport(
     month: input.month,
     createdBy: viewer.user.id,
   })
-  return toView(row, brand.name)
+  return toView(row, brand, viewer.profile.locale)
 }
 
 export async function listReports(viewer: Viewer, brandId: string): Promise<ReportView[]> {
@@ -334,7 +369,7 @@ export async function listReports(viewer: Viewer, brandId: string): Promise<Repo
     .order('period_start', { ascending: false })
     .limit(24)
   if (error) throw mapDbError(error)
-  return Promise.all((data ?? []).map((r) => toView(r, brand.name)))
+  return Promise.all((data ?? []).map((r) => toView(r, brand, viewer.profile.locale)))
 }
 
 export interface DueReport {
@@ -405,19 +440,27 @@ export async function deliverMonthlyReport(brandId: string, month: ReportMonth):
   if (claimed.error) throw mapDbError(claimed.error)
   if (!claimed.data) return { status: 'skipped', reportId: row.id, emailed: 0, failedEmails: 0 }
 
-  const label = monthLabel(month)
+  // klijent dobija izveštaj na jeziku brenda (D-130)
+  const locale = reportLocale(brand.content_locale)
+  const { num } = formatsFor(locale)
+  const label = reportMonthLabel(month, locale)
   const summary = data.empty
     ? null
-    : `${num.format(totals.posts)} ${pluralSr(totals.posts, 'objava', 'objave', 'objava')}, doseg ${num.format(totals.reach)}, angažovanje ${num.format(totals.engagement)}`
+    : REPORT_COPY[locale].summary(
+        totals.posts,
+        num.format(totals.posts),
+        num.format(totals.reach),
+        num.format(totals.engagement),
+      )
   const sent: string[] = []
   let failedEmails = 0
   for (const to of brand.report_emails) {
     try {
       await sendEmail({
         to,
-        subject: `${brand.name}: izveštaj o društvenim mrežama za ${label}`,
-        react: createElement(MonthlyReportEmail, { brandName: brand.name, month: label, summary }),
-        attachments: [{ filename: reportFileName(brand.name, month), content: pdf }],
+        subject: EMAIL_COPY[locale].reportPreview(brand.name, label),
+        react: createElement(MonthlyReportEmail, { brandName: brand.name, month: label, summary, locale }),
+        attachments: [{ filename: reportFileName(brand.name, month, locale), content: pdf }],
         tags: { type: 'monthly_report' },
       })
       sent.push(to)

@@ -1,12 +1,16 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 
 import { PostEditor } from '@/components/posts/post-editor'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
 
-export const metadata: Metadata = { title: 'Nova objava' }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('shell')
+  return { title: t('titles.newPost') }
+}
 
 export default async function NewPostPage() {
   const viewer = await getViewer()

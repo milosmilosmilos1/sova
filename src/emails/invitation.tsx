@@ -1,41 +1,40 @@
 import { Button, Text } from '@react-email/components'
 
+import type { AppLocale } from '@/i18n/config'
+
+import { EMAIL_COPY } from './copy'
 import { EmailLayout, emailButton, emailText } from './layout'
 
-const ROLE_LABEL: Record<string, string> = {
-  admin: 'administrator',
-  editor: 'urednik',
-  approver: 'odobravalac',
-  viewer: 'posmatrač',
-}
-
+/** Pozivnica u radni prostor, na jeziku onoga ko poziva (D-130). */
 export function InvitationEmail({
   inviterName,
   workspaceName,
   role,
   acceptUrl,
   expiresInDays,
+  locale = 'sr-Latn',
 }: {
   inviterName: string
   workspaceName: string
   role: string
   acceptUrl: string
   expiresInDays: number
+  locale?: AppLocale
 }) {
+  const copy = EMAIL_COPY[locale]
   return (
-    <EmailLayout preview={`${inviterName} vas poziva u radni prostor ${workspaceName}`}>
+    <EmailLayout preview={copy.invitePreview(inviterName, workspaceName)} lang={copy.htmlLang}>
       <Text style={emailText}>
-        {inviterName} vas poziva da se pridružite radnom prostoru <strong>{workspaceName}</strong> u Sovi kao{' '}
-        {ROLE_LABEL[role] ?? role}.
+        {copy.inviteLead(inviterName)}
+        <strong>{workspaceName}</strong>
+        {copy.inviteRole(copy.roles[role] ?? role)}
       </Text>
-      <Text style={emailText}>
-        Kliknite na dugme da prihvatite pozivnicu. Link važi {expiresInDays} dana.
-      </Text>
+      <Text style={emailText}>{copy.inviteExpires(expiresInDays)}</Text>
       <Button href={acceptUrl} style={emailButton}>
-        Prihvati pozivnicu
+        {copy.inviteAccept}
       </Button>
       <Text style={{ ...emailText, fontSize: 13, color: '#6b7280', marginTop: 16 }}>
-        Ako ne očekujete ovu pozivnicu, slobodno zanemarite poruku. Link: {acceptUrl}
+        {copy.inviteIgnore(acceptUrl)}
       </Text>
     </EmailLayout>
   )

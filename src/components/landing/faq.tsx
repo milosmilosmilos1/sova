@@ -1,78 +1,75 @@
 'use client'
 
 import { faPlus } from '@fortawesome/free-solid-svg-icons'
+import type { Route } from 'next'
 import Link from 'next/link'
+import { useLocale, useTranslations } from 'next-intl'
 import { useId, useState, type ReactNode } from 'react'
 
-import { pluralSr } from '@/lib/plural'
+import { localePath, SECTION_IDS } from '@/i18n/paths'
 import { cn } from 'cn'
 
 import { Fa } from './icons'
 import type { PricingCosts } from './pricing-math'
 
 /** Česta pitanja (D-098): jedno otvoreno u isto vreme, prvo otvoreno na početku. */
-const tokenWord = (n: number) => pluralSr(n, 'token', 'tokena', 'tokena')
 const link =
   'text-l-accent-soft underline decoration-l-accent-soft/40 underline-offset-2 hover:decoration-current'
 
-function items(costs: PricingCosts): Array<[string, ReactNode]> {
-  return [
-    [
-      'Šta su tokeni?',
-      `Tokeni su jedinica rada AI-ja. Tekst objave košta ${costs.text} ${tokenWord(costs.text)}, slika ${costs.image}, a mesečna strategija ${costs.strategy}. Objavljivanje, kalendar i analitika ne troše tokene, osim objava na X: ${costs.xPost} ${tokenWord(costs.xPost)}, a sa linkom ${costs.xPostWithLink}.`,
-    ],
-    [
-      'Da li Sova objavljuje bez mene?',
-      'Samo ako to želite. Podrazumevano svaka objava čeka vaše odobrenje. Kada uključite Autopilot, Sova objavljuje po planu, u okviru budžeta tokena i pravila koja ste postavili.',
-    ],
-    [
-      'Mogu li da otkažem pretplatu?',
-      'Da, u svakom trenutku, sa stranice Naplata u aplikaciji. Plan ostaje aktivan do kraja plaćenog perioda, a kupljene dopune tokena ne ističu.',
-    ],
-    [
-      'Šta se dešava sa mojim podacima?',
-      <>
-        Podaci se koriste samo za rad na vašem brendu i ne prodajemo ih. Delimo ih samo sa obrađivačima iz{' '}
-        <Link href="/privacy" className={link}>
-          Politike privatnosti
-        </Link>
-        , kao što su hosting, AI i naplata. Nalog i sve podatke možete trajno obrisati sa stranice{' '}
-        <Link href="/data-deletion" className={link}>
-          Brisanje podataka
-        </Link>
-        .
-      </>,
-    ],
-    [
-      'Da li radi na srpskom?',
-      'Da. Sova piše na srpskom, latinicom i ćirilicom, i na engleskom kada vam treba. Poštuje padeže, ton vašeg brenda i lokalne izraze.',
-    ],
-  ]
-}
+const ITEMS = ['tokens', 'autopilot', 'cancel', 'data', 'language'] as const
 
 export function Faq({ costs }: { costs: PricingCosts }) {
+  const t = useTranslations('site.faq')
+  const locale = useLocale()
   const [open, setOpen] = useState(0)
   const id = useId()
+  const href = (path: string) => localePath(locale, path) as Route
+  const answers: Record<(typeof ITEMS)[number], ReactNode> = {
+    tokens: t('items.tokens.a', {
+      text: costs.text,
+      image: costs.image,
+      strategy: costs.strategy,
+      xPost: costs.xPost,
+      withLink: costs.xPostWithLink,
+    }),
+    autopilot: t('items.autopilot.a'),
+    cancel: t('items.cancel.a'),
+    data: t.rich('items.data.a', {
+      privacy: (chunks) => (
+        <Link href={href('/privacy')} className={link}>
+          {chunks}
+        </Link>
+      ),
+      deletion: (chunks) => (
+        <Link href={href('/data-deletion')} className={link}>
+          {chunks}
+        </Link>
+      ),
+    }),
+    language: t('items.language.a'),
+  }
   return (
-    <section id="pitanja" className="px-6 py-[110px]">
+    <section id={SECTION_IDS[locale].faq} className="px-6 py-[110px]">
       <div className="mx-auto flex max-w-[1200px] flex-wrap gap-12">
         <div className="min-w-0 flex-[1_1_300px]">
           <h2 className="m-0 text-[clamp(34px,4.4vw,52px)] leading-[1.04] font-semibold tracking-[-0.04em]">
-            Česta pitanja
+            {t('title')}
           </h2>
           <p className="mt-4 max-w-[340px] text-[17px] leading-[1.55] text-pretty text-l-muted">
-            Ako ne nađete odgovor, pišite nam preko stranice{' '}
-            <Link href="/kontakt" className={link}>
-              Kontakt
-            </Link>
-            .
+            {t.rich('intro', {
+              link: (chunks) => (
+                <Link href={href('/kontakt')} className={link}>
+                  {chunks}
+                </Link>
+              ),
+            })}
           </p>
         </div>
         <div className="min-w-0 flex-[2_1_520px] border-t border-l-line/12">
-          {items(costs).map(([q, a], i) => {
+          {ITEMS.map((item, i) => {
             const isOpen = open === i
             return (
-              <div key={q} className="border-b border-l-line/12">
+              <div key={item} className="border-b border-l-line/12">
                 <h3>
                   <button
                     type="button"
@@ -82,7 +79,7 @@ export function Faq({ costs }: { costs: PricingCosts }) {
                     onClick={() => setOpen(isOpen ? -1 : i)}
                     className="flex w-full cursor-pointer items-center justify-between gap-4 py-[22px] text-left text-[17px] font-medium tracking-[-0.01em] text-l-text"
                   >
-                    <span>{q}</span>
+                    <span>{t(`items.${item}.q`)}</span>
                     <span
                       aria-hidden
                       className={cn(
@@ -98,7 +95,7 @@ export function Faq({ costs }: { costs: PricingCosts }) {
                 </h3>
                 <div id={`${id}-a${i}`} role="region" aria-labelledby={`${id}-q${i}`} hidden={!isOpen}>
                   <p className="-mt-1 mb-6 max-w-[640px] text-[15.5px] leading-[1.6] text-pretty text-l-muted motion-safe:animate-l-in-fast">
-                    {a}
+                    {answers[item]}
                   </p>
                 </div>
               </div>

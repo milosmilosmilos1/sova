@@ -1,16 +1,22 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
+
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import {
-  GBP_ACTION_LABELS,
-  GBP_ACTIONS,
-  GBP_TOPIC_LABELS,
-  GBP_TOPICS,
-  gbpOptionProblems,
-  type GbpOptions,
-} from '@/config/google-business'
+import { GBP_ACTIONS, GBP_TOPICS, gbpOptionProblems, type GbpOptions } from '@/config/google-business'
+
+/**
+ * Poruke iz `gbpOptionProblems` (deljene sa serverom, u kodu ostaju srpske, D-130) → ključ prevoda.
+ * Poruka koje nema u spisku prikazuje se kakva jeste.
+ */
+const PROBLEM_KEYS: Record<string, 'ctaLink' | 'title' | 'dates' | 'endAfterStart'> = {
+  'Dugme na Google poslovnom profilu traži link: upišite link objave ili adresu dugmeta.': 'ctaLink',
+  'Događaj i ponuda na Google poslovnom profilu traže naslov.': 'title',
+  'Događaj i ponuda traže početak i kraj (datum i sat).': 'dates',
+  'Kraj događaja mora biti posle početka.': 'endAfterStart',
+}
 
 /**
  * Podešavanja objave na Google poslovnom profilu (faza 8c): vrsta objave, dugme i, za događaj i
@@ -29,6 +35,7 @@ export function GoogleBusinessPanel({
   onChange: (next: GbpOptions) => void
   disabled: boolean
 }) {
+  const t = useTranslations('postPanels.gbp')
   const set = (patch: Partial<GbpOptions>) => onChange({ ...value, ...patch })
   const id = (name: string) => `gbp-${name}-${accountId}`
   const timed = value.topicType !== 'STANDARD'
@@ -37,7 +44,7 @@ export function GoogleBusinessPanel({
     <div className="mt-3 space-y-3 rounded-md border bg-muted/30 p-3 text-sm">
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
-          <Label htmlFor={id('topic')}>Vrsta objave</Label>
+          <Label htmlFor={id('topic')}>{t('topic')}</Label>
           <select
             id={id('topic')}
             value={value.topicType}
@@ -45,16 +52,16 @@ export function GoogleBusinessPanel({
             onChange={(e) => set({ topicType: e.target.value as GbpOptions['topicType'] })}
             className="h-9 w-full rounded-md border border-input bg-background px-2"
           >
-            {GBP_TOPICS.map((t) => (
-              <option key={t} value={t}>
-                {GBP_TOPIC_LABELS[t]}
+            {GBP_TOPICS.map((topic) => (
+              <option key={topic} value={topic}>
+                {t(`topics.${topic}`)}
               </option>
             ))}
           </select>
         </div>
         {value.topicType !== 'OFFER' ? (
           <div className="space-y-1">
-            <Label htmlFor={id('action')}>Dugme</Label>
+            <Label htmlFor={id('action')}>{t('button')}</Label>
             <select
               id={id('action')}
               value={value.actionType}
@@ -64,7 +71,7 @@ export function GoogleBusinessPanel({
             >
               {GBP_ACTIONS.map((a) => (
                 <option key={a} value={a}>
-                  {GBP_ACTION_LABELS[a]}
+                  {t(`actions.${a}`)}
                 </option>
               ))}
             </select>
@@ -73,11 +80,11 @@ export function GoogleBusinessPanel({
       </div>
       {value.topicType !== 'OFFER' && value.actionType !== 'NONE' && value.actionType !== 'CALL' ? (
         <div className="space-y-1">
-          <Label htmlFor={id('url')}>Adresa dugmeta</Label>
+          <Label htmlFor={id('url')}>{t('buttonUrl')}</Label>
           <Input
             id={id('url')}
             type="url"
-            placeholder={postLink ? 'prazno = link objave' : 'https://'}
+            placeholder={postLink ? t('emptyIsPostLink') : 'https://'}
             value={value.ctaUrl ?? ''}
             disabled={disabled}
             onChange={(e) => set({ ctaUrl: e.target.value || null })}
@@ -85,12 +92,14 @@ export function GoogleBusinessPanel({
         </div>
       ) : null}
       {value.actionType === 'CALL' && value.topicType !== 'OFFER' ? (
-        <p className="text-xs text-muted-foreground">Dugme poziva broj telefona sa profila.</p>
+        <p className="text-xs text-muted-foreground">{t('callHint')}</p>
       ) : null}
       {timed ? (
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="space-y-1 sm:col-span-3">
-            <Label htmlFor={id('title')}>Naslov {value.topicType === 'OFFER' ? 'ponude' : 'događaja'}</Label>
+            <Label htmlFor={id('title')}>
+              {value.topicType === 'OFFER' ? t('titleOffer') : t('titleEvent')}
+            </Label>
             <Input
               id={id('title')}
               maxLength={58}
@@ -100,7 +109,7 @@ export function GoogleBusinessPanel({
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor={id('start')}>Početak</Label>
+            <Label htmlFor={id('start')}>{t('start')}</Label>
             <Input
               id={id('start')}
               type="datetime-local"
@@ -110,7 +119,7 @@ export function GoogleBusinessPanel({
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor={id('end')}>Kraj</Label>
+            <Label htmlFor={id('end')}>{t('end')}</Label>
             <Input
               id={id('end')}
               type="datetime-local"
@@ -124,7 +133,7 @@ export function GoogleBusinessPanel({
       {value.topicType === 'OFFER' ? (
         <div className="grid gap-3 sm:grid-cols-2">
           <div className="space-y-1">
-            <Label htmlFor={id('coupon')}>Kupon (opciono)</Label>
+            <Label htmlFor={id('coupon')}>{t('coupon')}</Label>
             <Input
               id={id('coupon')}
               maxLength={58}
@@ -134,18 +143,18 @@ export function GoogleBusinessPanel({
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor={id('redeem')}>Link za ponudu (opciono)</Label>
+            <Label htmlFor={id('redeem')}>{t('redeemUrl')}</Label>
             <Input
               id={id('redeem')}
               type="url"
-              placeholder={postLink ? 'prazno = link objave' : 'https://'}
+              placeholder={postLink ? t('emptyIsPostLink') : 'https://'}
               value={value.redeemUrl ?? ''}
               disabled={disabled}
               onChange={(e) => set({ redeemUrl: e.target.value || null })}
             />
           </div>
           <div className="space-y-1 sm:col-span-2">
-            <Label htmlFor={id('terms')}>Uslovi ponude (opciono)</Label>
+            <Label htmlFor={id('terms')}>{t('terms')}</Label>
             <Textarea
               id={id('terms')}
               rows={2}
@@ -156,14 +165,13 @@ export function GoogleBusinessPanel({
           </div>
         </div>
       ) : null}
-      {timed ? (
-        <p className="text-xs text-muted-foreground">Vreme je lokalno vreme lokacije na Google mapama.</p>
-      ) : null}
+      {timed ? <p className="text-xs text-muted-foreground">{t('localTime')}</p> : null}
       {problems.length ? (
         <ul className="list-disc pl-5 text-xs text-amber-800" role="status">
-          {problems.map((p) => (
-            <li key={p}>{p}</li>
-          ))}
+          {problems.map((p) => {
+            const key = PROBLEM_KEYS[p]
+            return <li key={p}>{key ? t(`problems.${key}`) : p}</li>
+          })}
         </ul>
       ) : null}
     </div>

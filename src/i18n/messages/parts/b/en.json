@@ -1,1 +1,352 @@
-{}
+{
+  "postEditor": {
+    "loading": "Loading post…",
+    "xCost": "A post on X uses {cost, plural, one {# token} other {# tokens}} (1 without a link, 6 with one); you're charged only once it's published.",
+    "xCostLink": "A post on X uses {cost, plural, one {# token} other {# tokens}} because it has a link (1 without a link, 6 with one); you're charged only once it's published.",
+    "actions": {
+      "submit": "Send for approval",
+      "withdraw": "Withdraw from approval",
+      "schedule": "Schedule",
+      "unschedule": "Unschedule",
+      "pause": "Pause",
+      "resume": "Resume",
+      "cancel": "Cancel post",
+      "restore": "Back to draft",
+      "delete": "Delete"
+    },
+    "titleNew": "New post",
+    "titleEdit": "Post",
+    "draftBadge": "draft",
+    "version": "version {version}",
+    "brandZone": "· {brand} · time zone {timezone}",
+    "locked": "This post is being published right now and can't be changed.",
+    "draftOffer": "You have an unsaved draft from {date}.",
+    "draftOfferOld": "You have an unsaved draft from {date} (made on an older version of the post).",
+    "draftRestore": "Restore draft",
+    "draftDiscard": "Discard",
+    "content": {
+      "title": "Content",
+      "description": "The master text applies to every network; you can write different text for each one.",
+      "internalTitle": "Internal title (optional)",
+      "text": "Post text",
+      "chars": "{count, plural, one {# character} other {# characters}}",
+      "link": "Link (optional)",
+      "firstComment": "First comment (Instagram, Facebook and LinkedIn, optional)",
+      "pillar": "Content pillar (optional)",
+      "noPillar": "No pillar",
+      "campaign": "Campaign (optional)",
+      "noCampaign": "No campaign"
+    },
+    "networks": {
+      "title": "Networks",
+      "description": "Choose accounts; you can tailor the text for each one (network limits are checked when you send).",
+      "empty": "No networks connected. Connect them on the “Networks” page.",
+      "assisted": "assisted",
+      "limit": "limit {max, plural, one {# character} other {# characters}}",
+      "textPlaceholder": "Empty = master text",
+      "story": "Post as a story",
+      "storyHint": "One vertical image or a video up to 60 seconds. A story lasts 24 hours and has no caption."
+    },
+    "media": {
+      "title": "Media",
+      "description": "Pick from the brand library (Unsplash, Canva, Studio templates) or upload a photo or video (MP4, MOV).",
+      "replaceTitle": "Replace media without unscheduling",
+      "replaceHint": "The new file goes through the same network checks as when scheduling, and the time stays the same.",
+      "replace": "Replace",
+      "replacing": "Replacing media…",
+      "replacePick": "Choose new media from the library below or upload a file.",
+      "upload": "Upload a photo or video",
+      "uploading": "Uploading…",
+      "uploadingPercent": "Uploading… {percent}%",
+      "uploadProgress": "Upload progress",
+      "video": "Video",
+      "empty": "The library is empty."
+    },
+    "schedule": {
+      "title": "Date and time",
+      "description": "Time in the brand's time zone ({timezone}). Scheduling is a separate action below.",
+      "label": "Publish time"
+    },
+    "saving": "Saving…",
+    "saveChanges": "Save changes",
+    "saveDraft": "Save draft",
+    "publishNow": "Publish now",
+    "duplicate": "Duplicate",
+    "giveUp": "Cancel",
+    "decision": {
+      "title": "Decision",
+      "description": "Approve, reject or request changes (a comment is required to reject or request changes).",
+      "placeholder": "Comment for the author",
+      "approve": "Approve",
+      "requestChanges": "Request changes",
+      "reject": "Reject"
+    },
+    "targets": {
+      "title": "Targets",
+      "openPost": "Open post",
+      "retry": "Try again",
+      "accounts": "Networks",
+      "assistedHint": "This network is posted to by hand: copy the text, download the media, post it on the network, then mark it here.",
+      "copied": "Copied",
+      "copy": "Copy text",
+      "mediaItem": "Media {n}",
+      "permalink": "Link to the post on the network (optional)",
+      "markDone": "Mark as published"
+    },
+    "targetStatus": {
+      "pending": "waiting",
+      "scheduled": "scheduled",
+      "paused": "paused",
+      "needs_reauth": "needs reconnecting",
+      "publishing": "publishing",
+      "published": "published",
+      "failed": "failed",
+      "canceled": "cancelled",
+      "deleted_externally": "deleted on the network",
+      "assisted_pending": "waiting for manual posting",
+      "assisted_done": "posted manually"
+    },
+    "approvalLink": {
+      "title": "Public link for the client",
+      "description": "The client sees the post and decides, no account needed. The link is valid for 7 days.",
+      "create": "Create link",
+      "label": "Client link"
+    },
+    "comments": {
+      "title": "Comments",
+      "client": "(client)",
+      "empty": "No comments yet.",
+      "placeholder": "Write a comment",
+      "send": "Send"
+    },
+    "versions": "Versions",
+    "aspect": {
+      "range": "{min} to {max}",
+      "accepts": "{platform} accepts {range}",
+      "issue": "Image {n} has a {ratio} ratio, but {list}.",
+      "noCommon": "The selected networks don't share an aspect ratio. Create a separate post for the network that needs a different format.",
+      "crop": "Crop to {ratio}",
+      "cropping": "Cropping…",
+      "cropNote": "The crop becomes a new image in the library; the original stays untouched.",
+      "horizontal": "Left – right",
+      "vertical": "Top – bottom",
+      "position": "Crop position"
+    },
+    "qa": {
+      "passed": "Autopilot: the draft passed the quality check (length, banned words, script, similarity, figures from the profile, visual).",
+      "failed": "Autopilot sent the draft back for changes. Fix the text, then send it for approval:"
+    }
+  },
+  "postPanels": {
+    "titlePlaceholder": "Title (up to 100 characters)",
+    "tiktok": {
+      "loading": "Loading TikTok account settings…",
+      "loadError": "TikTok settings didn't load.",
+      "target": "This post goes to the TikTok account <b>{name}</b>.",
+      "targetUser": "This post goes to the TikTok account <b>{name}</b> (@{username}).",
+      "maxDuration": "Longest video for this account: {seconds} s.",
+      "privacy": "Who can see this post",
+      "choose": "Choose…",
+      "privacyLevel": {
+        "PUBLIC_TO_EVERYONE": "Everyone",
+        "MUTUAL_FOLLOW_FRIENDS": "Friends (followers you follow back)",
+        "FOLLOWER_OF_CREATOR": "Followers",
+        "SELF_ONLY": "Only me"
+      },
+      "notForBranded": "(not available for branded content)",
+      "allow": "Allow users to",
+      "comments": "Comment",
+      "disabledInTiktok": "turned off in the TikTok account settings",
+      "commercial": "Disclose commercial content",
+      "commercialHint": "the post promotes a brand, product or service",
+      "yourBrand": "Your brand",
+      "yourBrandHint": "you're promoting your own business; the post gets a “Promotional content” label",
+      "branded": "Branded content",
+      "brandedHint": "a paid partnership with another brand; the post gets a “Paid partnership” label",
+      "consent": "By posting, I agree to TikTok's <music>Music Usage Confirmation</music>.",
+      "consentBranded": "By posting, I agree to TikTok's <music>Music Usage Confirmation</music> and <branded>Branded Content Policy</branded>.",
+      "processing": "TikTok processes the post after the scheduled time; it shows up on the profile within a few minutes.",
+      "problems": {
+        "privacy": "choose who can see the post.",
+        "commercialType": "with commercial content, tick “Your brand”, “Branded content” or both.",
+        "brandedPrivate": "branded content can't be visible only to you.",
+        "consent": "confirm that you agree to TikTok's music usage rules."
+      }
+    },
+    "pinterest": {
+      "board": "Board",
+      "loadingBoards": "Loading boards…",
+      "chooseBoard": "Choose a board",
+      "secret": "(secret)",
+      "pinTitle": "Pin title",
+      "loadError": "Boards didn't load.",
+      "noBoards": "Create a board on Pinterest, then refresh the page.",
+      "hint": "Pinterest wants you to choose every pin yourself, so Autopilot doesn't publish pins. The pin description is the post text (up to 800 characters) and the link is the post link."
+    },
+    "youtube": {
+      "intro": "A Short is a vertical or square video up to 3 minutes long; the post text goes into the video description.",
+      "videoTitle": "Video title",
+      "privacy": "Privacy",
+      "privacyOptions": {
+        "public": "Public",
+        "unlisted": "Unlisted (link only)",
+        "private": "Private"
+      },
+      "madeForKids": "Is this video made for kids?",
+      "kidsNo": "No, it's not made for kids",
+      "kidsYes": "Yes, it's made for kids",
+      "problems": {
+        "titleRequired": "A YouTube video needs a title (up to 100 characters).",
+        "titleTooLong": "A YouTube video title can have at most 100 characters.",
+        "angleBrackets": "YouTube doesn't allow the characters < and > in the title or description.",
+        "descriptionTooLong": "A YouTube video description can be at most 5,000 bytes.",
+        "madeForKids": "Choose whether the video is made for kids (a required declaration for YouTube)."
+      }
+    },
+    "gbp": {
+      "topic": "Post type",
+      "topics": {
+        "STANDARD": "Standard post",
+        "EVENT": "Event",
+        "OFFER": "Offer"
+      },
+      "button": "Button",
+      "actions": {
+        "NONE": "No button",
+        "LEARN_MORE": "Learn more",
+        "BOOK": "Book",
+        "ORDER": "Order",
+        "SHOP": "Buy",
+        "SIGN_UP": "Sign up",
+        "CALL": "Call"
+      },
+      "buttonUrl": "Button URL",
+      "emptyIsPostLink": "empty = post link",
+      "callHint": "The button calls the phone number on the profile.",
+      "titleOffer": "Offer title",
+      "titleEvent": "Event title",
+      "start": "Start",
+      "end": "End",
+      "coupon": "Coupon (optional)",
+      "redeemUrl": "Offer link (optional)",
+      "terms": "Offer terms (optional)",
+      "localTime": "Times are the location's local time on Google Maps.",
+      "problems": {
+        "ctaLink": "The Google Business Profile button needs a link: enter the post link or a button URL.",
+        "title": "Events and offers on a Google Business Profile need a title.",
+        "dates": "Events and offers need a start and an end (date and time).",
+        "endAfterStart": "The event has to end after it starts."
+      }
+    }
+  },
+  "postsList": {
+    "title": "Posts",
+    "subtitle": "Brand: {brand}. Drafts, approvals, scheduling.",
+    "newPost": "New post",
+    "filters": {
+      "all": "All",
+      "draft": "Drafts",
+      "in_review": "In review",
+      "approved": "Approved",
+      "scheduled": "Scheduled",
+      "published": "Published",
+      "failed": "Failed",
+      "rejected": "Rejected and cancelled"
+    },
+    "loading": "Loading posts…",
+    "empty": "No posts match this filter.",
+    "untitled": "Untitled",
+    "when": "Publish time: {date}",
+    "noWhen": "No publish time",
+    "edited": "edited {date}",
+    "media": "{count, plural, one {# media file} other {# media files}}"
+  },
+  "publicApproval": {
+    "metaTitle": "Post approval",
+    "loading": "Loading posts…",
+    "unavailable": "This link isn't available",
+    "title": "Posts for approval · {brand}",
+    "forClient": "For: {client}.",
+    "validUntil": "The link is valid until {date}. Your decisions reach the team straight away.",
+    "name": "Your name (optional)",
+    "post": "Post",
+    "status": {
+      "in_review": "waiting for your decision",
+      "approved": "approved",
+      "rejected": "rejected",
+      "draft": "sent back for changes",
+      "scheduled": "scheduled",
+      "published": "published",
+      "changes_requested": "changes requested"
+    },
+    "firstComment": "First comment: {text}",
+    "link": "Link: {url}",
+    "planned": "Planned: {date}",
+    "decision": "Decision: {decision} · {date}",
+    "decisionComment": "Decision: {decision} · {date} · “{comment}”",
+    "commentPlaceholder": "Comment (required to reject or request changes)",
+    "commentLabel": "Comment for the team",
+    "approve": "Approve",
+    "requestChanges": "Request changes",
+    "reject": "Reject",
+    "sendComment": "Send comment"
+  },
+  "accounts": {
+    "title": "Networks",
+    "subtitle": "Brand: {brand}. Connected accounts that Sova posts to and imports history from.",
+    "emptyNotice": {
+      "meta": "Facebook didn't return any Pages. Check that you're an admin of the Page and that the Instagram account is a business account linked to the Page.",
+      "linkedin": "LinkedIn didn't return any accounts.",
+      "tiktok": "TikTok didn't return an account.",
+      "google_business": "Google didn't return any locations. Check that you're an owner or manager of the Business Profile and that the profile is verified.",
+      "youtube": "This Google account has no YouTube channel. Create a channel on YouTube, then connect again.",
+      "pinterest": "Pinterest didn't return an account.",
+      "x": "X didn't return an account."
+    },
+    "viaFacebook": "log in through Facebook",
+    "status": {
+      "active": "active",
+      "needs_reauth": "needs reconnecting",
+      "disabled": "disabled",
+      "revoked": "revoked"
+    },
+    "connectTitle": "Connect a network",
+    "connectAdmin": "Click a network, log in there and give Sova access. You only enter your password on the network's own page; Sova never sees it.",
+    "connectMember": "Networks are connected by the workspace owner or an admin.",
+    "tile": {
+      "connectMore": "Connected: {count}, add more",
+      "connect": "Connect",
+      "connected": "Connected: {count}",
+      "byAdmin": "Admin only",
+      "off": "Temporarily off",
+      "soon": "Coming soon"
+    },
+    "adminNote": "For the platform admin: “Coming soon” means the server has no app keys.",
+    "adminNoteMissing": "For the platform admin: “Coming soon” means the server has no app keys ({list}).",
+    "adminFlagged": "Turned off by a feature flag: {list}.",
+    "denied": "Connecting was cancelled on the network.",
+    "pickTitle": "Choose accounts",
+    "pickDescription": "The network returned these accounts (Pages, profiles). Tick the ones Sova may post to.",
+    "pickOne": "Select {name}",
+    "followers": "{count, plural, one {# follower} other {# followers}}",
+    "readOnly": "no publishing rights (read only)",
+    "connecting": "Connecting…",
+    "connectSelected": "Connect selected ({count})",
+    "loading": "Loading accounts…",
+    "empty": "No networks connected yet.",
+    "emptyAdmin": "Click a network above to start.",
+    "emptyMember": "The owner or an admin connects networks.",
+    "assisted": "assisted publishing",
+    "imported": "{count, plural, one {# imported post} other {# imported posts}}",
+    "synced": "synced {date}",
+    "linkedinExpiry": "The connection is valid until {date}; LinkedIn asks you to reconnect every 60 days.",
+    "sync": "Sync",
+    "hideHistory": "Hide history",
+    "history": "Post history",
+    "reconnect": "Reconnect",
+    "disconnect": "Disconnect",
+    "historyLoading": "Loading…",
+    "historyEmpty": "No imported posts yet (the import takes up to a minute after connecting).",
+    "metrics": "{likes, plural, one {# like} other {# likes}}, {comments, plural, one {# comment} other {# comments}}"
+  }
+}

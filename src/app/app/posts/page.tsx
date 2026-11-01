@@ -1,12 +1,16 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 
 import { PostsListClient } from '@/components/posts/posts-list-client'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
 
-export const metadata: Metadata = { title: 'Objave' }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('shell')
+  return { title: t('titles.posts') }
+}
 
 export default async function PostsPage({ searchParams }: PageProps<'/app/posts'>) {
   const viewer = await getViewer()

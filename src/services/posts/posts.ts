@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { translateServerText } from '@/i18n/server-text'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, getMembership, requireMembership, type Membership } from '@/lib/auth/workspace'
@@ -174,7 +175,8 @@ export async function getPostView(viewer: Viewer, postId: string): Promise<PostV
       status: t.status,
       externalPostId: t.external_post_id,
       permalink: t.permalink,
-      lastErrorMessage: t.last_error_message,
+      lastErrorMessage:
+        t.last_error_message && translateServerText(t.last_error_message, viewer.profile.locale),
       publishedAt: t.published_at,
     }
   })
@@ -618,7 +620,7 @@ export async function duplicatePost(viewer: Viewer, postId: string): Promise<Pos
 
 export async function listVersions(viewer: Viewer, postId: string) {
   await loadPost(viewer, postId)
-  return unwrap(
+  const rows = unwrap(
     await viewer.supabase
       .from('post_versions')
       .select('version, change_summary, changed_by, created_at, snapshot')
@@ -626,6 +628,11 @@ export async function listVersions(viewer: Viewer, postId: string) {
       .order('version', { ascending: false })
       .limit(50),
   )
+  // opis izmene piše server na srpskom; korisnik ga čita na svom jeziku (D-130)
+  return rows.map((r) => ({
+    ...r,
+    change_summary: r.change_summary && translateServerText(r.change_summary, viewer.profile.locale),
+  }))
 }
 
 export { assertMedia, getMembership, loadPost, snapshotVersion }

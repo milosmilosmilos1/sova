@@ -2,6 +2,7 @@
 
 import { faCheck, faThumbsUp } from '@fortawesome/free-solid-svg-icons'
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { cn } from 'cn'
@@ -12,6 +13,8 @@ import { LANDING_PLATFORMS } from './platforms'
 
 /** Interaktivni delovi sekcije „Kako radi” (D-098): povezivanje mreža i odobravanje objave. */
 export function ConnectDemo() {
+  const t = useTranslations('site.how.connect')
+  const tp = useTranslations('site.platforms')
   // podrazumevano povezani: Instagram, Facebook, LinkedIn i Google
   const [connected, setConnected] = useState(() =>
     LANDING_PLATFORMS.map((p) => ['instagram', 'facebook', 'linkedin', 'google_business'].includes(p.key)),
@@ -24,8 +27,8 @@ export function ConnectDemo() {
           <button
             key={p.key}
             type="button"
-            title={p.name}
-            aria-label={p.name}
+            title={tp(`${p.key}.name`)}
+            aria-label={tp(`${p.key}.name`)}
             aria-pressed={connected[i]}
             onClick={() => setConnected((c) => c.map((v, j) => (j === i ? !v : v)))}
             className="cursor-pointer rounded-[13px] transition-[opacity,filter,transform] duration-[250ms] active:scale-[0.94]"
@@ -39,14 +42,16 @@ export function ConnectDemo() {
         ))}
       </div>
       <div className="flex items-center justify-between text-[12.5px] text-l-muted">
-        <span>{count} od 8 mreža povezano</span>
-        <span className="text-l-dim">Kliknite da povežete</span>
+        <span>{t('count', { count })}</span>
+        <span className="text-l-dim">{t('hint')}</span>
       </div>
     </div>
   )
 }
 
 export function ApproveDemo() {
+  const t = useTranslations('site.how.approveDemo')
+  const demo = useTranslations('site.demo')
   const [approved, setApproved] = useState(false)
   return (
     <div className="flex h-full flex-col justify-center gap-3 p-6">
@@ -59,13 +64,13 @@ export function ApproveDemo() {
           className="size-[46px] rounded-[9px] bg-l-img object-cover"
         />
         <div className="min-w-0 flex-1">
-          <div className="truncate text-[13.5px] font-semibold">Kroasani iz prve ture</div>
-          <div className="mt-0.5 text-xs text-l-dim">Instagram · pon 08:00</div>
+          <div className="truncate text-[13.5px] font-semibold">{demo('postTitle')}</div>
+          <div className="mt-0.5 text-xs text-l-dim">{t('when')}</div>
         </div>
       </div>
       <div className="flex gap-2">
         <span className="flex h-10 flex-1 items-center justify-center rounded-[10px] border border-l-line/20 text-[13.5px] font-medium text-l-text-2">
-          Izmeni
+          {t('edit')}
         </span>
         <button
           type="button"
@@ -77,11 +82,11 @@ export function ApproveDemo() {
           )}
         >
           <Fa icon={approved ? faCheck : faThumbsUp} style={{ fontSize: 12 }} />
-          {approved ? 'Odobreno' : 'Odobri'}
+          {approved ? t('approved') : t('approve')}
         </button>
       </div>
       <div aria-live="polite" className="text-center text-xs text-l-dim">
-        {approved ? 'Zakazano za ponedeljak u 08:00.' : 'Klijent dobija link za odobravanje.'}
+        {approved ? t('scheduled') : t('link')}
       </div>
     </div>
   )

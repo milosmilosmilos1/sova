@@ -1,6 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -39,6 +40,7 @@ export function PinterestPanel({
   onChange: (next: PinterestOptions) => void
   disabled: boolean
 }) {
+  const t = useTranslations('postPanels')
   const boards = useQuery({
     queryKey: ['pinterest-boards', accountId],
     queryFn: () => fetchBoards(accountId),
@@ -53,7 +55,7 @@ export function PinterestPanel({
     <div className="mt-3 space-y-3 rounded-md border bg-muted/30 p-3 text-sm">
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
-          <Label htmlFor={id('board')}>Tabla</Label>
+          <Label htmlFor={id('board')}>{t('pinterest.board')}</Label>
           <select
             id={id('board')}
             value={value.boardId ?? ''}
@@ -64,22 +66,24 @@ export function PinterestPanel({
             }}
             className="h-9 w-full rounded-md border border-input bg-background px-2"
           >
-            <option value="">{boards.isLoading ? 'Učitavam table…' : 'Izaberite tablu'}</option>
+            <option value="">
+              {boards.isLoading ? t('pinterest.loadingBoards') : t('pinterest.chooseBoard')}
+            </option>
             {missing ? <option value={value.boardId!}>{value.boardName ?? value.boardId}</option> : null}
             {known.map((b) => (
               <option key={b.id} value={b.id}>
                 {b.name}
-                {b.privacy && b.privacy !== 'PUBLIC' ? ' (tajna)' : ''}
+                {b.privacy && b.privacy !== 'PUBLIC' ? ` ${t('pinterest.secret')}` : ''}
               </option>
             ))}
           </select>
         </div>
         <div className="space-y-1">
-          <Label htmlFor={id('title')}>Naslov pina</Label>
+          <Label htmlFor={id('title')}>{t('pinterest.pinTitle')}</Label>
           <Input
             id={id('title')}
             maxLength={100}
-            placeholder={pinterestTitle(value, postTitle || null, text) || 'Naslov (do 100 znakova)'}
+            placeholder={pinterestTitle(value, postTitle || null, text) || t('titlePlaceholder')}
             value={value.title ?? ''}
             disabled={disabled}
             onChange={(e) => set({ title: e.target.value || null })}
@@ -88,16 +92,13 @@ export function PinterestPanel({
       </div>
       {boards.error ? (
         <p className="text-xs text-destructive" role="alert">
-          {boards.error instanceof Error ? boards.error.message : 'Table nisu učitane.'}
+          {boards.error instanceof Error ? boards.error.message : t('pinterest.loadError')}
         </p>
       ) : null}
       {!boards.isLoading && !boards.error && known.length === 0 ? (
-        <p className="text-xs text-muted-foreground">Napravite tablu na Pinterest-u pa osvežite stranu.</p>
+        <p className="text-xs text-muted-foreground">{t('pinterest.noBoards')}</p>
       ) : null}
-      <p className="text-xs text-muted-foreground">
-        Pinterest traži da svaki pin izaberete sami, pa ga Autopilot ne objavljuje. Opis pina je tekst objave
-        (do 800 znakova), a link je link objave.
-      </p>
+      <p className="text-xs text-muted-foreground">{t('pinterest.hint')}</p>
     </div>
   )
 }

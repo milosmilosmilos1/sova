@@ -463,7 +463,7 @@ export function StudioChat({
                           className={cn(
                             'h-8 rounded-md border px-2 text-xs',
                             on
-                              ? 'border-primary bg-primary/10 text-primary'
+                              ? 'border-primary bg-primary/10 text-accent-foreground'
                               : 'bg-background text-muted-foreground',
                           )}
                         >

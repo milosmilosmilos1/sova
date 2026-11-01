@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Lock } from 'lucide-react'
+import { useLocale, useTranslations } from 'next-intl'
 import { useEffect, useState, type ReactNode } from 'react'
 
 import { Badge } from '@/components/ui/badge'
@@ -11,6 +12,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Textarea } from '@/components/ui/textarea'
+import { INTL_UI } from '@/i18n/config'
 import type { ApiResponse } from '@/lib/api/response'
 import type { BrandProfile, Field, FieldPath } from '@/lib/brand/profile-schema'
 
@@ -79,24 +81,26 @@ async function api<T>(
 }
 
 function ErrorBox({ error }: { error: unknown }) {
+  const tc = useTranslations('common')
   if (!error) return null
   return (
     <div
       role="alert"
       className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
     >
-      {error instanceof Error ? error.message : 'Greška.'}
+      {error instanceof Error ? error.message : tc('error')}
     </div>
   )
 }
 
-function confidenceLabel(c: number): { text: string; variant: 'default' | 'secondary' | 'outline' } {
-  if (c >= 0.75) return { text: 'visoka', variant: 'default' }
-  if (c >= 0.45) return { text: 'srednja', variant: 'secondary' }
-  return { text: 'niska', variant: 'outline' }
+function confidenceLabel(c: number): {
+  level: 'high' | 'medium' | 'low'
+  variant: 'default' | 'secondary' | 'outline'
+} {
+  if (c >= 0.75) return { level: 'high', variant: 'default' }
+  if (c >= 0.45) return { level: 'medium', variant: 'secondary' }
+  return { level: 'low', variant: 'outline' }
 }
-
-const GENERATED_LABEL = { ai: 'AI', heuristic: 'bez AI (heuristika)', manual: 'ručno' } as const
 
 function FieldRow({
   label,
@@ -113,28 +117,28 @@ function FieldRow({
   onUnlock?: (path: FieldPath) => void
   children: ReactNode
 }) {
+  const t = useTranslations('brandBrain')
   const conf = confidenceLabel(field.confidence)
   return (
     <div className="space-y-1 border-b py-2 last:border-b-0">
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
         <span className="font-medium text-foreground">{label}</span>
-        <Badge variant={conf.variant}>pouzdanost: {conf.text}</Badge>
+        <Badge variant={conf.variant}>
+          {t('field.confidence', { level: t(`confidence.${conf.level}`) })}
+        </Badge>
         {locked ? (
-          <span
-            className="inline-flex items-center gap-1"
-            title="Ručno izmenjeno; analiza ne menja ovo polje"
-          >
-            <Lock className="size-3" aria-hidden /> zaključano
+          <span className="inline-flex items-center gap-1" title={t('field.lockedTitle')}>
+            <Lock className="size-3" aria-hidden /> {t('field.locked')}
             {onUnlock ? (
               <button type="button" className="underline" onClick={() => onUnlock(path)}>
-                otključaj
+                {t('field.unlock')}
               </button>
             ) : null}
           </span>
         ) : null}
         {field.source_urls.length ? (
           <span className="truncate" title={field.source_urls.join('\n')}>
-            izvor: {field.source_urls.length} {field.source_urls.length === 1 ? 'strana' : 'strane'}
+            {t('field.source', { count: field.source_urls.length })}
           </span>
         ) : null}
       </div>
@@ -144,14 +148,16 @@ function FieldRow({
 }
 
 function Text({ value }: { value: string | number | boolean | null | undefined }) {
+  const t = useTranslations('brandBrain')
   if (value === null || value === undefined || value === '')
-    return <span className="text-muted-foreground">nije pronađeno</span>
-  if (typeof value === 'boolean') return <span>{value ? 'da' : 'ne'}</span>
+    return <span className="text-muted-foreground">{t('notFound')}</span>
+  if (typeof value === 'boolean') return <span>{value ? t('yes') : t('no')}</span>
   return <span>{String(value)}</span>
 }
 
 function List({ items }: { items: string[] }) {
-  if (!items.length) return <span className="text-muted-foreground">nije pronađeno</span>
+  const t = useTranslations('brandBrain')
+  if (!items.length) return <span className="text-muted-foreground">{t('notFound')}</span>
   return (
     <ul className="list-disc space-y-0.5 pl-5">
       {items.map((it, i) => (
@@ -174,6 +180,9 @@ export function BrandBrainClient({
   canEdit: boolean
   emailVerified: boolean
 }) {
+  const t = useTranslations('brandBrain')
+  const tc = useTranslations('common')
+  const intl = INTL_UI[useLocale()]
   const queryClient = useQueryClient()
   const [url, setUrl] = useState(websiteUrl ?? '')
   const [crawlId, setCrawlId] = useState<string | null>(null)
@@ -242,29 +251,24 @@ export function BrandBrainClient({
   return (
     <div className="space-y-6">
       <div>
-        <h2 className="text-xl font-semibold tracking-tight">Sajt i profil brenda</h2>
-        <p className="text-sm text-muted-foreground">
-          Brend: {brandName}. Sova čita sajt i pravi profil koji koristi pri svakom generisanju.
-        </p>
+        <h2 className="text-xl font-semibold tracking-tight">{t('title')}</h2>
+        <p className="text-sm text-muted-foreground">{t('subtitle', { brand: brandName })}</p>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-lg">Analiza sajta</CardTitle>
-          <CardDescription>
-            Prva analiza je besplatna, svaka sledeća košta tokene. Čita se najviše onoliko strana koliko plan
-            dozvoljava.
-          </CardDescription>
+          <CardTitle className="text-lg">{t('analysis.title')}</CardTitle>
+          <CardDescription>{t('analysis.description')}</CardDescription>
         </CardHeader>
         <CardContent className="space-y-3">
           <div className="flex flex-col gap-2 sm:flex-row sm:items-end">
             <div className="flex-1 space-y-1">
-              <Label htmlFor="websiteUrl">Adresa sajta</Label>
+              <Label htmlFor="websiteUrl">{t('analysis.url')}</Label>
               <Input
                 id="websiteUrl"
                 value={url}
                 onChange={(e) => setUrl(e.target.value)}
-                placeholder="https://primer.rs"
+                placeholder={t('analysis.placeholder')}
                 disabled={running}
               />
             </div>
@@ -272,20 +276,22 @@ export function BrandBrainClient({
               onClick={() => analyze.mutate()}
               disabled={!canEdit || !emailVerified || running || analyze.isPending || !url.trim()}
             >
-              {running ? 'Analiza u toku…' : profile.data?.exists ? 'Analiziraj ponovo' : 'Analiziraj sajt'}
+              {running
+                ? t('analysis.running')
+                : profile.data?.exists
+                  ? t('analysis.again')
+                  : t('analysis.start')}
             </Button>
             {running ? (
               <Button variant="outline" onClick={() => cancel.mutate()} disabled={cancel.isPending}>
-                Otkaži
+                {tc('cancel')}
               </Button>
             ) : null}
           </div>
           {!emailVerified ? (
-            <p className="text-sm text-muted-foreground">Potvrdite email da biste pokrenuli analizu.</p>
+            <p className="text-sm text-muted-foreground">{t('analysis.verifyEmail')}</p>
           ) : null}
-          {!canEdit ? (
-            <p className="text-sm text-muted-foreground">Vaša uloga može samo da gleda profil.</p>
-          ) : null}
+          {!canEdit ? <p className="text-sm text-muted-foreground">{t('analysis.viewOnly')}</p> : null}
           <ErrorBox error={analyze.error ?? cancel.error} />
 
           {crawl.data ? (
@@ -293,7 +299,11 @@ export function BrandBrainClient({
               <div className="flex items-center justify-between gap-2">
                 <span className="font-medium">{crawl.data.progress?.message ?? crawl.data.status}</span>
                 <span className="text-muted-foreground">
-                  {crawl.data.pagesFetched}/{crawl.data.pagesFound || '?'} strana · {crawl.data.status}
+                  {t('analysis.pages', {
+                    fetched: crawl.data.pagesFetched,
+                    found: crawl.data.pagesFound || '?',
+                    status: crawl.data.status,
+                  })}
                 </span>
               </div>
               <div className="h-2 w-full overflow-hidden rounded bg-muted" aria-hidden>
@@ -315,7 +325,7 @@ export function BrandBrainClient({
               {crawl.data.pages.length ? (
                 <details>
                   <summary className="cursor-pointer text-muted-foreground">
-                    Pročitane strane ({crawl.data.pages.length})
+                    {t('analysis.readPages', { count: crawl.data.pages.length })}
                   </summary>
                   <ul className="mt-1 max-h-48 space-y-0.5 overflow-auto text-xs">
                     {crawl.data.pages.map((pg) => (
@@ -343,7 +353,7 @@ export function BrandBrainClient({
       {profile.data && !profile.data.exists ? (
         <Card>
           <CardContent className="py-8 text-center text-sm text-muted-foreground">
-            Profil još ne postoji. Pokrenite analizu sajta, ili unesite podatke ručno kad se profil napravi.
+            {t('profile.missing')}
           </CardContent>
         </Card>
       ) : null}
@@ -351,14 +361,18 @@ export function BrandBrainClient({
       {profile.data && p && profile.data.exists ? (
         <>
           <div className="flex flex-wrap items-center gap-2 text-sm">
-            <Badge>verzija {profile.data.version}</Badge>
-            <Badge variant="secondary">izvor: {GENERATED_LABEL[p.meta.generated_by]}</Badge>
+            <Badge>{t('profile.version', { version: profile.data.version ?? '' })}</Badge>
+            <Badge variant="secondary">
+              {t('profile.source', { source: t(`generated.${p.meta.generated_by}`) })}
+            </Badge>
             {p.meta.model ? <Badge variant="outline">{p.meta.model}</Badge> : null}
-            <Badge variant="outline">ukupna pouzdanost {Math.round(p.meta.overall_confidence * 100)}%</Badge>
-            <Badge variant="outline">{profile.data.knowledgeChunks} odlomaka znanja</Badge>
+            <Badge variant="outline">
+              {t('profile.confidence', { value: Math.round(p.meta.overall_confidence * 100) })}
+            </Badge>
+            <Badge variant="outline">{t('profile.chunks', { count: profile.data.knowledgeChunks })}</Badge>
             {canEdit ? (
               <Button size="sm" variant="outline" onClick={() => setEditing((v) => !v)}>
-                {editing ? 'Zatvori izmene' : 'Izmeni ključna polja'}
+                {editing ? t('profile.closeEdit') : t('profile.edit')}
               </Button>
             ) : null}
           </div>
@@ -375,11 +389,11 @@ export function BrandBrainClient({
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Identitet</CardTitle>
+                <CardTitle className="text-base">{t('identity.title')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <FieldRow
-                  label="Naziv"
+                  label={t('identity.name')}
                   field={p.identity.name}
                   path="identity.name"
                   locked={isLocked('identity.name')}
@@ -388,7 +402,7 @@ export function BrandBrainClient({
                   <Text value={p.identity.name.value} />
                 </FieldRow>
                 <FieldRow
-                  label="Slogan"
+                  label={t('identity.tagline')}
                   field={p.identity.tagline}
                   path="identity.tagline"
                   locked={isLocked('identity.tagline')}
@@ -397,7 +411,7 @@ export function BrandBrainClient({
                   <Text value={p.identity.tagline.value} />
                 </FieldRow>
                 <FieldRow
-                  label="Opis"
+                  label={t('identity.description')}
                   field={p.identity.description}
                   path="identity.description"
                   locked={isLocked('identity.description')}
@@ -406,7 +420,7 @@ export function BrandBrainClient({
                   <Text value={p.identity.description.value} />
                 </FieldRow>
                 <FieldRow
-                  label="Delatnost"
+                  label={t('identity.industry')}
                   field={p.identity.industry}
                   path="identity.industry"
                   locked={isLocked('identity.industry')}
@@ -415,7 +429,7 @@ export function BrandBrainClient({
                   <Text value={p.identity.industry.value} />
                 </FieldRow>
                 <FieldRow
-                  label="Lokacija"
+                  label={t('identity.location')}
                   field={p.identity.location}
                   path="identity.location"
                   locked={isLocked('identity.location')}
@@ -430,7 +444,7 @@ export function BrandBrainClient({
                   />
                 </FieldRow>
                 <FieldRow
-                  label="Jezik sadržaja"
+                  label={t('identity.contentLocale')}
                   field={p.identity.content_locale}
                   path="identity.content_locale"
                   locked={isLocked('identity.content_locale')}
@@ -443,11 +457,11 @@ export function BrandBrainClient({
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Ponuda</CardTitle>
+                <CardTitle className="text-base">{t('offer.title')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <FieldRow
-                  label="Usluge"
+                  label={t('offer.services')}
                   field={p.offer.services}
                   path="offer.services"
                   locked={isLocked('offer.services')}
@@ -460,7 +474,7 @@ export function BrandBrainClient({
                   />
                 </FieldRow>
                 <FieldRow
-                  label="Proizvodi"
+                  label={t('offer.products')}
                   field={p.offer.products}
                   path="offer.products"
                   locked={isLocked('offer.products')}
@@ -469,7 +483,7 @@ export function BrandBrainClient({
                   <List items={p.offer.products.value.map((s) => s.name)} />
                 </FieldRow>
                 <FieldRow
-                  label="Po čemu se razlikuje"
+                  label={t('offer.differentiators')}
                   field={p.offer.differentiators}
                   path="offer.differentiators"
                   locked={isLocked('offer.differentiators')}
@@ -478,7 +492,7 @@ export function BrandBrainClient({
                   <List items={p.offer.differentiators.value} />
                 </FieldRow>
                 <FieldRow
-                  label="Cene sa sajta"
+                  label={t('offer.prices')}
                   field={p.offer.price_hints}
                   path="offer.price_hints"
                   locked={isLocked('offer.price_hints')}
@@ -491,11 +505,11 @@ export function BrandBrainClient({
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Glas brenda</CardTitle>
+                <CardTitle className="text-base">{t('voice.title')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <FieldRow
-                  label="Ton"
+                  label={t('voice.tone')}
                   field={p.voice.tone}
                   path="voice.tone"
                   locked={isLocked('voice.tone')}
@@ -504,16 +518,16 @@ export function BrandBrainClient({
                   <Text value={p.voice.tone.value.join(', ') || null} />
                 </FieldRow>
                 <FieldRow
-                  label="Obraćanje"
+                  label={t('voice.address')}
                   field={p.voice.address}
                   path="voice.address"
                   locked={isLocked('voice.address')}
                   onUnlock={onUnlock}
                 >
-                  <Text value={p.voice.address.value === 'ti' ? 'ti (neformalno)' : 'vi (persiranje)'} />
+                  <Text value={p.voice.address.value === 'ti' ? t('voice.informal') : t('voice.formal')} />
                 </FieldRow>
                 <FieldRow
-                  label="Emoji"
+                  label={t('voice.emoji')}
                   field={p.voice.emoji}
                   path="voice.emoji"
                   locked={isLocked('voice.emoji')}
@@ -522,7 +536,7 @@ export function BrandBrainClient({
                   <Text value={p.voice.emoji.value} />
                 </FieldRow>
                 <FieldRow
-                  label="Primeri fraza"
+                  label={t('voice.samples')}
                   field={p.voice.sample_phrases}
                   path="voice.sample_phrases"
                   locked={isLocked('voice.sample_phrases')}
@@ -531,7 +545,7 @@ export function BrandBrainClient({
                   <List items={p.voice.sample_phrases.value} />
                 </FieldRow>
                 <FieldRow
-                  label="Zabranjene reči"
+                  label={t('voice.forbidden')}
                   field={p.voice.forbidden_words}
                   path="voice.forbidden_words"
                   locked={isLocked('voice.forbidden_words')}
@@ -540,7 +554,7 @@ export function BrandBrainClient({
                   <Text value={p.voice.forbidden_words.value.join(', ') || null} />
                 </FieldRow>
                 <FieldRow
-                  label="Hashtagovi"
+                  label={t('voice.hashtags')}
                   field={p.voice.hashtags}
                   path="voice.hashtags"
                   locked={isLocked('voice.hashtags')}
@@ -553,11 +567,11 @@ export function BrandBrainClient({
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Publika i činjenice</CardTitle>
+                <CardTitle className="text-base">{t('audience.title')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <FieldRow
-                  label="Segmenti"
+                  label={t('audience.segments')}
                   field={p.audience.segments}
                   path="audience.segments"
                   locked={isLocked('audience.segments')}
@@ -570,7 +584,7 @@ export function BrandBrainClient({
                   />
                 </FieldRow>
                 <FieldRow
-                  label="Problemi publike"
+                  label={t('audience.pains')}
                   field={p.audience.pain_points}
                   path="audience.pain_points"
                   locked={isLocked('audience.pain_points')}
@@ -579,7 +593,7 @@ export function BrandBrainClient({
                   <List items={p.audience.pain_points.value} />
                 </FieldRow>
                 <FieldRow
-                  label="Tržište"
+                  label={t('audience.market')}
                   field={p.audience.market}
                   path="audience.market"
                   locked={isLocked('audience.market')}
@@ -588,7 +602,7 @@ export function BrandBrainClient({
                   <Text value={p.audience.market.value} />
                 </FieldRow>
                 <FieldRow
-                  label="Činjenice (smeju u objave)"
+                  label={t('audience.facts')}
                   field={p.facts}
                   path="facts"
                   locked={isLocked('facts')}
@@ -601,23 +615,23 @@ export function BrandBrainClient({
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Vizuali</CardTitle>
+                <CardTitle className="text-base">{t('visual.title')}</CardTitle>
               </CardHeader>
               <CardContent>
-                <FieldRow label="Logo" field={p.visual.logo} path="visual.logo" locked={false}>
+                <FieldRow label={t('visual.logo')} field={p.visual.logo} path="visual.logo" locked={false}>
                   {profile.data.logoUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={profile.data.logoUrl}
-                      alt="Logo brenda"
+                      alt={t('visual.logoAlt')}
                       className="max-h-16 rounded border bg-white p-1"
                     />
                   ) : (
-                    <span className="text-muted-foreground">nije pronađen</span>
+                    <span className="text-muted-foreground">{t('visual.logoMissing')}</span>
                   )}
                 </FieldRow>
                 <FieldRow
-                  label="Boje"
+                  label={t('visual.colors')}
                   field={p.visual.colors}
                   path="visual.colors"
                   locked={isLocked('visual.colors')}
@@ -626,11 +640,11 @@ export function BrandBrainClient({
                   <div className="flex flex-wrap gap-2">
                     {(
                       [
-                        ['primarna', p.visual.colors.value.primary],
-                        ['sekundarna', p.visual.colors.value.secondary],
-                        ['akcenat', p.visual.colors.value.accent],
-                        ['svetla', p.visual.colors.value.neutral_light],
-                        ['tamna', p.visual.colors.value.neutral_dark],
+                        ['primary', p.visual.colors.value.primary],
+                        ['secondary', p.visual.colors.value.secondary],
+                        ['accent', p.visual.colors.value.accent],
+                        ['light', p.visual.colors.value.neutral_light],
+                        ['dark', p.visual.colors.value.neutral_dark],
                       ] as const
                     ).map(([name, hex]) => (
                       <span key={name} className="inline-flex items-center gap-1 text-xs">
@@ -639,24 +653,29 @@ export function BrandBrainClient({
                           style={{ backgroundColor: hex }}
                           aria-hidden
                         />
-                        {name} {hex}
+                        {t(`colors.${name}`)} {hex}
                       </span>
                     ))}
                   </div>
                 </FieldRow>
                 <FieldRow
-                  label="Fontovi"
+                  label={t('visual.fonts')}
                   field={p.visual.fonts}
                   path="visual.fonts"
                   locked={isLocked('visual.fonts')}
                   onUnlock={onUnlock}
                 >
                   <Text
-                    value={`naslovi: ${p.visual.fonts.value.headings ?? '?'} → ${p.visual.fonts.value.mapped_headings}; tekst: ${p.visual.fonts.value.body ?? '?'} → ${p.visual.fonts.value.mapped_body}`}
+                    value={t('visual.fontsValue', {
+                      headings: p.visual.fonts.value.headings ?? '?',
+                      mappedHeadings: p.visual.fonts.value.mapped_headings,
+                      body: p.visual.fonts.value.body ?? '?',
+                      mappedBody: p.visual.fonts.value.mapped_body,
+                    })}
                   />
                 </FieldRow>
                 <FieldRow
-                  label="Stil fotografija"
+                  label={t('visual.photoStyle')}
                   field={p.visual.photo_style}
                   path="visual.photo_style"
                   locked={isLocked('visual.photo_style')}
@@ -666,13 +685,15 @@ export function BrandBrainClient({
                     <div className="space-y-1">
                       <p>{p.visual.photo_style.value.summary}</p>
                       <p className="text-xs text-muted-foreground">
-                        svetlo: {p.visual.photo_style.value.lighting} · atmosfera:{' '}
-                        {p.visual.photo_style.value.mood} · ljudi:{' '}
-                        {p.visual.photo_style.value.has_people ? 'da' : 'ne'}
+                        {t('visual.photoDetails', {
+                          lighting: p.visual.photo_style.value.lighting,
+                          mood: p.visual.photo_style.value.mood,
+                          people: p.visual.photo_style.value.has_people ? t('yes') : t('no'),
+                        })}
                       </p>
                     </div>
                   ) : (
-                    <span className="text-muted-foreground">nije procenjen</span>
+                    <span className="text-muted-foreground">{t('visual.notAssessed')}</span>
                   )}
                 </FieldRow>
               </CardContent>
@@ -680,11 +701,11 @@ export function BrandBrainClient({
 
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Kontakt, mreže i sadržaj</CardTitle>
+                <CardTitle className="text-base">{t('contact.title')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <FieldRow
-                  label="Email"
+                  label={t('contact.email')}
                   field={p.contact.email}
                   path="contact.email"
                   locked={isLocked('contact.email')}
@@ -693,7 +714,7 @@ export function BrandBrainClient({
                   <Text value={p.contact.email.value} />
                 </FieldRow>
                 <FieldRow
-                  label="Telefon"
+                  label={t('contact.phone')}
                   field={p.contact.phone}
                   path="contact.phone"
                   locked={isLocked('contact.phone')}
@@ -702,7 +723,7 @@ export function BrandBrainClient({
                   <Text value={p.contact.phone.value} />
                 </FieldRow>
                 <FieldRow
-                  label="Adresa"
+                  label={t('contact.address')}
                   field={p.contact.address}
                   path="contact.address"
                   locked={isLocked('contact.address')}
@@ -711,7 +732,7 @@ export function BrandBrainClient({
                   <Text value={p.contact.address.value} />
                 </FieldRow>
                 <FieldRow
-                  label="Društvene mreže"
+                  label={t('contact.social')}
                   field={p.social}
                   path="social"
                   locked={isLocked('social')}
@@ -720,7 +741,7 @@ export function BrandBrainClient({
                   <List items={Object.entries(p.social.value).map(([k, v]) => `${k}: ${v}`)} />
                 </FieldRow>
                 <FieldRow
-                  label="Teme sa bloga"
+                  label={t('contact.blogTopics')}
                   field={p.content.blog_topics}
                   path="content.blog_topics"
                   locked={isLocked('content.blog_topics')}
@@ -729,7 +750,7 @@ export function BrandBrainClient({
                   <List items={p.content.blog_topics.value.slice(0, 10)} />
                 </FieldRow>
                 <FieldRow
-                  label="Stubovi sadržaja"
+                  label={t('contact.pillars')}
                   field={p.content.content_pillars}
                   path="content.content_pillars"
                   locked={isLocked('content.content_pillars')}
@@ -743,10 +764,8 @@ export function BrandBrainClient({
 
           <Card>
             <CardHeader>
-              <CardTitle className="text-base">Verzije profila</CardTitle>
-              <CardDescription>
-                Svaka analiza i svaka ručna izmena prave novu verziju. Starija može da se vrati.
-              </CardDescription>
+              <CardTitle className="text-base">{t('versions.title')}</CardTitle>
+              <CardDescription>{t('versions.description')}</CardDescription>
             </CardHeader>
             <CardContent>
               <ErrorBox error={restore.error ?? unlock.error} />
@@ -754,12 +773,12 @@ export function BrandBrainClient({
                 {profile.data.versions.map((v) => (
                   <li key={v.version} className="flex flex-wrap items-center justify-between gap-2 py-2">
                     <span>
-                      v{v.version} · {GENERATED_LABEL[v.generatedBy]}
-                      {v.model ? ` (${v.model})` : ''} · {new Date(v.createdAt).toLocaleString('sr-Latn-RS')}{' '}
-                      · pouzdanost {Math.round(v.overallConfidence * 100)}%
+                      v{v.version} · {t(`generated.${v.generatedBy}`)}
+                      {v.model ? ` (${v.model})` : ''} · {new Date(v.createdAt).toLocaleString(intl)} ·{' '}
+                      {t('versions.confidence', { value: Math.round(v.overallConfidence * 100) })}
                     </span>
                     {v.isCurrent ? (
-                      <Badge>trenutna</Badge>
+                      <Badge>{t('versions.current')}</Badge>
                     ) : canEdit ? (
                       <Button
                         size="sm"
@@ -767,7 +786,7 @@ export function BrandBrainClient({
                         onClick={() => restore.mutate(v.version)}
                         disabled={restore.isPending}
                       >
-                        Vrati ovu verziju
+                        {t('versions.restore')}
                       </Button>
                     ) : null}
                   </li>
@@ -799,6 +818,7 @@ function EditForm({
   error: unknown
   onSave: (changes: Array<{ path: FieldPath; value: unknown }>) => void
 }) {
+  const t = useTranslations('brandBrain')
   const [description, setDescription] = useState(profile.identity.description.value ?? '')
   const [tone, setTone] = useState(profile.voice.tone.value.join(', '))
   const [address, setAddress] = useState<'vi' | 'ti'>(profile.voice.address.value)
@@ -839,14 +859,12 @@ function EditForm({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Ručne izmene</CardTitle>
-        <CardDescription>
-          Izmenjena polja se zaključavaju: buduće analize ih ne menjaju dok ih ne otključate.
-        </CardDescription>
+        <CardTitle className="text-base">{t('edit.title')}</CardTitle>
+        <CardDescription>{t('edit.description')}</CardDescription>
       </CardHeader>
       <CardContent className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1 sm:col-span-2">
-          <Label htmlFor="bb-description">Opis brenda</Label>
+          <Label htmlFor="bb-description">{t('edit.brandDescription')}</Label>
           <Textarea
             id="bb-description"
             value={description}
@@ -855,31 +873,31 @@ function EditForm({
           />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="bb-tone">Ton (pridevi, zarezom)</Label>
+          <Label htmlFor="bb-tone">{t('edit.tone')}</Label>
           <Input id="bb-tone" value={tone} onChange={(e) => setTone(e.target.value)} />
         </div>
         <div className="space-y-1">
-          <Label htmlFor="bb-address">Obraćanje</Label>
+          <Label htmlFor="bb-address">{t('voice.address')}</Label>
           <select
             id="bb-address"
             className="h-9 w-full rounded-md border bg-background px-2 text-sm"
             value={address}
             onChange={(e) => setAddress(e.target.value as 'vi' | 'ti')}
           >
-            <option value="vi">vi (persiranje)</option>
-            <option value="ti">ti (neformalno)</option>
+            <option value="vi">{t('voice.formal')}</option>
+            <option value="ti">{t('voice.informal')}</option>
           </select>
         </div>
         <label className="flex items-center gap-2 text-sm">
           <input type="checkbox" checked={emoji} onChange={(e) => setEmoji(e.target.checked)} />
-          Emoji su dozvoljeni
+          {t('edit.emoji')}
         </label>
         <div className="space-y-1">
-          <Label htmlFor="bb-forbidden">Zabranjene reči (zarezom)</Label>
+          <Label htmlFor="bb-forbidden">{t('edit.forbidden')}</Label>
           <Input id="bb-forbidden" value={forbidden} onChange={(e) => setForbidden(e.target.value)} />
         </div>
         <div className="space-y-1 sm:col-span-2">
-          <Label htmlFor="bb-services">Usluge (jedna po redu)</Label>
+          <Label htmlFor="bb-services">{t('edit.services')}</Label>
           <Textarea
             id="bb-services"
             value={services}
@@ -888,7 +906,7 @@ function EditForm({
           />
         </div>
         <div className="space-y-1 sm:col-span-2">
-          <Label htmlFor="bb-facts">Činjenice koje smeju u objave (jedna po redu)</Label>
+          <Label htmlFor="bb-facts">{t('edit.facts')}</Label>
           <Textarea id="bb-facts" value={facts} onChange={(e) => setFacts(e.target.value)} rows={4} />
         </div>
         <div className="sm:col-span-2">
@@ -896,7 +914,7 @@ function EditForm({
         </div>
         <div className="sm:col-span-2">
           <Button onClick={submit} disabled={pending}>
-            {pending ? 'Čuvam…' : 'Sačuvaj kao novu verziju'}
+            {pending ? t('edit.saving') : t('edit.save')}
           </Button>
         </div>
       </CardContent>

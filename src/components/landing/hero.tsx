@@ -1,6 +1,9 @@
 import { faCheck } from '@fortawesome/free-solid-svg-icons'
+import type { Route } from 'next'
 import Link from 'next/link'
+import { useLocale, useTranslations } from 'next-intl'
 
+import { localePath, SECTION_IDS } from '@/i18n/paths'
 import { cn } from 'cn'
 
 import { UrlForm } from './demo-context'
@@ -11,12 +14,15 @@ import { LANDING_PLATFORMS } from './platforms'
 
 /**
  * Pilula iznad naslova prati flag `registration_open` (admin): zatvoreno je tekst iz dizajna
- * („U izradi · Registracija stiže uskoro”), otvoreno vodi na registraciju.
+ * („U izradi · Registracija stiže uskoro”), otvoreno vodi na registraciju na jeziku strane (D-130).
  */
 function StatusPill({ open }: { open: boolean }) {
+  const t = useTranslations('site.hero.pill')
+  const locale = useLocale()
+  const href = (open ? localePath(locale, '/register') : `#${SECTION_IDS[locale].pricing}`) as Route
   return (
     <Link
-      href={open ? '/register' : '#cene'}
+      href={href}
       className="inline-flex items-center gap-2.5 rounded-full border border-l-line/18 bg-[rgba(11,17,30,0.6)] py-[5px] pr-3 pl-[5px] text-[13px] text-l-text-2 transition-colors hover:border-l-line/30 hover:text-white"
     >
       <span
@@ -31,9 +37,9 @@ function StatusPill({ open }: { open: boolean }) {
             open ? 'bg-l-accent' : 'bg-l-warning',
           )}
         />
-        {open ? 'Otvoreno' : 'U izradi'}
+        {open ? t('open') : t('closed')}
       </span>
-      <span>{open ? 'Registracija je otvorena' : 'Registracija stiže uskoro'}</span>
+      <span>{open ? t('openText') : t('closedText')}</span>
     </Link>
   )
 }
@@ -45,6 +51,7 @@ export function Hero({
   registrationOpen: boolean
   freeTokens: number | null
 }) {
+  const t = useTranslations('site.hero')
   return (
     <section id="top" className="relative px-6 pt-[72px] pb-[110px]">
       <div aria-hidden className="l-hero-glow pointer-events-none absolute inset-0" />
@@ -53,31 +60,28 @@ export function Hero({
         <div className="min-w-0 flex-[1_1_420px]">
           <StatusPill open={registrationOpen} />
           <h1 className="mt-6 text-[clamp(44px,5.6vw,72px)] leading-[0.98] font-semibold tracking-[-0.045em]">
-            Unesite sajt,
+            {t('title1')}
             <br />
-            <span className="text-l-accent">Sova vodi</span>
+            <span className="text-l-accent">{t('title2')}</span>
             <br />
-            vaše mreže.
+            {t('title3')}
           </h1>
-          <p className="mt-6 max-w-[500px] text-lg leading-[1.55] text-pretty text-l-muted">
-            Sova nauči vaš brend sa sajta, napravi strategiju, piše objave, pravi vizuale, zakazuje i
-            objavljuje, pa uči iz rezultata.
-          </p>
+          <p className="mt-6 max-w-[500px] text-lg leading-[1.55] text-pretty text-l-muted">{t('sub')}</p>
           <UrlForm variant="hero" />
           <div className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-[13.5px] text-l-muted">
             {[
-              freeTokens ? `${freeTokens} besplatnih tokena` : 'Besplatna proba',
-              'Bez kartice',
-              'Srpski, latinica i ćirilica',
-            ].map((t) => (
-              <span key={t} className="flex items-center gap-[7px]">
+              freeTokens ? t('freeTokens', { count: freeTokens }) : t('freeTrial'),
+              t('noCard'),
+              t('languages'),
+            ].map((item) => (
+              <span key={item} className="flex items-center gap-[7px]">
                 <Fa icon={faCheck} className="text-l-accent" style={{ fontSize: 11 }} />
-                {t}
+                {item}
               </span>
             ))}
           </div>
           <div className="mt-11 flex flex-wrap items-center gap-3.5">
-            <span className="text-[12.5px] text-l-dim">Objavljuje na</span>
+            <span className="text-[12.5px] text-l-dim">{t('publishesTo')}</span>
             <div className="flex flex-wrap gap-1.5">
               {LANDING_PLATFORMS.map((p) => (
                 <PlatformTile key={p.key} p={p} size={28} radius={8} glyph={13} />

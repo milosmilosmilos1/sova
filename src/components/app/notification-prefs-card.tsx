@@ -1,6 +1,7 @@
 'use client'
 
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -31,6 +32,7 @@ async function api<T>(path: string, init: RequestInit & { json?: unknown } = {})
 
 /** Podešavanja obaveštenja po workspace-u: za svaki tip kanal u aplikaciji i email. */
 export function NotificationPrefsCard({ workspaceId }: { workspaceId: string }) {
+  const t = useTranslations('notifications')
   const prefs = useQuery({
     queryKey: ['notification-prefs', workspaceId],
     queryFn: () => api<{ items: Pref[] }>(`/api/notifications/preferences?workspaceId=${workspaceId}`),
@@ -38,14 +40,12 @@ export function NotificationPrefsCard({ workspaceId }: { workspaceId: string }) 
   return (
     <Card id="obavestenja">
       <CardHeader>
-        <CardTitle>Obaveštenja</CardTitle>
-        <CardDescription>
-          Šta stiže u aplikaciju, a šta i na email. Važi za ovaj radni prostor.
-        </CardDescription>
+        <CardTitle>{t('title')}</CardTitle>
+        <CardDescription>{t('prefs.description')}</CardDescription>
       </CardHeader>
       <CardContent>
         {prefs.isPending ? (
-          <p className="text-sm text-muted-foreground">Učitavam…</p>
+          <p className="text-sm text-muted-foreground">{t('loading')}</p>
         ) : prefs.isError ? (
           <p className="text-sm text-destructive">{prefs.error.message}</p>
         ) : (
@@ -61,6 +61,8 @@ export function NotificationPrefsCard({ workspaceId }: { workspaceId: string }) 
 }
 
 function PrefsForm({ workspaceId, initial }: { workspaceId: string; initial: Pref[] }) {
+  const t = useTranslations('notifications.prefs')
+  const tc = useTranslations('common')
   const [items, setItems] = useState(initial)
   const [saved, setSaved] = useState(false)
   const save = useMutation({
@@ -80,18 +82,18 @@ function PrefsForm({ workspaceId, initial }: { workspaceId: string; initial: Pre
   return (
     <div className="space-y-3">
       <div className="grid grid-cols-[1fr_auto_auto] items-center gap-x-4 gap-y-2 text-sm">
-        <span className="text-xs text-muted-foreground">Tip</span>
-        <span className="text-xs text-muted-foreground">U aplikaciji</span>
-        <span className="text-xs text-muted-foreground">Email</span>
+        <span className="text-xs text-muted-foreground">{t('type')}</span>
+        <span className="text-xs text-muted-foreground">{t('inApp')}</span>
+        <span className="text-xs text-muted-foreground">{t('email')}</span>
         {items.map((i) => (
           <PrefRow key={i.type} pref={i} onToggle={toggle} />
         ))}
       </div>
       <div className="flex items-center gap-3">
         <Button size="sm" onClick={() => save.mutate()} disabled={!dirty || save.isPending}>
-          Sačuvaj
+          {tc('save')}
         </Button>
-        {saved ? <span className="text-xs text-muted-foreground">Sačuvano.</span> : null}
+        {saved ? <span className="text-xs text-muted-foreground">{t('saved')}</span> : null}
         {save.isError ? <span className="text-xs text-destructive">{save.error.message}</span> : null}
       </div>
     </div>
@@ -105,21 +107,28 @@ function PrefRow({
   pref: Pref
   onToggle: (type: string, key: 'inApp' | 'email', value: boolean) => void
 }) {
+  const t = useTranslations('notifications')
+  // poznati tip dobija tekst na jeziku interfejsa; tip koji interfejs još ne zna ostaje sa tekstom servera
+  const known = t.has(`types.${pref.type}.label` as 'types.post_approved.label')
+  const label = known ? t(`types.${pref.type}.label` as 'types.post_approved.label') : pref.label
+  const description = known
+    ? t(`types.${pref.type}.description` as 'types.post_approved.description')
+    : pref.description
   return (
     <>
       <div>
-        <div>{pref.label}</div>
-        <div className="text-xs text-muted-foreground">{pref.description}</div>
+        <div>{label}</div>
+        <div className="text-xs text-muted-foreground">{description}</div>
       </div>
       <Switch
         checked={pref.inApp}
         onCheckedChange={(v) => onToggle(pref.type, 'inApp', Boolean(v))}
-        aria-label={`${pref.label} u aplikaciji`}
+        aria-label={t('prefs.inAppFor', { label })}
       />
       <Switch
         checked={pref.email}
         onCheckedChange={(v) => onToggle(pref.type, 'email', Boolean(v))}
-        aria-label={`${pref.label} na email`}
+        aria-label={t('prefs.emailFor', { label })}
       />
     </>
   )

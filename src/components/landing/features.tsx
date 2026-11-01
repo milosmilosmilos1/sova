@@ -1,6 +1,8 @@
 import { faCheck, faChevronLeft, faChevronRight, faUserPlus } from '@fortawesome/free-solid-svg-icons'
 import Image from 'next/image'
+import { useLocale, useTranslations } from 'next-intl'
 
+import { SECTION_IDS } from '@/i18n/paths'
 import { cn } from 'cn'
 
 import { AutopilotDemo, ReachDemo, ScriptDemo } from './feature-demos'
@@ -9,8 +11,13 @@ import { PlatformTile } from './platform-tile'
 import { byKey } from './platforms'
 import { Accent, DemoCard, Section, SectionHeading } from './section'
 
-/** Sekcija „Funkcije” (D-098): šest kartica u bento rasporedu, primer brenda „Pekara Zrno”. */
+/**
+ * Sekcija „Funkcije” (D-098): šest kartica u bento rasporedu, primer brenda „Pekara Zrno”. Primeri
+ * (brendovi, imena, gradovi) su na jeziku strane (D-130).
+ */
 function BrandBrainVisual() {
+  const t = useTranslations('site.features.brain')
+  const demo = useTranslations('site.demo')
   return (
     <>
       <div className="absolute top-7 -bottom-[30px] left-7 w-[60%] overflow-hidden rounded-xl border border-l-line/18 bg-white shadow-[0_30px_60px_-20px_rgba(0,0,0,0.7)]">
@@ -19,7 +26,7 @@ function BrandBrainVisual() {
             <span key={i} className="size-2 rounded-full bg-[#D5DAE1]" />
           ))}
           <span className="ml-2.5 rounded-md bg-white px-3 py-[3px] text-[11px] text-l-social-meta">
-            pekarazrno.rs
+            {demo('domain')}
           </span>
         </div>
         <div className="relative h-full bg-[#3B2416]">
@@ -32,29 +39,29 @@ function BrandBrainVisual() {
           />
           <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(30,18,10,0.85),rgba(30,18,10,0.1))]" />
           <div className="absolute top-5 left-[22px] flex gap-3.5 text-[10.5px] whitespace-nowrap text-white/75">
-            <span className="font-bold text-[#F3E6D3]">ZRNO</span>
-            <span>Ponuda</span>
-            <span>O nama</span>
-            <span>Kontakt</span>
+            <span className="font-bold text-[#F3E6D3]">{demo('logo')}</span>
+            <span>{t('nav.offer')}</span>
+            <span>{t('nav.about')}</span>
+            <span>{t('nav.contact')}</span>
           </div>
           <div className="absolute top-[70px] left-[22px] max-w-[200px] text-[22px] leading-[1.15] font-semibold tracking-[-0.02em] text-[#F3E6D3]">
-            Hleb kakav se nekad pekao.
+            {demo('headline')}
           </div>
           <div className="absolute top-[138px] left-[22px] rounded-md bg-[#C98B4B] px-3 py-1.5 text-[11px] font-semibold text-[#1E120A]">
-            Pogledajte ponudu
+            {t('cta')}
           </div>
         </div>
       </div>
       <div className="absolute top-[34px] right-[22px] flex w-[min(44%,290px)] flex-col gap-3.5 rounded-[14px] border border-l-line/20 bg-[rgba(15,23,39,0.95)] p-4 shadow-[0_24px_50px_-16px_rgba(0,0,0,0.8)] backdrop-blur-[8px]">
         <div className="flex items-center justify-between">
-          <span className="font-l-mono text-[10.5px] tracking-[0.08em] text-l-accent">PROFIL BRENDA</span>
+          <span className="font-l-mono text-[10.5px] tracking-[0.08em] text-l-accent">{t('profile')}</span>
           <span className="flex items-center gap-[5px] text-[11px] text-l-success">
             <Fa icon={faCheck} style={{ fontSize: 9 }} />
-            gotovo
+            {t('done')}
           </span>
         </div>
         <div>
-          <div className="mb-1.5 text-[11px] text-l-dim">Boje</div>
+          <div className="mb-1.5 text-[11px] text-l-dim">{t('colours')}</div>
           <div className="flex gap-[5px]">
             {['#3B2416', '#C98B4B', '#F3E6D3', '#6E7F4F'].map((c, i) => (
               <span
@@ -69,21 +76,19 @@ function BrandBrainVisual() {
           </div>
         </div>
         <div>
-          <div className="mb-1.5 text-[11px] text-l-dim">Ton</div>
+          <div className="mb-1.5 text-[11px] text-l-dim">{t('tone')}</div>
           <div className="flex flex-wrap gap-1">
-            {['Topao', 'Domaći', 'Bez žargona'].map((t) => (
-              <span key={t} className="rounded-full bg-l-chip px-2 py-[3px] text-[11.5px] text-l-text-2">
-                {t}
+            {[demo('tones.warm'), demo('tones.local'), demo('tones.plain')].map((tone) => (
+              <span key={tone} className="rounded-full bg-l-chip px-2 py-[3px] text-[11.5px] text-l-text-2">
+                {tone}
               </span>
             ))}
           </div>
         </div>
         {/* na uskom ekranu kartica profila nema mesta za činjenice */}
         <div className="hidden sm:block">
-          <div className="mb-1 text-[11px] text-l-dim">Činjenice</div>
-          <div className="text-xs leading-normal text-l-text-2">
-            Peku od 1998. · Kvasac star 20 godina · Otvoreno od 6:30
-          </div>
+          <div className="mb-1 text-[11px] text-l-dim">{t('facts')}</div>
+          <div className="text-xs leading-normal text-l-text-2">{t('factsText')}</div>
         </div>
       </div>
     </>
@@ -91,21 +96,25 @@ function BrandBrainVisual() {
 }
 
 type Chip = Parameters<typeof byKey>[0]
-const WEEK: Array<{ d: string; n: number; chips: Chip[]; today?: boolean; dim?: boolean }> = [
-  { d: 'PON', n: 2, chips: ['instagram', 'facebook'] },
-  { d: 'UTO', n: 3, chips: [] },
-  { d: 'SRE', n: 4, chips: ['tiktok'] },
-  { d: 'ČET', n: 5, chips: ['linkedin'] },
-  { d: 'PET', n: 6, chips: ['instagram', 'google_business'], today: true },
-  { d: 'SUB', n: 7, chips: ['pinterest'] },
-  { d: 'NED', n: 8, chips: [], dim: true },
+type Day = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
+const WEEK: Array<{ d: Day; n: number; chips: Chip[]; today?: boolean; dim?: boolean }> = [
+  { d: 'mon', n: 2, chips: ['instagram', 'facebook'] },
+  { d: 'tue', n: 3, chips: [] },
+  { d: 'wed', n: 4, chips: ['tiktok'] },
+  { d: 'thu', n: 5, chips: ['linkedin'] },
+  { d: 'fri', n: 6, chips: ['instagram', 'google_business'], today: true },
+  { d: 'sat', n: 7, chips: ['pinterest'] },
+  { d: 'sun', n: 8, chips: [], dim: true },
 ]
 
 function CalendarVisual() {
+  const t = useTranslations('site.features.calendar')
+  const demo = useTranslations('site.demo')
+  const days = useTranslations('site.days.short')
   return (
     <div className="h-full overflow-hidden p-5">
       <div className="mb-3 flex items-center justify-between">
-        <span className="text-[13px] font-semibold">2–8. novembar</span>
+        <span className="text-[13px] font-semibold">{demo('week')}</span>
         <span aria-hidden className="flex gap-1">
           {[faChevronLeft, faChevronRight].map((icon, i) => (
             <span
@@ -126,7 +135,7 @@ function CalendarVisual() {
                 day.today ? 'text-l-accent' : 'text-l-dim',
               )}
             >
-              {day.d}
+              {days(day.d)}
             </span>
             <span
               className={cn(
@@ -168,46 +177,51 @@ function CalendarVisual() {
         />
         <div className="min-w-0 flex-1">
           <div className="text-xs text-l-muted">
-            <b className="font-semibold text-l-text">Jelena</b> · klijent
+            <b className="font-semibold text-l-text">{demo('client')}</b> · {t('client')}
           </div>
-          <div className="mt-[3px] text-[13px] leading-[1.4]">Može, samo pomerite na 9:00.</div>
+          <div className="mt-[3px] text-[13px] leading-[1.4]">{t('comment')}</div>
         </div>
         <span className="flex items-center gap-[5px] rounded-[7px] bg-l-success/14 px-2 py-1 text-[11px] font-medium whitespace-nowrap text-l-success">
           <Fa icon={faCheck} style={{ fontSize: 9 }} />
-          Odobreno
+          {t('approved')}
         </span>
       </div>
     </div>
   )
 }
 
-const BRANDS: Array<[string, string, string, string, 'wait' | 'ok']> = [
-  ['/landing/hleb.jpg', 'Pekara Zrno', 'Novi Sad · 3 mreže', '3 čeka', 'wait'],
-  ['/landing/teretana.jpg', 'Teretana Forma', 'Beograd · 4 mreže', 'Sve odobreno', 'ok'],
-  ['/landing/cvecara.jpg', 'Cvećara Lala', 'Niš · 2 mreže', '1 čeka', 'wait'],
-  ['/landing/bistro.jpg', 'Bistro Ugao', 'Kragujevac · 5 mreža', 'Sve odobreno', 'ok'],
+/** Brendovi u primeru agencije: slika, ključ u porukama i broj objava koje čekaju (0 = sve odobreno). */
+const BRANDS: Array<[string, 'bakery' | 'gym' | 'florist' | 'bistro', number]> = [
+  ['/landing/hleb.jpg', 'bakery', 3],
+  ['/landing/teretana.jpg', 'gym', 0],
+  ['/landing/cvecara.jpg', 'florist', 1],
+  ['/landing/bistro.jpg', 'bistro', 0],
 ]
-const TEAM: Array<[string, string, string]> = [
-  ['/landing/osoba-ana.jpg', 'Ana Petrović', 'Vlasnik'],
-  ['/landing/osoba-marko.jpg', 'Marko Ilić', 'Urednik'],
-  ['/landing/osoba-jelena.jpg', 'Jelena Kovač', 'Klijent'],
+const TEAM: Array<[string, 'owner' | 'editor' | 'client']> = [
+  ['/landing/osoba-ana.jpg', 'owner'],
+  ['/landing/osoba-marko.jpg', 'editor'],
+  ['/landing/osoba-jelena.jpg', 'client'],
 ]
 
 function AgenciesCard() {
+  const t = useTranslations('site.features.agencies')
+  const demo = useTranslations('site.demo')
   return (
     <div className="flex min-w-0 flex-[1_1_100%] flex-wrap overflow-hidden rounded-[20px] border border-l-line/12 bg-l-card transition-[border-color] duration-[250ms] hover:border-l-line/26">
       <div className="flex flex-[1_1_300px] flex-col justify-end p-7">
-        <h3 className="text-lg font-semibold tracking-[-0.015em]">Za agencije i timove</h3>
+        <h3 className="text-lg font-semibold tracking-[-0.015em]">{t('title')}</h3>
         <p className="mt-2 max-w-[340px] text-[14.5px] leading-[1.55] text-pretty text-l-muted">
-          Više brendova u jednom radnom prostoru, uloge, pozivnice i odobravanje po klijentu.
+          {t('text')}
         </p>
       </div>
       <div className="flex min-w-0 flex-[2_1_520px] flex-wrap gap-4 border-l border-l-line/10 bg-l-visual p-[22px]">
         <div className="flex min-w-0 flex-[1.3_1_280px] flex-col gap-1.5">
-          <div className="mb-1 font-l-mono text-[10.5px] tracking-[0.08em] text-l-dim">BRENDOVI</div>
-          {BRANDS.map(([src, name, meta, status, kind], i) => (
+          <div className="mb-1 font-l-mono text-[10.5px] tracking-[0.08em] text-l-dim">
+            {t('brandsLabel')}
+          </div>
+          {BRANDS.map(([src, brand, waiting], i) => (
             <div
-              key={name}
+              key={brand}
               className={cn(
                 'flex items-center gap-3 rounded-[11px] border px-2.5 py-[9px]',
                 i === 0 ? 'border-l-accent/35 bg-l-inner' : 'border-transparent hover:bg-l-inner',
@@ -221,24 +235,26 @@ function AgenciesCard() {
                 className="size-[34px] rounded-[9px] bg-l-img object-cover"
               />
               <div className="min-w-0 flex-1">
-                <div className="text-[13.5px] font-medium">{name}</div>
-                <div className="text-[11.5px] text-l-dim">{meta}</div>
+                <div className="text-[13.5px] font-medium">
+                  {brand === 'bakery' ? demo('brand') : t(`brands.${brand}.name`)}
+                </div>
+                <div className="text-[11.5px] text-l-dim">{t(`brands.${brand}.meta`)}</div>
               </div>
               <span
                 className={cn(
                   'rounded-full px-2 py-[3px] text-[11px] whitespace-nowrap',
-                  kind === 'wait' ? 'bg-l-warning/13 text-l-warning' : 'bg-l-success/12 text-l-success',
+                  waiting ? 'bg-l-warning/13 text-l-warning' : 'bg-l-success/12 text-l-success',
                 )}
               >
-                {status}
+                {waiting ? t('waiting', { count: waiting }) : t('allApproved')}
               </span>
             </div>
           ))}
         </div>
         <div className="flex min-w-0 flex-[1_1_220px] flex-col gap-1.5">
-          <div className="mb-1 font-l-mono text-[10.5px] tracking-[0.08em] text-l-dim">TIM · PEKARA ZRNO</div>
-          {TEAM.map(([src, name, role]) => (
-            <div key={name} className="flex items-center gap-2.5 px-0.5 py-2">
+          <div className="mb-1 font-l-mono text-[10.5px] tracking-[0.08em] text-l-dim">{t('teamLabel')}</div>
+          {TEAM.map(([src, role]) => (
+            <div key={role} className="flex items-center gap-2.5 px-0.5 py-2">
               <Image
                 src={src}
                 alt=""
@@ -246,13 +262,13 @@ function AgenciesCard() {
                 height={30}
                 className="size-[30px] rounded-full bg-l-img object-cover"
               />
-              <div className="min-w-0 flex-1 text-[13px]">{name}</div>
-              <span className="text-[11.5px] text-l-muted">{role}</span>
+              <div className="min-w-0 flex-1 text-[13px]">{t(`team.${role}`)}</div>
+              <span className="text-[11.5px] text-l-muted">{t(`roles.${role}`)}</span>
             </div>
           ))}
           <div className="mt-1 flex h-9 items-center justify-center gap-2 rounded-[10px] border border-dashed border-l-line/30 text-[12.5px] text-l-muted transition-colors hover:border-l-line/50 hover:text-l-text">
             <Fa icon={faUserPlus} style={{ fontSize: 11 }} />
-            Pozovite člana tima
+            {t('invite')}
           </div>
         </div>
       </div>
@@ -261,15 +277,13 @@ function AgenciesCard() {
 }
 
 export function Features() {
+  const t = useTranslations('site.features')
+  const locale = useLocale()
   return (
-    <Section id="funkcije" alt>
+    <Section id={SECTION_IDS[locale].features} alt>
       <SectionHeading
-        title={
-          <>
-            Sve što radi agencija, <Accent>za deo cene</Accent>
-          </>
-        }
-        sub="Šest alata koji rade zajedno, od prvog čitanja sajta do mesečnog izveštaja."
+        title={t.rich('title', { accent: (chunks) => <Accent>{chunks}</Accent> })}
+        sub={t('sub')}
       />
       <div className="flex flex-wrap gap-4">
         <DemoCard
@@ -277,36 +291,41 @@ export function Features() {
           visualHeight={310}
           visualClassName="overflow-hidden"
           visual={<BrandBrainVisual />}
-          title="Brand Brain"
+          title={t('cards.brain.title')}
         >
-          Pročita sajt i izvuče usluge, ton, publiku, boje i činjenice koje posle koristi u svakoj objavi.
+          {t('cards.brain.text')}
         </DemoCard>
-        <DemoCard className="flex-[1_1_320px]" visualHeight={310} visual={<ScriptDemo />} title="AI Studio">
-          Tekst za svaku mrežu po njenim pravilima, slike i vizuali iz šablona, prevod i hashtagovi.
+        <DemoCard
+          className="flex-[1_1_320px]"
+          visualHeight={310}
+          visual={<ScriptDemo />}
+          title={t('cards.studio.title')}
+        >
+          {t('cards.studio.text')}
         </DemoCard>
         <DemoCard
           className="flex-[1_1_320px]"
           visualHeight={270}
           visual={<CalendarVisual />}
-          title="Kalendar i odobravanje"
+          title={t('cards.calendar.title')}
         >
-          Nacrti, komentari, link za odobrenje klijentu i objava u tačno vreme, i kad promenite zonu.
+          {t('cards.calendar.text')}
         </DemoCard>
         <DemoCard
           className="flex-[1_1_320px]"
           visualHeight={270}
           visual={<AutopilotDemo />}
-          title="Autopilot"
+          title={t('cards.autopilot.title')}
         >
-          Nedeljni plan iz strategije, sa kontrolom kvaliteta, budžetom tokena i rokovima za odobrenje.
+          {t('cards.autopilot.text')}
         </DemoCard>
         <DemoCard
           className="flex-[1_1_320px]"
           visualHeight={270}
           visual={<ReachDemo />}
-          title="Analitika i uvidi"
+          title={t('cards.analytics.title')}
         >
-          Doseg, angažovanje i najbolji termini po mreži, uz nedeljne uvide šta da radite drugačije.
+          {t('cards.analytics.text')}
         </DemoCard>
         <AgenciesCard />
       </div>

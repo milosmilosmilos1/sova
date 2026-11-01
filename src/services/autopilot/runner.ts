@@ -587,7 +587,7 @@ async function completeDraft(input: {
     await notifyRoles(brand, ['owner', 'admin', 'editor'], {
       type: 'autopilot_returned',
       title: 'Autopilot je vratio objavu na doradu',
-      body: `${post.title ?? 'Objava'}: ${failed.join(' ')}`.slice(0, 500),
+      body: `„${post.title ?? 'Objava'}”: ${failed.join(' ')}`.slice(0, 500),
       link: `/app/posts/${postId}`,
       data: { postId, runId },
       email: false,
@@ -915,13 +915,16 @@ async function weeklyReport(brand: BrandRow, summary: WeeklySummary): Promise<vo
   } catch (error) {
     logger.warn('autopilot_report_overview_failed', { brandId: brand.id, error })
   }
-  const plan =
-    `Za nedelju od ${summary.weekStart}: ${summary.planned} nacrta` +
-    (summary.submitted ? `, ${summary.submitted} čeka odobrenje` : '') +
-    (summary.scheduled ? `, ${summary.scheduled} zakazano` : '') +
-    (summary.returned ? `, ${summary.returned} vraćeno na doradu` : '') +
-    (summary.budgetStopped ? '; budžet je potrošen pre kraja' : '') +
-    '.'
+  // kratke rečenice, da se obaveštenje prevede na jezik primaoca rečenicu po rečenicu (D-130)
+  const plan = [
+    `Za nedelju od ${summary.weekStart}: ${summary.planned} nacrta.`,
+    summary.submitted ? `Čeka odobrenje: ${summary.submitted}.` : '',
+    summary.scheduled ? `Zakazano: ${summary.scheduled}.` : '',
+    summary.returned ? `Vraćeno na doradu: ${summary.returned}.` : '',
+    summary.budgetStopped ? 'Budžet je potrošen pre kraja nedelje.' : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
   await notifyRoles(brand, ['owner', 'admin'], {
     type: 'autopilot_weekly_report',
     title: `Autopilot: nedeljni izveštaj za ${brand.name}`,

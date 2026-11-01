@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { getTranslations } from 'next-intl/server'
+import { getLocale, getTranslations } from 'next-intl/server'
 
 import { DemoProvider } from '@/components/landing/demo-context'
 import { Faq } from '@/components/landing/faq'
@@ -12,27 +12,37 @@ import { Pricing } from '@/components/landing/pricing'
 import { pricingFromPlans, type PricingCosts } from '@/components/landing/pricing-math'
 import { Accent, Section, SectionHeading } from '@/components/landing/section'
 import { company } from '@/config/company'
+import type { AppLocale } from '@/i18n/config'
+import { localePath, SECTION_IDS } from '@/i18n/paths'
 import { AI_IMAGES_FLAG, isFeatureEnabled } from '@/lib/flags'
-import { siteUrl } from '@/lib/seo'
+import { publicMetadata, siteUrl } from '@/lib/seo'
 import { getTokenPrices } from '@/lib/tokens/prices'
 import { listPlans, type PlanRow } from '@/services/plans'
 
-/** Naslov, opis i kanonski URL početne (D-095); slika za deljenje je `opengraph-image.tsx`. */
+/**
+ * Naslov, opis, kanonski URL i verzije na drugim jezicima (D-095, D-130); slika za deljenje je
+ * `/og/<jezik>`.
+ */
 export async function generateMetadata(): Promise<Metadata> {
-  const t = await getTranslations('landing')
+  const [locale, t] = await Promise.all([getLocale(), getTranslations('landing')])
   const title = t('metaTitle')
   const description = t('metaDescription')
   return {
-    title: { absolute: title },
-    description,
-    alternates: { canonical: '/' },
-    openGraph: { type: 'website', url: '/', siteName: 'Sova', locale: 'sr_RS', title, description },
+    ...publicMetadata({ locale, path: '/', title, description, absoluteTitle: true }),
     twitter: { card: 'summary_large_image', title, description },
   }
 }
 
-/** Strukturirani podaci (schema.org): proizvod sa cenama iz tabele `plans` i vlasnik. */
-function structuredData(description: string, plans: PlanRow[]) {
+/**
+ * Strukturirani podaci (schema.org): proizvod sa cenama iz tabele `plans` i vlasnik. Opis, jezik,
+ * adresa strane i nazivi planova su na jeziku strane (D-130).
+ */
+function structuredData(
+  locale: AppLocale,
+  description: string,
+  plans: PlanRow[],
+  planName: (code: string, fromDb?: string) => string,
+) {
   const base = siteUrl()
   return {
     '@context': 'https://schema.org',
@@ -49,14 +59,14 @@ function structuredData(description: string, plans: PlanRow[]) {
         name: company.productName,
         applicationCategory: 'BusinessApplication',
         operatingSystem: 'Web',
-        url: `${base}/`,
-        inLanguage: 'sr-Latn',
+        url: `${base}${localePath(locale, '/')}`,
+        inLanguage: locale,
         description,
         publisher: { '@id': `${base}/#organization` },
         offers: [
           {
             '@type': 'Offer',
-            name: 'Besplatno',
+            name: planName('free'),
             price: '0',
             priceCurrency: (plans.find((p) => p.code === 'free')?.currency ?? 'EUR').toUpperCase(),
           },
@@ -64,7 +74,7 @@ function structuredData(description: string, plans: PlanRow[]) {
             .filter((p) => p.kind === 'subscription' && p.price_cents > 0)
             .map((p) => ({
               '@type': 'Offer',
-              name: p.name,
+              name: planName(p.code, p.name),
               price: (p.price_cents / 100).toFixed(2),
               priceCurrency: p.currency.toUpperCase(),
             })),
@@ -79,7 +89,12 @@ const jsonForScript = (value: unknown) => JSON.stringify(value).replace(/</g, '\
 
 /** Landing po dizajnu iz Claude Design-a (D-098); cene i troškovi tokena dolaze iz baze. */
 export default async function LandingPage() {
-  const t = await getTranslations('landing')
+  const [t, tp, locale] = await Promise.all([
+    getTranslations('landing'),
+    getTranslations('site'),
+    getLocale(),
+  ])
+  const ids = SECTION_IDS[locale]
   const [plans, prices, registrationOpen, aiImages] = await Promise.all([
     listPlans().catch(() => []),
     getTokenPrices(),
@@ -96,41 +111,42 @@ export default async function LandingPage() {
   }
   const pricing = pricingFromPlans(plans, costs)
   const freeTokens = pricing?.free.tokens ?? null
+  // naziv plana u porukama (D-130); plan koji poruke ne poznaju zadržava naziv iz baze
+  const planName = (code: string, fromDb?: string) =>
+    code === 'free' || code === 'monthly' || code === 'yearly'
+      ? tp(`pricing.plans.${code}`)
+      : (fromDb ?? code)
 
   return (
     <DemoProvider>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: jsonForScript(structuredData(t('metaDescription'), plans)) }}
+        dangerouslySetInnerHTML={{
+          __html: jsonForScript(structuredData(locale, t('metaDescription'), plans, planName)),
+        }}
       />
       <Hero registrationOpen={registrationOpen} freeTokens={freeTokens} />
-      <Section id="mreze">
-        <SectionHeading
-          title="Jedan kalendar za sve mreže"
-          sub="Napišete jednom, Sova prilagodi format, dužinu i ton svakoj mreži. Objavljuje kroz zvanične API-je, uz vaše odobrenje ili automatski. Izaberite mrežu i pogledajte."
-          subWidth={600}
-        />
+      <Section id={ids.networks}>
+        <SectionHeading title={tp('networks.title')} sub={tp('networks.sub')} subWidth={600} />
         <PlatformShowcase />
       </Section>
       <Features />
       <HowItWorks />
-      <Section id="cene" alt>
+      <Section id={ids.pricing} alt>
         <SectionHeading
           title={
             <>
-              Jednostavne cene,
+              {tp('pricing.title')}
               <br />
-              <Accent>plaćate rad, ne sedišta</Accent>
+              <Accent>{tp('pricing.titleAccent')}</Accent>
             </>
           }
-          sub="Tokeni se troše kad AI nešto napravi. Kalendar i analitika ne koštaju ništa."
+          sub={tp('pricing.sub')}
         />
         {pricing ? (
           <Pricing data={pricing} registrationOpen={registrationOpen} />
         ) : (
-          <p className="text-[15px] text-l-muted">
-            Cenovnik trenutno nije dostupan. Osvežite stranicu za nekoliko minuta.
-          </p>
+          <p className="text-[15px] text-l-muted">{tp('pricing.unavailable')}</p>
         )}
       </Section>
       <Faq costs={costs} />

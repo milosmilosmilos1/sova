@@ -2,6 +2,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -28,6 +29,8 @@ async function fetchFactors(): Promise<Factor[]> {
  * Posle promene nivoa sesije osvežava server (router.refresh) da admin gate vidi AAL2.
  */
 export function MfaPanel({ currentLevel, reason }: { currentLevel: 'aal1' | 'aal2'; reason?: string }) {
+  const t = useTranslations('security.mfa')
+  const tc = useTranslations('common')
   const router = useRouter()
   const queryClient = useQueryClient()
   const factors = useQuery({ queryKey: FACTORS_KEY, queryFn: fetchFactors, retry: 1 })
@@ -46,7 +49,7 @@ export function MfaPanel({ currentLevel, reason }: { currentLevel: 'aal1' | 'aal
       if (result) setMessage(result)
       await queryClient.invalidateQueries({ queryKey: FACTORS_KEY })
     } catch (e) {
-      setMessage(e instanceof Error ? mapMfaError(e.message) : 'Radnja nije uspela.')
+      setMessage(e instanceof Error ? mapMfaError(e.message, t) : t('failed'))
     } finally {
       setBusy(false)
     }
@@ -78,26 +81,26 @@ export function MfaPanel({ currentLevel, reason }: { currentLevel: 'aal1' | 'aal
       setEnroll(null)
       setCode('')
       router.refresh()
-      return 'Dvofaktorska zaštita je uključena i potvrđena za ovu sesiju.'
+      return t('enabled')
     })
 
   const disable = (factorId: string) =>
     run(async () => {
-      if (!window.confirm('Isključiti dvofaktorsku zaštitu?')) return null
+      if (!window.confirm(t('confirmDisable'))) return null
       const supabase = createSupabaseBrowserClient()
       const { error } = await supabase.auth.mfa.unenroll({ factorId })
       if (error) throw error
       router.refresh()
-      return 'Dvofaktorska zaštita je isključena.'
+      return t('disabled')
     })
 
-  if (factors.isPending) return <p className="text-sm text-muted-foreground">Učitavam…</p>
+  if (factors.isPending) return <p className="text-sm text-muted-foreground">{t('loading')}</p>
   if (factors.isError)
     return (
       <div className="space-y-2 text-sm">
-        <p className="text-destructive">Stanje zaštite nije učitano.</p>
+        <p className="text-destructive">{t('loadFailed')}</p>
         <Button variant="outline" size="sm" onClick={() => void factors.refetch()}>
-          Pokušajte ponovo
+          {tc('retry')}
         </Button>
       </div>
     )
@@ -105,7 +108,7 @@ export function MfaPanel({ currentLevel, reason }: { currentLevel: 'aal1' | 'aal
   const codeInput = (onSubmit: () => void) => (
     <div className="flex max-w-xs items-end gap-2">
       <div className="flex-1 space-y-1.5">
-        <Label htmlFor="mfa-code">Kod iz aplikacije</Label>
+        <Label htmlFor="mfa-code">{t('codeLabel')}</Label>
         <Input
           id="mfa-code"
           inputMode="numeric"
@@ -116,7 +119,7 @@ export function MfaPanel({ currentLevel, reason }: { currentLevel: 'aal1' | 'aal
         />
       </div>
       <Button disabled={busy || code.trim().length < 6} onClick={onSubmit}>
-        Potvrdite
+        {t('confirm')}
       </Button>
     </div>
   )
@@ -125,7 +128,7 @@ export function MfaPanel({ currentLevel, reason }: { currentLevel: 'aal1' | 'aal
     <div className="space-y-4 text-sm">
       {reason === 'admin' ? (
         <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-amber-900">
-          Admin panel traži dvofaktorsku zaštitu i potvrdu koda u ovoj sesiji.
+          {t('adminRequired')}
         </p>
       ) : null}
       {message ? (
@@ -137,39 +140,35 @@ export function MfaPanel({ currentLevel, reason }: { currentLevel: 'aal1' | 'aal
       {verified ? (
         <div className="space-y-3">
           <p>
-            Dvofaktorska zaštita je <strong>uključena</strong>.{' '}
-            {currentLevel === 'aal2'
-              ? 'Ova sesija je potvrđena kodom.'
-              : 'Ova sesija još nije potvrđena kodom.'}
+            {t.rich('on', { strong: (chunks) => <strong>{chunks}</strong> })}{' '}
+            {currentLevel === 'aal2' ? t('sessionVerified') : t('sessionNotVerified')}
           </p>
           {currentLevel !== 'aal2' ? codeInput(() => void verifyCode(verified.id)) : null}
           <Button variant="outline" size="sm" disabled={busy} onClick={() => void disable(verified.id)}>
-            Isključite zaštitu
+            {t('turnOff')}
           </Button>
         </div>
       ) : enroll ? (
         <div className="space-y-3">
-          <p>
-            Skenirajte kod aplikacijom (Google Authenticator, 1Password, Authy…), pa unesite 6-cifreni kod.
-          </p>
+          <p>{t('scan')}</p>
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={enroll.qr}
-            alt="QR kod za aplikaciju za autentifikaciju"
+            alt={t('qrAlt')}
             width={180}
             height={180}
             className="rounded-md border bg-white p-2"
           />
           <p className="text-xs text-muted-foreground">
-            Ručni unos: <code className="font-mono">{enroll.secret}</code>
+            {t('manual')} <code className="font-mono">{enroll.secret}</code>
           </p>
           {codeInput(() => void verifyCode(enroll.factorId))}
         </div>
       ) : (
         <div className="space-y-3">
-          <p>Dvofaktorska zaštita je isključena. Preporučujemo je svima, a obavezna je za admin panel.</p>
+          <p>{t('off')}</p>
           <Button disabled={busy} onClick={() => void startEnroll()}>
-            Uključite dvofaktorsku zaštitu
+            {t('turnOn')}
           </Button>
         </div>
       )}
@@ -177,10 +176,9 @@ export function MfaPanel({ currentLevel, reason }: { currentLevel: 'aal1' | 'aal
   )
 }
 
-function mapMfaError(message: string): string {
+function mapMfaError(message: string, t: (key: 'wrongCode' | 'needCode') => string): string {
   const m = message.toLowerCase()
-  if (m.includes('invalid totp') || m.includes('invalid code'))
-    return 'Kod nije tačan. Proverite vreme na telefonu i pokušajte ponovo.'
-  if (m.includes('aal2')) return 'Za ovu radnju prvo potvrdite kod iz aplikacije.'
+  if (m.includes('invalid totp') || m.includes('invalid code')) return t('wrongCode')
+  if (m.includes('aal2')) return t('needCode')
   return message
 }

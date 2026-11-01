@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 
 import { StudioClient } from '@/components/studio/studio-client'
 import { getCurrentBrand } from '@/lib/auth/brand'
@@ -8,7 +9,10 @@ import { getCurrentWorkspace } from '@/lib/auth/workspace'
 import { configured } from '@/lib/env'
 import { AI_IMAGES_FLAG, isFeatureEnabled } from '@/lib/flags'
 
-export const metadata: Metadata = { title: 'Ručni alati Studija' }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('shell')
+  return { title: t('titles.studioTools') }
+}
 
 /** Ručni alati Studija (forma „Nova objava”, Unsplash, Pexels, Canva, šablon); razgovor je na /app/studio (D-116). */
 export default async function StudioToolsPage() {

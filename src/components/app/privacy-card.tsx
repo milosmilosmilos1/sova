@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { Button } from '@/components/ui/button'
@@ -21,6 +22,7 @@ export function PrivacyCard({
   hasPassword: boolean
   disabledReason: string | null
 }) {
+  const t = useTranslations('settings.privacy')
   const [open, setOpen] = useState(false)
   const [confirmEmail, setConfirmEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -45,7 +47,7 @@ export function PrivacyCard({
       }
       window.location.href = data.data.redirect
     } catch (e) {
-      setError(e instanceof Error ? e.message : 'Brisanje nije uspelo.')
+      setError(e instanceof Error ? e.message : t('failed'))
       setBusy(false)
     }
   }
@@ -53,8 +55,8 @@ export function PrivacyCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Privatnost i podaci</CardTitle>
-        <CardDescription>Preuzmite sve svoje podatke ili trajno obrišite nalog.</CardDescription>
+        <CardTitle>{t('title')}</CardTitle>
+        <CardDescription>{t('description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4 text-sm">
         {disabledReason ? <p className="text-muted-foreground">{disabledReason}</p> : null}
@@ -65,12 +67,9 @@ export function PrivacyCard({
             disabled={Boolean(disabledReason)}
             render={<a href="/api/account/export" />}
           >
-            Preuzmi moje podatke (JSON)
+            {t('export')}
           </Button>
-          <span className="text-xs text-muted-foreground">
-            Profil, radni prostori čiji ste vlasnik, objave, mediji (linkovi važe 7 dana), tokeni i
-            obaveštenja.
-          </span>
+          <span className="text-xs text-muted-foreground">{t('exportHint')}</span>
         </div>
         {!open ? (
           <Button
@@ -79,17 +78,13 @@ export function PrivacyCard({
             disabled={Boolean(disabledReason)}
             onClick={() => setOpen(true)}
           >
-            Obriši nalog…
+            {t('open')}
           </Button>
         ) : (
           <div className="space-y-3 rounded-md border border-destructive/40 p-3">
-            <p>
-              Brisanje je trajno: brišu se nalog, radni prostori u kojima ste sami, njihove objave, mediji i
-              veze sa mrežama. Ako ste vlasnik tima sa drugim članovima, prvo prenesite vlasništvo na strani
-              Tim.
-            </p>
+            <p>{t('warning')}</p>
             <div className="space-y-1.5">
-              <Label htmlFor="confirm-email">Za potvrdu upišite email {email}</Label>
+              <Label htmlFor="confirm-email">{t('confirmEmail', { email })}</Label>
               <Input
                 id="confirm-email"
                 value={confirmEmail}
@@ -99,7 +94,7 @@ export function PrivacyCard({
             </div>
             {hasPassword ? (
               <div className="space-y-1.5">
-                <Label htmlFor="confirm-password">Lozinka</Label>
+                <Label htmlFor="confirm-password">{t('password')}</Label>
                 <Input
                   id="confirm-password"
                   type="password"
@@ -109,9 +104,7 @@ export function PrivacyCard({
                 />
               </div>
             ) : (
-              <p className="text-xs text-muted-foreground">
-                Nalog nema lozinku: brisanje je moguće u roku od 15 minuta posle prijave.
-              </p>
+              <p className="text-xs text-muted-foreground">{t('noPassword')}</p>
             )}
             {error ? (
               <p role="alert" className="text-destructive">
@@ -128,10 +121,10 @@ export function PrivacyCard({
                 }
                 onClick={() => void remove()}
               >
-                {busy ? 'Brišem…' : 'Trajno obriši nalog'}
+                {busy ? t('deleting') : t('delete')}
               </Button>
               <Button variant="ghost" onClick={() => setOpen(false)} disabled={busy}>
-                Odustani
+                {t('cancel')}
               </Button>
             </div>
           </div>

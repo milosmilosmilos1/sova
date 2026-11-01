@@ -10,7 +10,9 @@
     "cancel": "Cancel",
     "errorId": "Error ID for support: {id}",
     "error": "Error.",
-    "timeout": "The server didn't finish in time. Refresh the page to see what was done, then try again."
+    "timeout": "The server didn't finish in time. Refresh the page to see what was done, then try again.",
+    "toasts": "Notifications",
+    "closeToast": "Close notification"
   },
   "nav": {
     "login": "Log in",
@@ -691,6 +693,7 @@
       "site": "Website",
       "siteHint": "The first analysis is free and takes a minute or two.",
       "siteUrl": "Website address",
+      "siteUrlPlaceholder": "https://example.com",
       "analyze": "Analyze website",
       "analyzeAgain": "Analyze again",
       "running": "Analysis in progress…",

@@ -2,6 +2,7 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import Link from 'next/link'
+import { useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { Badge } from '@/components/ui/badge'
@@ -10,7 +11,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { PLATFORMS } from '@/config/platforms'
-import { FORMAT_HINT, FORMAT_LABEL, POST_FORMATS, type PostFormat } from '@/config/post-formats'
+import { POST_FORMATS, type PostFormat } from '@/config/post-formats'
+import { INTL_UI } from '@/i18n/config'
 import type { ApiResponse } from '@/lib/api/response'
 
 /**
@@ -59,13 +61,8 @@ interface View {
   }>
 }
 
-const RUN_STATUS: Record<string, string> = {
-  running: 'u toku',
-  succeeded: 'gotovo',
-  partial: 'delimično',
-  skipped: 'preskočeno',
-  failed: 'neuspelo',
-}
+/** statusi prolaza sa prevodom; nepoznat status se prikazuje kako stigne */
+const RUN_STATUSES = ['running', 'succeeded', 'partial', 'skipped', 'failed'] as const
 
 async function api<T>(path: string, init: RequestInit & { json?: unknown } = {}): Promise<T> {
   const headers = new Headers(init.headers)
@@ -81,19 +78,20 @@ async function api<T>(path: string, init: RequestInit & { json?: unknown } = {})
 }
 
 function ErrorBox({ error }: { error: unknown }) {
+  const tc = useTranslations('common')
   if (!error) return null
   return (
     <div
       role="alert"
       className="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-sm text-destructive"
     >
-      {error instanceof Error ? error.message : 'Greška.'}
+      {error instanceof Error ? error.message : tc('error')}
     </div>
   )
 }
 
-const fmtDate = (d: string) =>
-  new Date(`${d.slice(0, 10)}T12:00:00Z`).toLocaleDateString('sr-Latn-RS', { day: 'numeric', month: 'short' })
+const dayMonth = (d: string, intl: string) =>
+  new Date(`${d.slice(0, 10)}T12:00:00Z`).toLocaleDateString(intl, { day: 'numeric', month: 'short' })
 
 export function AutopilotClient({
   brandId,
@@ -104,6 +102,9 @@ export function AutopilotClient({
   canAdmin: boolean
   canEdit: boolean
 }) {
+  const t = useTranslations('autopilot')
+  const intl = INTL_UI[useLocale()]
+  const fmtDate = (d: string) => dayMonth(d, intl)
   const qc = useQueryClient()
   const view = useQuery({
     queryKey: ['autopilot', brandId],
@@ -123,7 +124,7 @@ export function AutopilotClient({
       api<{ weekStart: string }>(`/api/autopilot/${brandId}/run`, { method: 'POST', json: {} }),
     onSuccess: refresh,
   })
-  if (view.isPending) return <p className="text-sm text-muted-foreground">Učitavam…</p>
+  if (view.isPending) return <p className="text-sm text-muted-foreground">{t('loading')}</p>
   if (view.isError) return <ErrorBox error={view.error} />
   const v = view.data
   const u = v.usage
@@ -132,27 +133,31 @@ export function AutopilotClient({
     <div className="space-y-6">
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Autopilot</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">{t('title')}</h1>
           <p className="text-sm text-muted-foreground">
-            {v.brandName} · zona {v.timezone}. Nedeljni prolaz ponedeljkom u 06:00 priprema nedelju od{' '}
-            {fmtDate(v.nextWeek.start)} do {fmtDate(v.nextWeek.end)}.
+            {t('subtitle', {
+              brand: v.brandName,
+              timezone: v.timezone,
+              from: fmtDate(v.nextWeek.start),
+              to: fmtDate(v.nextWeek.end),
+            })}
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           {v.paused ? (
             canAdmin ? (
               <Button onClick={() => resume.mutate()} disabled={resume.isPending}>
-                Nastavi
+                {t('resume')}
               </Button>
             ) : null
           ) : canEdit ? (
             <Button variant="destructive" onClick={() => pause.mutate()} disabled={pause.isPending}>
-              Pauziraj sve
+              {t('pauseAll')}
             </Button>
           ) : null}
           {canAdmin && v.level >= 1 && !v.paused ? (
             <Button variant="outline" onClick={() => runNow.mutate()} disabled={runNow.isPending}>
-              Pripremi narednu nedelju sada
+              {t('runNow')}
             </Button>
           ) : null}
         </div>
@@ -160,16 +165,16 @@ export function AutopilotClient({
       <ErrorBox error={pause.error ?? resume.error ?? runNow.error} />
       {runNow.data ? (
         <p className="text-sm text-muted-foreground">
-          Prolaz za nedelju od {fmtDate(runNow.data.weekStart)} je pokrenut; nacrti stižu za nekoliko minuta.
+          {t('runStarted', { date: fmtDate(runNow.data.weekStart) })}
         </p>
       ) : null}
       {pause.data || v.paused ? (
         <p className="rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
-          Brend je pauziran
           {v.pausedAt
-            ? ` od ${new Date(v.pausedAt).toLocaleString('sr-Latn-RS', { timeZone: v.timezone })}`
-            : ''}
-          : Autopilot ne radi i zakazane objave stoje. „Nastavi” vraća u red objave čiji termin nije prošao.
+            ? t('pausedSince', {
+                date: new Date(v.pausedAt).toLocaleString(intl, { timeZone: v.timezone }),
+              })
+            : t('paused')}
         </p>
       ) : null}
 
@@ -179,12 +184,12 @@ export function AutopilotClient({
         <div className="space-y-4">
           <Card>
             <CardHeader>
-              <CardDescription>Budžet za {u.month}</CardDescription>
+              <CardDescription>{t('budget.title', { month: u.month })}</CardDescription>
               <CardTitle className="text-3xl tabular-nums">
-                {u.used}
+                {u.used.toLocaleString(intl)}
                 <span className="text-base font-normal text-muted-foreground">
                   {' '}
-                  / {u.budget ?? 'bez limita'} tokena
+                  {u.budget === null ? t('budget.unlimited') : t('budget.of', { count: u.budget })}
                 </span>
               </CardTitle>
             </CardHeader>
@@ -196,7 +201,7 @@ export function AutopilotClient({
                   aria-valuenow={u.percent ?? 0}
                   aria-valuemin={0}
                   aria-valuemax={100}
-                  aria-label="Potrošnja budžeta"
+                  aria-label={t('budget.progress')}
                 >
                   <div
                     className={`h-full rounded-full ${u.state === 'stopped' ? 'bg-destructive' : u.state === 'warning' ? 'bg-amber-500' : 'bg-primary'}`}
@@ -206,32 +211,32 @@ export function AutopilotClient({
               ) : null}
               <p className="text-muted-foreground">
                 {u.state === 'stopped'
-                  ? 'Budžet je potrošen: Autopilot ne pravi nove nacrte do sledećeg meseca ili povećanja budžeta.'
+                  ? t('budget.stopped')
                   : u.state === 'warning'
-                    ? `Potrošeno ${u.percent} %; upozorenje je poslato vlasnicima.`
+                    ? t('budget.warning', { percent: u.percent ?? 0 })
                     : u.state === 'unlimited'
-                      ? 'Bez posebnog limita; troši se stanje tokena radnog prostora.'
-                      : `Preostalo ${u.remaining} tokena. Tekst objave 2, vizual 2, strategija 20.`}
+                      ? t('budget.unlimitedText')
+                      : t('budget.remaining', { count: u.remaining ?? 0 })}
               </p>
             </CardContent>
           </Card>
           <Card>
             <CardHeader>
-              <CardDescription>Aktivna strategija</CardDescription>
+              <CardDescription>{t('strategy.label')}</CardDescription>
               <CardTitle className="text-base">
                 {v.activeStrategy
                   ? `${fmtDate(v.activeStrategy.periodStart)} – ${fmtDate(v.activeStrategy.periodEnd)}`
-                  : 'Nema aktivne strategije'}
+                  : t('strategy.none')}
               </CardTitle>
             </CardHeader>
             <CardContent className="text-sm text-muted-foreground">
               {v.activeStrategy
-                ? 'Nacrti se prave iz tema, stubova i termina ove strategije.'
+                ? t('strategy.active')
                 : v.level >= 2
-                  ? 'Na nivou 2 i 3 Autopilot sam pravi strategiju pri sledećem prolazu.'
-                  : 'Na nivou 1 Autopilot čeka da napravite i aktivirate strategiju.'}{' '}
+                  ? t('strategy.auto')
+                  : t('strategy.manual')}{' '}
               <Link href="/app/strategy" className="underline">
-                Strategija
+                {t('strategy.link')}
               </Link>
             </CardContent>
           </Card>
@@ -240,38 +245,42 @@ export function AutopilotClient({
 
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">Poslednji prolazi</CardTitle>
+          <CardTitle className="text-base">{t('runs.title')}</CardTitle>
         </CardHeader>
         <CardContent>
           {v.runs.length ? (
             <table className="w-full text-sm">
               <thead className="text-left text-xs text-muted-foreground">
                 <tr>
-                  <th className="py-1 pr-2">Vrsta</th>
-                  <th className="py-1 pr-2">Period od</th>
-                  <th className="py-1 pr-2">Status</th>
-                  <th className="py-1 pr-2">Rezultat</th>
-                  <th className="py-1 text-right">Tokeni</th>
+                  <th className="py-1 pr-2">{t('runs.kind')}</th>
+                  <th className="py-1 pr-2">{t('runs.period')}</th>
+                  <th className="py-1 pr-2">{t('runs.status')}</th>
+                  <th className="py-1 pr-2">{t('runs.result')}</th>
+                  <th className="py-1 text-right">{t('runs.tokens')}</th>
                 </tr>
               </thead>
               <tbody>
                 {v.runs.map((r) => (
                   <tr key={r.id} className="border-t align-top">
-                    <td className="py-1 pr-2">{r.kind === 'weekly' ? 'nedeljni' : 'mesečni'}</td>
+                    <td className="py-1 pr-2">
+                      {r.kind === 'weekly' ? t('runs.weekly') : t('runs.monthly')}
+                    </td>
                     <td className="py-1 pr-2">{fmtDate(r.periodStart)}</td>
                     <td className="py-1 pr-2">
                       <Badge variant={r.status === 'succeeded' ? 'default' : 'outline'}>
-                        {RUN_STATUS[r.status] ?? r.status}
+                        {(RUN_STATUSES as readonly string[]).includes(r.status)
+                          ? t(`runStatus.${r.status}` as 'runStatus.running')
+                          : r.status}
                       </Badge>
                     </td>
-                    <td className="py-1 pr-2 text-muted-foreground">{runSummary(r.summary)}</td>
+                    <td className="py-1 pr-2 text-muted-foreground">{runSummary(r.summary, t)}</td>
                     <td className="py-1 text-right tabular-nums">{r.tokensUsed}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           ) : (
-            <p className="text-sm text-muted-foreground">Još nema prolaza.</p>
+            <p className="text-sm text-muted-foreground">{t('runs.empty')}</p>
           )}
         </CardContent>
       </Card>
@@ -279,21 +288,23 @@ export function AutopilotClient({
   )
 }
 
-function runSummary(s: Record<string, unknown>): string {
+function runSummary(s: Record<string, unknown>, t: ReturnType<typeof useTranslations<'autopilot'>>): string {
   if (typeof s.reason === 'string') return s.reason
   const parts: string[] = []
   const n = (k: string) => (typeof s[k] === 'number' ? (s[k] as number) : 0)
-  if (n('planned')) parts.push(`${n('planned')} nacrta`)
-  if (n('submitted')) parts.push(`${n('submitted')} na odobrenju`)
-  if (n('scheduled')) parts.push(`${n('scheduled')} zakazano`)
-  if (n('returned')) parts.push(`${n('returned')} vraćeno`)
-  if (s.budgetStopped) parts.push('budžet potrošen')
-  if (s.suggested) parts.push('predlog strategije u Inbox-u')
-  if (typeof s.strategyId === 'string' && !parts.length) parts.push('strategija napravljena')
+  if (n('planned')) parts.push(t('summary.planned', { count: n('planned') }))
+  if (n('submitted')) parts.push(t('summary.submitted', { count: n('submitted') }))
+  if (n('scheduled')) parts.push(t('summary.scheduled', { count: n('scheduled') }))
+  if (n('returned')) parts.push(t('summary.returned', { count: n('returned') }))
+  if (s.budgetStopped) parts.push(t('summary.budgetStopped'))
+  if (s.suggested) parts.push(t('summary.suggested'))
+  if (typeof s.strategyId === 'string' && !parts.length) parts.push(t('summary.strategyCreated'))
   return parts.join(', ') || '—'
 }
 
 function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; onSaved: () => void }) {
+  const t = useTranslations('autopilot')
+  const tc = useTranslations('common')
   const [level, setLevel] = useState<Level>(v.level)
   const [budget, setBudget] = useState(v.tokenBudget === null ? '' : String(v.tokenBudget))
   const [deadline, setDeadline] = useState(String(v.approvalDeadlineHours))
@@ -325,11 +336,11 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Nivo automatizacije</CardTitle>
-        <CardDescription>Bira se po brendu. Menjaju vlasnik i administrator.</CardDescription>
+        <CardTitle className="text-base">{t('settings.title')}</CardTitle>
+        <CardDescription>{t('settings.description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
-        <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label="Nivo Autopilota">
+        <div className="grid gap-2 sm:grid-cols-2" role="radiogroup" aria-label={t('settings.levelsLabel')}>
           {levels.map((l) => {
             const locked = l === 3 && !v.level3Available
             return (
@@ -344,15 +355,17 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
               >
                 <div className="flex items-center justify-between gap-2">
                   <span className="font-medium">
-                    {l} · {v.levels[l].label}
+                    {l} · {t(`levels.${l}.label` as 'levels.0.label')}
                   </span>
                   {v.level === l ? (
-                    <Badge>trenutno</Badge>
+                    <Badge>{t('settings.current')}</Badge>
                   ) : locked ? (
-                    <Badge variant="outline">uskoro</Badge>
+                    <Badge variant="outline">{t('settings.soon')}</Badge>
                   ) : null}
                 </div>
-                <p className="mt-1 text-xs text-muted-foreground">{v.levels[l].description}</p>
+                <p className="mt-1 text-xs text-muted-foreground">
+                  {t(`levels.${l}.description` as 'levels.0.description')}
+                </p>
               </button>
             )
           })}
@@ -360,13 +373,10 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
 
         {level === 3 ? (
           <div className="space-y-3 rounded-md border border-amber-300 bg-amber-50/60 p-3 text-sm">
-            <p className="font-medium">Pun autopilot objavljuje bez odobrenja.</p>
-            <p className="text-muted-foreground">
-              Izaberite naloge na kojima Sova sme da objavljuje sama; ostali nalozi i dalje idu na odobrenje.
-              Isključuje se jednim klikom (izbor drugog nivoa ili „Pauziraj sve”).
-            </p>
+            <p className="font-medium">{t('level3.warning')}</p>
+            <p className="text-muted-foreground">{t('level3.text')}</p>
             <fieldset className="space-y-1">
-              <legend className="text-xs text-muted-foreground">Nalozi</legend>
+              <legend className="text-xs text-muted-foreground">{t('level3.accounts')}</legend>
               {v.accounts
                 .filter((a) => a.status === 'active')
                 .map((a) => (
@@ -386,7 +396,7 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
                 ))}
             </fieldset>
             <div className="space-y-1">
-              <Label htmlFor="ap-confirm">Za potvrdu upišite naziv brenda „{v.brandName}”</Label>
+              <Label htmlFor="ap-confirm">{t('level3.confirm', { brand: v.brandName })}</Label>
               <Input
                 id="ap-confirm"
                 value={confirm}
@@ -400,19 +410,19 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
 
         <div className="grid gap-3 sm:grid-cols-3">
           <div className="space-y-1">
-            <Label htmlFor="ap-budget">Mesečni budžet (tokeni)</Label>
+            <Label htmlFor="ap-budget">{t('settings.budget')}</Label>
             <Input
               id="ap-budget"
               type="number"
               min={0}
               value={budget}
               onChange={(e) => setBudget(e.target.value)}
-              placeholder="bez limita"
+              placeholder={t('settings.noLimit')}
               disabled={disabled}
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="ap-deadline">Rok za odobrenje (sati pre termina)</Label>
+            <Label htmlFor="ap-deadline">{t('settings.deadline')}</Label>
             <Input
               id="ap-deadline"
               type="number"
@@ -424,7 +434,7 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
             />
           </div>
           <div className="space-y-1">
-            <Label htmlFor="ap-unapproved">Neodobrene posle roka (nivo 2+)</Label>
+            <Label htmlFor="ap-unapproved">{t('settings.unapproved')}</Label>
             <select
               id="ap-unapproved"
               value={unapproved}
@@ -432,8 +442,8 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
               disabled={disabled}
               className="h-9 w-full rounded-md border bg-background px-3 text-sm"
             >
-              <option value="skip">preskoči</option>
-              <option value="publish">objavi</option>
+              <option value="skip">{t('settings.skip')}</option>
+              <option value="publish">{t('settings.publish')}</option>
             </select>
           </div>
         </div>
@@ -444,30 +454,29 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
               onClick={() => save.mutate()}
               disabled={save.isPending || (level === 3 && (!accounts.length || !confirm.trim()))}
             >
-              Sačuvaj
+              {tc('save')}
             </Button>
-            {saved ? <span className="text-sm text-muted-foreground">Sačuvano.</span> : null}
+            {saved ? <span className="text-sm text-muted-foreground">{t('saved')}</span> : null}
           </div>
         ) : (
-          <p className="text-xs text-muted-foreground">Podešavanja menjaju vlasnik i administrator.</p>
+          <p className="text-xs text-muted-foreground">{t('settings.adminOnly')}</p>
         )}
       </CardContent>
     </Card>
   )
 }
 
-const AUTOPILOT_LOCALES = [
-  ['sr-Latn', 'Srpski, latinica'],
-  ['sr-Cyrl', 'Srpski, ćirilica'],
-  ['en', 'Engleski'],
-  ['uk', 'Ukrajinski'],
-] as const
+const AUTOPILOT_LOCALES = ['sr-Latn', 'sr-Cyrl', 'en', 'uk'] as const
 
 /**
  * Sadržaj Autopilota (D-107): jezik objava, dozvoljene vrste i da li AI meša vrste kroz nedelju.
  * Svaka mreža dobija samo vrste koje prima (Instagram nema objave bez slike, YouTube samo video).
  */
 function ContentCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; onSaved: () => void }) {
+  const t = useTranslations('autopilot')
+  const tc = useTranslations('common')
+  const tl = useTranslations('contentLocale')
+  const tf = useTranslations('studioTools.formats')
   const [language, setLanguage] = useState(v.language)
   const [formats, setFormats] = useState<PostFormat[]>(v.formats)
   const [mix, setMix] = useState(v.mix)
@@ -485,15 +494,12 @@ function ContentCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; onS
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="text-base">Sadržaj</CardTitle>
-        <CardDescription>
-          Jezik i vrste objava koje Autopilot pravi. Tekst sa heštegovima piše Gemini, fotografije dolaze sa
-          Unsplash-a, a video sa Pexels-a.
-        </CardDescription>
+        <CardTitle className="text-base">{t('content.title')}</CardTitle>
+        <CardDescription>{t('content.description')}</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="space-y-1.5">
-          <Label htmlFor="ap-language">Jezik objava</Label>
+          <Label htmlFor="ap-language">{tl('label')}</Label>
           <select
             id="ap-language"
             value={language}
@@ -501,15 +507,15 @@ function ContentCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; onS
             onChange={(e) => setLanguage(e.target.value as View['language'])}
             className="h-9 w-full rounded-md border border-input bg-background px-2 text-sm"
           >
-            {AUTOPILOT_LOCALES.map(([value, label]) => (
+            {AUTOPILOT_LOCALES.map((value) => (
               <option key={value} value={value}>
-                {label}
+                {tl(value)}
               </option>
             ))}
           </select>
         </div>
         <fieldset className="space-y-2">
-          <legend className="text-sm font-medium">Vrste objava</legend>
+          <legend className="text-sm font-medium">{t('content.formats')}</legend>
           <div className="grid gap-2 sm:grid-cols-2">
             {POST_FORMATS.map((f) => (
               <label key={f} className="flex items-start gap-2 text-sm">
@@ -523,8 +529,10 @@ function ContentCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; onS
                   }
                 />
                 <span>
-                  {FORMAT_LABEL[f]}
-                  <span className="block text-xs text-muted-foreground">{FORMAT_HINT[f]}</span>
+                  {tf(`${f}.label` as 'text.label')}
+                  <span className="block text-xs text-muted-foreground">
+                    {tf(`${f}.hint` as 'text.hint')}
+                  </span>
                 </span>
               </label>
             ))}
@@ -539,20 +547,17 @@ function ContentCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; onS
             onChange={(e) => setMix(e.target.checked)}
           />
           <span>
-            AI meša vrste
-            <span className="block text-xs text-muted-foreground">
-              Kroz nedelju se smenjuju izabrane vrste, a slika i karusel dolaze češće. Isključeno: uvek prva
-              izabrana vrsta koju mreža prima.
-            </span>
+            {t('content.mix')}
+            <span className="block text-xs text-muted-foreground">{t('content.mixHint')}</span>
           </span>
         </label>
         <div className="flex items-center gap-3">
           <Button disabled={disabled || save.isPending || !formats.length} onClick={() => save.mutate()}>
-            {save.isPending ? 'Čuvam…' : 'Sačuvaj'}
+            {save.isPending ? t('saving') : tc('save')}
           </Button>
-          {saved ? <span className="text-sm text-muted-foreground">Sačuvano.</span> : null}
+          {saved ? <span className="text-sm text-muted-foreground">{t('saved')}</span> : null}
           {!formats.length ? (
-            <span className="text-sm text-muted-foreground">Izaberite bar jednu vrstu.</span>
+            <span className="text-sm text-muted-foreground">{t('content.pickOne')}</span>
           ) : null}
         </div>
         <ErrorBox error={save.error} />

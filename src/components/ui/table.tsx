@@ -5,7 +5,8 @@ import { cn } from 'cn'
 
 function Table({ className, ...props }: React.ComponentProps<'table'>) {
   return (
-    <div data-slot="table-container" className="relative w-full overflow-x-auto">
+    // tabIndex: široka tabela na telefonu se skroluje i tastaturom (axe scrollable-region-focusable)
+    <div data-slot="table-container" className="relative w-full overflow-x-auto" tabIndex={0}>
       <table data-slot="table" className={cn('w-full caption-bottom text-sm', className)} {...props} />
     </div>
   )

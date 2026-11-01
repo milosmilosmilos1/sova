@@ -1,16 +1,28 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import { useTranslations } from 'next-intl'
+import type { ReactNode } from 'react'
 
 import {
   TIKTOK_BRANDED_POLICY_URL,
   TIKTOK_MUSIC_POLICY_URL,
-  TIKTOK_PRIVACY_LABEL,
   tiktokOptionProblems,
   type TikTokPostOptions,
   type TikTokPrivacy,
 } from '@/config/tiktok'
 import type { ApiResponse } from '@/lib/api/response'
+
+/**
+ * Poruke iz `tiktokOptionProblems` (deljene sa serverom, u kodu ostaju srpske, D-130) → ključ prevoda.
+ * Poruka koje nema u spisku prikazuje se kakva jeste.
+ */
+const PROBLEM_KEYS: Record<string, 'privacy' | 'commercialType' | 'brandedPrivate' | 'consent'> = {
+  'TikTok: izaberite ko može da vidi objavu.': 'privacy',
+  'TikTok: uz komercijalni sadržaj označite „Vaš brend”, „Brendirani sadržaj” ili oba.': 'commercialType',
+  'TikTok: brendirani sadržaj ne može biti vidljiv samo vama.': 'brandedPrivate',
+  'TikTok: potvrdite saglasnost sa TikTok pravilima o korišćenju muzike.': 'consent',
+}
 
 /**
  * TikTok podešavanja objave po UX smernicama za Direct Post (uslov za TikTok audit): nalog na koji
@@ -48,6 +60,7 @@ export function TikTokPanel({
   disabled: boolean
   isVideo: boolean
 }) {
+  const t = useTranslations('postPanels.tiktok')
   const creator = useQuery({
     queryKey: ['tiktok-creator', accountId],
     queryFn: () => fetchCreator(accountId),
@@ -57,52 +70,60 @@ export function TikTokPanel({
   const set = (patch: Partial<TikTokPostOptions>) => onChange({ ...value, ...patch })
   const info = creator.data
   const problems = tiktokOptionProblems(value)
+  const disabledNote = t('disabledInTiktok')
 
-  if (creator.isPending)
-    return <p className="mt-2 text-xs text-muted-foreground">Učitavam podešavanja TikTok naloga…</p>
+  if (creator.isPending) return <p className="mt-2 text-xs text-muted-foreground">{t('loading')}</p>
   if (creator.isError || !info) {
     return (
       <p role="alert" className="mt-2 text-xs text-destructive">
-        {creator.error instanceof Error ? creator.error.message : 'TikTok podešavanja nisu učitana.'}
+        {creator.error instanceof Error ? creator.error.message : t('loadError')}
       </p>
     )
   }
 
+  const name = info.nickname ?? info.username ?? 'TikTok'
+  const bold = (chunks: ReactNode) => <strong>{chunks}</strong>
+
   return (
     <div className="mt-3 space-y-3 rounded-md bg-muted/40 p-3 text-sm">
       <p className="text-xs text-muted-foreground">
-        Objava ide na TikTok nalog <strong>{info.nickname ?? info.username ?? 'TikTok'}</strong>
-        {info.username ? ` (@${info.username})` : ''}.
+        {info.username
+          ? t.rich('targetUser', { name, username: info.username, b: bold })
+          : t.rich('target', { name, b: bold })}
         {isVideo && info.maxVideoPostDurationSec
-          ? ` Najduži video za ovaj nalog: ${info.maxVideoPostDurationSec} s.`
+          ? ` ${t('maxDuration', { seconds: info.maxVideoPostDurationSec })}`
           : ''}
       </p>
 
       <label className="block space-y-1">
-        <span className="text-xs font-medium">Ko može da vidi objavu</span>
+        <span className="text-xs font-medium">{t('privacy')}</span>
         <select
           className="h-9 w-full rounded-md border bg-background px-2 text-sm"
           value={value.privacyLevel ?? ''}
           disabled={disabled}
           onChange={(e) => set({ privacyLevel: (e.target.value || null) as TikTokPrivacy | null })}
         >
-          <option value="">Izaberite…</option>
-          {info.privacyLevelOptions.map((p) => (
-            <option key={p} value={p} disabled={p === 'SELF_ONLY' && value.brandedContent}>
-              {TIKTOK_PRIVACY_LABEL[p] ?? p}
-              {p === 'SELF_ONLY' && value.brandedContent ? ' (nije dostupno za brendirani sadržaj)' : ''}
-            </option>
-          ))}
+          <option value="">{t('choose')}</option>
+          {info.privacyLevelOptions.map((p) => {
+            // TikTok može da vrati vrednost koju još ne poznajemo: tada ide sirova vrednost
+            const key = `privacyLevel.${p}` as 'privacyLevel.SELF_ONLY'
+            return (
+              <option key={p} value={p} disabled={p === 'SELF_ONLY' && value.brandedContent}>
+                {t.has(key) ? t(key) : p}
+                {p === 'SELF_ONLY' && value.brandedContent ? ` ${t('notForBranded')}` : ''}
+              </option>
+            )
+          })}
         </select>
       </label>
 
       <fieldset className="space-y-1">
-        <legend className="text-xs font-medium">Dozvolite korisnicima</legend>
+        <legend className="text-xs font-medium">{t('allow')}</legend>
         <Check
-          label="Komentare"
+          label={t('comments')}
           checked={value.allowComment && !info.commentDisabled}
           disabled={disabled || info.commentDisabled}
-          note={info.commentDisabled ? 'isključeno u podešavanjima TikTok naloga' : null}
+          note={info.commentDisabled ? disabledNote : null}
           onChange={(v) => set({ allowComment: v })}
         />
         {isVideo ? (
@@ -111,14 +132,14 @@ export function TikTokPanel({
               label="Duet"
               checked={value.allowDuet && !info.duetDisabled}
               disabled={disabled || info.duetDisabled}
-              note={info.duetDisabled ? 'isključeno u podešavanjima TikTok naloga' : null}
+              note={info.duetDisabled ? disabledNote : null}
               onChange={(v) => set({ allowDuet: v })}
             />
             <Check
               label="Stitch"
               checked={value.allowStitch && !info.stitchDisabled}
               disabled={disabled || info.stitchDisabled}
-              note={info.stitchDisabled ? 'isključeno u podešavanjima TikTok naloga' : null}
+              note={info.stitchDisabled ? disabledNote : null}
               onChange={(v) => set({ allowStitch: v })}
             />
           </>
@@ -127,10 +148,10 @@ export function TikTokPanel({
 
       <fieldset className="space-y-1">
         <Check
-          label="Otkrij komercijalni sadržaj"
+          label={t('commercial')}
           checked={value.commercial}
           disabled={disabled}
-          note="objava promoviše brend, proizvod ili uslugu"
+          note={t('commercialHint')}
           onChange={(v) =>
             set({ commercial: v, ...(v ? {} : { brandOrganic: false, brandedContent: false }) })
           }
@@ -138,17 +159,17 @@ export function TikTokPanel({
         {value.commercial ? (
           <div className="ml-6 space-y-1">
             <Check
-              label="Vaš brend"
+              label={t('yourBrand')}
               checked={value.brandOrganic}
               disabled={disabled}
-              note="promovišete sopstveni posao; objava dobija oznaku „Promotivni sadržaj”"
+              note={t('yourBrandHint')}
               onChange={(v) => set({ brandOrganic: v })}
             />
             <Check
-              label="Brendirani sadržaj"
+              label={t('branded')}
               checked={value.brandedContent}
               disabled={disabled}
-              note="plaćena saradnja sa drugim brendom; objava dobija oznaku „Plaćeno partnerstvo”"
+              note={t('brandedHint')}
               onChange={(v) =>
                 set({
                   brandedContent: v,
@@ -171,31 +192,28 @@ export function TikTokPanel({
           }
         />
         <span>
-          Objavljivanjem prihvatam TikTok-ovu{' '}
-          <a href={TIKTOK_MUSIC_POLICY_URL} target="_blank" rel="noreferrer" className="underline">
-            Potvrdu o korišćenju muzike
-          </a>
-          {value.brandedContent ? (
-            <>
-              {' '}
-              i{' '}
-              <a href={TIKTOK_BRANDED_POLICY_URL} target="_blank" rel="noreferrer" className="underline">
-                Politiku brendiranog sadržaja
+          {t.rich(value.brandedContent ? 'consentBranded' : 'consent', {
+            music: (chunks) => (
+              <a href={TIKTOK_MUSIC_POLICY_URL} target="_blank" rel="noreferrer" className="underline">
+                {chunks}
               </a>
-            </>
-          ) : null}
-          .
+            ),
+            branded: (chunks) => (
+              <a href={TIKTOK_BRANDED_POLICY_URL} target="_blank" rel="noreferrer" className="underline">
+                {chunks}
+              </a>
+            ),
+          })}
         </span>
       </label>
 
-      <p className="text-xs text-muted-foreground">
-        TikTok obrađuje objavu posle termina; na profilu se pojavljuje za nekoliko minuta.
-      </p>
+      <p className="text-xs text-muted-foreground">{t('processing')}</p>
       {problems.length ? (
         <ul className="list-disc pl-5 text-xs text-amber-800">
-          {problems.map((p) => (
-            <li key={p}>{p.replace(/^TikTok: /, '')}</li>
-          ))}
+          {problems.map((p) => {
+            const key = PROBLEM_KEYS[p]
+            return <li key={p}>{key ? t(`problems.${key}`) : p.replace(/^TikTok: /, '')}</li>
+          })}
         </ul>
       ) : null}
     </div>

@@ -1,5 +1,6 @@
 'use client'
 
+import { useLocale, useTranslations } from 'next-intl'
 import {
   useCallback,
   useEffect,
@@ -13,7 +14,9 @@ import {
 
 import { cn } from 'cn'
 
-import { dayLabel, fullNumber, niceScale, tickFormatter, valueLabel } from './scale'
+import { INTL_UI } from '@/i18n/config'
+
+import { chartNumbers, niceScale } from './scale'
 
 /**
  * Grafikon trenda jedne serije (D-062, D-092): linija 2 px sa blagom površinom, horizontalne linije
@@ -34,10 +37,10 @@ export function TrendChart({
   title,
   description,
   points,
-  format = (v) => fullNumber.format(v),
+  format: formatProp,
   zeroBaseline = true,
   dim = false,
-  emptyText = 'Još nema podataka za ovaj period.',
+  emptyText,
 }: {
   title: string
   description?: string
@@ -47,6 +50,11 @@ export function TrendChart({
   dim?: boolean
   emptyText?: string
 }) {
+  const t = useTranslations('charts')
+  const locale = useLocale()
+  const numbers = useMemo(() => chartNumbers(INTL_UI[locale]), [locale])
+  const format = formatProp ?? numbers.full
+  const dayLabel = numbers.day
   const ref = useRef<HTMLDivElement>(null)
   const [width, setWidth] = useState(0)
   const [active, setActive] = useState<number | null>(null)
@@ -77,8 +85,8 @@ export function TrendChart({
     const line = points.map((p, i) => `${i ? 'L' : 'M'}${x(i).toFixed(1)},${y(p.value).toFixed(1)}`).join('')
     const base = y(scale.lo)
     const area = `${line}L${x(points.length - 1).toFixed(1)},${base}L${x(0).toFixed(1)},${base}Z`
-    return { scale, x, y, line, area, base, tickLabel: tickFormatter(scale) }
-  }, [width, points, zeroBaseline])
+    return { scale, x, y, line, area, base, tickLabel: numbers.tick(scale) }
+  }, [width, points, zeroBaseline, numbers])
 
   const pick = (clientX: number) => {
     if (!geo || !ref.current) return
@@ -98,7 +106,7 @@ export function TrendChart({
   }
 
   const last = points.length - 1
-  const tickLabel = geo?.tickLabel ?? ((v: number) => fullNumber.format(v))
+  const tickLabel = geo?.tickLabel ?? numbers.full
   const shown = active ?? null
   const xLabels = points.length > 2 ? [0, Math.floor(last / 2), last] : points.map((_, i) => i)
 
@@ -118,21 +126,21 @@ export function TrendChart({
             className="rounded-md border px-2 py-0.5 text-xs text-muted-foreground hover:text-foreground"
             aria-pressed={asTable}
           >
-            {asTable ? 'Grafikon' : 'Tabela'}
+            {asTable ? t('chart') : t('table')}
           </button>
         ) : null}
       </div>
 
       {empty ? (
         <p className="grid h-[192px] place-items-center rounded-lg border border-dashed text-sm text-muted-foreground">
-          {emptyText}
+          {emptyText ?? t('empty')}
         </p>
       ) : asTable ? (
         <div className="max-h-[192px] overflow-y-auto rounded-lg border">
           <table className="w-full text-sm">
             <thead className="sticky top-0 bg-card text-muted-foreground">
               <tr>
-                <th className="px-3 py-1.5 text-left font-normal">Dan</th>
+                <th className="px-3 py-1.5 text-left font-normal">{t('day')}</th>
                 <th className="px-3 py-1.5 text-right font-normal">{title}</th>
               </tr>
             </thead>
@@ -157,7 +165,11 @@ export function TrendChart({
               width={width}
               height={PLOT_HEIGHT + PAD.top + AXIS_BAND}
               role="img"
-              aria-label={`${title}: od ${format(points[0]!.value)} do ${format(points[last]!.value)}. Strelicama birate dan.`}
+              aria-label={t('trendAria', {
+                title,
+                from: format(points[0]!.value),
+                to: format(points[last]!.value),
+              })}
               tabIndex={0}
               className="touch-none outline-none focus-visible:ring-2 focus-visible:ring-ring/50"
               onPointerMove={(e: PointerEvent) => pick(e.clientX)}
@@ -221,7 +233,7 @@ export function TrendChart({
                 dy="0.32em"
                 className="fill-foreground text-xs font-medium"
               >
-                {valueLabel(points[last]!.value)}
+                {numbers.value(points[last]!.value)}
               </text>
               {shown !== null ? (
                 <g pointerEvents="none">

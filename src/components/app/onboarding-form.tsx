@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useActionState, useState } from 'react'
 
 import { FormMessage, SubmitButton, TextField } from '@/components/forms/form-parts'
@@ -8,16 +9,10 @@ import { createWorkspaceAction } from '@/lib/auth/actions'
 import { initialFormState } from '@/lib/auth/form-state'
 import { cn } from '@/lib/utils'
 
-const TYPES = [
-  { value: 'business', title: 'Jedan biznis', text: 'Vodim mreže za svoju firmu ili svoj brend.' },
-  {
-    value: 'agency',
-    title: 'Agencija ili freelancer',
-    text: 'Vodim mreže za više klijenata, svaki je poseban brend.',
-  },
-] as const
+const TYPES = ['business', 'agency'] as const
 
 export function OnboardingForm({ defaultName }: { defaultName?: string }) {
+  const t = useTranslations('onboarding')
   const [state, action] = useActionState(createWorkspaceAction, initialFormState)
   const [type, setType] = useState<'business' | 'agency'>(
     (state.values?.type as 'business' | 'agency') ?? 'business',
@@ -27,26 +22,26 @@ export function OnboardingForm({ defaultName }: { defaultName?: string }) {
     <form action={action} className="space-y-6" noValidate>
       <FormMessage state={state} />
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium">Kakav nalog pravite?</legend>
+        <legend className="text-sm font-medium">{t('typeLegend')}</legend>
         <div className="grid gap-3 sm:grid-cols-2">
-          {TYPES.map((t) => (
+          {TYPES.map((value) => (
             <label
-              key={t.value}
+              key={value}
               className={cn(
                 'cursor-pointer rounded-lg border p-4 hover:bg-muted/50',
-                type === t.value && 'border-primary ring-2 ring-primary/30',
+                type === value && 'border-primary ring-2 ring-primary/30',
               )}
             >
               <input
                 type="radio"
                 name="type"
-                value={t.value}
-                checked={type === t.value}
-                onChange={() => setType(t.value)}
+                value={value}
+                checked={type === value}
+                onChange={() => setType(value)}
                 className="sr-only"
               />
-              <span className="block font-medium">{t.title}</span>
-              <span className="block text-sm text-muted-foreground">{t.text}</span>
+              <span className="block font-medium">{t(`types.${value}.title`)}</span>
+              <span className="block text-sm text-muted-foreground">{t(`types.${value}.text`)}</span>
             </label>
           ))}
         </div>
@@ -54,7 +49,7 @@ export function OnboardingForm({ defaultName }: { defaultName?: string }) {
 
       <TextField
         name="name"
-        label={type === 'agency' ? 'Naziv agencije' : 'Naziv firme'}
+        label={type === 'agency' ? t('agencyName') : t('companyName')}
         state={state}
         required
         defaultValue={defaultName}
@@ -63,9 +58,9 @@ export function OnboardingForm({ defaultName }: { defaultName?: string }) {
       {type === 'agency' ? (
         <TextField
           name="brandName"
-          label="Prvi klijent (brend)"
+          label={t('firstClient')}
           state={state}
-          hint="Možete dodati još brendova kasnije."
+          hint={t('firstClientHint')}
           maxLength={100}
         />
       ) : (
@@ -74,18 +69,18 @@ export function OnboardingForm({ defaultName }: { defaultName?: string }) {
       <div className="space-y-1.5">
         <TextField
           name="websiteUrl"
-          label="Sajt brenda"
+          label={t('website')}
           state={state}
-          placeholder="https://primer.rs"
-          hint="Sova od sajta uči brend. Ako sajta nema, ostavite prazno."
+          placeholder={t('websitePlaceholder')}
+          hint={t('websiteHint')}
           autoComplete="url"
         />
         <Label className="sr-only" htmlFor="websiteUrl">
-          Sajt
+          {t('websiteShort')}
         </Label>
       </div>
-      <SubmitButton pendingText="Pravim radni prostor…" className="w-full sm:w-auto">
-        Napravite radni prostor
+      <SubmitButton pendingText={t('pending')} className="w-full sm:w-auto">
+        {t('submit')}
       </SubmitButton>
     </form>
   )
