@@ -12,6 +12,7 @@ import {
   type FieldPath,
 } from '@/lib/brand/profile-schema'
 import type { UpdateProfileInput } from '@/lib/schemas/brand'
+import { storedDesignSchema } from '@/lib/schemas/design'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
 import { getBrand } from '@/services/brands'
@@ -40,6 +41,8 @@ export interface ProfileView {
   versions: ProfileVersionSummary[]
   knowledgeChunks: number
   logoUrl: string | null
+  /** odakle je logo sa slajdova: vaš (D-113, D-133) ili sa sajta; bez logoa `null` */
+  logoSource: 'custom' | 'site' | null
 }
 
 /** Parsira `data` kolonu; neispravan JSON (stara šema) daje prazan profil da UI ne padne. */
@@ -98,8 +101,17 @@ export async function getProfileView(viewer: Viewer, brandId: string): Promise<P
   }
   const profile = current ? parseProfile(current.data, fallback) : emptyProfile(fallback)
   const { data: chunkCount } = await viewer.supabase.rpc('brand_knowledge_count', { p_brand_id: brandId })
+  // logo koji ide na slajdove: vaš (otpremljen ovde ili u Vizuelnom identitetu), pa logo sa sajta
+  const { data: designRow } = await viewer.supabase
+    .from('brands')
+    .select('design')
+    .eq('id', brandId)
+    .maybeSingle()
+  const stored = storedDesignSchema.safeParse(designRow?.design ?? {})
+  const customLogo = stored.success ? (stored.data.logoAssetId ?? null) : null
+  const siteLogo = profile.visual.logo.value.asset_id ?? brand.logo_asset_id
   let logoUrl: string | null = null
-  const logoId = profile.visual.logo.value.asset_id ?? brand.logo_asset_id
+  const logoId = customLogo ?? siteLogo
   if (logoId) {
     const { data: asset } = await viewer.supabase
       .from('media_assets')
@@ -123,6 +135,7 @@ export async function getProfileView(viewer: Viewer, brandId: string): Promise<P
     versions: (rows ?? []).map(summary),
     knowledgeChunks: chunkCount ?? 0,
     logoUrl,
+    logoSource: customLogo ? 'custom' : siteLogo ? 'site' : null,
   }
 }
 

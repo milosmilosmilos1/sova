@@ -348,8 +348,7 @@
       "source": "source: {source}",
       "confidence": "overall confidence {value}%",
       "chunks": "{count, plural, one {# knowledge snippet} other {# knowledge snippets}}",
-      "closeEdit": "Close editing",
-      "edit": "Edit key fields"
+      "editHint": "You can edit any field: click “Edit” next to its name. The site analysis won't touch a field you've changed."
     },
     "generated": {
       "ai": "AI",
@@ -366,7 +365,20 @@
       "lockedTitle": "Edited by hand; the analysis does not change this field",
       "locked": "locked",
       "unlock": "unlock",
-      "source": "source: {count, plural, one {# page} other {# pages}}"
+      "source": "source: {count, plural, one {# page} other {# pages}}",
+      "edit": "Edit",
+      "editLabel": "Edit: {label}",
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "error": "The change wasn't saved. Please try again.",
+      "linesHint": "One item per line.",
+      "commaHint": "Separate with commas or new lines.",
+      "pairsHint": "One per line, as “name: description”.",
+      "socialHint": "One network per line, as “network: address”.",
+      "lockNote": "A saved field is locked, so a new site analysis won't change it.",
+      "city": "City",
+      "country": "Country"
     },
     "identity": {
       "title": "Identity",
@@ -393,20 +405,25 @@
       "emoji": "Emoji",
       "samples": "Sample phrases",
       "forbidden": "Banned words",
-      "hashtags": "Hashtags"
+      "hashtags": "Hashtags",
+      "emojiAllowed": "Emoji are allowed"
     },
     "audience": {
       "title": "Audience and facts",
       "segments": "Segments",
       "pains": "Audience pain points",
       "market": "Market",
-      "facts": "Facts (allowed in posts)"
+      "facts": "Facts (allowed in posts)",
+      "markets": {
+        "b2b": "Businesses (B2B)",
+        "b2c": "Consumers (B2C)",
+        "both": "Businesses and consumers",
+        "unknown": "Unknown"
+      }
     },
     "visual": {
       "title": "Visuals",
       "logo": "Logo",
-      "logoAlt": "Brand logo",
-      "logoMissing": "not found",
       "colors": "Colours",
       "fonts": "Fonts",
       "fontsValue": "headings: {headings} → {mappedHeadings}; body: {body} → {mappedBody}",
@@ -437,17 +454,17 @@
       "current": "current",
       "restore": "Restore this version"
     },
-    "edit": {
-      "title": "Manual edits",
-      "description": "Edited fields are locked: future analyses will not change them until you unlock them.",
-      "brandDescription": "Brand description",
-      "tone": "Tone (adjectives, comma-separated)",
-      "emoji": "Emoji are allowed",
-      "forbidden": "Banned words (comma-separated)",
-      "services": "Services (one per line)",
-      "facts": "Facts allowed in posts (one per line)",
-      "saving": "Saving…",
-      "save": "Save as a new version"
+    "logo": {
+      "alt": "Brand logo",
+      "missing": "No logo found",
+      "custom": "Your logo",
+      "fromSite": "Logo from the website",
+      "upload": "Upload logo",
+      "replace": "Upload a different logo",
+      "uploading": "Uploading…",
+      "backToSite": "Use the logo from the website",
+      "hint": "If Sova picked the wrong logo, upload the right one: it goes on all new slides, and drafts waiting for review are redrawn automatically. A PNG with a transparent background looks best.",
+      "notImage": "Choose an image: PNG, JPG or WebP."
     }
   },
   "studioTools": {

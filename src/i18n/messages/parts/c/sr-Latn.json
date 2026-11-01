@@ -348,8 +348,7 @@
       "source": "izvor: {source}",
       "confidence": "ukupna pouzdanost {value}%",
       "chunks": "{count, plural, one {# odlomak znanja} few {# odlomka znanja} other {# odlomaka znanja}}",
-      "closeEdit": "Zatvori izmene",
-      "edit": "Izmeni ključna polja"
+      "editHint": "Svako polje možete da izmenite: kliknite „Izmeni” pored naziva. Izmenjeno polje analiza sajta više ne dira."
     },
     "generated": {
       "ai": "AI",
@@ -366,7 +365,20 @@
       "lockedTitle": "Ručno izmenjeno; analiza ne menja ovo polje",
       "locked": "zaključano",
       "unlock": "otključaj",
-      "source": "izvor: {count, plural, one {# strana} few {# strane} other {# strana}}"
+      "source": "izvor: {count, plural, one {# strana} few {# strane} other {# strana}}",
+      "edit": "Izmeni",
+      "editLabel": "Izmeni: {label}",
+      "save": "Sačuvaj",
+      "saving": "Čuvam…",
+      "cancel": "Otkaži",
+      "error": "Izmena nije sačuvana. Pokušajte ponovo.",
+      "linesHint": "Jedna stavka po redu.",
+      "commaHint": "Odvojite zarezom ili novim redom.",
+      "pairsHint": "Jedna po redu, u obliku „naziv: opis”.",
+      "socialHint": "Jedna mreža po redu, u obliku „mreža: adresa”.",
+      "lockNote": "Sačuvano polje se zaključava, pa ga nova analiza sajta ne menja.",
+      "city": "Grad",
+      "country": "Država"
     },
     "identity": {
       "title": "Identitet",
@@ -393,20 +405,25 @@
       "emoji": "Emoji",
       "samples": "Primeri fraza",
       "forbidden": "Zabranjene reči",
-      "hashtags": "Hashtagovi"
+      "hashtags": "Hashtagovi",
+      "emojiAllowed": "Emoji su dozvoljeni"
     },
     "audience": {
       "title": "Publika i činjenice",
       "segments": "Segmenti",
       "pains": "Problemi publike",
       "market": "Tržište",
-      "facts": "Činjenice (smeju u objave)"
+      "facts": "Činjenice (smeju u objave)",
+      "markets": {
+        "b2b": "Firme (B2B)",
+        "b2c": "Ljudi (B2C)",
+        "both": "Firme i ljudi",
+        "unknown": "Nije poznato"
+      }
     },
     "visual": {
       "title": "Vizuali",
       "logo": "Logo",
-      "logoAlt": "Logo brenda",
-      "logoMissing": "nije pronađen",
       "colors": "Boje",
       "fonts": "Fontovi",
       "fontsValue": "naslovi: {headings} → {mappedHeadings}; tekst: {body} → {mappedBody}",
@@ -437,17 +454,17 @@
       "current": "trenutna",
       "restore": "Vrati ovu verziju"
     },
-    "edit": {
-      "title": "Ručne izmene",
-      "description": "Izmenjena polja se zaključavaju: buduće analize ih ne menjaju dok ih ne otključate.",
-      "brandDescription": "Opis brenda",
-      "tone": "Ton (pridevi, zarezom)",
-      "emoji": "Emoji su dozvoljeni",
-      "forbidden": "Zabranjene reči (zarezom)",
-      "services": "Usluge (jedna po redu)",
-      "facts": "Činjenice koje smeju u objave (jedna po redu)",
-      "saving": "Čuvam…",
-      "save": "Sačuvaj kao novu verziju"
+    "logo": {
+      "alt": "Logo brenda",
+      "missing": "Logo nije pronađen",
+      "custom": "Vaš logo",
+      "fromSite": "Logo sa sajta",
+      "upload": "Otpremi logo",
+      "replace": "Otpremi drugi logo",
+      "uploading": "Otpremam…",
+      "backToSite": "Vrati logo sa sajta",
+      "hint": "Ako je Sova uzela pogrešan logo, otpremite pravi: ide na sve nove slajdove, a nacrti koji čekaju prepravljaju se sami. PNG sa providnom pozadinom izgleda najbolje.",
+      "notImage": "Izaberite sliku: PNG, JPG ili WebP."
     }
   },
   "studioTools": {

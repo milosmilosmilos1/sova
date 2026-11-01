@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Lock } from 'lucide-react'
+import { Lock, Pencil } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useEffect, useState, type ReactNode } from 'react'
 
@@ -11,15 +11,17 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Skeleton } from '@/components/ui/skeleton'
-import { Textarea } from '@/components/ui/textarea'
 import { INTL_UI } from '@/i18n/config'
 import type { ApiResponse } from '@/lib/api/response'
 import type { BrandProfile, Field, FieldPath } from '@/lib/brand/profile-schema'
 
+import { FieldEditor, type FieldEdit } from './profile-field-editor'
+import { ProfileLogo } from './profile-logo'
+
 /**
  * Brand Brain (faza 6): pokretanje analize sajta sa napretkom, prikaz profila po sekcijama
- * sa pouzdanošću i izvorima, ručne izmene koje zaključavaju polja, verzije i vraćanje.
- * Dizajn dolazi u fazi 14; ovde su funkcionalnost i 4 stanja.
+ * sa pouzdanošću i izvorima, izmena svakog polja na mestu (polje se zaključava), logo sa
+ * otpremanjem kad Sova uzme pogrešan (D-133), verzije i vraćanje.
  */
 interface ProfileView {
   brandId: string
@@ -37,6 +39,7 @@ interface ProfileView {
   }>
   knowledgeChunks: number
   logoUrl: string | null
+  logoSource: 'custom' | 'site' | null
 }
 
 interface CrawlView {
@@ -108,6 +111,8 @@ function FieldRow({
   path,
   locked,
   onUnlock,
+  edit,
+  onSave,
   children,
 }: {
   label: string
@@ -115,10 +120,14 @@ function FieldRow({
   path: FieldPath
   locked: boolean
   onUnlock?: (path: FieldPath) => void
+  /** kako se polje menja na mestu; bez njega polje se samo prikazuje */
+  edit?: FieldEdit
+  onSave?: (path: FieldPath, value: unknown) => Promise<void>
   children: ReactNode
 }) {
   const t = useTranslations('brandBrain')
   const conf = confidenceLabel(field.confidence)
+  const [editing, setEditing] = useState(false)
   return (
     <div className="space-y-1 border-b py-2 last:border-b-0">
       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -141,8 +150,32 @@ function FieldRow({
             {t('field.source', { count: field.source_urls.length })}
           </span>
         ) : null}
+        {edit && onSave && !editing ? (
+          <button
+            type="button"
+            className="ml-auto inline-flex items-center gap-1 rounded px-1 font-medium text-primary hover:underline"
+            aria-label={t('field.editLabel', { label })}
+            onClick={() => setEditing(true)}
+          >
+            <Pencil className="size-3" aria-hidden />
+            {t('field.edit')}
+          </button>
+        ) : null}
       </div>
-      <div className="text-sm">{children}</div>
+      {edit && onSave && editing ? (
+        <FieldEditor
+          id={`bb-${path.replace('.', '-')}`}
+          label={label}
+          edit={edit}
+          onSave={async (value) => {
+            await onSave(path, value)
+            setEditing(false)
+          }}
+          onCancel={() => setEditing(false)}
+        />
+      ) : (
+        <div className="text-sm">{children}</div>
+      )}
     </div>
   )
 }
@@ -186,7 +219,6 @@ export function BrandBrainClient({
   const queryClient = useQueryClient()
   const [url, setUrl] = useState(websiteUrl ?? '')
   const [crawlId, setCrawlId] = useState<string | null>(null)
-  const [editing, setEditing] = useState(false)
 
   const profile = useQuery({
     queryKey: ['brand-profile', brandId],
@@ -236,10 +268,7 @@ export function BrandBrainClient({
   const save = useMutation({
     mutationFn: (changes: Array<{ path: FieldPath; value: unknown }>) =>
       api<ProfileView>(`/api/brands/${brandId}/profile`, { method: 'PATCH', json: { changes } }),
-    onSuccess: (data) => {
-      queryClient.setQueryData(['brand-profile', brandId], data)
-      setEditing(false)
-    },
+    onSuccess: (data) => queryClient.setQueryData(['brand-profile', brandId], data),
   })
 
   const running = crawlStatus === 'queued' || crawlStatus === 'running'
@@ -247,6 +276,13 @@ export function BrandBrainClient({
   const locked = new Set(profile.data?.lockedFields ?? [])
   const isLocked = (path: FieldPath) => locked.has(path)
   const onUnlock = canEdit ? (path: FieldPath) => unlock.mutate(path) : undefined
+  // izmena na mestu: jedno polje, nova verzija profila, polje se zaključava
+  const onSave = canEdit
+    ? async (path: FieldPath, value: unknown) => {
+        await save.mutateAsync([{ path, value }])
+      }
+    : undefined
+  const marketLabel = (m: string) => t(`audience.markets.${m as 'b2b' | 'b2c' | 'both' | 'unknown'}`)
 
   return (
     <div className="space-y-6">
@@ -370,21 +406,8 @@ export function BrandBrainClient({
               {t('profile.confidence', { value: Math.round(p.meta.overall_confidence * 100) })}
             </Badge>
             <Badge variant="outline">{t('profile.chunks', { count: profile.data.knowledgeChunks })}</Badge>
-            {canEdit ? (
-              <Button size="sm" variant="outline" onClick={() => setEditing((v) => !v)}>
-                {editing ? t('profile.closeEdit') : t('profile.edit')}
-              </Button>
-            ) : null}
           </div>
-
-          {editing ? (
-            <EditForm
-              profile={p}
-              pending={save.isPending}
-              error={save.error}
-              onSave={(c) => save.mutate(c)}
-            />
-          ) : null}
+          {canEdit ? <p className="text-sm text-muted-foreground">{t('profile.editHint')}</p> : null}
 
           <div className="grid gap-4 lg:grid-cols-2">
             <Card>
@@ -398,6 +421,8 @@ export function BrandBrainClient({
                   path="identity.name"
                   locked={isLocked('identity.name')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'text', value: p.identity.name.value, required: true }}
+                  onSave={onSave}
                 >
                   <Text value={p.identity.name.value} />
                 </FieldRow>
@@ -407,6 +432,8 @@ export function BrandBrainClient({
                   path="identity.tagline"
                   locked={isLocked('identity.tagline')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'text', value: p.identity.tagline.value }}
+                  onSave={onSave}
                 >
                   <Text value={p.identity.tagline.value} />
                 </FieldRow>
@@ -416,6 +443,8 @@ export function BrandBrainClient({
                   path="identity.description"
                   locked={isLocked('identity.description')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'text', value: p.identity.description.value, multiline: true }}
+                  onSave={onSave}
                 >
                   <Text value={p.identity.description.value} />
                 </FieldRow>
@@ -425,6 +454,8 @@ export function BrandBrainClient({
                   path="identity.industry"
                   locked={isLocked('identity.industry')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'text', value: p.identity.industry.value }}
+                  onSave={onSave}
                 >
                   <Text value={p.identity.industry.value} />
                 </FieldRow>
@@ -434,6 +465,8 @@ export function BrandBrainClient({
                   path="identity.location"
                   locked={isLocked('identity.location')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'location', value: p.identity.location.value }}
+                  onSave={onSave}
                 >
                   <Text
                     value={
@@ -466,6 +499,8 @@ export function BrandBrainClient({
                   path="offer.services"
                   locked={isLocked('offer.services')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'pairs', value: p.offer.services.value }}
+                  onSave={onSave}
                 >
                   <List
                     items={p.offer.services.value.map((s) =>
@@ -479,6 +514,8 @@ export function BrandBrainClient({
                   path="offer.products"
                   locked={isLocked('offer.products')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'pairs', value: p.offer.products.value }}
+                  onSave={onSave}
                 >
                   <List items={p.offer.products.value.map((s) => s.name)} />
                 </FieldRow>
@@ -488,6 +525,8 @@ export function BrandBrainClient({
                   path="offer.differentiators"
                   locked={isLocked('offer.differentiators')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'lines', value: p.offer.differentiators.value }}
+                  onSave={onSave}
                 >
                   <List items={p.offer.differentiators.value} />
                 </FieldRow>
@@ -497,6 +536,8 @@ export function BrandBrainClient({
                   path="offer.price_hints"
                   locked={isLocked('offer.price_hints')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'lines', value: p.offer.price_hints.value }}
+                  onSave={onSave}
                 >
                   <List items={p.offer.price_hints.value} />
                 </FieldRow>
@@ -514,6 +555,8 @@ export function BrandBrainClient({
                   path="voice.tone"
                   locked={isLocked('voice.tone')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'lines', value: p.voice.tone.value, comma: true }}
+                  onSave={onSave}
                 >
                   <Text value={p.voice.tone.value.join(', ') || null} />
                 </FieldRow>
@@ -523,6 +566,15 @@ export function BrandBrainClient({
                   path="voice.address"
                   locked={isLocked('voice.address')}
                   onUnlock={onUnlock}
+                  edit={{
+                    kind: 'choice',
+                    value: p.voice.address.value,
+                    options: [
+                      { value: 'vi', label: t('voice.formal') },
+                      { value: 'ti', label: t('voice.informal') },
+                    ],
+                  }}
+                  onSave={onSave}
                 >
                   <Text value={p.voice.address.value === 'ti' ? t('voice.informal') : t('voice.formal')} />
                 </FieldRow>
@@ -532,6 +584,8 @@ export function BrandBrainClient({
                   path="voice.emoji"
                   locked={isLocked('voice.emoji')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'bool', value: p.voice.emoji.value, label: t('voice.emojiAllowed') }}
+                  onSave={onSave}
                 >
                   <Text value={p.voice.emoji.value} />
                 </FieldRow>
@@ -541,6 +595,8 @@ export function BrandBrainClient({
                   path="voice.sample_phrases"
                   locked={isLocked('voice.sample_phrases')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'lines', value: p.voice.sample_phrases.value }}
+                  onSave={onSave}
                 >
                   <List items={p.voice.sample_phrases.value} />
                 </FieldRow>
@@ -550,6 +606,8 @@ export function BrandBrainClient({
                   path="voice.forbidden_words"
                   locked={isLocked('voice.forbidden_words')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'lines', value: p.voice.forbidden_words.value, comma: true }}
+                  onSave={onSave}
                 >
                   <Text value={p.voice.forbidden_words.value.join(', ') || null} />
                 </FieldRow>
@@ -559,6 +617,8 @@ export function BrandBrainClient({
                   path="voice.hashtags"
                   locked={isLocked('voice.hashtags')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'lines', value: p.voice.hashtags.value }}
+                  onSave={onSave}
                 >
                   <Text value={p.voice.hashtags.value.join(' ') || null} />
                 </FieldRow>
@@ -576,6 +636,8 @@ export function BrandBrainClient({
                   path="audience.segments"
                   locked={isLocked('audience.segments')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'pairs', value: p.audience.segments.value }}
+                  onSave={onSave}
                 >
                   <List
                     items={p.audience.segments.value.map((s) =>
@@ -589,6 +651,8 @@ export function BrandBrainClient({
                   path="audience.pain_points"
                   locked={isLocked('audience.pain_points')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'lines', value: p.audience.pain_points.value }}
+                  onSave={onSave}
                 >
                   <List items={p.audience.pain_points.value} />
                 </FieldRow>
@@ -598,8 +662,17 @@ export function BrandBrainClient({
                   path="audience.market"
                   locked={isLocked('audience.market')}
                   onUnlock={onUnlock}
+                  edit={{
+                    kind: 'choice',
+                    value: p.audience.market.value,
+                    options: (['b2b', 'b2c', 'both', 'unknown'] as const).map((m) => ({
+                      value: m,
+                      label: marketLabel(m),
+                    })),
+                  }}
+                  onSave={onSave}
                 >
-                  <Text value={p.audience.market.value} />
+                  <Text value={marketLabel(p.audience.market.value)} />
                 </FieldRow>
                 <FieldRow
                   label={t('audience.facts')}
@@ -607,6 +680,8 @@ export function BrandBrainClient({
                   path="facts"
                   locked={isLocked('facts')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'facts', value: p.facts.value }}
+                  onSave={onSave}
                 >
                   <List items={p.facts.value.map((f) => f.claim)} />
                 </FieldRow>
@@ -618,17 +693,23 @@ export function BrandBrainClient({
                 <CardTitle className="text-base">{t('visual.title')}</CardTitle>
               </CardHeader>
               <CardContent>
-                <FieldRow label={t('visual.logo')} field={p.visual.logo} path="visual.logo" locked={false}>
-                  {profile.data.logoUrl ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
-                      src={profile.data.logoUrl}
-                      alt={t('visual.logoAlt')}
-                      className="max-h-16 rounded border bg-white p-1"
-                    />
-                  ) : (
-                    <span className="text-muted-foreground">{t('visual.logoMissing')}</span>
-                  )}
+                <FieldRow
+                  label={t('visual.logo')}
+                  // vaš logo nije nađen na sajtu: bez pouzdanosti i izvora analize
+                  field={
+                    profile.data.logoSource === 'custom'
+                      ? { ...p.visual.logo, confidence: 1, source_urls: [] }
+                      : p.visual.logo
+                  }
+                  path="visual.logo"
+                  locked={false}
+                >
+                  <ProfileLogo
+                    brandId={brandId}
+                    logoUrl={profile.data.logoUrl}
+                    source={profile.data.logoSource}
+                    canEdit={canEdit}
+                  />
                 </FieldRow>
                 <FieldRow
                   label={t('visual.colors')}
@@ -710,6 +791,8 @@ export function BrandBrainClient({
                   path="contact.email"
                   locked={isLocked('contact.email')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'text', value: p.contact.email.value }}
+                  onSave={onSave}
                 >
                   <Text value={p.contact.email.value} />
                 </FieldRow>
@@ -719,6 +802,8 @@ export function BrandBrainClient({
                   path="contact.phone"
                   locked={isLocked('contact.phone')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'text', value: p.contact.phone.value }}
+                  onSave={onSave}
                 >
                   <Text value={p.contact.phone.value} />
                 </FieldRow>
@@ -728,6 +813,8 @@ export function BrandBrainClient({
                   path="contact.address"
                   locked={isLocked('contact.address')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'text', value: p.contact.address.value }}
+                  onSave={onSave}
                 >
                   <Text value={p.contact.address.value} />
                 </FieldRow>
@@ -737,6 +824,8 @@ export function BrandBrainClient({
                   path="social"
                   locked={isLocked('social')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'social', value: p.social.value }}
+                  onSave={onSave}
                 >
                   <List items={Object.entries(p.social.value).map(([k, v]) => `${k}: ${v}`)} />
                 </FieldRow>
@@ -746,6 +835,8 @@ export function BrandBrainClient({
                   path="content.blog_topics"
                   locked={isLocked('content.blog_topics')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'lines', value: p.content.blog_topics.value }}
+                  onSave={onSave}
                 >
                   <List items={p.content.blog_topics.value.slice(0, 10)} />
                 </FieldRow>
@@ -755,6 +846,8 @@ export function BrandBrainClient({
                   path="content.content_pillars"
                   locked={isLocked('content.content_pillars')}
                   onUnlock={onUnlock}
+                  edit={{ kind: 'pairs', value: p.content.content_pillars.value, requiredDescription: true }}
+                  onSave={onSave}
                 >
                   <List items={p.content.content_pillars.value.map((c) => `${c.name}: ${c.description}`)} />
                 </FieldRow>
@@ -797,127 +890,5 @@ export function BrandBrainClient({
         </>
       ) : null}
     </div>
-  )
-}
-
-function splitList(s: string): string[] {
-  return s
-    .split(/[\n,]/)
-    .map((x) => x.trim())
-    .filter(Boolean)
-}
-
-function EditForm({
-  profile,
-  pending,
-  error,
-  onSave,
-}: {
-  profile: BrandProfile
-  pending: boolean
-  error: unknown
-  onSave: (changes: Array<{ path: FieldPath; value: unknown }>) => void
-}) {
-  const t = useTranslations('brandBrain')
-  const [description, setDescription] = useState(profile.identity.description.value ?? '')
-  const [tone, setTone] = useState(profile.voice.tone.value.join(', '))
-  const [address, setAddress] = useState<'vi' | 'ti'>(profile.voice.address.value)
-  const [emoji, setEmoji] = useState(profile.voice.emoji.value)
-  const [forbidden, setForbidden] = useState(profile.voice.forbidden_words.value.join(', '))
-  const [facts, setFacts] = useState(profile.facts.value.map((f) => f.claim).join('\n'))
-  const [services, setServices] = useState(profile.offer.services.value.map((s) => s.name).join('\n'))
-
-  const submit = () => {
-    const changes: Array<{ path: FieldPath; value: unknown }> = []
-    if (description !== (profile.identity.description.value ?? ''))
-      changes.push({ path: 'identity.description', value: description || null })
-    if (tone !== profile.voice.tone.value.join(', '))
-      changes.push({ path: 'voice.tone', value: splitList(tone).slice(0, 6) })
-    if (address !== profile.voice.address.value) changes.push({ path: 'voice.address', value: address })
-    if (emoji !== profile.voice.emoji.value) changes.push({ path: 'voice.emoji', value: emoji })
-    if (forbidden !== profile.voice.forbidden_words.value.join(', '))
-      changes.push({ path: 'voice.forbidden_words', value: splitList(forbidden).slice(0, 20) })
-    if (facts !== profile.facts.value.map((f) => f.claim).join('\n')) {
-      changes.push({
-        path: 'facts',
-        value: splitList(facts)
-          .slice(0, 30)
-          .map((claim) => ({ claim, source_url: null })),
-      })
-    }
-    if (services !== profile.offer.services.value.map((s) => s.name).join('\n')) {
-      changes.push({
-        path: 'offer.services',
-        value: splitList(services)
-          .slice(0, 30)
-          .map((name) => ({ name, description: null })),
-      })
-    }
-    if (changes.length) onSave(changes)
-  }
-
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="text-base">{t('edit.title')}</CardTitle>
-        <CardDescription>{t('edit.description')}</CardDescription>
-      </CardHeader>
-      <CardContent className="grid gap-3 sm:grid-cols-2">
-        <div className="space-y-1 sm:col-span-2">
-          <Label htmlFor="bb-description">{t('edit.brandDescription')}</Label>
-          <Textarea
-            id="bb-description"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            rows={3}
-          />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="bb-tone">{t('edit.tone')}</Label>
-          <Input id="bb-tone" value={tone} onChange={(e) => setTone(e.target.value)} />
-        </div>
-        <div className="space-y-1">
-          <Label htmlFor="bb-address">{t('voice.address')}</Label>
-          <select
-            id="bb-address"
-            className="h-9 w-full rounded-md border bg-background px-2 text-sm"
-            value={address}
-            onChange={(e) => setAddress(e.target.value as 'vi' | 'ti')}
-          >
-            <option value="vi">{t('voice.formal')}</option>
-            <option value="ti">{t('voice.informal')}</option>
-          </select>
-        </div>
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" checked={emoji} onChange={(e) => setEmoji(e.target.checked)} />
-          {t('edit.emoji')}
-        </label>
-        <div className="space-y-1">
-          <Label htmlFor="bb-forbidden">{t('edit.forbidden')}</Label>
-          <Input id="bb-forbidden" value={forbidden} onChange={(e) => setForbidden(e.target.value)} />
-        </div>
-        <div className="space-y-1 sm:col-span-2">
-          <Label htmlFor="bb-services">{t('edit.services')}</Label>
-          <Textarea
-            id="bb-services"
-            value={services}
-            onChange={(e) => setServices(e.target.value)}
-            rows={4}
-          />
-        </div>
-        <div className="space-y-1 sm:col-span-2">
-          <Label htmlFor="bb-facts">{t('edit.facts')}</Label>
-          <Textarea id="bb-facts" value={facts} onChange={(e) => setFacts(e.target.value)} rows={4} />
-        </div>
-        <div className="sm:col-span-2">
-          <ErrorBox error={error} />
-        </div>
-        <div className="sm:col-span-2">
-          <Button onClick={submit} disabled={pending}>
-            {pending ? t('edit.saving') : t('edit.save')}
-          </Button>
-        </div>
-      </CardContent>
-    </Card>
   )
 }
