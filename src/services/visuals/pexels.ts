@@ -112,17 +112,20 @@ async function existing(
 async function downloadVideo(
   video: PexelsVideo,
   prefer?: number,
+  limits: { timeoutMs?: number; maxBytes?: number } = {},
 ): Promise<{ bytes: Buffer; fileId: number; quality: string | null }> {
   for (const file of videoFileCandidates(video, prefer)) {
     try {
       const res = await safeFetch(file.link, {
-        timeoutMs: 40_000,
-        maxBytes: maxVideoBytes(),
+        timeoutMs: limits.timeoutMs ?? 40_000,
+        maxBytes: limits.maxBytes ?? maxVideoBytes(),
         headers: { accept: 'video/mp4' },
       })
       if (res.ok) return { bytes: res.body, fileId: file.id, quality: file.quality }
     } catch (error) {
       if (error instanceof SsrfError && error.code === 'TOO_LARGE') continue
+      // sa rokom (video u temi) sporo preuzimanje probaj manjim fajlom istog snimka
+      if (limits.timeoutMs && error instanceof SsrfError && error.code === 'TIMEOUT') continue
       throw error
     }
   }
@@ -161,6 +164,9 @@ export async function storePexelsMedia(input: {
   video?: PexelsVideo
   /** najveća kraća strana snimka koja se prvo traži (video u temi: 720, D-128) */
   preferShortSide?: number
+  /** granice preuzimanja snimka (video u temi mora da stane u korak od 30 s na Netlify-u) */
+  downloadTimeoutMs?: number
+  maxBytes?: number
 }): Promise<StoredPexels> {
   const found = await existing(input.brandId, input.kind, input.id, input.crop)
   // već sačuvan: atribucija je u redu medija, bez novog poziva Pexels-u (200 zahteva na sat)
@@ -169,7 +175,10 @@ export async function storePexelsMedia(input: {
   if (input.kind === 'video') {
     const video = input.video ?? (await getVideo(input.id))
     const attribution = attributionFor('video', video.user, video.pageUrl)
-    const file = await downloadVideo(video, input.preferShortSide)
+    const file = await downloadVideo(video, input.preferShortSide, {
+      timeoutMs: input.downloadTimeoutMs,
+      maxBytes: input.maxBytes,
+    })
     const asset = await storeServerVideo({
       workspaceId: input.workspaceId,
       brandId: input.brandId,
@@ -246,8 +255,14 @@ export async function pickPexelsVideo(input: {
   orientation: PexelsOrientation
   uploadedBy: string | null
   preferShortSide?: number
+  /** rok (ms od epohe) za ceo izbor: posle njega se ne kreće sa novim snimkom (korak od 30 s, D-122) */
+  deadline?: number
+  /** najduži snimak u sekundama (video u temi traje oko 12 s, pa duži snimak samo troši vreme) */
+  maxSeconds?: number
+  maxBytes?: number
 }): Promise<StoredPexels | null> {
   if (!isPexelsConfigured()) return null
+  const { deadline, maxSeconds = 60, maxBytes, ...store } = input
   const used = await usedStockIds(input.brandId, 'pexels-video')
   const variants = queryVariants(input.query)
   for (let v = 0; v < variants.length; v++) {
@@ -258,13 +273,27 @@ export async function pickPexelsVideo(input: {
         perPage: 30,
         page,
       })
-      for (const clip of videos.filter((x) => x.durationSec >= 3 && x.durationSec <= 60)) {
+      for (const clip of videos.filter((x) => x.durationSec >= 3 && x.durationSec <= maxSeconds)) {
         if (used.has(String(clip.id))) continue
         used.add(String(clip.id))
+        const left = deadline ? deadline - Date.now() : null
+        if (left !== null && left < 8_000) return null
         try {
-          return await storePexelsMedia({ ...input, kind: 'video', id: clip.id, video: clip })
+          return await storePexelsMedia({
+            ...store,
+            kind: 'video',
+            id: clip.id,
+            video: clip,
+            maxBytes,
+            downloadTimeoutMs: left !== null ? Math.min(12_000, left - 4_000) : undefined,
+          })
         } catch (error) {
           if (error instanceof ApiError && error.code === 'PAYLOAD_TOO_LARGE') continue
+          // sa rokom jedan neispravan ili spor snimak ne zaustavlja izbor: probaj sledeći
+          if (deadline) {
+            logger.warn('pexels_video_skipped', { brandId: input.brandId, clipId: clip.id, error })
+            continue
+          }
           throw error
         }
       }

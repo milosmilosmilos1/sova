@@ -22,6 +22,8 @@ export interface Mp4Options {
   version1?: boolean
   /** lokacija snimka kao na telefonu: `udta/©xyz` i QuickTime `meta` ključ (ISO 6709) */
   location?: string
+  /** trajanje samo u trakama (`mdhd`), a `mvhd` ima 0, kao kod nekih enkodera */
+  durationInTrackOnly?: boolean
 }
 
 const ONE = 65536
@@ -100,7 +102,12 @@ function track(handler: string, codec: string, w: number, h: number, rot: number
   return box(
     'trak',
     tkhd(w, h, rot, ms, v1),
-    box('mdia', fullBox('mdhd', 0, Buffer.alloc(20)), hdlr, box('minf', box('stbl', stsd))),
+    box(
+      'mdia',
+      fullBox('mdhd', 0, u32(0), u32(0), u32(90_000), u32(Math.round(ms * 90)), Buffer.alloc(4)),
+      hdlr,
+      box('minf', box('stbl', stsd)),
+    ),
   )
 }
 
@@ -124,7 +131,7 @@ export function buildMp4(o: Mp4Options = {}): Buffer {
     extra.push(box('udta', box('©xyz', Buffer.from(o.location))))
     extra.push(box('meta', Buffer.from(`com.apple.quicktime.location.ISO6709${o.location}`)))
   }
-  const moov = box('moov', mvhd(ms, v1), ...tracks, ...extra)
+  const moov = box('moov', mvhd(o.durationInTrackOnly ? 0 : ms, v1), ...tracks, ...extra)
   const payload = Buffer.alloc(o.mdatBytes ?? 1024, 7)
   const mdat = o.largeMdat
     ? Buffer.concat([u32(1), Buffer.from('mdat'), u64(16 + payload.length), payload])

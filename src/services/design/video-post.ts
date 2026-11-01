@@ -51,6 +51,11 @@ export interface ThemeVideo {
 const CLIPS_PER_VIDEO = 2
 /** Snimak u temi se uzima do 720 px po kraćoj strani (tekst je u sloju teme, ne u snimku). */
 const CLIP_SHORT_SIDE = 720
+/** Video u temi traje oko 12 s, pa duži snimak samo produžava preuzimanje. */
+const CLIP_MAX_SECONDS = 20
+const CLIP_MAX_BYTES = 30 * 1024 * 1024
+/** Izbor jednog snimka (pretraga, preuzimanje, čuvanje) u jednom koraku od najviše 30 s. */
+const CLIP_STEP_BUDGET_MS = 22_000
 
 /** Jedan nov snimak za upit; `null` kad Pexels nije podešen ili novog snimka nema. */
 export async function pickVideoClip(input: ThemeVideoInput): Promise<string | null> {
@@ -62,6 +67,10 @@ export async function pickVideoClip(input: ThemeVideoInput): Promise<string | nu
       orientation: 'portrait',
       uploadedBy: input.uploadedBy,
       preferShortSide: CLIP_SHORT_SIDE,
+      // korak na Netlify-u traje najviše 30 s (D-122): preuzimanje i čuvanje moraju da stanu u to
+      deadline: Date.now() + CLIP_STEP_BUDGET_MS,
+      maxSeconds: CLIP_MAX_SECONDS,
+      maxBytes: CLIP_MAX_BYTES,
     })
     return clip?.asset.id ?? null
   } catch (error) {

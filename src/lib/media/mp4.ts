@@ -63,6 +63,28 @@ function readMvhd(buf: Buffer, box: Box): { timescale: number; duration: number 
   return { timescale: buf.readUInt32BE(p + 8), duration: buf.readUInt32BE(p + 12) }
 }
 
+/** Trajanje trake u njenoj vremenskoj skali (`mdhd`). */
+function readMdhd(buf: Buffer, box: Box): { timescale: number; duration: number } | null {
+  const version = buf.readUInt8(box.body)
+  const p = box.body + 4
+  if (version === 1) {
+    if (p + 28 > box.end) return null
+    return { timescale: buf.readUInt32BE(p + 16), duration: Number(buf.readBigUInt64BE(p + 20)) }
+  }
+  if (p + 16 > box.end) return null
+  return { timescale: buf.readUInt32BE(p + 8), duration: buf.readUInt32BE(p + 12) }
+}
+
+/** Ukupno trajanje fragmentisanog MP4 (`mvex` → `mehd`) u vremenskoj skali filma. */
+function readMehd(buf: Buffer, moov: Box): number {
+  const mvex = child(buf, moov, 'mvex')
+  const mehd = mvex ? child(buf, mvex, 'mehd') : undefined
+  if (!mehd || mehd.body + 8 > mehd.end) return 0
+  const version = buf.readUInt8(mehd.body)
+  if (version === 1) return mehd.body + 12 <= mehd.end ? Number(buf.readBigUInt64BE(mehd.body + 4)) : 0
+  return buf.readUInt32BE(mehd.body + 4)
+}
+
 function readTkhd(
   buf: Buffer,
   box: Box,
@@ -111,6 +133,7 @@ export function parseMp4(buf: Buffer): VideoInfo {
   let video: { width: number; height: number; rotation: VideoInfo['rotation']; codec: string | null } | null =
     null
   let audioCodec: string | null = null
+  let trackMs = 0
   for (const trak of children(buf, moov, 'trak')) {
     const mdia = child(buf, trak, 'mdia')
     if (!mdia) continue
@@ -119,15 +142,22 @@ export function parseMp4(buf: Buffer): VideoInfo {
       const tkhdBox = child(buf, trak, 'tkhd')
       const tkhd = tkhdBox ? readTkhd(buf, tkhdBox) : null
       if (tkhd && tkhd.width > 0 && tkhd.height > 0) video = { ...tkhd, codec: codecOf(buf, mdia) }
+      const mdhdBox = child(buf, mdia, 'mdhd')
+      const mdhd = mdhdBox ? readMdhd(buf, mdhdBox) : null
+      if (mdhd?.timescale) trackMs = Math.round((mdhd.duration / mdhd.timescale) * 1000)
     } else if (handler === 'soun' && !audioCodec) {
       audioCodec = codecOf(buf, mdia)
     }
   }
   if (!video) throw new Error('Video nema video traku.')
-  if (!mvhd || !mvhd.timescale) throw new Error('Video nema trajanje u zaglavlju.')
+  const movieMs = mvhd?.timescale ? Math.round((mvhd.duration / mvhd.timescale) * 1000) : 0
+  const fragmentMs = mvhd?.timescale ? Math.round((readMehd(buf, moov) / mvhd.timescale) * 1000) : 0
+  // neki enkoderi (i deo snimaka sa Pexels-a) upišu 0 u mvhd: tada važi trajanje video trake ili mehd
+  const durationMs = movieMs || trackMs || fragmentMs
+  if (!durationMs && !mvhd?.timescale) throw new Error('Video nema trajanje u zaglavlju.')
   const swap = video.rotation === 90 || video.rotation === 270
   return {
-    durationMs: Math.round((mvhd.duration / mvhd.timescale) * 1000),
+    durationMs,
     width: swap ? video.height : video.width,
     height: swap ? video.width : video.height,
     rotation: video.rotation,

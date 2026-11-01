@@ -33,6 +33,10 @@ describe('parseMp4', () => {
     expect(info.height).toBe(1920)
   })
 
+  it('mvhd sa trajanjem 0: trajanje se čita iz video trake (mdhd)', () => {
+    expect(parseMp4(buildMp4({ durationInTrackOnly: true, durationMs: 12_400 })).durationMs).toBe(12_400)
+  })
+
   it('MOV (QuickTime) ima istu strukturu; video bez zvuka', () => {
     const info = parseMp4(buildMp4({ brand: 'qt  ', audioCodec: null }))
     expect(info.audioCodec).toBeNull()
