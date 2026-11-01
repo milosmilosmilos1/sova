@@ -677,6 +677,7 @@
       "adminOnly": "Networks are connected by the workspace owner or an admin.",
       "pickTitle": "Choose accounts",
       "pickText": "The network returned these accounts. Tick the ones Sova may post to.",
+      "pickMissing": "Missing a Page? Facebook only sends the Pages you gave Sova access to. Click Connect next to Facebook again, choose “Edit settings” in the Facebook window and tick every Page you want.",
       "pickButton": "Connect selected ({count})",
       "picking": "Connecting…",
       "pick": "Select {name}",

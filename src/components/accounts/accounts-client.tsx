@@ -308,6 +308,11 @@ export function AccountsClient({
             <CardDescription>{t('pickDescription')}</CardDescription>
           </CardHeader>
           <CardContent className="space-y-3">
+            {pending.some((a) => a.platform === 'facebook' || a.platform === 'instagram') ? (
+              <p className="rounded-md bg-muted/60 px-3 py-2 text-xs text-muted-foreground">
+                {t('pickMissing')}
+              </p>
+            ) : null}
             <ul className="divide-y">
               {pending.map((a) => (
                 <li key={a.id} className="flex items-center gap-3 py-2">

@@ -677,6 +677,7 @@
       "adminOnly": "Mreže povezuje vlasnik ili administrator radnog prostora.",
       "pickTitle": "Izaberite naloge",
       "pickText": "Mreža je vratila ove naloge. Štiklirajte one na koje Sova sme da objavljuje.",
+      "pickMissing": "Ne vidite sve stranice? Facebook šalje samo stranice kojima ste Sovi dali pristup. Kliknite ponovo „Poveži” kod Facebook-a, u prozoru Facebook-a izaberite „Uredi podešavanja” (Edit settings) i označite sve stranice koje želite.",
       "pickButton": "Poveži izabrane ({count})",
       "picking": "Povezujem…",
       "pick": "Izaberi {name}",

@@ -327,6 +327,7 @@
     "denied": "Povezivanje je otkazano na mreži.",
     "pickTitle": "Izaberite naloge",
     "pickDescription": "Mreža je vratila ove naloge (stranice, profile). Štiklirajte one na koje Sova sme da objavljuje.",
+    "pickMissing": "Ne vidite sve stranice? Facebook šalje samo stranice kojima ste Sovi dali pristup. Kliknite ponovo „Poveži” kod Facebook-a, u prozoru Facebook-a izaberite „Uredi podešavanja” (Edit settings) i označite sve stranice koje želite.",
     "pickOne": "Izaberi {name}",
     "followers": "{count} pratilaca",
     "readOnly": "bez prava objavljivanja (samo čitanje)",

@@ -327,6 +327,7 @@
     "denied": "Connecting was cancelled on the network.",
     "pickTitle": "Choose accounts",
     "pickDescription": "The network returned these accounts (Pages, profiles). Tick the ones Sova may post to.",
+    "pickMissing": "Missing a Page? Facebook only sends the Pages you gave Sova access to. Click Connect next to Facebook again, choose “Edit settings” in the Facebook window and tick every Page you want.",
     "pickOne": "Select {name}",
     "followers": "{count, plural, one {# follower} other {# followers}}",
     "readOnly": "no publishing rights (read only)",
