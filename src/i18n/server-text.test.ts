@@ -139,7 +139,7 @@ function serbianLiterals(src: string): string[] {
 function apiErrorMessages(src: string): string[] {
   const out: string[] = []
   const re =
-    /new ApiError\(\s*'[A-Z_]+'\s*,\s*|\b(?:problems|list)\.push\(\s*|\bchangeSummary:\s*|\bsnapshotVersion\([^,()]+,[^,()]+,\s*|\btitle:\s*(?=`[^`]*\$\{)|\bnotifyOwner\([^,()]+,\s*'[a-z_]+',\s*|\b(?:translateServerText|tr)\(\s*/g
+    /new ApiError\(\s*'[A-Z_]+'\s*,\s*|\b(?:problems|list)\.push\(\s*|\bchangeSummary:\s*|\bsnapshotVersion\([^,()]+,[^,()]+,\s*|\btitle:\s*(?=`[^`]*\$\{)|\bnotifyOwner\([^,()]+,\s*'[a-z_]+',\s*|\b(?:translateServerText|tr)\(\s*|\bfail[A-Z]\w*\([^,()]+,\s*/g
   for (let m = re.exec(src); m; m = re.exec(src)) {
     const start = m.index + m[0].length
     const quote = src[start]
@@ -176,11 +176,11 @@ function expressionLiterals(src: string, start: number): string[] {
 
 /**
  * Tekst koji server upisuje u polja koja korisnik vidi: naslov i tekst obaveštenja i predloga,
- * poruka napretka i provere kvaliteta, razlog preskočenog posla.
+ * poruka napretka i provere kvaliteta, razlog preskočenog posla i greška stavke ili posla.
  */
 function propertyMessages(src: string): string[] {
   const out: string[] = []
-  const re = /\b(?:title|body|message|reason):\s*/g
+  const re = /\b(?:title|body|message|reason|error):\s*/g
   for (let m = re.exec(src); m; m = re.exec(src))
     for (const text of expressionLiterals(src, m.index + m[0].length))
       if (SERBIAN.test(text) && text.trim().length > 2) out.push(text)

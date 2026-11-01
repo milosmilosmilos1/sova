@@ -8,6 +8,7 @@ import { fontWidth } from './font-choices'
 import { cleanSlideText, getStyle } from './index'
 import { mix, withWidthScale } from './kit'
 import { matteFromKeys } from './matte'
+import { tightenShadowFilters } from './shadows'
 import {
   DESIGN_SIZES,
   type DesignColors,
@@ -90,11 +91,13 @@ export async function renderSlide(input: SlideRenderInput): Promise<SlideRenderR
       ? Math.min(1.6, Math.max(0.8, fontWidth(fonts.headings) / fontWidth(designed)))
       : 1
   const tree = withWidthScale(scale, () => style.render(cleanSlideText(input.slide), ctx))
-  const svg = await satori(tree as unknown as Parameters<typeof satori>[0], {
+  const drawn = await satori(tree as unknown as Parameters<typeof satori>[0], {
     width: size.width,
     height: size.height,
     fonts: loaded.fonts.map((f) => ({ name: f.name, data: f.data, weight: f.weight, style: f.style })),
   })
+  // senke: resvg zamućuje samo oko senke, ne površinu triput veću od slajda
+  const svg = tightenShadowFilters(drawn, size.width, size.height)
   const outWidth = input.outputWidth ?? size.width
   const png = new Resvg(svg, { fitTo: { mode: 'width', value: outWidth }, font: { loadSystemFonts: false } })
     .render()

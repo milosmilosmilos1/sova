@@ -59,4 +59,13 @@ describe('tekst na slikama', () => {
       [7, 8],
     ])
   })
+
+  it('sloj videa se crta po jedan: svaki izmenjen kadar je svoj deo', () => {
+    expect(changedChunks([0, 1, 2, 4], 1)).toEqual([
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [4, 5],
+    ])
+  })
 })

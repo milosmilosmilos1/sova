@@ -1,4 +1,4 @@
-import { slideRanges } from './batches'
+import { slideRanges, SLIDES_PER_STEP } from './batches'
 import type { Slide } from './types'
 
 /**
@@ -74,9 +74,9 @@ export function changedRanges(indexes: number[]): Array<[number, number]> {
   return out
 }
 
-/** Delovi od najviše tri uzastopna izmenjena slajda, kao koraci pozadinskog posla (D-122). */
-export function changedChunks(indexes: number[]): Array<[number, number]> {
+/** Delovi od najviše `size` (tri) uzastopna izmenjena slajda, kao koraci pozadinskog posla (D-122). */
+export function changedChunks(indexes: number[], size = SLIDES_PER_STEP): Array<[number, number]> {
   return changedRanges(indexes).flatMap(([from, to]) =>
-    slideRanges(to - from).map(([a, b]): [number, number] => [from + a, from + b]),
+    slideRanges(to - from, size).map(([a, b]): [number, number] => [from + a, from + b]),
   )
 }

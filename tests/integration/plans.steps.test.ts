@@ -257,6 +257,39 @@ describe('plan u koracima (D-122)', () => {
     expect(media.map((m) => byId.get(m.media_asset_id)!.photoAssetId)).toEqual(design.copy.photoAssetIds)
   })
 
+  it('video u temi: snimci, pa svaki sloj teksta u svom koraku, slika za listu i nacrt', async () => {
+    const { ids } = await newPlan([{ format: 'video' }])
+    enqueueReply(carouselReply(4))
+    const rec = recorder()
+    expect(await runPlanItem(ids[0]!, rec.run)).toBe('done')
+    // sloj se crta dvaput (zbog providnosti): tri sloja u jednom koraku nisu stala u 30 s (1.11.2026)
+    expect(rec.names).toEqual([
+      'start',
+      'clip-0',
+      'clip-1',
+      'overlay-0',
+      'overlay-1',
+      'overlay-2',
+      'overlay-3',
+      'poster',
+      'save',
+    ])
+    const { data: item } = await admin
+      .from('month_plan_items')
+      .select('status, post_id')
+      .eq('id', ids[0]!)
+      .single()
+    expect(item!.status).toBe('done')
+    const { data: post } = await admin.from('posts').select('design').eq('id', item!.post_id!).single()
+    const design = post!.design as {
+      format: string
+      video: { overlayAssetIds: string[]; clipAssetIds: string[] }
+    }
+    expect(design.format).toBe('video')
+    expect(design.video.overlayAssetIds).toHaveLength(4)
+    expect(design.video.clipAssetIds).toHaveLength(2)
+  })
+
   it('korak koji ne uspe ostavlja stavku u neuspelima bez ostataka, a sledeća se pravi normalno', async () => {
     const { ids } = await newPlan([{ format: 'carousel' }, { format: 'carousel' }])
     enqueueReply(carouselReply(5))

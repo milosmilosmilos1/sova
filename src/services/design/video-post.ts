@@ -4,7 +4,6 @@ import { logger } from '@/lib/logger'
 import { safeFetch } from '@/lib/ssrf'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import type { StyleId } from '@/lib/visuals/design'
-import { slideRanges } from '@/lib/visuals/design/batches'
 import { preparePhoto, renderOverlay, renderSlide } from '@/lib/visuals/design/render'
 import type { DesignColors, Slide } from '@/lib/visuals/design/types'
 import { sceneSeconds, videoStyleFor } from '@/lib/visuals/design/video'
@@ -253,10 +252,10 @@ export async function buildThemeVideoInSteps(step: StepRunner, input: ThemeVideo
   const photoAssetIds =
     input.photoAssetIds ?? (clipAssetIds.length ? [] : await step('photos', () => pickVideoPhotos(input)))
   const overlayAssetIds: string[] = []
-  for (const [from, to] of slideRanges(input.scenes.length)) {
-    overlayAssetIds.push(
-      ...(await step(`overlays-${from}`, () => renderVideoOverlays(input, styleId, from, to))),
-    )
+  // jedan sloj po koraku: sloj se crta dvaput (zbog providnosti) i čuva, a tri sloja u temi sa
+  // senkama nisu stala u Netlify-jevih 30 s
+  for (let i = 0; i < input.scenes.length; i++) {
+    overlayAssetIds.push(...(await step(`overlay-${i}`, () => renderVideoOverlays(input, styleId, i, i + 1))))
   }
   const posterAssetId = await step('poster', () =>
     renderVideoPoster(input, styleId, clipAssetIds[0] ?? null, photoAssetIds[0] ?? null),

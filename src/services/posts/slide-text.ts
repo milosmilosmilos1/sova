@@ -329,14 +329,15 @@ async function discard(ids: string[]): Promise<void> {
     .in('id', ids)
 }
 
-/** Izmenjeni slajdovi po tri, dok traje vreme zahteva; prvi deo se crta uvek. */
+/** Izmenjeni slajdovi po tri (sloj videa po jedan), dok traje vreme zahteva; prvi deo se crta uvek. */
 async function withinBudget(
   changed: number[],
   draw: (from: number, to: number) => Promise<void>,
+  size?: number,
 ): Promise<number[]> {
   const started = Date.now()
   const done: number[] = []
-  for (const [from, to] of changedChunks(changed)) {
+  for (const [from, to] of changedChunks(changed, size)) {
     if (done.length && Date.now() - started >= renderBudgetMs) break
     await draw(from, to)
     for (let i = from; i < to; i++) done.push(i)
@@ -428,13 +429,18 @@ async function renderVideoText(
     let posterAssetId = video.posterAssetId
     let done: number[]
     try {
-      done = await withinBudget(changed, async (from, to) => {
-        const ids = await renderVideoOverlays(input, styleId, from, to)
-        ids.forEach((id, k) => {
-          overlays[from + k] = id
-          fresh.push(id)
-        })
-      })
+      // sloj videa se crta dvaput (zbog providnosti), pa po jedan, da sledeći ne počne pred kraj vremena
+      done = await withinBudget(
+        changed,
+        async (from, to) => {
+          const ids = await renderVideoOverlays(input, styleId, from, to)
+          ids.forEach((id, k) => {
+            overlays[from + k] = id
+            fresh.push(id)
+          })
+        },
+        1,
+      )
       if (done.includes(0)) {
         const poster = await renderVideoPoster(
           input,
