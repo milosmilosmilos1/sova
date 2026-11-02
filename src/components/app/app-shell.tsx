@@ -26,18 +26,20 @@ import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 
 import { ImpersonationBanner } from '@/components/admin/impersonation-banner'
+import { BrandMark } from '@/components/brand/brand-mark'
 import { SovaLogo } from '@/components/brand/sova-logo'
 import { AuthSync } from '@/components/app/auth-sync'
-import { AutoSubmitSelect } from '@/components/app/auto-submit-select'
 import { GuideWidget } from '@/components/app/guide-widget'
 import { ServiceWorkerRegister } from '@/components/app/service-worker'
 import { NotificationsBell } from '@/components/app/notifications-bell'
+import { ShellSelect } from '@/components/app/shell-select'
 import { CurrentPathInput, NavGroup, NavLink } from '@/components/app/nav-link'
 import { LocaleSwitcher } from '@/components/shared/locale-switcher'
 import { Badge } from '@/components/ui/badge'
 import { company } from '@/config/company'
 import { signOutAction, switchBrandAction, switchWorkspaceAction } from '@/lib/auth/actions'
 import { EDIT_ROLES, type Membership } from '@/lib/auth/workspace'
+import { brandSwatch, type BrandSwatch } from '@/lib/brands/swatch'
 import type { BrandSummary } from '@/services/brands'
 
 export interface ShellViewer {
@@ -55,6 +57,7 @@ export function AppShell({
   current,
   brands,
   currentBrand,
+  swatches = {},
   waitingApprovals = 0,
   children,
 }: {
@@ -63,11 +66,14 @@ export function AppShell({
   current: Membership | null
   brands: BrandSummary[]
   currentBrand: BrandSummary | null
+  /** boja svakog brenda (D-137); brend bez nje dobija rezervnu */
+  swatches?: Record<string, BrandSwatch>
   /** broj nacrta koji čekaju odluku (D-108), značka uz „Odobravanje” */
   waitingApprovals?: number
   children: ReactNode
 }) {
   const t = useTranslations('shell')
+  const swatchOf = (id: string) => swatches[id] ?? brandSwatch(id)
   return (
     <>
       <AuthSync />
@@ -91,7 +97,8 @@ export function AppShell({
             <div className="space-y-2 rounded-lg border border-sidebar-border bg-background/60 p-2">
               <form action={switchWorkspaceAction}>
                 <CurrentPathInput />
-                <AutoSubmitSelect
+                <ShellSelect
+                  key={current.workspaceId}
                   name="workspaceId"
                   value={current.workspaceId}
                   ariaLabel={t('workspace')}
@@ -101,17 +108,23 @@ export function AppShell({
               {brands.length > 1 && currentBrand ? (
                 <form action={switchBrandAction}>
                   <CurrentPathInput />
-                  <AutoSubmitSelect
+                  <ShellSelect
+                    key={currentBrand.id}
                     name="brandId"
                     value={currentBrand.id}
                     ariaLabel={t('brand')}
-                    options={brands.map((b) => ({ value: b.id, label: b.name }))}
+                    options={brands.map((b) => ({ value: b.id, label: b.name, swatch: swatchOf(b.id) }))}
                   />
                 </form>
               ) : null}
-              <p className="truncate px-1 text-xs text-muted-foreground">
-                {t(`roles.${current.role}`)}
-                {currentBrand ? ` · ${currentBrand.name}` : ''}
+              <p className="flex min-w-0 items-center gap-1.5 px-1 text-xs text-muted-foreground">
+                {brands.length <= 1 && currentBrand ? (
+                  <BrandMark name={currentBrand.name} swatch={swatchOf(currentBrand.id)} size={16} />
+                ) : null}
+                <span className="truncate">
+                  {t(`roles.${current.role}`)}
+                  {currentBrand ? ` · ${currentBrand.name}` : ''}
+                </span>
               </p>
               {EDIT_ROLES.includes(current.role) ? (
                 <Link

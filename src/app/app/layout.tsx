@@ -10,7 +10,7 @@ import { getViewer } from '@/lib/auth/viewer'
 import { getCurrentWorkspace, listMemberships } from '@/lib/auth/workspace'
 import { configured, isPreview } from '@/lib/env'
 import { logger } from '@/lib/logger'
-import { listBrands } from '@/services/brands'
+import { listBrands, listBrandSwatches } from '@/services/brands'
 
 export const metadata: Metadata = { robots: { index: false, follow: false } }
 
@@ -63,14 +63,18 @@ export default async function AppLayout({ children }: LayoutProps<'/app'>) {
     if (error) logger.warn('profile_locale_sync_failed', { error: error.message })
     await viewer.supabase.auth.updateUser({ data: { locale: cookieLocale } }).catch(() => undefined)
   }
-  const { count: waitingApprovals } = currentBrand
-    ? await viewer.supabase
-        .from('posts')
-        .select('id', { count: 'exact', head: true })
-        .eq('brand_id', currentBrand.id)
-        .eq('status', 'in_review')
-        .is('deleted_at', null)
-    : { count: 0 }
+  const [{ count: waitingApprovals }, swatches] = await Promise.all([
+    currentBrand
+      ? viewer.supabase
+          .from('posts')
+          .select('id', { count: 'exact', head: true })
+          .eq('brand_id', currentBrand.id)
+          .eq('status', 'in_review')
+          .is('deleted_at', null)
+      : Promise.resolve({ count: 0 }),
+    // boje brendova za birač u bočnoj traci (D-137)
+    current ? listBrandSwatches(viewer, current.workspaceId) : Promise.resolve({}),
+  ])
 
   return (
     <AppShell
@@ -87,6 +91,7 @@ export default async function AppLayout({ children }: LayoutProps<'/app'>) {
       current={current}
       brands={brands}
       currentBrand={currentBrand}
+      swatches={swatches}
       waitingApprovals={waitingApprovals ?? 0}
     >
       {pending.length ? (

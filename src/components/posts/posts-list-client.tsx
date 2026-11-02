@@ -11,8 +11,8 @@ import { BulkBar, SelectAllBox, SelectBox, useSelection } from '@/components/sha
 import { ErrorBox } from '@/components/shared/error-box'
 import { MediaThumb } from '@/components/shared/media-thumb'
 import { NetworkBadge } from '@/components/shared/network-badge'
+import { StatusBadge, StatusDot } from '@/components/shared/status-badge'
 
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { INTL_UI } from '@/i18n/config'
@@ -107,6 +107,7 @@ export function PostsListClient({
             variant={status === value ? 'default' : 'outline'}
             onClick={() => setStatus(value)}
           >
+            {value ? <StatusDot status={value.split(',')[0]!} className="size-2" /> : null}
             {t(`filters.${label}`)}
           </Button>
         ))}
@@ -161,11 +162,7 @@ export function PostsListClient({
                     <span className="truncate font-medium">
                       {p.title ?? p.masterText.slice(0, 60) ?? t('untitled')}
                     </span>
-                    <Badge
-                      variant={p.status === 'scheduled' || p.status === 'published' ? 'default' : 'secondary'}
-                    >
-                      {p.statusLabel}
-                    </Badge>
+                    <StatusBadge status={p.status} label={p.statusLabel} />
                     {p.platforms.map((pl) => (
                       <NetworkBadge key={pl} platform={pl} />
                     ))}

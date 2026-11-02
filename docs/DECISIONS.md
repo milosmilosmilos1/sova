@@ -1144,3 +1144,13 @@ Odluka:
 - Brend to može da isključi u Vizuelnom identitetu („Ljudi na fotografijama i snimcima: kao vaša publika”, `brands.design.people` = `any`). Brend na engleskom bira kao do sada.
 
 Razlog: vlasnik prodaje na tržištu Srbije i traži da se publika poistoveti sa ljudima u objavama.
+
+## D-137 · 2.11.2026 · usvojeno · Boje brenda u biraču i iste boje stanja svuda
+
+Odluka:
+
+- Birač brenda u bočnoj traci više nije sistemski padajući meni. Svaki brend ima kvadratić u svojoj boji sa početnim slovom imena (`BrandMark`, `ShellSelect`). Isti znak stoji na strani Brendovi, u zaglavlju početne i u bočnoj traci kad radni prostor ima jedan brend. Birač radnog prostora ima isti izgled, ali bez boje, jer radni prostor nema boju brenda.
+- Boja brenda je primarna boja izabrana u Vizuelnom identitetu, inače primarna boja sa sajta iz trenutnog profila brenda, inače rezervna boja iz stalne palete od osam nijansi koja zavisi od ID-ja brenda (`lib/brands/swatch.ts`). Boje za ceo radni prostor čita jedan upit (`listBrandSwatches`). Kad upit ne uspe, znak dobija rezervnu boju i strana radi dalje. Slovo je belo ili skoro crno, šta je čitljivije na boji, a tanak prsten drži znak vidljivim i na podlozi iste boje (taman brend u tamnoj temi).
+- Stanja objave imaju iste boje svuda (`components/shared/status-badge.tsx`): zakazano i odobreno plavo, objavljeno zeleno, delimično objavljeno narandžasto, na odobravanju žuto, neuspelo crveno, nacrt i pauzirano sivo, odbijeno i otkazano svetlosivo. Lista objava (oznake i filteri sa tačkom) i Odobravanje (oznaka odluke, tačka u listi nacrta) prate boje kalendara, a kalendar čita istu mapu. Tekst oznake ostaje u boji teksta teme zbog kontrasta (faza 15); boja je u tački, ivici i blagoj podlozi.
+
+Razlog: vlasnik vodi šest brendova u jednom radnom prostoru i u sivoj listi ih je teško razlikovati, pa je tražio boje brenda u biraču i još boja gde ima smisla. Boje stanja su postojale samo u kalendaru, pa je ista objava na listi bila siva, a u kalendaru zelena.

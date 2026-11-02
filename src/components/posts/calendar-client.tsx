@@ -18,6 +18,7 @@ import { useMemo, useState } from 'react'
 import { api } from '@/components/shared/api-client'
 import { ErrorBox } from '@/components/shared/error-box'
 import { NetworkIcons, NetworkNames } from '@/components/shared/network-badge'
+import { statusTone } from '@/components/shared/status-badge'
 import { Button } from '@/components/ui/button'
 import { type SocialPlatform } from '@/config/platforms'
 import { cn } from '@/lib/utils'
@@ -47,26 +48,8 @@ type PostStatusKey =
   | 'canceled'
   | 'rejected'
 
-/** boja tačke i ivice po statusu; tekst ostaje u tokenima teme (kontrast, faza 15) */
-const TONE: Record<string, string> = {
-  scheduled: 'bg-sky-500',
-  approved: 'bg-sky-500',
-  publishing: 'bg-sky-500',
-  published: 'bg-emerald-600',
-  partially_published: 'bg-orange-500',
-  in_review: 'bg-amber-500',
-  failed: 'bg-red-600',
-  draft: 'bg-zinc-400',
-  paused: 'bg-zinc-400',
-  canceled: 'bg-zinc-300',
-  rejected: 'bg-zinc-300',
-}
-const LEGEND = [
-  { key: 'scheduled', tone: 'bg-sky-500' },
-  { key: 'published', tone: 'bg-emerald-600' },
-  { key: 'in_review', tone: 'bg-amber-500' },
-  { key: 'failed', tone: 'bg-red-600' },
-] as const
+/** legenda boja stanja; iste boje su na listi objava i u Odobravanju (`statusTone`, D-137) */
+const LEGEND = ['scheduled', 'published', 'in_review', 'failed'] as const
 
 /** Dan objave u zoni brenda kao YYYY-MM-DD. */
 function zonedDay(iso: string, timeZone: string): string {
@@ -243,10 +226,10 @@ export function CalendarClient({ brandId, timezone }: { brandId: string; timezon
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <ul className="hidden items-center gap-3 text-xs text-muted-foreground md:flex">
-                {LEGEND.map((l) => (
-                  <li key={l.key} className="flex items-center gap-1.5">
-                    <span className={cn('size-2 rounded-full', l.tone)} aria-hidden />
-                    {t(`legend.${l.key}`)}
+                {LEGEND.map((key) => (
+                  <li key={key} className="flex items-center gap-1.5">
+                    <span className={cn('size-2 rounded-full', statusTone(key).dot)} aria-hidden />
+                    {t(`legend.${key}`)}
                   </li>
                 ))}
               </ul>
@@ -321,10 +304,7 @@ export function CalendarClient({ brandId, timezone }: { brandId: string; timezon
                           />
                         ) : (
                           <span
-                            className={cn(
-                              'ml-1 size-2 shrink-0 rounded-full',
-                              TONE[item.status] ?? 'bg-zinc-400',
-                            )}
+                            className={cn('ml-1 size-2 shrink-0 rounded-full', statusTone(item.status).dot)}
                             aria-hidden
                           />
                         )}
@@ -413,10 +393,7 @@ export function CalendarClient({ brandId, timezone }: { brandId: string; timezon
                         className="flex items-start gap-2 rounded-lg p-1.5 text-sm hover:bg-muted"
                       >
                         <span
-                          className={cn(
-                            'mt-1.5 size-2 shrink-0 rounded-full',
-                            TONE[item.status] ?? 'bg-zinc-400',
-                          )}
+                          className={cn('mt-1.5 size-2 shrink-0 rounded-full', statusTone(item.status).dot)}
                           aria-hidden
                         />
                         <span className="min-w-0">
@@ -469,10 +446,7 @@ export function CalendarClient({ brandId, timezone }: { brandId: string; timezon
                   </span>
                   <span className="min-w-0 flex-1 truncate">{title(item)}</span>
                   <span className="hidden shrink-0 items-center gap-1.5 text-xs text-muted-foreground sm:flex">
-                    <span
-                      className={cn('size-2 rounded-full', TONE[item.status] ?? 'bg-zinc-400')}
-                      aria-hidden
-                    />
+                    <span className={cn('size-2 rounded-full', statusTone(item.status).dot)} aria-hidden />
                     {t(`status.${item.status as PostStatusKey}`)}
                   </span>
                 </Link>

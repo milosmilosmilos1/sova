@@ -31,7 +31,7 @@ import { ErrorBox } from '@/components/shared/error-box'
 import { MediaThumb } from '@/components/shared/media-thumb'
 import { VideoDialog } from '@/components/review/video-dialog'
 import { NetworkName } from '@/components/shared/network-badge'
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge, StatusDot } from '@/components/shared/status-badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -325,7 +325,8 @@ export function ReviewDesk({
                       {i.slides > 1 ? ` · ${t('slides', { n: i.slides })}` : ''}
                       {i.videoPending ? ` · ${t('themeVideo.pending')}` : ''}
                     </span>
-                    <span className="block text-xs text-muted-foreground">
+                    <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                      <StatusDot status={i.status} />
                       {t(`status.${i.status}` as 'status.draft')}
                     </span>
                   </span>
@@ -684,9 +685,7 @@ function DetailForm({
                 <p className="text-xs font-semibold tracking-wider text-muted-foreground uppercase">
                   {t('panel.decision')}
                 </p>
-                <Badge variant={post.status === 'in_review' ? 'default' : 'secondary'}>
-                  {t(`status.${post.status}` as 'status.draft')}
-                </Badge>
+                <StatusBadge status={post.status} label={t(`status.${post.status}` as 'status.draft')} />
               </div>
               <p className="text-lg leading-snug font-semibold">{post.title}</p>
               {detail.flowName ? (

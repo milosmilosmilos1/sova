@@ -19,6 +19,7 @@ import { getFormatter, getTranslations } from 'next-intl/server'
 import type { ReactNode } from 'react'
 
 import { InstallCard } from '@/components/app/install-card'
+import { BrandMark } from '@/components/brand/brand-mark'
 import { MediaThumb } from '@/components/shared/media-thumb'
 import { NetworkName, NetworkNames } from '@/components/shared/network-badge'
 import { Button } from '@/components/ui/button'
@@ -27,9 +28,10 @@ import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
 import { parsePlaybook } from '@/lib/brand/playbook'
+import { brandSwatch } from '@/lib/brands/swatch'
 import { GUIDE_HREF, type GuideStepKey } from '@/lib/guide'
 import { getOverview } from '@/services/analytics/overview'
-import { getBrand, listBrands } from '@/services/brands'
+import { getBrand, listBrands, listBrandSwatches } from '@/services/brands'
 import { resolveDesign } from '@/services/design/brand-design'
 import { listFlows } from '@/services/flows/flows'
 import { getGuide } from '@/services/guide'
@@ -127,7 +129,7 @@ export default async function AppHomePage({ searchParams }: PageProps<'/app'>) {
   const today = new Date(`${todayKey}T00:00:00Z`)
   const weekStart = new Date(today.getTime() - ((today.getUTCDay() + 6) % 7) * DAY)
   // pregled ne sme da padne zbog jednog dela: svaki izvor ima svoju rezervu
-  const [brand, guide, desk, overview, week, flows, accounts, inbox] = await Promise.all([
+  const [brand, guide, desk, overview, week, flows, accounts, inbox, swatches] = await Promise.all([
     getBrand(viewer, summary.id),
     getGuide(viewer, summary.id).catch(() => null),
     listReviewDesk(viewer, { brandId: summary.id, tab: 'waiting' }).catch(() => null),
@@ -146,6 +148,7 @@ export default async function AppHomePage({ searchParams }: PageProps<'/app'>) {
     listFlows(viewer, summary.id).catch(() => []),
     listSocialAccounts(viewer, summary.id).catch(() => null),
     countNewSuggestions(viewer, summary.id).catch(() => 0),
+    listBrandSwatches(viewer, current.workspaceId),
   ])
   const design = await resolveDesign(brand).catch(() => null)
   const playbook = parsePlaybook(brand.playbook)
@@ -195,7 +198,13 @@ export default async function AppHomePage({ searchParams }: PageProps<'/app'>) {
               aria-hidden
             />
             {healthy ? t('status.ok') : t('status.check')}
-            {handle ? <span>· @{handle}</span> : <span>· {summary.name}</span>}
+            <span aria-hidden>·</span>
+            <BrandMark
+              name={summary.name}
+              swatch={swatches[summary.id] ?? brandSwatch(summary.id)}
+              size={16}
+            />
+            {handle ? <span>@{handle}</span> : <span>{summary.name}</span>}
           </p>
           <h1 className="text-2xl font-semibold tracking-tight">
             {firstName ? t(`greeting.${greeting}`, { name: firstName }) : t(`greetingPlain.${greeting}`)}

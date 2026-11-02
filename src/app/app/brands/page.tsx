@@ -5,6 +5,7 @@ import { getTranslations } from 'next-intl/server'
 
 import { BrandTimezoneForm, CreateBrandForm } from '@/components/app/settings-forms'
 import { BrandAccountHeader } from '@/components/brand/brand-account-header'
+import { BrandMark } from '@/components/brand/brand-mark'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -13,7 +14,8 @@ import { deleteBrandAction, switchBrandAction } from '@/lib/auth/actions'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
-import { listBrands } from '@/services/brands'
+import { brandSwatch } from '@/lib/brands/swatch'
+import { listBrands, listBrandSwatches } from '@/services/brands'
 import { getWorkspacePlan } from '@/services/plans'
 import { countScheduledPosts } from '@/services/posts/publisher'
 
@@ -31,10 +33,11 @@ export default async function BrandsPage() {
   if (!viewer) redirect('/login')
   const current = await getCurrentWorkspace(viewer)
   if (!current) redirect('/app/onboarding')
-  const [brands, plan, currentBrand] = await Promise.all([
+  const [brands, plan, currentBrand, swatches] = await Promise.all([
     listBrands(viewer, current.workspaceId),
     getWorkspacePlan(current.workspaceId),
     getCurrentBrand(viewer, current.workspaceId),
+    listBrandSwatches(viewer, current.workspaceId),
   ])
   const scheduledCounts = await countScheduledPosts(
     viewer,
@@ -73,6 +76,7 @@ export default async function BrandsPage() {
                 <li key={b.id} className="flex flex-wrap items-start justify-between gap-3 py-4">
                   <div className="min-w-0 flex-1">
                     <div className="flex flex-wrap items-center gap-2">
+                      <BrandMark name={b.name} swatch={swatches[b.id] ?? brandSwatch(b.id)} size={24} />
                       <span className="font-medium">{b.name}</span>
                       {isCurrent ? <Badge variant="secondary">{t('brands.current')}</Badge> : null}
                     </div>

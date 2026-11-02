@@ -5,6 +5,9 @@ import { randomUUID } from 'node:crypto'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
+import { brandSwatch, type BrandSwatch } from '@/lib/brands/swatch'
+import { logger } from '@/lib/logger'
+import { storedDesignSchema } from '@/lib/schemas/design'
 import type { CreateBrandInput } from '@/lib/schemas/workspace'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
@@ -42,6 +45,40 @@ export async function listBrands(viewer: Viewer, workspaceId: string): Promise<B
       .eq('workspace_id', workspaceId)
       .is('deleted_at', null)
       .order('created_at', { ascending: true }),
+  )
+}
+
+/**
+ * Boja svakog brenda za birač brenda, listu brendova i početnu (D-137): izabrana u Vizuelnom identitetu,
+ * inače sa sajta (trenutni profil brenda), inače rezervna. Jedan upit; greška ne obara stranu, jer
+ * `brandSwatch` i bez podataka daje boju.
+ */
+export async function listBrandSwatches(
+  viewer: Viewer,
+  workspaceId: string,
+): Promise<Record<string, BrandSwatch>> {
+  const { data, error } = await viewer.supabase
+    .from('brands')
+    .select('id, design, brand_profiles(colors:data->visual->colors->value)')
+    .eq('workspace_id', workspaceId)
+    .is('deleted_at', null)
+    .eq('brand_profiles.is_current', true)
+  if (error) {
+    logger.warn('brand_swatches_failed', { error: error.message })
+    return {}
+  }
+  const rows = (data ?? []) as unknown as Array<{
+    id: string
+    design: unknown
+    brand_profiles: Array<{ colors: { primary?: unknown } | null }>
+  }>
+  return Object.fromEntries(
+    rows.map((row) => {
+      const stored = storedDesignSchema.safeParse(row.design ?? {})
+      const site = row.brand_profiles[0]?.colors?.primary
+      const chosen = stored.success ? stored.data.colors?.primary : undefined
+      return [row.id, brandSwatch(row.id, chosen ?? (typeof site === 'string' ? site : null))]
+    }),
   )
 }
 
