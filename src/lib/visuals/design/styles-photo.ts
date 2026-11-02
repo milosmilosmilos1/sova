@@ -18,6 +18,7 @@ import {
   text,
   topBar,
   layered,
+  logoFor,
 } from './kit'
 import type { DesignContext, StyleDef } from './types'
 
@@ -615,8 +616,9 @@ const social: StyleDef = {
       height: ctx.size.height * (hasPhoto ? 0.16 : 0.3) * tall(ctx),
       lineHeight: 1.15,
     })
+    // logo na beloj okrugloj podlozi: beo logo ide u tamnoj verziji (D-134)
     const avatar = ctx.logo
-      ? img(ctx.logo, {
+      ? img(logoFor(ctx.logo, '#111827', '#ffffff'), {
           width: px(76 * s),
           height: px(76 * s),
           borderRadius: px(40 * s),

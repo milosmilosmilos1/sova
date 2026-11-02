@@ -41,6 +41,26 @@ export interface DesignColors {
 export type FontChoice =
   'brand' | 'Inter' | 'Playfair Display' | 'Oswald' | 'JetBrains Mono' | 'Caveat' | 'Montserrat'
 
+/**
+ * Logo brenda pripremljen za slajd (D-134): bez praznih ivica i ravne pozadine, u bojama brenda
+ * i jednobojno; glavne boje logoa odlučuju koja verzija se vidi na kojoj podlozi.
+ */
+/** Način crtanja logoa; objava nacrtana starijim načinom (beli okvir oko logoa) nije u temi. */
+export const LOGO_VERSION = 2
+
+export interface BrandLogo {
+  /** u bojama brenda, providna pozadina (PNG data URI) */
+  src: string
+  /** isti oblik u beloj boji, za tamnu ili jarku podlogu */
+  light: string
+  /** isti oblik u tamnoj boji, za svetlu podlogu */
+  dark: string
+  /** širina / visina posle sečenja praznih ivica */
+  aspect: number
+  /** glavne boje logoa i njihov udeo (0–1), najveći prvi */
+  inks: Array<{ color: string; share: number }>
+}
+
 export interface DesignContext {
   format: DesignFormat
   size: { width: number; height: number }
@@ -49,7 +69,7 @@ export interface DesignContext {
   brandName: string
   /** „@nalog” ispod slajda; bez naloga ide ime brenda */
   handle: string | null
-  logo: string | null
+  logo: BrandLogo | null
   /** fotografija za ovaj slajd (data URI), već pripremljena za stil */
   photo: string | null
   index: number

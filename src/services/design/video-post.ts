@@ -5,7 +5,7 @@ import { safeFetch } from '@/lib/ssrf'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import type { StyleId } from '@/lib/visuals/design'
 import { preparePhoto, renderOverlay, renderSlide } from '@/lib/visuals/design/render'
-import type { DesignColors, Slide } from '@/lib/visuals/design/types'
+import type { BrandLogo, DesignColors, Slide } from '@/lib/visuals/design/types'
 import { sceneSeconds, videoStyleFor } from '@/lib/visuals/design/video'
 import { getStyle } from '@/lib/visuals/design'
 import type { StepRunner } from '@/services/autopilot/runner'
@@ -13,7 +13,7 @@ import { downloadAsset } from '@/services/media'
 import { pickPexelsPhotos, pickPexelsVideo } from '@/services/visuals/pexels'
 import { storeServerImage } from '@/services/visuals/store'
 
-import { logoDataUri, type ResolvedDesign } from './brand-design'
+import { brandLogo, type ResolvedDesign } from './brand-design'
 import { themeOf, type PostDesignContext } from './post-design'
 
 /**
@@ -97,7 +97,7 @@ async function pickVideoPhotos(input: ThemeVideoInput): Promise<string[]> {
 }
 
 /** Ulaz za crtanje kadra u stilu teme (sloj, slika videa i pregled izmene teksta, D-129). */
-export function sceneRender(input: ThemeVideoInput, styleId: StyleId, scene: Slide, logo: string | null) {
+export function sceneRender(input: ThemeVideoInput, styleId: StyleId, scene: Slide, logo: BrandLogo | null) {
   return {
     styleId,
     slide: scene,
@@ -121,7 +121,7 @@ export async function renderVideoOverlays(
   from: number,
   to: number,
 ): Promise<string[]> {
-  const logo = await logoDataUri(input.design.logoAssetId)
+  const logo = await brandLogo(input.design.logoAssetId)
   const ids: string[] = []
   for (let i = from; i < to; i++) {
     const scene = input.scenes[i]!
@@ -184,7 +184,7 @@ export async function renderVideoPoster(
     const colors = input.colors ?? input.design.colors
     const bytes = await posterPhoto(clipId, photoId)
     const photo = bytes ? await preparePhoto(bytes, getStyle(styleId), colors) : null
-    const logo = await logoDataUri(input.design.logoAssetId)
+    const logo = await brandLogo(input.design.logoAssetId)
     const rendered = await renderSlide({ ...sceneRender(input, styleId, input.scenes[0]!, logo), photo })
     const asset = await storeServerImage({
       workspaceId: input.workspaceId,

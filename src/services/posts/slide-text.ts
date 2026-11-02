@@ -16,7 +16,7 @@ import { changedChunks, changedSlides, withSlideText, type SlideText } from '@/l
 import { DESIGN_SIZES, type DesignColors, type Slide, type StyleDef } from '@/lib/visuals/design/types'
 import { clipPlan, sceneSeconds, videoStyleFor } from '@/lib/visuals/design/video'
 import { getBrand } from '@/services/brands'
-import { logoDataUri, resolveDesign, type ResolvedDesign } from '@/services/design/brand-design'
+import { brandLogo, resolveDesign, type ResolvedDesign } from '@/services/design/brand-design'
 import { parsePostDesign, themeOf, type PostDesignContext } from '@/services/design/post-design'
 import { renderDesignRange, renderDesignSlides, type DesignRenderInput } from '@/services/design/render-post'
 import {
@@ -256,7 +256,7 @@ export async function previewSlideText(
   const video = work.design.format === 'video'
   const slide = textFor(base, input.slide, video)
   const theme = work.theme ?? work.brandTheme
-  const logo = await logoDataUri(theme.logoAssetId)
+  const logo = await brandLogo(theme.logoAssetId)
   if (video) {
     const styleId = videoStyleFor(theme.styleId)
     const photo = await scenePhoto(work, input.index, getStyle(styleId), theme.colors)

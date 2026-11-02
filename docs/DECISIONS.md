@@ -1110,3 +1110,14 @@ Odluka:
 - Na strani Brain svako polje profila se menja na mestu (dugme „Izmeni” pored naziva; tekst, lista po redu, „naziv: opis”, izbor, da/ne, grad i država), a sačuvano polje se zaključava kao i do sada (brif 5.6). Forma „Izmeni ključna polja” sa šest polja je ukinuta. Logo na strani Brain je logo koji ide na slajdove, sa oznakom odakle je; „Otpremi logo” ga postavlja kao vaš logo (isti kao u Vizuelnom identitetu, D-113, analiza ga ne menja), „Vrati logo sa sajta” ga skida, a posle promene Sova odmah usklađuje nacrte koji čekaju.
 
 Razlog: tangerineseo.rs ima traku logoa klijenata („Logo klijenta Altema” i još devet), a pravi logo je SVG u zaglavlju i u JSON-LD-u kao referenca. Sova je za brend TangerineSEO uzela logo klijenta Altema i ucrtala ga u nacrte; na tangerineseo.com logo iz istog razloga nije ni nađen.
+
+## D-134 · 2.11.2026 · usvojeno · Logo na slajdu uvek čist: bez pozadine, verzija po podlozi, veličina po obliku
+
+Odluka:
+
+- Logo se pre crtanja priprema jednom (`lib/visuals/design/logo.ts`): prazne ivice se seku, a ravna pozadina (okvir slike skoro jedne boje, npr. bela iza natpisa u JPG-u) postaje providna, i u rupama slova, sa mekim prelazom na ivicama. Fotografija i logo bez ravnog okvira ostaju kakvi jesu. Pravi se i bela i tamna jednobojna verzija istog oblika, i pamte se glavne boje logoa sa udelom.
+- Na slajdu se logo crta u bojama brenda kad se vidi na podlozi. Kad se petina logoa ili više slabo vidi (kontrast ispod 2,5: tamna slova na tamnocrvenoj, narandžast znak na narandžastoj), crta se jednobojno u boji teksta tog mesta: belo na tamnoj ili jarkoj podlozi, tamno na svetloj. Okrugla oznaka u Društvenoj kartici je na beloj podlozi.
+- Veličina po obliku: natpis 3:1 je visok koliko stil kaže, kvadratni znak do 1,2 puta viši, a dugačak natpis najviše 4,2 visine širok.
+- Objava pamti način crtanja logoa (`posts.design.logoVersion` = 2), pa se nacrti sa logoom nacrtani ranije (beli okvir) nude za „Uskladi sa temom”.
+
+Razlog: vlasnik je otpremio logo TangerineSEO sa belom pozadinom. Na crvenoj udarnoj objavi video se beli pravougaonik oko logoa, a tamna slova se na crvenoj ne bi videla ni bez njega.

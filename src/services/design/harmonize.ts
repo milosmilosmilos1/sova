@@ -6,6 +6,7 @@ import { enqueueHarmonize } from '@/lib/jobs/enqueue'
 import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { styleForPhotos } from '@/lib/visuals/design'
+import { LOGO_VERSION } from '@/lib/visuals/design/types'
 import { videoStyleFor } from '@/lib/visuals/design/video'
 import type { StepRunner } from '@/services/autopilot/runner'
 import { getBrand, type BrandRow } from '@/services/brands'
@@ -56,9 +57,11 @@ export function inTheme(
       ? videoStyleFor(theme.styleId)
       : styleForPhotos(theme.styleId, Boolean(design.ownPhotos))
   const logo =
-    design.logoAssetId !== undefined
+    (design.logoAssetId !== undefined
       ? design.logoAssetId === theme.logoAssetId
-      : !(drawn?.logoSince && Date.parse(drawn.logoSince) > Date.parse(drawn.createdAt))
+      : !(drawn?.logoSince && Date.parse(drawn.logoSince) > Date.parse(drawn.createdAt))) &&
+    // logo nacrtan starijim načinom (beli okvir, ista boja na svakoj podlozi) crta se ponovo (D-134)
+    (!theme.logoAssetId || design.logoVersion === LOGO_VERSION)
   return (
     design.styleId === style &&
     upper(design.colors) === upper(theme.colors as unknown as Record<string, string>) &&

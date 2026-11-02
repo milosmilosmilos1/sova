@@ -1,6 +1,6 @@
 import type { SatoriNode } from '../templates'
 
-import type { DesignContext, Slide } from './types'
+import type { BrandLogo, DesignContext, Slide } from './types'
 
 /** Alati koje dele stilovi: elementi, veličina teksta, boje i ponovljeni delovi slajda. */
 export type Style = Record<string, string | number>
@@ -178,8 +178,44 @@ export function handleText(ctx: DesignContext): string {
 }
 
 /** Logo brenda ako postoji, inače ime brenda slovima. */
+/**
+ * Veličina logoa po površini (D-134): natpis 3:1 je visok `height`, kvadratni znak malo viši, a
+ * dugačak natpis niži, da svi izgledaju jednako krupno i da nijedan ne pređe četiri visine.
+ */
+export function logoBox(aspect: number, height: number): { width: number; height: number } {
+  const r = Math.min(8, Math.max(0.25, aspect))
+  let h = Math.min(height * 1.2, height * Math.sqrt(3 / r))
+  let w = h * r
+  if (w > height * 4.2) {
+    w = height * 4.2
+    h = w / r
+  }
+  return { width: w, height: h }
+}
+
+/**
+ * Verzija logoa za podlogu (D-134): u bojama brenda kad se vidi, a jednobojan u boji teksta tog
+ * mesta (`color`) kad se petina logoa ili više slabo vidi na podlozi (kontrast ispod 2,5: tamna
+ * slova na tamnocrvenoj, narandžast znak na narandžastoj).
+ */
+export function logoFor(logo: BrandLogo, color: string, bg: string): string {
+  const hidden = logo.inks
+    .filter((ink) => contrast(ink.color, bg) < 2.5)
+    .reduce((sum, ink) => sum + ink.share, 0)
+  if (hidden < 0.2) return logo.src
+  return luminance(color) > 0.5 ? logo.light : logo.dark
+}
+
 export function brandMark(ctx: DesignContext, height: number, color: string): SatoriNode {
-  if (ctx.logo) return img(ctx.logo, { height: px(height), objectFit: 'contain', maxWidth: px(height * 4) })
+  if (ctx.logo) {
+    // logo je na podlozi slajda kad je boja teksta ista kao na njoj; inače (fotografija) samo
+    // znamo da li je mesto tamno ili svetlo
+    const slide = ctx.colors.background
+    const light = luminance(color) > 0.5
+    const bg = light === luminance(readable(slide)) > 0.5 ? slide : light ? '#000000' : '#ffffff'
+    const box = logoBox(ctx.logo.aspect, height)
+    return img(logoFor(ctx.logo, color, bg), { width: px(box.width), height: px(box.height) })
+  }
   return el(
     'div',
     { display: 'flex', fontFamily: ctx.fonts.headings, fontWeight: 700, fontSize: px(height * 0.62), color },

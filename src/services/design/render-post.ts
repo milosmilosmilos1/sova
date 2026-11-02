@@ -14,7 +14,7 @@ import { pickPexelsPhotos } from '@/services/visuals/pexels'
 import { storeServerImage } from '@/services/visuals/store'
 import { pickUnsplashPhotos } from '@/services/visuals/unsplash'
 
-import { logoDataUri, type ResolvedDesign } from './brand-design'
+import { brandLogo, type ResolvedDesign } from './brand-design'
 
 /**
  * Slajdovi dizajnirane objave u biblioteci (D-108): fotografije po izvoru (Unsplash pa Pexels, ili
@@ -248,7 +248,7 @@ export async function renderDesignRange(
       }
     }),
   )
-  const logo = await logoDataUri(input.design.logoAssetId)
+  const logo = await brandLogo(input.design.logoAssetId)
 
   const stores: Array<Promise<string>> = []
   let size = { width: 0, height: 0 }

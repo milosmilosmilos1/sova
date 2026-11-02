@@ -4,6 +4,7 @@ import { CONTENT_LOCALES } from '@/config/locales'
 import { PLATFORMS } from '@/config/platforms'
 import { designColorsSchema, fontPairSchema } from '@/lib/schemas/design'
 import { PHOTO_SOURCES, POST_SIZES, STYLE_IDS } from '@/lib/visuals/design/catalog'
+import { LOGO_VERSION } from '@/lib/visuals/design/types'
 
 /** Tekst jednog slajda kako ga je napisao Gemini (D-116: Studio menja pojedinačne slajdove). */
 export const designSlideSchema = z.object({
@@ -45,6 +46,8 @@ export const postDesignSchema = z.object({
   variant: z.union([z.literal(0), z.literal(1), z.literal(2)]).optional(),
   /** logo kojim je objava nacrtana (`null`: bez logoa); starije objave ga nemaju */
   logoAssetId: z.uuid().nullable().optional(),
+  /** način crtanja logoa (D-134: bez pozadine, verzija po podlozi); starije objave ga nemaju */
+  logoVersion: z.number().int().min(1).optional(),
   copy: z
     .object({
       slides: z.array(designSlideSchema).min(1).max(10),
@@ -86,6 +89,11 @@ export function themeOf(design: {
   colors: PostDesignContext['colors'] & object
   fonts: { headings: string; body: string }
   logoAssetId: string | null
-}): Pick<PostDesignContext, 'colors' | 'fonts' | 'logoAssetId'> {
-  return { colors: design.colors, fonts: design.fonts, logoAssetId: design.logoAssetId }
+}): Pick<PostDesignContext, 'colors' | 'fonts' | 'logoAssetId' | 'logoVersion'> {
+  return {
+    colors: design.colors,
+    fonts: design.fonts,
+    logoAssetId: design.logoAssetId,
+    logoVersion: LOGO_VERSION,
+  }
 }

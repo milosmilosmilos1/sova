@@ -10,6 +10,7 @@ import { mix, withWidthScale } from './kit'
 import { matteFromKeys } from './matte'
 import { tightenShadowFilters } from './shadows'
 import {
+  type BrandLogo,
   DESIGN_SIZES,
   type DesignColors,
   type DesignContext,
@@ -35,7 +36,7 @@ export interface SlideRenderInput {
   lockFonts?: boolean
   brandName: string
   handle: string | null
-  logo: string | null
+  logo: BrandLogo | null
   photo: string | null
   index: number
   total: number

@@ -17,8 +17,8 @@ import {
 } from '@/lib/visuals/design/catalog'
 import { contrast, mix, readable } from '@/lib/visuals/design/kit'
 import type { LookId } from '@/lib/visuals/design/looks'
-import type { DesignColors } from '@/lib/visuals/design/types'
-import { prepareLogoForTemplate } from '@/lib/visuals/render'
+import type { BrandLogo, DesignColors } from '@/lib/visuals/design/types'
+import { prepareBrandLogo } from '@/lib/visuals/design/logo'
 import { getCurrentProfileRow } from '@/services/brand-brain/profile'
 import { getBrand, type BrandRow } from '@/services/brands'
 import { downloadAsset, getAsset } from '@/services/media'
@@ -186,8 +186,8 @@ export async function updateDesign(
   return resolveDesign(data)
 }
 
-/** Logo brenda kao data URI za slajdove; bez logoa slajd ispisuje ime brenda. */
-export async function logoDataUri(logoAssetId: string | null): Promise<string | null> {
+/** Logo brenda pripremljen za slajdove (D-134); bez logoa slajd ispisuje ime brenda. */
+export async function brandLogo(logoAssetId: string | null): Promise<BrandLogo | null> {
   if (!logoAssetId) return null
   const { data: logo } = await createSupabaseAdminClient()
     .from('media_assets')
@@ -197,7 +197,7 @@ export async function logoDataUri(logoAssetId: string | null): Promise<string | 
     .maybeSingle()
   if (!logo) return null
   try {
-    return await prepareLogoForTemplate(await downloadAsset(logo), logo.mime_type)
+    return await prepareBrandLogo(await downloadAsset(logo), logo.mime_type)
   } catch (error) {
     logger.warn('design_logo_failed', { logoAssetId, error })
     return null

@@ -14,7 +14,7 @@ import { preparePhoto, renderOverlay, renderSlide } from '@/lib/visuals/design/r
 import { videoStyleFor } from '@/lib/visuals/design/video'
 import { getBrand } from '@/services/brands'
 
-import { logoDataUri, resolveDesign } from './brand-design'
+import { brandLogo, resolveDesign } from './brand-design'
 
 /**
  * Pregled stila uživo (D-108): mala slika slajda u bojama i fontovima brenda, sa primerom teksta
@@ -174,7 +174,7 @@ export async function renderPreview(viewer: Viewer, input: PreviewInput): Promis
       lockFonts,
       brandName: brand.name,
       handle: design.handle,
-      logo: await logoDataUri(design.logoAssetId),
+      logo: await brandLogo(design.logoAssetId),
       index: 0,
       total: 1,
       outputWidth: PREVIEW_WIDTH,
@@ -194,7 +194,7 @@ export async function renderPreview(viewer: Viewer, input: PreviewInput): Promis
     lockFonts,
     brandName: brand.name,
     handle: design.handle,
-    logo: await logoDataUri(design.logoAssetId),
+    logo: await brandLogo(design.logoAssetId),
     photo,
     index,
     total: 5,

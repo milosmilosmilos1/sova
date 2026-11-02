@@ -268,7 +268,21 @@ describe('jedna tema za sve objave (D-125)', () => {
 
     expect(await harmonizePost(themed.id)).toBe('done')
     const { data: after } = await admin.from('posts').select('design').eq('id', themed.id).single()
-    expect((after!.design as { logoAssetId: string }).logoAssetId).toBe(logo.id)
+    expect(after!.design as { logoAssetId: string; logoVersion: number }).toMatchObject({
+      logoAssetId: logo.id,
+      logoVersion: 2,
+    })
     expect(await offThemeDraftIds(brandId)).not.toContain(themed.id)
+
+    // isti logo nacrtan starijim načinom (beli okvir oko logoa): nacrt se nudi za ponovno crtanje
+    const older = await draft('in_review', 'theme')
+    const { data: o } = await admin.from('posts').select('design').eq('id', older.id).single()
+    await admin
+      .from('posts')
+      .update({
+        design: { ...(o!.design as Record<string, unknown>), logoAssetId: logo.id } as unknown as Json,
+      })
+      .eq('id', older.id)
+    expect(await offThemeDraftIds(brandId)).toContain(older.id)
   })
 })
