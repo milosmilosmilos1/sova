@@ -220,17 +220,53 @@ describe('Instagram video', () => {
     expect((await runPublishTarget(job, ctx)).outcome).toBe('published')
     const media = metaState.publishes.filter((p) => p.path === 'ig-1/media')
     expect(media).toHaveLength(3)
-    expect(media[0]!.body).toMatchObject({ is_carousel_item: 'true' })
-    expect(media[0]!.body.image_url).toMatch(/^http/)
-    expect(media[1]!.body).toMatchObject({ media_type: 'VIDEO', is_carousel_item: 'true' })
-    const ids = Object.keys(metaState.containers).slice(0, 2)
-    expect(media[2]!.body).toMatchObject({
+    // delovi se šalju istovremeno (D-140): nalaze se po sadržaju, a u karuselu su redom medija
+    const containerOf = (pick: (body: Record<string, string>) => boolean) =>
+      Object.entries(metaState.containers).find(([, body]) => pick(body))![0]
+    const imageId = containerOf(
+      (body) => Boolean(body.image_url?.startsWith('http')) && body.is_carousel_item === 'true',
+    )
+    const videoId = containerOf((body) => body.media_type === 'VIDEO' && body.is_carousel_item === 'true')
+    expect(media.find((m) => m.body.media_type === 'CAROUSEL')!.body).toMatchObject({
       media_type: 'CAROUSEL',
-      children: ids.join(','),
+      children: `${imageId},${videoId}`,
       caption: 'Pre i posle servisa',
     })
     expect(metaState.publishes.filter((p) => p.path === 'ig-1/media_publish')).toHaveLength(1)
     expect((await target(job.targetId)).status).toBe('published')
+  })
+
+  it('karusel slika kad istekne vreme koraka: delovi u prvom koraku, karusel i objava posle provere (D-140)', async () => {
+    setMetaProviderForTests({ pollIntervalMs: 0, pollAttempts: 2, stepBudgetMs: 0 })
+    try {
+      const ids = [await jpeg(200, 40, 40), await jpeg(40, 200, 40), await jpeg(40, 40, 200)]
+      const { job } = await scheduled({
+        masterText: 'Tri slike',
+        targets: [{ socialAccountId: igId }],
+        media: ids.map((mediaAssetId, sortOrder) => ({ mediaAssetId, sortOrder })),
+      })
+      const slept: number[] = []
+      const report = await runPublishTarget(job, {
+        ...ctx,
+        sleep: async (_name, ms) => {
+          slept.push(ms)
+        },
+      })
+      expect(report.outcome).toBe('published')
+      // karusel nije napravljen u prvom koraku, nego posle pauze i provere statusa delova
+      expect(slept.length).toBeGreaterThan(0)
+      const media = metaState.publishes.filter((p) => p.path === 'ig-1/media')
+      expect(media.filter((m) => m.body.is_carousel_item === 'true')).toHaveLength(3)
+      const containerFor = (assetId: string) =>
+        Object.entries(metaState.containers).find(([, body]) => body.image_url?.includes(assetId))![0]
+      expect(media.find((m) => m.body.media_type === 'CAROUSEL')!.body.children).toBe(
+        ids.map(containerFor).join(','),
+      )
+      expect(metaState.publishes.filter((p) => p.path === 'ig-1/media_publish')).toHaveLength(1)
+      expect((await target(job.targetId)).status).toBe('published')
+    } finally {
+      setMetaProviderForTests({ pollIntervalMs: 0, pollAttempts: 2 })
+    }
   })
 
   it('Instagram odbije video (2207026): target pada sa razumljivom porukom', async () => {

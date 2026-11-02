@@ -660,18 +660,29 @@ async function attemptOnce(
 ): Promise<AttemptResult> {
   const b = await loadBundle(job.targetId)
   if (!b) return { kind: 'skipped', reason: 'target ne postoji' }
-  if (b.target.status !== 'scheduled' || !sameMinute(b.target.scheduled_at, job.scheduledAt)) {
+  // Inngest ponavlja korak koji je platforma prekinula (Netlify posle 30 s, D-140): target je tada
+  // već zaključan ovim run-om, pa se nastavlja, a ne preskače (inače ostaje „objavljuje se” zauvek)
+  const resumed =
+    runId !== null &&
+    b.target.status === 'publishing' &&
+    b.target.inngest_run_id === runId &&
+    sameMinute(b.target.scheduled_at, job.scheduledAt)
+  if (!resumed && (b.target.status !== 'scheduled' || !sameMinute(b.target.scheduled_at, job.scheduledAt))) {
     return { kind: 'skipped', reason: `target je ${b.target.status}` }
   }
-  // zaključavanje: samo jedan run sme da pređe scheduled → publishing
-  const locked = await moveTarget(b.target.id, 'scheduled', 'publishing', {
-    attempt_count: b.target.attempt_count + 1,
-    last_attempt_at: now.toISOString(),
-    inngest_run_id: runId,
-  })
-  if (!locked) return { kind: 'skipped', reason: 'drugi run je preuzeo target' }
-  b.target.status = 'publishing'
-  b.target.attempt_count += 1
+  if (resumed) {
+    logger.warn('publish_attempt_resumed', { targetId: b.target.id, attemptNo, runId })
+  } else {
+    // zaključavanje: samo jedan run sme da pređe scheduled → publishing
+    const locked = await moveTarget(b.target.id, 'scheduled', 'publishing', {
+      attempt_count: b.target.attempt_count + 1,
+      last_attempt_at: now.toISOString(),
+      inngest_run_id: runId,
+    })
+    if (!locked) return { kind: 'skipped', reason: 'drugi run je preuzeo target' }
+    b.target.status = 'publishing'
+    b.target.attempt_count += 1
+  }
   if (b.post.status === 'scheduled')
     await transitionPostService(b.post.id, 'publishing', ROLLUP_SUMMARY.publishing!)
 
@@ -702,8 +713,9 @@ async function attemptOnce(
     return { kind: 'failed', message: failure.message }
   }
 
-  // posle pada ili privremene greške: da li je objava ipak prošla? (N5)
-  if (attemptNo > 1) {
+  // posle pada ili privremene greške: da li je objava ipak prošla? (N5) Isto i kad je korak prekinut,
+  // i kad je target već imao pokušaj u ranijem run-u (čuvar ga ponovo pokrenuo, ponovljeno ručno; D-140)
+  if (attemptNo > 1 || resumed || b.target.attempt_count > 1) {
     try {
       const existing = await provider.findExistingPost(normalized, ref, token)
       if (existing) {

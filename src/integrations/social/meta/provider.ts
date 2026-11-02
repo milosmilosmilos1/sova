@@ -88,6 +88,8 @@ export interface MetaProviderOptions {
   /** pauza između provera statusa IG kontejnera (testovi: 0) */
   pollIntervalMs?: number
   pollAttempts?: number
+  /** koliko jedan korak objave sme da čeka mrežu (Netlify prekida zahtev posle 30 s, D-140; testovi: 0) */
+  stepBudgetMs?: number
 }
 
 interface PageNode {
@@ -109,6 +111,20 @@ interface PageNode {
 }
 
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms))
+
+/** Rezerva vremena koraka za pravljenje karusela i objavu posle slanja delova (D-140). */
+const CAROUSEL_RESERVE_MS = 6_000
+
+/**
+ * Delovi objave se šalju po pet istovremeno: mreža svaki preuzima sama, pa bi redom pet slika trajalo
+ * duže od koraka (D-140). Redosled rezultata prati redosled delova.
+ */
+async function inChunks<T, R>(items: T[], size: number, fn: (item: T) => Promise<R>): Promise<R[]> {
+  const out: R[] = []
+  for (let i = 0; i < items.length; i += size)
+    out.push(...(await Promise.all(items.slice(i, i + size).map(fn))))
+  return out
+}
 
 /** `status` IG kontejnera u stanju ERROR nosi podkod greške; korisnik dobija razumljiv razlog. */
 export function igStatusMessage(status: string | undefined): string {
@@ -136,11 +152,13 @@ export class MetaProvider implements SocialProvider {
   private readonly fetchImpl: typeof fetch | undefined
   private readonly pollIntervalMs: number
   private readonly pollAttempts: number
+  private readonly stepBudgetMs: number
 
   constructor(options: MetaProviderOptions = {}) {
     this.fetchImpl = options.fetchImpl
     this.pollIntervalMs = options.pollIntervalMs ?? 3_000
     this.pollAttempts = options.pollAttempts ?? 10
+    this.stepBudgetMs = options.stepBudgetMs ?? 15_000
   }
 
   private client(token: string | null, host?: string): GraphClient {
@@ -433,15 +451,18 @@ export class MetaProvider implements SocialProvider {
       })
       postId = r.post_id ?? r.id
     } else {
-      const ids: string[] = []
-      for (const m of input.media) {
-        const r = await g.post<{ id: string }>(`${page}/photos`, {
-          url: m.url,
-          published: false,
-          alt_text_custom: m.alt ?? undefined,
-        })
-        ids.push(r.id)
-      }
+      const ids = await inChunks(
+        input.media,
+        5,
+        async (m) =>
+          (
+            await g.post<{ id: string }>(`${page}/photos`, {
+              url: m.url,
+              published: false,
+              alt_text_custom: m.alt ?? undefined,
+            })
+          ).id,
+      )
       const params: Record<string, string> = { message: input.text }
       ids.forEach((id, i) => {
         params[`attached_media[${i}]`] = JSON.stringify({ media_fbid: id })
@@ -681,9 +702,11 @@ export class MetaProvider implements SocialProvider {
     return { state: 'published', externalId: handle.videoId, permalink }
   }
 
+  /** Čeka kontejner do `pollAttempts` provera, ali ne posle roka koraka (D-140). */
   private async waitForContainer(
     g: GraphClient,
     containerId: string,
+    deadline = Number.POSITIVE_INFINITY,
   ): Promise<'FINISHED' | 'PUBLISHED' | 'IN_PROGRESS'> {
     for (let i = 0; i < this.pollAttempts; i++) {
       const s = await g.get<{ status_code?: string; status?: string }>(containerId, {
@@ -702,7 +725,8 @@ export class MetaProvider implements SocialProvider {
           raw: s,
           userMessage: 'Instagram nije obradio medij na vreme. Pokušajte ponovo.',
         })
-      if (i < this.pollAttempts - 1 && this.pollIntervalMs > 0) await sleep(this.pollIntervalMs)
+      if (i >= this.pollAttempts - 1 || Date.now() + this.pollIntervalMs > deadline) break
+      if (this.pollIntervalMs > 0) await sleep(this.pollIntervalMs)
     }
     return 'IN_PROGRESS'
   }
@@ -719,6 +743,7 @@ export class MetaProvider implements SocialProvider {
     const aiFlag = input.isAiGenerated ? true : undefined
     // saradnici (do tri Instagram naloga) dobijaju poziv da objava bude i na njihovom profilu (D-108)
     const collaborators = igCollaborators(input.options)
+    const deadline = Date.now() + this.stepBudgetMs
     if (input.media.length === 1) {
       const m = input.media[0]!
       if (isVideo(m)) {
@@ -744,18 +769,21 @@ export class MetaProvider implements SocialProvider {
         is_ai_generated: aiFlag,
         collaborators,
       })
-      return this.finishContainer(g, ig, r.id, firstComment)
+      return this.finishContainer(g, ig, r.id, firstComment, deadline)
     }
-    const children: string[] = []
-    for (const m of input.media.slice(0, 20)) {
-      const r = await g.post<{ id: string }>(
-        `${ig}/media`,
-        isVideo(m)
-          ? { media_type: 'VIDEO', video_url: m.url, is_carousel_item: true }
-          : { image_url: m.url, is_carousel_item: true, alt_text: m.alt ?? undefined },
-      )
-      children.push(r.id)
-    }
+    const children = await inChunks(
+      input.media.slice(0, 20),
+      5,
+      async (m) =>
+        (
+          await g.post<{ id: string }>(
+            `${ig}/media`,
+            isVideo(m)
+              ? { media_type: 'VIDEO', video_url: m.url, is_carousel_item: true }
+              : { image_url: m.url, is_carousel_item: true, alt_text: m.alt ?? undefined },
+          )
+        ).id,
+    )
     const carousel: Record<string, string | boolean> = {
       media_type: 'CAROUSEL',
       children: children.join(','),
@@ -763,8 +791,9 @@ export class MetaProvider implements SocialProvider {
       ...(aiFlag ? { is_ai_generated: true } : {}),
       ...(collaborators ? { collaborators } : {}),
     }
-    // karusel sa videom se pravi tek kad Instagram obradi svaki deo
-    if (input.media.some(isVideo))
+    // karusel sa videom se pravi tek kad Instagram obradi svaki deo, a karusel slika i kad je vreme
+    // koraka skoro potrošeno: provera statusa ga pravi u sledećem koraku (D-140)
+    if (input.media.some(isVideo) || Date.now() > deadline - CAROUSEL_RESERVE_MS)
       return {
         externalId: null,
         permalink: null,
@@ -777,7 +806,7 @@ export class MetaProvider implements SocialProvider {
         },
       }
     const r = await g.post<{ id: string }>(`${ig}/media`, carousel)
-    return this.finishContainer(g, ig, r.id, firstComment)
+    return this.finishContainer(g, ig, r.id, firstComment, deadline)
   }
 
   /** Kratko čekanje kontejnera; ako obrada traje, objava se završava kroz proveru statusa. */
@@ -786,8 +815,9 @@ export class MetaProvider implements SocialProvider {
     ig: string,
     containerId: string,
     firstComment: string | null,
+    deadline = Number.POSITIVE_INFINITY,
   ): Promise<PublishResult> {
-    const state = await this.waitForContainer(g, containerId)
+    const state = await this.waitForContainer(g, containerId, deadline)
     if (state === 'IN_PROGRESS')
       return {
         externalId: null,
@@ -844,6 +874,7 @@ export class MetaProvider implements SocialProvider {
       return { state: 'published', ...done }
     }
     if (handle.kind === 'ig_carousel_items') {
+      const deadline = Date.now() + this.stepBudgetMs
       const items = await Promise.all(
         handle.itemIds.map((id) =>
           g.get<{ status_code?: string; status?: string }>(id, { fields: 'status_code,status' }),
@@ -856,7 +887,13 @@ export class MetaProvider implements SocialProvider {
         `${handle.accountExternalId}/media`,
         graphParams(handle.carousel),
       )
-      const result = await this.finishContainer(g, handle.accountExternalId, r.id, handle.firstComment)
+      const result = await this.finishContainer(
+        g,
+        handle.accountExternalId,
+        r.id,
+        handle.firstComment,
+        deadline,
+      )
       if (result.pending) return { state: 'pending', next: result.pending }
       return { state: 'published', externalId: result.externalId!, permalink: result.permalink }
     }

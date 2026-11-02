@@ -23,6 +23,8 @@ export const metaState = {
   /** ID-jevi objava koje mreža više ne zna (code 100 / subcode 33) */
   goneIds: [] as string[],
   containers: {} as Record<string, Record<string, string>>,
+  /** skorašnje objave stranice (provera da li je objava ipak prošla, D-140) */
+  recentFeed: [] as Array<{ id: string; message: string; created_time: string }>,
   containerPolls: {} as Record<string, number>,
   /** koliko prvih provera video kontejner (REELS ili VIDEO) vraća IN_PROGRESS */
   videoProcessingPolls: 0,
@@ -52,6 +54,7 @@ export function resetMetaState(): void {
   metaState.mediaRejected = false
   metaState.goneIds = []
   metaState.containers = {}
+  metaState.recentFeed = []
   metaState.containerPolls = {}
   metaState.videoProcessingPolls = 0
   metaState.videoFinalStatus = 'FINISHED'
@@ -145,6 +148,7 @@ export const metaHandlers = [
     if (!token(request)?.startsWith('page-token')) return err(190, 'Invalid OAuth access token')
     return HttpResponse.json({
       data: [
+        ...metaState.recentFeed,
         {
           id: 'page-1_101',
           message: 'Prva objava sa sajta',

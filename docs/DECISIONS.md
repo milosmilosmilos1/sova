@@ -1173,3 +1173,14 @@ Odluka:
 - Verzija se proverava pre otkazivanja termina, da zastareo zahtev ne ostavi objavu „zakazanom” bez čekanja termina. Strana objave traži potvrdu („Objaviti odmah, umesto u zakazanom terminu?”), kao i Odobravanje.
 
 Razlog: vlasnik želi da zakazanu objavu po potrebi pusti odmah, bez otkazivanja i ponovnog zakazivanja.
+
+## D-140 · 2.11.2026 · usvojeno · Objava na Meta mrežama staje u korak od 30 sekundi i ne zaglavljuje se
+
+Odluka:
+
+- Delovi Instagram karusela i fotografije višedelne Facebook objave šalju se po pet istovremeno (`inChunks` u `integrations/social/meta/provider.ts`): mreža svaku sliku preuzima sama, pa je pet slika redom trajalo duže od Netlify ograničenja od 30 s po zahtevu. Redosled u objavi i dalje prati redosled slika.
+- Čekanje da Instagram obradi kontejner ima rok koraka (`stepBudgetMs`, 15 s). Karusel slika se pravi u istom koraku samo ako je od roka ostalo bar 6 s; inače ga pravi provera statusa posle pauze, kao karusel sa videom.
+- Korak koji je platforma prekinula, pa ga Inngest ponavlja, nastavlja objavu: target „objavljuje se” sa istim run ID-jem je njegov, a ne tuđ. Ranije je ponovljen korak odustajao i target je ostajao zaglavljen dok ga čuvar posle 30 minuta ne pokrene ponovo.
+- Pre svakog ponovnog slanja (ponovljen korak, target koji je već imao pokušaj pa ga je čuvar ili korisnik ponovo pokrenuo) Sova pita mrežu da li je objava ipak izašla (poslednjih 10 objava, isti početak teksta, poslednja dva sata), da ne nastane duplikat.
+
+Razlog: Instagram karusel od pet slika (Adaptiko, 2.11.2026) zaglavio se u „objavljuje se”. Netlify je prekinuo korak posle 30 s, a ponovljen korak je odustao.

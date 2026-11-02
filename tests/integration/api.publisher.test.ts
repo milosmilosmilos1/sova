@@ -344,6 +344,59 @@ describe('Publisher: uspeh', () => {
     expect((await targetRow(job.targetId)).status).toBe('pending')
   })
 
+  it('prekinut korak (D-140): ponovljen korak istog run-a završava objavu, a tuđi run je ne dira', async () => {
+    const created = await createPost([{ socialAccountId: fbId }])
+    const p = await schedule(created.id, created.version)
+    const job = jobFor(p, fbId)
+    // stanje koje ostavi korak koji je platforma prekinula posle zaključavanja
+    const lock = await admin
+      .from('post_targets')
+      .update({
+        status: 'publishing',
+        attempt_count: 1,
+        last_attempt_at: new Date().toISOString(),
+        inngest_run_id: 'test-run',
+      })
+      .eq('id', job.targetId)
+    expect(lock.error).toBeNull()
+    // Inngest ne ponavlja završene korake (učitavanje i provera), samo prekinut pokušaj
+    const memo: Record<string, unknown> = { load: { ok: true, reason: null }, recheck: { action: 'go' } }
+    const retried = (runId: string): PublishContext => ({
+      ...ctx,
+      runId,
+      run: ((name: string, fn: () => Promise<unknown>) =>
+        name in memo ? Promise.resolve(memo[name]) : fn()) as PublishContext['run'],
+    })
+
+    expect((await runPublishTarget(job, retried('drugi-run'))).outcome).toBe('skipped')
+    expect((await targetRow(job.targetId)).status).toBe('publishing')
+
+    const done = await runPublishTarget(job, retried('test-run'))
+    expect(done.outcome).toBe('published')
+    expect(await targetRow(job.targetId)).toMatchObject({ status: 'published', attempt_count: 1 })
+    expect((await view(created.id)).status).toBe('published')
+    expect(metaState.publishes.filter((x) => x.path === 'page-1/feed')).toHaveLength(1)
+  })
+
+  it('ponovo pokrenut target čija je objava ipak prošla ne objavljuje se dvaput (D-140)', async () => {
+    const created = await createPost([{ socialAccountId: fbId }])
+    const p = await schedule(created.id, created.version)
+    const job = jobFor(p, fbId)
+    // raniji run je zaključao target i objavio, pa ga je platforma prekinula pre beleženja;
+    // čuvar ga je vratio u scheduled sa jednim pokušajem
+    const before = await admin.from('post_targets').update({ attempt_count: 1 }).eq('id', job.targetId)
+    expect(before.error).toBeNull()
+    const { data: post } = await admin.from('posts').select('master_text').eq('id', created.id).single()
+    metaState.recentFeed = [
+      { id: 'page-1_vec-objavljeno', message: post!.master_text, created_time: new Date().toISOString() },
+    ]
+
+    const r = await runPublishTarget(job, { ...ctx, runId: 'novi-run' })
+    expect(r).toMatchObject({ outcome: 'published', externalId: 'page-1_vec-objavljeno' })
+    expect(metaState.publishes.filter((x) => x.path === 'page-1/feed')).toHaveLength(0)
+    expect(await targetRow(job.targetId)).toMatchObject({ status: 'published', attempt_count: 2 })
+  })
+
   it('onFailure posle naše greške otključava target: failed sa porukom, objava failed', async () => {
     const created = await createPost([{ socialAccountId: fbId }])
     const p = await schedule(created.id, created.version)
