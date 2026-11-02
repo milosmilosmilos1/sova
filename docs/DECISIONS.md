@@ -1128,7 +1128,7 @@ Odluka:
 
 - Kadar videa ima svoj raspored u svakoj temi (`ctx.video`): snimak ide preko celog kadra, a znak teme stoji preko njega pri dnu. Nalepnica ima karticu sa trakama i krug iza nje, Pola-pola panel u boji podloge sa oznakom na ivici (snimak oko dve trećine kadra), Aurora preliv i ploču (manje providnu, da se tekst čita), Blokovi blok u boji teme sa cik-cak linijom i krugom, Uramljeno beli okvir oko celog kadra, traku sa naslovom i tekst na kartici, a Poster je već bio preko celog kadra. Vrh i dno dobijaju blagu senku, da se nalog i znak brenda čitaju.
 - Završni kadar (poziv na akciju) takođe pušta snimak u pozadini.
-- Tekst u kadru videa stoji u donjoj četvrtini ekrana, a snimak zauzima bar tri četvrtine (vlasnik, 2.11.2026): naslov u dva-tri reda (`videoTitle`), opis manjim slovima i najviše dva reda (`lineClamp`), uže margine i manji znak brenda.
+- Tekst u kadru videa stoji u donjoj četvrtini ekrana, a snimak zauzima bar tri četvrtine (vlasnik, 2.11.2026): naslov u dva-tri reda (`videoTitle`), opis manjim slovima i najviše dva reda (`lineClamp`), uže margine i manji znak brenda. Raspored kadra je zato 3 (`VIDEO_LAYOUT`): video nacrtan ranije nudi se za „Uskladi sa temom”, a izmena teksta u njemu ponovo crta sve kadrove.
 - Stilovi sa malom fotografijom (Pop, Magazin, Uvodnik, Društvena kartica, Film) u videu idu kao Poster. Stilovi koji već crtaju fotografiju preko celog slajda (Naslovna, Duoton, Događaj, Snimak, Mim) ostaju svoji.
 - Video pamti raspored (`posts.design.video.layout` = 2). Video nacrtan ranije (snimak u fotografiji teme) nudi se za „Uskladi sa temom”, a izmena teksta na takvom videu crta sve kadrove, da ne budu različiti.
 

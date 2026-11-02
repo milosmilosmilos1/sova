@@ -37,8 +37,11 @@ export function videoStyleFor(styleId: StyleId): StyleId {
   return getStyle(styleId).photo !== 'none' && FULL_FRAME_VIDEO.includes(styleId) ? styleId : 'poster'
 }
 
-/** Raspored video kadra; video nacrtan starijim (snimak u fotografiji teme) nudi se za usklađivanje. */
-export const VIDEO_LAYOUT = 2
+/**
+ * Raspored video kadra: 2 je snimak preko celog kadra, 3 i tekst u donjoj četvrtini (D-135). Video nacrtan
+ * starijim rasporedom nudi se za usklađivanje.
+ */
+export const VIDEO_LAYOUT = 3
 
 /**
  * Kadrovi od slajdova: svaki kadar sa tekstom crta se kao naslovni slajd teme, jer naslovni slajd

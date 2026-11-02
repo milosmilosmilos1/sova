@@ -64,7 +64,7 @@ export function inTheme(
     (!theme.logoAssetId || design.logoVersion === LOGO_VERSION)
   return (
     design.styleId === style &&
-    // video starijeg rasporeda (snimak u fotografiji teme) crta se ponovo preko celog kadra (D-135)
+    // video starijeg rasporeda (snimak u fotografiji teme, tekst preko pola kadra) crta se ponovo (D-135)
     (design.format !== 'video' || design.video?.layout === VIDEO_LAYOUT) &&
     upper(design.colors) === upper(theme.colors as unknown as Record<string, string>) &&
     design.fonts?.headings === theme.fonts.headings &&

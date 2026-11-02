@@ -422,7 +422,7 @@ async function renderVideoText(
 ): Promise<TextRender> {
   const video = work.design.video!
   const input = videoInput(work, scenes, uploadedBy)
-  // video starijeg rasporeda (snimak u fotografiji teme) crta se ceo, da kadrovi ne budu različiti (D-135)
+  // video starijeg rasporeda crta se ceo, da kadrovi ne budu različiti (D-135)
   if (work.theme && video.overlayAssetIds.length === scenes.length && video.layout === VIDEO_LAYOUT) {
     const styleId = videoStyleFor(work.theme.styleId)
     const overlays = [...video.overlayAssetIds]
