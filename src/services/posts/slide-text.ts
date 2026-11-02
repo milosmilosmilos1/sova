@@ -14,7 +14,7 @@ import { drawnFields, formFields, type SlideField } from '@/lib/visuals/design/f
 import { preparePhoto, renderSlide } from '@/lib/visuals/design/render'
 import { changedChunks, changedSlides, withSlideText, type SlideText } from '@/lib/visuals/design/slide-text'
 import { DESIGN_SIZES, type DesignColors, type Slide, type StyleDef } from '@/lib/visuals/design/types'
-import { clipPlan, sceneSeconds, videoStyleFor } from '@/lib/visuals/design/video'
+import { clipPlan, sceneSeconds, VIDEO_LAYOUT, videoStyleFor } from '@/lib/visuals/design/video'
 import { getBrand } from '@/services/brands'
 import { brandLogo, resolveDesign, type ResolvedDesign } from '@/services/design/brand-design'
 import { parsePostDesign, themeOf, type PostDesignContext } from '@/services/design/post-design'
@@ -422,7 +422,8 @@ async function renderVideoText(
 ): Promise<TextRender> {
   const video = work.design.video!
   const input = videoInput(work, scenes, uploadedBy)
-  if (work.theme && video.overlayAssetIds.length === scenes.length) {
+  // video starijeg rasporeda (snimak u fotografiji teme) crta se ceo, da kadrovi ne budu različiti (D-135)
+  if (work.theme && video.overlayAssetIds.length === scenes.length && video.layout === VIDEO_LAYOUT) {
     const styleId = videoStyleFor(work.theme.styleId)
     const overlays = [...video.overlayAssetIds]
     const fresh: string[] = []
@@ -469,6 +470,7 @@ async function renderVideoText(
           seconds: saved.map(sceneSeconds),
           posterAssetId,
           renderedAssetId: null,
+          layout: VIDEO_LAYOUT,
         },
       },
       media: [],
@@ -489,6 +491,7 @@ async function renderVideoText(
         seconds: built.seconds,
         posterAssetId: built.posterAssetId,
         renderedAssetId: null,
+        layout: VIDEO_LAYOUT,
       },
     },
     media: [],

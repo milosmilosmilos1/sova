@@ -1121,3 +1121,14 @@ Odluka:
 - Objava pamti način crtanja logoa (`posts.design.logoVersion` = 2), pa se nacrti sa logoom nacrtani ranije (beli okvir) nude za „Uskladi sa temom”.
 
 Razlog: vlasnik je otpremio logo TangerineSEO sa belom pozadinom. Na crvenoj udarnoj objavi video se beli pravougaonik oko logoa, a tamna slova se na crvenoj ne bi videla ni bez njega.
+
+## D-135 · 2.11.2026 · usvojeno · Video u temi: snimak preko celog kadra, elementi teme preko njega
+
+Odluka:
+
+- Kadar videa ima svoj raspored u svakoj temi (`ctx.video`): snimak ide preko celog kadra, a znak teme stoji preko njega pri dnu. Nalepnica ima karticu sa trakama i krug iza nje, Pola-pola panel u boji podloge sa oznakom na ivici (snimak oko dve trećine kadra), Aurora preliv i ploču (manje providnu, da se tekst čita), Blokovi blok u boji teme sa cik-cak linijom i krugom, Uramljeno beli okvir oko celog kadra, traku sa naslovom i tekst na kartici, a Poster je već bio preko celog kadra. Vrh i dno dobijaju blagu senku, da se nalog i znak brenda čitaju.
+- Završni kadar (poziv na akciju) takođe pušta snimak u pozadini.
+- Stilovi sa malom fotografijom (Pop, Magazin, Uvodnik, Društvena kartica, Film) u videu idu kao Poster. Stilovi koji već crtaju fotografiju preko celog slajda (Naslovna, Duoton, Događaj, Snimak, Mim) ostaju svoji.
+- Video pamti raspored (`posts.design.video.layout` = 2). Video nacrtan ranije (snimak u fotografiji teme) nudi se za „Uskladi sa temom”, a izmena teksta na takvom videu crta sve kadrove, da ne budu različiti.
+
+Razlog: vlasnik je primetio da se u videu u temi Nalepnica snimak vidi samo kroz malu polaroid fotografiju. Snimak se video na 20 % kadra u Nalepnici, 18 % u Blokovima, 29 % u Aurori i 45–50 % u Pola-pola i Uramljenom; sada se vidi na 68–79 %, a u završnom kadru na 76–83 %.

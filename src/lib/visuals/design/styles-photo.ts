@@ -501,6 +501,56 @@ const framed: StyleDef = {
         : brandMark(ctx, 40 * s, readable(bg)),
       swipeHint(ctx, strip),
     ])
+    if (ctx.video) {
+      // kadar videa (D-135): snimak preko celog kadra u belom okviru, traka sa naslovom i tekst na kartici
+      const inset = 26 * s
+      return root(ctx, { padding: px(p) }, [
+        backdrop(ctx),
+        el('div', {
+          position: 'absolute',
+          left: 0,
+          top: 0,
+          width: px(ctx.size.width),
+          height: px(ctx.size.height * 0.2),
+          backgroundImage: `linear-gradient(180deg, ${alpha('#000000', 0.45)} 0%, ${alpha('#000000', 0)} 100%)`,
+        }),
+        el('div', {
+          position: 'absolute',
+          left: px(inset),
+          top: px(inset),
+          width: px(ctx.size.width - inset * 2),
+          height: px(ctx.size.height - inset * 2),
+          border: `${px(16 * s)} solid #ffffff`,
+          boxSizing: 'border-box',
+        }),
+        topBar(ctx, '#ffffff'),
+        box({ flexGrow: 1 }),
+        col(
+          { backgroundColor: strip, color: onStrip, padding: `${px(34 * s)} ${px(36 * s)}`, gap: px(12 * s) },
+          [
+            text(
+              {
+                fontFamily: ctx.fonts.body,
+                fontWeight: 700,
+                fontSize: px(20 * s),
+                letterSpacing: '3px',
+                textTransform: 'uppercase',
+                opacity: 0.85,
+              },
+              slide.kicker,
+            ),
+            text(
+              { fontFamily: ctx.fonts.headings, fontWeight: 700, fontSize: px(titleSize), lineHeight: 1.08 },
+              slide.title,
+            ),
+          ],
+        ),
+        col({ backgroundColor: bg, padding: `${px(28 * s)} ${px(36 * s)}`, gap: px(18 * s) }, [
+          body,
+          bottomRow,
+        ]),
+      ])
+    }
     return root(ctx, { backgroundColor: bg, padding: px(p), justifyContent: 'space-between' }, [
       topBar(ctx, mix(readable(bg), bg, 0.4)),
       // obrnut raspored (D-132): tekst iznad uramljene fotografije, traka naslova pomerena udesno

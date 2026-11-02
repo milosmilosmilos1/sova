@@ -1,5 +1,9 @@
-import { describe, expect, it } from 'vitest'
+import sharp from 'sharp'
+import { beforeAll, describe, expect, it } from 'vitest'
 
+import { configureFontLoader } from '../fonts'
+import { renderOverlay } from './render'
+import type { Slide } from './types'
 import { clipPlan, sceneSeconds, videoScenes, videoStyleFor } from './video'
 
 describe('video u temi', () => {
@@ -36,8 +40,59 @@ describe('video u temi', () => {
     expect(clipPlan([3, 3, 2.5], 1).map((c) => c.start)).toEqual([0, 3, 6])
   })
 
-  it('tipografska tema ide preko snimka kao Poster', () => {
+  it('tipografska tema i stil sa malom fotografijom idu preko snimka kao Poster, teme ostaju svoje', () => {
     expect(videoStyleFor('headline')).toBe('poster')
-    expect(videoStyleFor('split')).toBe('split')
+    for (const id of ['split', 'sticker', 'aurora', 'blocks', 'framed', 'poster'] as const)
+      expect(videoStyleFor(id)).toBe(id)
+    // krug, kartica i traka filma pokazivale bi snimak u uglu kadra (D-135)
+    for (const id of ['pop', 'magazine', 'editorial', 'social', 'film'] as const)
+      expect(videoStyleFor(id)).toBe('poster')
   })
+})
+
+describe('kadar videa preko celog ekrana (D-135)', () => {
+  beforeAll(() => configureFontLoader({ remote: false }))
+
+  /** Udeo kadra kroz koji se vidi snimak (sloj je providan ili poluprovidan). */
+  async function videoShare(styleId: string, slide: Slide): Promise<number> {
+    const r = await renderOverlay({
+      styleId,
+      slide,
+      format: 'story',
+      colors: {
+        primary: '#990000',
+        secondary: '#F26B1D',
+        background: '#FFFFFF',
+        text: '#111827',
+        muted: '#6B7280',
+      },
+      brandFonts: { headings: 'Inter', body: 'Inter' },
+      brandName: 'Brend',
+      handle: '@brend',
+      logo: null,
+      index: 0,
+      total: 1,
+      video: true,
+      outputWidth: 216,
+    })
+    const raw = await sharp(r.bytes).ensureAlpha().raw().toBuffer()
+    let see = 0
+    for (let i = 3; i < raw.length; i += 4) if (raw[i]! < 200) see++
+    return see / (raw.length / 4)
+  }
+
+  it('u svakoj temi snimak se vidi na većem delu kadra, i u završnom kadru', async () => {
+    const scene: Slide = {
+      kind: 'cover',
+      kicker: 'SEO',
+      title: 'Upoređivanje rezultata nakon rada',
+      body: 'Testovi.',
+    }
+    const end: Slide = { kind: 'cta', title: 'Pišite nam', body: 'Odgovaramo isti dan.' }
+    for (const id of ['split', 'sticker', 'aurora', 'blocks', 'framed', 'poster']) {
+      // Nalepnica je pre D-135 pokazivala snimak na 20 % kadra (polaroid u uglu)
+      expect(await videoShare(id, scene), id).toBeGreaterThan(0.6)
+      expect(await videoShare(id, end), `${id} kraj`).toBeGreaterThan(0.6)
+    }
+  }, 60_000)
 })

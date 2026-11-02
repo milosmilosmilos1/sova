@@ -66,6 +66,8 @@ export const postDesignSchema = z.object({
       seconds: z.array(z.number().min(1).max(10)).min(1).max(10),
       posterAssetId: z.uuid().nullable(),
       renderedAssetId: z.uuid().nullable(),
+      /** raspored kadra (D-135: snimak preko celog kadra); stariji video ga nema */
+      layout: z.number().int().min(1).optional(),
     })
     .optional(),
 })

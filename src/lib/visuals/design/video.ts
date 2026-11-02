@@ -11,10 +11,34 @@ export const THEME_VIDEO = { width: 1080, height: 1920, fps: 30 } as const
 /** Najviše kadrova sa tekstom (naslov i tri poruke) pre poziva na akciju. */
 const MAX_TEXT_SCENES = 4
 
-/** Stil videa: stil teme ako crta fotografiju, inače Poster (snimak preko celog kadra). */
+/**
+ * Stilovi koji u videu puštaju snimak preko celog kadra (D-135): teme imaju svoj raspored za video,
+ * a ostali već crtaju fotografiju preko celog slajda.
+ */
+const FULL_FRAME_VIDEO: readonly StyleId[] = [
+  'poster',
+  'split',
+  'sticker',
+  'aurora',
+  'blocks',
+  'framed',
+  'cover',
+  'duotone',
+  'event',
+  'snap',
+  'meme',
+]
+
+/**
+ * Stil videa: stil teme kad pušta snimak preko celog kadra, inače Poster. Stil sa malom fotografijom
+ * (krug, kartica, traka filma) pokazivao bi snimak u uglu kadra.
+ */
 export function videoStyleFor(styleId: StyleId): StyleId {
-  return getStyle(styleId).photo === 'none' ? 'poster' : styleId
+  return getStyle(styleId).photo !== 'none' && FULL_FRAME_VIDEO.includes(styleId) ? styleId : 'poster'
 }
+
+/** Raspored video kadra; video nacrtan starijim (snimak u fotografiji teme) nudi se za usklađivanje. */
+export const VIDEO_LAYOUT = 2
 
 /**
  * Kadrovi od slajdova: svaki kadar sa tekstom crta se kao naslovni slajd teme, jer naslovni slajd

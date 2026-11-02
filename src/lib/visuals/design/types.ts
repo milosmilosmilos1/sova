@@ -76,6 +76,8 @@ export interface DesignContext {
   total: number
   /** varijanta ritma teme; boje su već prilagođene, a stil po njoj bira raspored (D-132) */
   variant: ThemeVariant
+  /** kadar videa (D-135): snimak ide preko celog kadra, a tekst teme preko njega */
+  video?: boolean
 }
 
 export type PhotoUse = 'none' | 'optional' | 'cover' | 'all'

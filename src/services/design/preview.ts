@@ -177,6 +177,7 @@ export async function renderPreview(viewer: Viewer, input: PreviewInput): Promis
       logo: await brandLogo(design.logoAssetId),
       index: 0,
       total: 1,
+      video: true,
       outputWidth: PREVIEW_WIDTH,
     })
     if (cache.size >= CACHE_MAX) cache.delete(cache.keys().next().value!)

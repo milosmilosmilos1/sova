@@ -7,7 +7,7 @@ import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { styleForPhotos } from '@/lib/visuals/design'
 import { LOGO_VERSION } from '@/lib/visuals/design/types'
-import { videoStyleFor } from '@/lib/visuals/design/video'
+import { VIDEO_LAYOUT, videoStyleFor } from '@/lib/visuals/design/video'
 import type { StepRunner } from '@/services/autopilot/runner'
 import { getBrand, type BrandRow } from '@/services/brands'
 import { snapshotVersion } from '@/services/posts/posts'
@@ -64,6 +64,8 @@ export function inTheme(
     (!theme.logoAssetId || design.logoVersion === LOGO_VERSION)
   return (
     design.styleId === style &&
+    // video starijeg rasporeda (snimak u fotografiji teme) crta se ponovo preko celog kadra (D-135)
+    (design.format !== 'video' || design.video?.layout === VIDEO_LAYOUT) &&
     upper(design.colors) === upper(theme.colors as unknown as Record<string, string>) &&
     design.fonts?.headings === theme.fonts.headings &&
     design.fonts?.body === theme.fonts.body &&
@@ -195,6 +197,7 @@ async function saveVideo(
       seconds: video.seconds,
       posterAssetId: video.posterAssetId,
       renderedAssetId: null,
+      layout: VIDEO_LAYOUT,
     },
   }
   const { data: updated } = await admin

@@ -42,6 +42,8 @@ export interface SlideRenderInput {
   total: number
   /** ritam teme (D-132); bez nje osnovni raspored */
   variant?: ThemeVariant
+  /** kadar videa (D-135): snimak preko celog kadra */
+  video?: boolean
   /** širina izlaza; pregled u biraču je manji od pune veličine */
   outputWidth?: number
   format_out?: 'jpeg' | 'png'
@@ -84,6 +86,7 @@ export async function renderSlide(input: SlideRenderInput): Promise<SlideRenderR
     index: input.index,
     total: input.total,
     variant,
+    video: input.video ?? false,
   }
   // stil sa sopstvenim fontom (npr. uski Oswald) je veličinu naslova podesio za taj font
   const designed = style.fonts.headings

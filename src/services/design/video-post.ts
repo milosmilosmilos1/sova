@@ -6,7 +6,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import type { StyleId } from '@/lib/visuals/design'
 import { preparePhoto, renderOverlay, renderSlide } from '@/lib/visuals/design/render'
 import type { BrandLogo, DesignColors, Slide } from '@/lib/visuals/design/types'
-import { sceneSeconds, videoStyleFor } from '@/lib/visuals/design/video'
+import { sceneSeconds, VIDEO_LAYOUT, videoStyleFor } from '@/lib/visuals/design/video'
 import { getStyle } from '@/lib/visuals/design'
 import type { StepRunner } from '@/services/autopilot/runner'
 import { downloadAsset } from '@/services/media'
@@ -111,6 +111,8 @@ export function sceneRender(input: ThemeVideoInput, styleId: StyleId, scene: Sli
     // jedan slajd: bez brojača i strelice za listanje koje stilovi crtaju na karuselu
     index: 0,
     total: 1,
+    // snimak preko celog kadra, tekst teme preko njega (D-135)
+    video: true,
   }
 }
 
@@ -231,6 +233,7 @@ export function videoPostDesign(
       seconds: video.seconds,
       posterAssetId: video.posterAssetId,
       renderedAssetId: null,
+      layout: VIDEO_LAYOUT,
     },
   }
 }
