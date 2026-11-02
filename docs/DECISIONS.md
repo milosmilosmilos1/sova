@@ -1140,6 +1140,7 @@ Odluka:
 
 - Za brend koji objavljuje na srpskom ili ukrajinskom, automatski izbor fotografija i snimaka (dizajn objave, video u temi, Autopilot, Studio) traži evropske ljude: svaka varijanta upita koja pominje ljude ili scenu sa ljudima (par, porodica, tim, gosti, svadba, proslava, sastanak…) dobija reč „european” (`lib/visuals/people.ts`, u `pickPexelsPhotos`, `pickPexelsVideo` i `pickUnsplashPhotos`). Upit bez ljudi ostaje kakav jeste, a kraća rezervna pretraga ne postaje samo „european”.
 - Izgled ljudi se ne procenjuje na slici: Sova bira kroz upit, kako se to radi i ručno na foto-bankama. Pretraga koju korisnik sam kuca i fotografije koje sam izabere ostaju kakve jesu.
+- Upit je već određen samo kad sadrži „european”, „caucasian”, „serbian”, „ukrainian” ili „balkan”. Reč „white” se ne računa, jer je u upitu skoro uvek boja (bela haljina, beli cvetovi na svadbi).
 - Brend to može da isključi u Vizuelnom identitetu („Ljudi na fotografijama i snimcima: kao vaša publika”, `brands.design.people` = `any`). Brend na engleskom bira kao do sada.
 
 Razlog: vlasnik prodaje na tržištu Srbije i traži da se publika poistoveti sa ljudima u objavama.

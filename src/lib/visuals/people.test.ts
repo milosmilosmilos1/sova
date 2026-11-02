@@ -8,6 +8,10 @@ describe('ljudi kao publika (D-136)', () => {
     expect(localPeopleQuery('wedding hall decoration', 'europe')).toBe('european wedding hall decoration')
     expect(localPeopleQuery('team meeting office', 'europe')).toBe('european team meeting office')
     expect(localPeopleQuery('women smiling', 'europe')).toBe('european women smiling')
+    expect(localPeopleQuery('outdoor weddings summer', 'europe')).toBe('european outdoor weddings summer')
+    expect(localPeopleQuery('barber cutting hair', 'europe')).toBe('european barber cutting hair')
+    // „white” je u upitu skoro uvek boja, a ne izgled ljudi
+    expect(localPeopleQuery('bride in white dress', 'europe')).toBe('european bride in white dress')
   })
 
   it('upit bez ljudi, već određen upit i brend bez lokalnog izgleda ostaju kakvi jesu', () => {
