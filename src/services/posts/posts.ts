@@ -33,6 +33,8 @@ export interface PostTargetView {
   platform: TargetRow['platform']
   accountName: string | null
   accountUsername: string | null
+  /** profilna slika naloga sa mreže (pregled objave na mreži, D-138) */
+  accountAvatarUrl: string | null
   accountStatus: string | null
   assistedOnly: boolean
   text: string
@@ -133,7 +135,7 @@ async function loadPost(viewer: Viewer, postId: string): Promise<PostRow> {
 async function accountMap(viewer: Viewer, brandId: string) {
   const { data } = await viewer.supabase
     .from('social_accounts_public')
-    .select('id, platform, name, username, status, assisted_only')
+    .select('id, platform, name, username, avatar_url, status, assisted_only')
     .eq('brand_id', brandId)
   return new Map((data ?? []).map((a) => [a.id!, a]))
 }
@@ -166,6 +168,7 @@ export async function getPostView(viewer: Viewer, postId: string): Promise<PostV
       platform: t.platform,
       accountName: acc?.name ?? null,
       accountUsername: acc?.username ?? null,
+      accountAvatarUrl: acc?.avatar_url ?? null,
       accountStatus: acc?.status ?? null,
       assistedOnly: Boolean(acc?.assisted_only),
       text: t.text_content || post.master_text,

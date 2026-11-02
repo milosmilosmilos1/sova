@@ -1154,3 +1154,22 @@ Odluka:
 - Stanja objave imaju iste boje svuda (`components/shared/status-badge.tsx`): zakazano i odobreno plavo, objavljeno zeleno, delimično objavljeno narandžasto, na odobravanju žuto, neuspelo crveno, nacrt i pauzirano sivo, odbijeno i otkazano svetlosivo. Lista objava (oznake i filteri sa tačkom) i Odobravanje (oznaka odluke, tačka u listi nacrta) prate boje kalendara, a kalendar čita istu mapu. Tekst oznake ostaje u boji teksta teme zbog kontrasta (faza 15); boja je u tački, ivici i blagoj podlozi.
 
 Razlog: vlasnik vodi šest brendova u jednom radnom prostoru i u sivoj listi ih je teško razlikovati, pa je tražio boje brenda u biraču i još boja gde ima smisla. Boje stanja su postojale samo u kalendaru, pa je ista objava na listi bila siva, a u kalendaru zelena.
+
+## D-138 · 2.11.2026 · usvojeno · Pregled objave na mreži u Odobravanju
+
+Odluka:
+
+- U Odobravanju (i u Studiju, koji koristi isti panel) dugme „Pregled na mreži” otvara prozor sa karticom za svaku mrežu objave. Objava se crta po uzoru na aplikaciju na telefonu: ime, korisničko ime i profilna slika naloga (`social_accounts.avatar_url`, nov `accountAvatarUrl` u prikazu objave), opis skraćen gde mreža stavlja „više” (Instagram oko 125 znakova ili dva reda, Facebook 250 ili pet, LinkedIn 210 ili tri, TikTok 80 ili dva, Google 150 ili tri; X pokazuje ceo tekst i upozorava preko 280 znakova), heštegovi, pominjanja i linkovi u boji mreže, slike u razmeri mreže (feed 0,8–1,91, Pinterest 0,5–1,5, Google 4:3), karusel sa strelicama i tačkama, više fotografija u mreži (Facebook do pet, LinkedIn i X do četiri) i prvi komentar (Instagram, Facebook, LinkedIn).
+- Priča (Instagram, Facebook) i vertikalni video (Reel, TikTok, YouTube Shorts) su preko celog ekrana. Priča nema opis, što prozor i napiše; YouTube bez videa i mreža bez slike pokazuju napomenu umesto slike. Pravila su u `lib/posts/preview.ts`, izgled u `components/review/network-mockups.tsx`, prozor u `network-preview.tsx`.
+- Pregled koristi tekst koji je trenutno u obrascu, pa se vide i nesačuvane izmene. Brojke (sviđanja, pregledi) se ne prikazuju, jer ih nova objava nema; video se pušta bez zvuka, kao u feedu.
+
+Razlog: vlasnik želi da pre odobrenja vidi kako će objava izgledati uživo na mreži.
+
+## D-139 · 2.11.2026 · usvojeno · „Objavi odmah” i za zakazanu objavu
+
+Odluka:
+
+- Zakazana objava ima „Objavi odmah” na strani objave i u Odobravanju. Server proveri verziju i sadržaj, pauzira objavu (otkazuje čekanje starog termina) i zakaže je za sledeći pun minut (`publishNow` u `services/posts/workflow.ts`). Pauza i zakazivanje iz pauze su prelazi koje urednik već sme, pa administrator nije potreban; put zakazano → nacrt → zakazano bi tražio administratora, jer zakazivanje iz nacrta preskače odobrenje.
+- Verzija se proverava pre otkazivanja termina, da zastareo zahtev ne ostavi objavu „zakazanom” bez čekanja termina. Strana objave traži potvrdu („Objaviti odmah, umesto u zakazanom terminu?”), kao i Odobravanje.
+
+Razlog: vlasnik želi da zakazanu objavu po potrebi pusti odmah, bez otkazivanja i ponovnog zakazivanja.

@@ -46,7 +46,14 @@ interface Detail {
     status: string
     version: number
     masterText: string
-    targets: Array<{ socialAccountId: string; platform: string; text: string; scheduledAt: string | null }>
+    targets: Array<{
+      socialAccountId: string
+      platform: string
+      text: string
+      scheduledAt: string | null
+      accountUsername: string | null
+      accountAvatarUrl: string | null
+    }>
     media: Array<{ mediaAssetId: string }>
   }
   flowName: string | null
@@ -132,6 +139,7 @@ beforeAll(async () => {
         external_id: `ig-rev-${Date.now()}`,
         name: 'IG',
         username: 'brend',
+        avatar_url: 'https://cdn.primer.test/brend.jpg',
         account_type: 'instagram_business',
       },
       {
@@ -212,6 +220,11 @@ describe('Odobravanje: lista i detalj', () => {
       limits: { instagram: 2200 },
     })
     expect(new Date(d.json.data!.suggestedAt).getTime()).toBeGreaterThan(Date.now())
+    // pregled na mreži (D-138) pokazuje korisničko ime i sliku naloga
+    expect(d.json.data!.post.targets.find((t) => t.platform === 'instagram')).toMatchObject({
+      accountUsername: 'brend',
+      accountAvatarUrl: 'https://cdn.primer.test/brend.jpg',
+    })
     expect((await detail(id, other.token)).status).toBe(404)
   })
 })

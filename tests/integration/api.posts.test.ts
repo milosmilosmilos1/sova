@@ -434,6 +434,38 @@ describe('Zakazivanje', () => {
     expect(after.status).toBe(404)
   })
 
+  it('„Objavi sada” za zakazanu objavu: stari termin se otkazuje, nov je sledeći minut (i urednik sme)', async () => {
+    const created = await call<PostView>(postsPost, '/api/posts', {
+      token: owner.token,
+      body: { brandId, masterText: 'Zakazana pa odmah', targets: [{ socialAccountId: fbAccountId }] },
+    })
+    const id = created.json.data!.id
+    const scheduled = await act(id, 'schedule', {
+      version: created.json.data!.version,
+      scheduledFor: future(300),
+    })
+    expect(scheduled.json.data!.status).toBe('scheduled')
+    const unscheduledBefore = vi.mocked(enqueueTargetUnscheduled).mock.calls.length
+    const scheduledBefore = vi.mocked(enqueueTargetScheduled).mock.calls.length
+
+    const now = await act(id, 'publish-now', { version: scheduled.json.data!.version }, editor.token)
+    expect(now.status).toBe(200)
+    expect(now.json.data!.status).toBe('scheduled')
+    const at = new Date(now.json.data!.scheduledFor!).getTime()
+    expect(at).toBeGreaterThan(Date.now())
+    expect(at - Date.now()).toBeLessThanOrEqual(90_000)
+    expect(now.json.data!.targets[0]).toMatchObject({ status: 'scheduled' })
+    expect(new Date(now.json.data!.targets[0]!.scheduledAt!).getTime()).toBe(at)
+    expect(vi.mocked(enqueueTargetUnscheduled).mock.calls.length).toBe(unscheduledBefore + 1)
+    expect(vi.mocked(enqueueTargetScheduled).mock.calls.length).toBe(scheduledBefore + 1)
+    expect(vi.mocked(enqueueTargetScheduled).mock.calls.at(-1)![1]).toBe(new Date(at).toISOString())
+
+    // stara verzija se odbija pre otkazivanja termina, pa objava i dalje čeka nov termin
+    const stale = await act(id, 'publish-now', { version: scheduled.json.data!.version }, editor.token)
+    expect(stale.status).toBe(409)
+    expect(vi.mocked(enqueueTargetUnscheduled).mock.calls.length).toBe(unscheduledBefore + 1)
+  })
+
   it('komentari tima i red objava sa sledećim slobodnim terminom', async () => {
     const c = await call<{ authorName: string; body: string }>(
       commentsPost,

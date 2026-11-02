@@ -520,10 +520,29 @@ export async function schedulePost(viewer: Viewer, postId: string, input: Schedu
   return getPostView(viewer, postId)
 }
 
-/** „Objavi sada” = zakazivanje za sledeći pun minut (publisher ga odmah uzima). */
+/**
+ * „Objavi sada” = zakazivanje za sledeći pun minut (publisher ga odmah uzima). Zakazana objava se
+ * prvo pauzira, da stari termin više ne čeka, pa zakazuje za sada (pauza i zakazivanje iz pauze su
+ * dozvoljeni uredniku). Sadržaj se proverava pre pauze, da neuspela provera ne ostavi objavu pauziranu.
+ */
 export async function publishNow(viewer: Viewer, postId: string, version: number): Promise<PostView> {
-  const at = new Date(Math.ceil((Date.now() + 15_000) / 60_000) * 60_000)
-  return schedulePost(viewer, postId, { version, scheduledFor: at.toISOString() })
+  const at = new Date(Math.ceil((Date.now() + 15_000) / 60_000) * 60_000).toISOString()
+  const post = await loadPost(viewer, postId)
+  if (post.status !== 'scheduled') return schedulePost(viewer, postId, { version, scheduledFor: at })
+  await actor(viewer, postId, 'pause')
+  // verzija pre otkazivanja termina: zastareo zahtev ne sme da ostavi objavu zakazanu bez čekanja termina
+  if (post.version !== version)
+    throw new ApiError('CONFLICT', 'Objavu je u međuvremenu neko izmenio. Osvežite je pa pokušajte ponovo.')
+  const validation = await validatePostContent(viewer, postId)
+  if (!validation.ok)
+    throw new ApiError('VALIDATION', 'Objava nije spremna za zakazivanje.', {
+      details: { problems: validation.problems },
+    })
+  await unscheduleTargets(postId)
+  const paused = await transition(postId, 'paused', version, viewer.user.id, 'pauzirano')
+  await setTargetsStatus(postId, 'paused')
+  await schedule(viewer, postId, { version: paused, scheduledFor: at }, { validated: true })
+  return getPostView(viewer, postId)
 }
 
 async function unscheduleTargets(postId: string): Promise<void> {

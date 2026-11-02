@@ -71,6 +71,7 @@
     "saveChanges": "Зберегти зміни",
     "saveDraft": "Зберегти чернетку",
     "publishNow": "Опублікувати зараз",
+    "publishNowConfirm": "Опублікувати зараз замість запланованого часу?",
     "duplicate": "Дублювати",
     "giveUp": "Скасувати",
     "decision": {

@@ -1091,6 +1091,15 @@ function EditorForm({
               </Button>
             </>
           ) : null}
+          {p && p.status === 'scheduled' && actions.includes('pause') ? (
+            <Button
+              variant="outline"
+              onClick={() => window.confirm(t('publishNowConfirm')) && action.mutate({ name: 'publish-now' })}
+              disabled={action.isPending}
+            >
+              {t('publishNow')}
+            </Button>
+          ) : null}
           {p
             ? (['withdraw', 'unschedule', 'pause', 'resume', 'cancel', 'restore'] as const)
                 .filter((a) => actions.includes(a))

@@ -71,6 +71,7 @@
     "saveChanges": "Save changes",
     "saveDraft": "Save draft",
     "publishNow": "Publish now",
+    "publishNowConfirm": "Publish now instead of at the scheduled time?",
     "duplicate": "Duplicate",
     "giveUp": "Cancel",
     "decision": {

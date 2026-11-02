@@ -13,6 +13,7 @@ import {
   RefreshCw,
   Search,
   SkipForward,
+  Smartphone,
   Trash2,
   Type,
 } from 'lucide-react'
@@ -23,6 +24,7 @@ import { useCallback, useState } from 'react'
 
 import { ThemeNotice } from '@/components/design/theme-notice'
 import { BulkScheduleDialog } from '@/components/review/bulk-schedule-dialog'
+import { NetworkPreviewDialog } from '@/components/review/network-preview'
 import { SlideTextDialog, type SlideTextSaved } from '@/components/review/slide-text-dialog'
 import { ThemeVideoQueue } from '@/components/review/theme-video-queue'
 import { api, bulkRequest } from '@/components/shared/api-client'
@@ -37,7 +39,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
-import { type SocialPlatform } from '@/config/platforms'
+import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { wallClock, zonedToUtc } from '@/lib/zoned-time'
 import { cn } from '@/lib/utils'
 
@@ -75,8 +77,10 @@ interface Detail {
       platform: SocialPlatform
       accountName: string | null
       accountUsername: string | null
+      accountAvatarUrl: string | null
       text: string
       usesMaster: boolean
+      options: Record<string, unknown>
     }>
     media: Array<{
       id: string
@@ -475,6 +479,7 @@ function DetailForm({
   const [notice, setNotice] = useState<string | null>(kept?.notice ?? null)
   const [videoOpen, setVideoOpen] = useState(false)
   const [textOpen, setTextOpen] = useState(false)
+  const [previewOpen, setPreviewOpen] = useState(false)
   const textSaved = (saved: SlideTextSaved) => {
     setTextOpen(false)
     if (!saved.changed) return setNotice(t('slideText.unchanged'))
@@ -492,7 +497,21 @@ function DetailForm({
   }
   const canApprove = post.actions.includes('approve') || post.actions.includes('schedule')
   const editable = ['draft', 'in_review', 'approved', 'rejected', 'canceled', 'failed'].includes(post.status)
+  // zakazana objava ide odmah: server pauzira stari termin i zakazuje za sada
+  const canPublishNow =
+    (canApprove && editable) || (post.status === 'scheduled' && post.actions.includes('pause'))
   const media = post.media.filter((m) => m.url)
+  // pregled na mreži (D-138): video u temi koji se još pravi vidi se kao svoja slika
+  const previewMedia = media.length
+    ? media.map((m) => ({
+        url: m.url!,
+        video: Boolean(m.mimeType?.startsWith('video')),
+        width: m.width,
+        height: m.height,
+      }))
+    : detail.video?.posterUrl
+      ? [{ url: detail.video.posterUrl, video: true, width: null, height: null, poster: true }]
+      : []
   const edits = () => ({
     version: post.version,
     masterText: master,
@@ -623,6 +642,12 @@ function DetailForm({
               </div>
             ) : null}
             <div className="flex flex-wrap justify-end gap-2">
+              {post.targets.length ? (
+                <Button size="sm" variant="outline" onClick={() => setPreviewOpen(true)}>
+                  <Smartphone aria-hidden />
+                  {t('netPreview.open')}
+                </Button>
+              ) : null}
               <Button
                 size="sm"
                 variant="outline"
@@ -663,6 +688,26 @@ function DetailForm({
                 postId={post.id}
                 video={Boolean(detail.video)}
                 onSaved={textSaved}
+              />
+            ) : null}
+            {post.targets.length ? (
+              <NetworkPreviewDialog
+                open={previewOpen}
+                onOpenChange={setPreviewOpen}
+                initial={activeTarget?.socialAccountId ?? null}
+                targets={post.targets.map((tg) => ({
+                  id: tg.socialAccountId,
+                  platform: tg.platform,
+                  name: tg.accountName ?? PLATFORMS[tg.platform].label,
+                  username: tg.accountUsername,
+                  avatarUrl: tg.accountAvatarUrl,
+                  text: texts[tg.socialAccountId] || master,
+                  options: tg.options ?? {},
+                  postTitle: post.title,
+                  firstComment,
+                }))}
+                media={previewMedia}
+                pending={!media.length && Boolean(detail.video?.pending)}
               />
             ) : null}
             <VideoDialog
@@ -814,7 +859,7 @@ function DetailForm({
                 <Button
                   variant="outline"
                   size="sm"
-                  disabled={!canApprove || act.isPending || !editable}
+                  disabled={!canPublishNow || act.isPending}
                   onClick={() => window.confirm(t('actions.confirmPublish')) && act.mutate('publish')}
                 >
                   {t('actions.publishNow')}

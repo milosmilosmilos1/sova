@@ -71,6 +71,7 @@
     "saveChanges": "Sačuvaj izmene",
     "saveDraft": "Sačuvaj nacrt",
     "publishNow": "Objavi sada",
+    "publishNowConfirm": "Objaviti odmah, umesto u zakazanom terminu?",
     "duplicate": "Dupliraj",
     "giveUp": "Odustani",
     "decision": {
