@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Lock, Pencil } from 'lucide-react'
+import { CheckCircle2, Lock, Pencil } from 'lucide-react'
 import { useLocale, useTranslations } from 'next-intl'
 import { useEffect, useState, type ReactNode } from 'react'
 
@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton'
 import { INTL_UI } from '@/i18n/config'
 import type { ApiResponse } from '@/lib/api/response'
 import type { BrandProfile, Field, FieldPath } from '@/lib/brand/profile-schema'
+import { cn } from '@/lib/utils'
 
 import { FieldEditor, type FieldEdit } from './profile-field-editor'
 import { ProfileLogo } from './profile-logo'
@@ -272,6 +273,7 @@ export function BrandBrainClient({
   })
 
   const running = crawlStatus === 'queued' || crawlStatus === 'running'
+  const crawlDone = crawlStatus === 'succeeded' || crawlStatus === 'partial'
   const p = profile.data?.profile
   const locked = new Set(profile.data?.lockedFields ?? [])
   const isLocked = (path: FieldPath) => locked.has(path)
@@ -331,9 +333,23 @@ export function BrandBrainClient({
           <ErrorBox error={analyze.error ?? cancel.error} />
 
           {crawl.data ? (
-            <div className="space-y-2 rounded-md border p-3 text-sm" role="status" aria-live="polite">
+            <div
+              className={cn(
+                'space-y-2 rounded-md border p-3 text-sm',
+                // gotova analiza zelenim, neuspela crvenim okvirom
+                crawlDone && 'border-success/40 bg-success/10',
+                crawl.data.status === 'failed' && 'border-destructive/40 bg-destructive/10',
+              )}
+              role="status"
+              aria-live="polite"
+            >
               <div className="flex items-center justify-between gap-2">
-                <span className="font-medium">{crawl.data.progress?.message ?? crawl.data.status}</span>
+                <span
+                  className={cn('inline-flex items-center gap-1.5 font-medium', crawlDone && 'text-success')}
+                >
+                  {crawlDone ? <CheckCircle2 className="size-4 shrink-0" aria-hidden /> : null}
+                  {crawl.data.progress?.message ?? crawl.data.status}
+                </span>
                 <span className="text-muted-foreground">
                   {t('analysis.pages', {
                     fetched: crawl.data.pagesFetched,
@@ -344,8 +360,8 @@ export function BrandBrainClient({
               </div>
               <div className="h-2 w-full overflow-hidden rounded bg-muted" aria-hidden>
                 <div
-                  className="h-full bg-primary transition-all"
-                  style={{ width: `${crawl.data.progress?.percent ?? 0}%` }}
+                  className={cn('h-full transition-all', crawlDone ? 'bg-success' : 'bg-primary')}
+                  style={{ width: `${crawlDone ? 100 : (crawl.data.progress?.percent ?? 0)}%` }}
                 />
               </div>
               {crawl.data.status === 'failed' && crawl.data.errorMessage ? (

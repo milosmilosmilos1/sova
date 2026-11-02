@@ -1,6 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
+import { CheckCircle2 } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 
@@ -11,6 +12,7 @@ import { ErrorBox } from '@/components/shared/error-box'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { cn } from '@/lib/utils'
 
 import { StepFooter } from './step-footer'
 
@@ -109,6 +111,8 @@ export function StepAnalysis({
   })
 
   const isRunning = running(current)
+  const done = current?.status === 'succeeded' || current?.status === 'partial'
+  const broke = current?.status === 'failed' || current?.status === 'canceled'
   const phase = isPhase(current?.progress?.phase) ? current!.progress!.phase : null
   const posts = voice.data?.sources.posts ?? 0
 
@@ -160,9 +164,25 @@ export function StepAnalysis({
             {!emailVerified ? <p className="text-sm text-muted-foreground">{t('verifyEmail')}</p> : null}
             <ErrorBox error={analyze.error ?? crawls.error} />
             {current && (isRunning || startedId) ? (
-              <div className="space-y-2 text-sm" role="status" aria-live="polite">
+              <div
+                className={cn(
+                  'space-y-2 text-sm',
+                  // uspeh zelenim, neuspeh crvenim okvirom, da se odmah vidi kako je prošlo
+                  done && 'rounded-md border border-success/40 bg-success/10 px-3 py-2',
+                  broke && 'rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2',
+                )}
+                role="status"
+                aria-live="polite"
+              >
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-medium">
+                  <span
+                    className={cn(
+                      'inline-flex items-center gap-1.5 font-medium',
+                      done && 'text-success',
+                      broke && 'text-destructive',
+                    )}
+                  >
+                    {done ? <CheckCircle2 className="size-4 shrink-0" aria-hidden /> : null}
                     {current.status === 'succeeded' || current.status === 'partial'
                       ? t('succeeded')
                       : current.status === 'failed' || current.status === 'canceled'

@@ -7,6 +7,7 @@ import type { PexelsSearchInput, PexelsSelectInput } from '@/lib/schemas/visuals
 import { logger } from '@/lib/logger'
 import { mapLimit } from '@/lib/map-limit'
 import { safeFetch, SsrfError } from '@/lib/ssrf'
+import { localPeopleQuery } from '@/lib/visuals/people'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import {
   attributionFor,
@@ -24,6 +25,7 @@ import {
 import { getBrand } from '@/services/brands'
 import { maxVideoBytes, storeServerVideo, type MediaAssetRow } from '@/services/media'
 import { storeServerImage } from '@/services/visuals/store'
+import { brandPeopleLook } from '@/services/visuals/people'
 import { queryVariants, STOCK_PARALLEL, usedStockIds } from '@/services/visuals/used'
 import type { Json } from '@/types/database'
 
@@ -264,7 +266,9 @@ export async function pickPexelsVideo(input: {
   if (!isPexelsConfigured()) return null
   const { deadline, maxSeconds = 60, maxBytes, ...store } = input
   const used = await usedStockIds(input.brandId, 'pexels-video')
-  const variants = queryVariants(input.query)
+  // ljudi kao publika brenda (D-136): svaka varijanta upita koja pominje ljude traži evropske ljude
+  const look = await brandPeopleLook(input.brandId)
+  const variants = queryVariants(input.query).map((q) => localPeopleQuery(q, look))
   for (let v = 0; v < variants.length; v++) {
     for (let page = 1; page <= (v === 0 ? 3 : 1); page++) {
       const videos = await searchVideos({
@@ -317,8 +321,9 @@ export async function pickPexelsPhotos(input: {
 }): Promise<StoredPexels[]> {
   if (!isPexelsConfigured() || input.count <= 0) return []
   const used = await usedStockIds(input.brandId, 'pexels-photo')
+  const look = await brandPeopleLook(input.brandId)
   const chosen: PexelsPhoto[] = []
-  const variants = queryVariants(input.query)
+  const variants = queryVariants(input.query).map((q) => localPeopleQuery(q, look))
   for (let v = 0; v < variants.length && chosen.length < input.count; v++) {
     for (let page = 1; page <= (v === 0 ? 3 : 1) && chosen.length < input.count; page++) {
       const photos = await searchPhotos({

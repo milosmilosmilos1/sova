@@ -216,7 +216,8 @@ describe('Nova objava (POST /api/ai/compose)', () => {
     expect(r.json.data!.media).toEqual([
       expect.objectContaining({ kind: 'video', attribution: 'Video by Autor 101 on Pexels' }),
     ])
-    expect(visualsState.pexelsSearches).toEqual(['video:barista coffee:portrait'])
+    // brend objavljuje za Srbiju i Ukrajinu: upit sa ljudima traži evropske ljude (D-136)
+    expect(visualsState.pexelsSearches).toEqual(['video:european barista coffee:portrait'])
     visualsState.pexelsEmpty = true
     const none = await compose({ format: 'video', platforms: ['instagram'] })
     expect(none.status).toBe(200)

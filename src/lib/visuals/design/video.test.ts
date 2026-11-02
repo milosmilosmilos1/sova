@@ -81,7 +81,7 @@ describe('kadar videa preko celog ekrana (D-135)', () => {
     return see / (raw.length / 4)
   }
 
-  it('u svakoj temi snimak se vidi na većem delu kadra, i u završnom kadru', async () => {
+  it('u svakoj temi snimak zauzima bar tri četvrtine kadra, i u završnom kadru', async () => {
     const scene: Slide = {
       kind: 'cover',
       kicker: 'SEO',
@@ -90,9 +90,9 @@ describe('kadar videa preko celog ekrana (D-135)', () => {
     }
     const end: Slide = { kind: 'cta', title: 'Pišite nam', body: 'Odgovaramo isti dan.' }
     for (const id of ['split', 'sticker', 'aurora', 'blocks', 'framed', 'poster']) {
-      // Nalepnica je pre D-135 pokazivala snimak na 20 % kadra (polaroid u uglu)
-      expect(await videoShare(id, scene), id).toBeGreaterThan(0.6)
-      expect(await videoShare(id, end), `${id} kraj`).toBeGreaterThan(0.6)
+      // bar tri četvrtine kadra je snimak, tekst u donjoj četvrtini (Nalepnica je pre D-135 imala 20 %)
+      expect(await videoShare(id, scene), id).toBeGreaterThan(0.75)
+      expect(await videoShare(id, end), `${id} kraj`).toBeGreaterThan(0.75)
     }
   }, 60_000)
 })

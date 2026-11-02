@@ -314,6 +314,11 @@
       "offTheme": "{count, plural, one {# draft waiting is} other {# drafts waiting are}} not in the brand theme. Sova can redraw them in the theme with the same text and photos, at no token cost.",
       "running": "Sova is redrawing drafts in the brand theme. {count, plural, one {# draft} other {# drafts}} left, this takes a few minutes.",
       "apply": "Match the theme"
+    },
+    "people": {
+      "label": "People in photos and videos",
+      "local": "Like your audience: European look",
+      "hint": "When Sova picks photos and videos with people on its own, it looks for European people so your audience can relate. Photos and videos you choose yourself stay as they are."
     }
   },
   "flows": {

@@ -39,6 +39,8 @@ export interface DesignView {
   logoAssetId: string | null
   logoSource: 'custom' | 'site' | null
   saved: { colors: boolean; handle: boolean }
+  /** ljudi na fotografijama i snimcima (D-136); `local` je da li lokalni izgled važi za jezik brenda */
+  people: { setting: 'local' | 'any'; local: boolean }
 }
 
 const LOGO_TYPES = ['image/png', 'image/jpeg', 'image/webp']
@@ -172,6 +174,7 @@ function VisualEditor({
   const logo = useSaveDesign(brandId, (data) =>
     setDraft((cur) => ({ ...cur, logoAssetId: data.logoAssetId, logoSource: data.logoSource })),
   )
+  const people = useSaveDesign(brandId, (data) => setDraft((cur) => ({ ...cur, people: data.people })))
   const disabled = !canEdit || save.isPending
   const set = <K extends keyof DesignView>(key: K, value: DesignView[K]) =>
     setDraft({ ...draft, [key]: value })
@@ -203,6 +206,24 @@ function VisualEditor({
             pending={logo.isPending}
             error={logo.error}
           />
+
+          {draft.people.local ? (
+            <section className="space-y-2">
+              <h3 className="text-sm font-medium">{t('people.label')}</h3>
+              <label className="flex items-start gap-2 text-sm">
+                <input
+                  type="checkbox"
+                  className="mt-0.5 size-4"
+                  checked={draft.people.setting === 'local'}
+                  disabled={!canEdit || people.isPending}
+                  onChange={(e) => people.mutate({ people: e.target.checked ? 'local' : 'any' })}
+                />
+                <span>{t('people.local')}</span>
+              </label>
+              <p className="text-xs text-muted-foreground">{t('people.hint')}</p>
+              <ErrorBox error={people.error} />
+            </section>
+          ) : null}
 
           <section className="space-y-2">
             <h3 className="text-sm font-medium">{t('photoSource.label')}</h3>

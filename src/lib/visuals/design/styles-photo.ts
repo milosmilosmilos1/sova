@@ -86,11 +86,12 @@ const poster: StyleDef = {
   render(slide, ctx) {
     const s = sc(ctx)
     const p = 72 * s
+    // u videu naslov u donjoj četvrtini, da se snimak vidi (D-135)
     const titleSize = fit(slide.title.toUpperCase(), {
-      max: 92 * s,
+      max: (ctx.video ? 74 : 92) * s,
       min: 44 * s,
       width: W(ctx, p),
-      height: ctx.size.height * 0.28 * tall(ctx),
+      height: ctx.size.height * (ctx.video ? 0.11 : 0.28 * tall(ctx)),
       lineHeight: 1.02,
       charWidth: 0.62,
     })
@@ -127,6 +128,7 @@ const poster: StyleDef = {
           lineHeight: 1.4,
           color: alpha(fg, 0.88),
           width: px(W(ctx, p) * 0.85),
+          ...(ctx.video ? { lineClamp: 2 } : {}),
         },
         slide.body,
       ),
@@ -502,9 +504,17 @@ const framed: StyleDef = {
       swipeHint(ctx, strip),
     ])
     if (ctx.video) {
-      // kadar videa (D-135): snimak preko celog kadra u belom okviru, traka sa naslovom i tekst na kartici
-      const inset = 26 * s
-      return root(ctx, { padding: px(p) }, [
+      // kadar videa (D-135): snimak preko celog kadra u belom okviru, traka i tekst u donjoj četvrtini
+      const inset = 24 * s
+      const vp = 56 * s
+      const vTitle = fit(slide.title, {
+        max: 60 * s,
+        min: 34 * s,
+        width: W(ctx, vp) - 72 * s,
+        height: ctx.size.height * 0.09,
+        lineHeight: 1.08,
+      })
+      return root(ctx, { padding: px(vp) }, [
         backdrop(ctx),
         el('div', {
           position: 'absolute',
@@ -520,19 +530,19 @@ const framed: StyleDef = {
           top: px(inset),
           width: px(ctx.size.width - inset * 2),
           height: px(ctx.size.height - inset * 2),
-          border: `${px(16 * s)} solid #ffffff`,
+          border: `${px(14 * s)} solid #ffffff`,
           boxSizing: 'border-box',
         }),
         topBar(ctx, '#ffffff'),
         box({ flexGrow: 1 }),
         col(
-          { backgroundColor: strip, color: onStrip, padding: `${px(34 * s)} ${px(36 * s)}`, gap: px(12 * s) },
+          { backgroundColor: strip, color: onStrip, padding: `${px(28 * s)} ${px(36 * s)}`, gap: px(10 * s) },
           [
             text(
               {
                 fontFamily: ctx.fonts.body,
                 fontWeight: 700,
-                fontSize: px(20 * s),
+                fontSize: px(18 * s),
                 letterSpacing: '3px',
                 textTransform: 'uppercase',
                 opacity: 0.85,
@@ -540,13 +550,22 @@ const framed: StyleDef = {
               slide.kicker,
             ),
             text(
-              { fontFamily: ctx.fonts.headings, fontWeight: 700, fontSize: px(titleSize), lineHeight: 1.08 },
+              { fontFamily: ctx.fonts.headings, fontWeight: 700, fontSize: px(vTitle), lineHeight: 1.08 },
               slide.title,
             ),
           ],
         ),
-        col({ backgroundColor: bg, padding: `${px(28 * s)} ${px(36 * s)}`, gap: px(18 * s) }, [
-          body,
+        col({ backgroundColor: bg, padding: `${px(22 * s)} ${px(36 * s)}`, gap: px(14 * s) }, [
+          text(
+            {
+              fontFamily: ctx.fonts.body,
+              fontSize: px(26 * s),
+              lineHeight: 1.4,
+              color: mix(readable(bg), bg, 0.25),
+              lineClamp: 2,
+            },
+            slide.body,
+          ),
           bottomRow,
         ]),
       ])

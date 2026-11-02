@@ -314,6 +314,11 @@
       "offTheme": "{count, plural, one {# nacrt koji čeka nije} few {# nacrta koja čekaju nisu} other {# nacrta koji čekaju nisu}} u temi brenda. Sova ih može nacrtati u temi, sa istim tekstom i fotografijama, bez tokena.",
       "running": "Sova crta nacrte u temi brenda. Još {count, plural, one {# nacrt} few {# nacrta} other {# nacrta}}, traje par minuta.",
       "apply": "Uskladi sa temom"
+    },
+    "people": {
+      "label": "Ljudi na fotografijama i snimcima",
+      "local": "Kao vaša publika: evropski izgled",
+      "hint": "Kad Sova sama bira fotografije i snimke sa ljudima, traži evropske ljude, da se vaša publika poistoveti. Fotografije i snimci koje sami izaberete ostaju kakvi jesu."
     }
   },
   "flows": {

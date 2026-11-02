@@ -124,6 +124,33 @@ function videoFrame(ctx: DesignContext, p: number, decor: Child[], content: Chil
   ])
 }
 
+/** Naslov u kadru videa: dva-tri reda, da sav tekst stane u donju četvrtinu ekrana (D-135). */
+function videoTitle(ctx: DesignContext, title: string, width: number): number {
+  return fit(title, {
+    max: 76 * sc(ctx),
+    min: 40 * sc(ctx),
+    width,
+    height: ctx.size.height * 0.1,
+    lineHeight: 1.05,
+    charWidth: 0.62,
+  })
+}
+
+/** Opis u kadru videa: manja slova i najviše dva reda (D-135). */
+function videoBody(ctx: DesignContext, value: string | null | undefined, color: string, width: number) {
+  return text(
+    {
+      fontFamily: ctx.fonts.body,
+      fontSize: px(27 * sc(ctx)),
+      lineHeight: 1.35,
+      color,
+      width: px(width),
+      lineClamp: 2,
+    },
+    value,
+  )
+}
+
 /** Obris kruga kao svg (okvir sa zaobljenjem Satori crta kao zaobljen kvadrat). */
 const ring = (size: number, color: string, stroke: number, pos: Style) =>
   shape({ width: px(size), height: px(size), ...pos }, [
@@ -435,11 +462,12 @@ const split: StyleDef = {
       borderRadius: px(40 * s),
       boxShadow: `0 ${px(10 * s)} ${px(24 * s)} rgba(0,0,0,0.25)`,
     }
-    if (ctx.video)
-      // kadar videa (D-135): snimak preko celog kadra, panel u boji podloge pri dnu, oznaka na njegovoj ivici
+    if (ctx.video) {
+      // kadar videa (D-135): snimak preko celog kadra, panel u boji podloge u donjoj četvrtini
+      const vp = 56 * s
       return videoFrame(
         ctx,
-        p,
+        vp,
         [],
         [
           col(
@@ -450,21 +478,31 @@ const split: StyleDef = {
               width: px(Wd),
               backgroundColor: t.bg,
               color: t.fg,
-              padding: `${px(70 * s)} ${px(p)} ${px(p)}`,
-              gap: px(20 * s),
+              padding: `${px(52 * s)} ${px(vp)} ${px(40 * s)}`,
+              gap: px(14 * s),
             },
             [
               label
-                ? text({ ...pillStyle, left: px(p), top: px(-34 * s), transform: 'rotate(-2deg)' }, label)
+                ? text(
+                    {
+                      ...pillStyle,
+                      fontSize: px(24 * s),
+                      padding: `${px(10 * s)} ${px(24 * s)}`,
+                      left: px(vp),
+                      top: px(-26 * s),
+                      transform: 'rotate(-2deg)',
+                    },
+                    label,
+                  )
                 : null,
-              heading(ctx, slide.title, titleSize, t.fg, W(ctx, p)),
-              bodyText(ctx, slide.body, alpha(t.fg, 0.88), W(ctx, p), 32),
-              box({ height: px(12 * s) }),
-              footer(ctx, slide, t.fg, t.a1, t.on1),
+              heading(ctx, slide.title, videoTitle(ctx, slide.title, W(ctx, vp)), t.fg, W(ctx, vp)),
+              videoBody(ctx, slide.body, alpha(t.fg, 0.85), W(ctx, vp)),
+              slide.kind === 'cta' ? button(ctx, t.a1, t.on1) : brandMark(ctx, 38 * s, t.fg),
             ],
           ),
         ],
       )
+    }
     if (ctx.variant === 1) {
       // obrnut raspored (D-132): tekst gore, fotografija dole, oznaka na desnoj ivici fotografije
       const photoTop = Hd - topH
@@ -642,18 +680,56 @@ const sticker: StyleDef = {
           : null,
       ],
     )
-    if (ctx.video)
-      // kadar videa (D-135): snimak preko celog kadra, kartica sa trakama pri dnu, krug iza nje
-      return videoFrame(
-        ctx,
-        p,
-        [circle(Wd * 0.34, alpha(t.a2, 0.92), { right: px(-Wd * 0.1), bottom: px(Hd * 0.1) })],
+    if (ctx.video) {
+      // kadar videa (D-135): snimak preko celog kadra, kartica sa trakama u donjoj četvrtini, krug iza nje
+      const vp = 52 * s
+      const vCardW = W(ctx, vp) - 20 * s
+      const vInner = vCardW - 88 * s
+      const vCard = col(
+        {
+          alignSelf: 'center',
+          width: px(vCardW),
+          backgroundColor: '#FFFFFF',
+          color: ink,
+          borderRadius: px(36 * s),
+          padding: `${px(40 * s)} ${px(44 * s)}`,
+          gap: px(12 * s),
+          transform: rot(-2),
+          boxShadow: `0 ${px(24 * s)} ${px(50 * s)} rgba(0,0,0,0.3)`,
+          position: 'relative',
+        },
         [
-          card,
-          box({ minHeight: px(36 * s) }),
-          box({ alignItems: 'center' }, [brandMark(ctx, 46 * s, '#FFFFFF')]),
+          slide.kicker
+            ? text(
+                {
+                  fontFamily: ctx.fonts.body,
+                  fontWeight: 700,
+                  fontSize: px(22 * s),
+                  letterSpacing: '2px',
+                  textTransform: 'uppercase',
+                  color: accentInk,
+                },
+                slide.kicker,
+              )
+            : null,
+          heading(ctx, slide.title, videoTitle(ctx, slide.title, vInner), ink, vInner),
+          videoBody(ctx, slide.body, alpha(ink, 0.75), vInner),
+          slide.kind === 'cta' ? button(ctx, t.a1, t.on1) : null,
+          tape({ top: px(-22 * s), ...L(px(48 * s)) }, -8),
+          tape({ top: px(-18 * s), ...R(px(48 * s)) }, 7),
         ],
       )
+      return videoFrame(
+        ctx,
+        vp,
+        [circle(Wd * 0.3, alpha(t.a2, 0.92), { right: px(-Wd * 0.09), bottom: px(Hd * 0.06) })],
+        [
+          vCard,
+          box({ minHeight: px(22 * s) }),
+          box({ alignItems: 'center' }, [brandMark(ctx, 38 * s, '#FFFFFF')]),
+        ],
+      )
+    }
     return root(ctx, { backgroundColor: t.bg, padding: px(p), color: t.fg }, [
       circle(Wd * 0.62, alpha(t.a1, 0.9), { ...L(px(-Wd * 0.26)), top: px(Hd * 0.12) }),
       // donji krug ostaje desno, ispod strelice: u ogledalu bi presekao ime brenda
@@ -755,21 +831,22 @@ const blocks: StyleDef = {
       ),
     )
     if (ctx.video) {
-      // kadar videa (D-135): snimak preko celog kadra, tekst u bloku boje teme, cik-cak i krug iza bloka
-      const inner = W(ctx, p) - 104 * s
+      // kadar videa (D-135): snimak preko celog kadra, tekst u bloku boje teme u donjoj četvrtini
+      const vp = 52 * s
+      const vInner = W(ctx, vp) - 88 * s
       return videoFrame(
         ctx,
-        p,
-        [circle(Wd * 0.5, t.a2, { right: px(-Wd * 0.2), bottom: px(-Wd * 0.08) })],
+        vp,
+        [circle(Wd * 0.44, t.a2, { right: px(-Wd * 0.18), bottom: px(-Wd * 0.08) })],
         [
-          box({ marginBottom: px(22 * s) }, [zigzag(200 * s, 36 * s, t.a1, 10 * s)]),
+          box({ marginBottom: px(16 * s) }, [zigzag(170 * s, 30 * s, t.a1, 9 * s)]),
           col(
             {
               backgroundColor: t.bg,
               color: t.fg,
-              borderRadius: px(36 * s),
-              padding: px(52 * s),
-              gap: px(22 * s),
+              borderRadius: px(32 * s),
+              padding: `${px(40 * s)} ${px(44 * s)}`,
+              gap: px(14 * s),
             },
             [
               slide.kicker
@@ -778,18 +855,18 @@ const blocks: StyleDef = {
                       alignSelf: 'flex-start',
                       fontFamily: ctx.fonts.body,
                       fontWeight: 700,
-                      fontSize: px(26 * s),
+                      fontSize: px(22 * s),
                       letterSpacing: '2px',
                       textTransform: 'uppercase',
-                      paddingBottom: px(8 * s),
-                      borderBottom: `${px(6 * s)} solid ${t.a1}`,
+                      paddingBottom: px(6 * s),
+                      borderBottom: `${px(5 * s)} solid ${t.a1}`,
                     },
                     slide.kicker,
                   )
                 : null,
-              heading(ctx, slide.title, titleSize, t.fg, inner),
-              bodyText(ctx, slide.body, alpha(t.fg, 0.88), inner, 32),
-              footer(ctx, slide, t.fg, t.fg, t.bg),
+              heading(ctx, slide.title, videoTitle(ctx, slide.title, vInner), t.fg, vInner),
+              videoBody(ctx, slide.body, alpha(t.fg, 0.85), vInner),
+              slide.kind === 'cta' ? button(ctx, t.fg, t.bg) : brandMark(ctx, 38 * s, t.fg),
             ],
           ),
         ],
@@ -919,18 +996,21 @@ const aurora: StyleDef = {
       brandMark(ctx, 46 * s, t.fg),
       swipeHint(ctx, t.fg),
     ])
-    if (ctx.video)
-      // kadar videa (D-135): snimak preko celog kadra, preliv teme pri dnu i ploča (manje providna, da se čita)
+    if (ctx.video) {
+      // kadar videa (D-135): snimak preko celog kadra, preliv teme pri dnu i ploča u donjoj četvrtini
+      const vp = 52 * s
+      const vInner = W(ctx, vp) - 88 * s
+      const tint = mix(t.a1, t.a2, 0.5)
       return videoFrame(
         ctx,
-        p,
+        vp,
         [
           shape({
             left: 0,
             top: 0,
             width: px(Wd),
             height: px(Hd),
-            backgroundImage: `radial-gradient(circle at 50% 100%, ${alpha(mix(t.a1, t.a2, 0.5), 0.6)} 0%, ${alpha(mix(t.a1, t.a2, 0.5), 0)} 55%)`,
+            backgroundImage: `radial-gradient(circle at 50% 100%, ${alpha(tint, 0.6)} 0%, ${alpha(tint, 0)} 45%)`,
           }),
         ],
         [
@@ -938,21 +1018,22 @@ const aurora: StyleDef = {
             {
               backgroundColor: alpha(t.bg, 0.88),
               border: `${px(2 * s)} solid ${alpha('#FFFFFF', 0.5)}`,
-              borderRadius: px(48 * s),
-              padding: px(56 * s),
-              gap: px(20 * s),
+              borderRadius: px(40 * s),
+              padding: `${px(40 * s)} ${px(44 * s)}`,
+              gap: px(14 * s),
             },
             [
               pill(ctx, slide.kicker, t.a1, t.on1),
-              heading(ctx, slide.title, titleSize, t.fg, inner),
-              bodyText(ctx, slide.body, alpha(t.fg, 0.88), inner, 32),
+              heading(ctx, slide.title, videoTitle(ctx, slide.title, vInner), t.fg, vInner),
+              videoBody(ctx, slide.body, alpha(t.fg, 0.85), vInner),
               slide.kind === 'cta' ? button(ctx, t.fg, t.bg) : null,
             ],
           ),
-          box({ minHeight: px(36 * s) }),
-          box({ alignItems: 'center' }, [brandMark(ctx, 46 * s, '#FFFFFF')]),
+          box({ minHeight: px(22 * s) }),
+          box({ alignItems: 'center' }, [brandMark(ctx, 38 * s, '#FFFFFF')]),
         ],
       )
+    }
     return root(ctx, { backgroundColor: t.bg, padding: px(p), color: t.fg }, [
       glow(m ? 90 : 10, 12, t.a1, 50),
       glow(m ? 8 : 92, 24, t.a2, 52),

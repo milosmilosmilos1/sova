@@ -18,6 +18,7 @@ import { logger } from '@/lib/logger'
 import { mapLimit } from '@/lib/map-limit'
 import type { UnsplashSearchInput, UnsplashSelectInput } from '@/lib/schemas/visuals'
 import { safeFetch } from '@/lib/ssrf'
+import { localPeopleQuery } from '@/lib/visuals/people'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import {
   attributionFor,
@@ -34,6 +35,7 @@ import {
 import { getBrand } from '@/services/brands'
 import type { MediaAssetRow } from '@/services/media'
 import { storeServerImage } from '@/services/visuals/store'
+import { brandPeopleLook } from '@/services/visuals/people'
 import { queryVariants, STOCK_PARALLEL, usedStockIds } from '@/services/visuals/used'
 
 export interface UnsplashPhotoView {
@@ -192,7 +194,9 @@ export async function pickUnsplashPhotos(input: {
   if (spent()) return []
   const used = await usedStockIds(input.brandId, 'unsplash')
   const chosen: UnsplashPhoto[] = []
-  const variants = queryVariants(input.query)
+  // ljudi kao publika brenda (D-136): svaka varijanta upita koja pominje ljude traži evropske ljude
+  const look = await brandPeopleLook(input.brandId)
+  const variants = queryVariants(input.query).map((q) => localPeopleQuery(q, look))
   search: for (let v = 0; v < variants.length && chosen.length < input.count; v++) {
     for (let page = 1; page <= (v === 0 ? 3 : 1) && chosen.length < input.count; page++) {
       if (spent()) break search

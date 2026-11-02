@@ -19,6 +19,7 @@ import { contrast, mix, readable } from '@/lib/visuals/design/kit'
 import type { LookId } from '@/lib/visuals/design/looks'
 import type { BrandLogo, DesignColors } from '@/lib/visuals/design/types'
 import { prepareBrandLogo } from '@/lib/visuals/design/logo'
+import { peopleLookFor, type PeopleSetting } from '@/lib/visuals/people'
 import { getCurrentProfileRow } from '@/services/brand-brain/profile'
 import { getBrand, type BrandRow } from '@/services/brands'
 import { downloadAsset, getAsset } from '@/services/media'
@@ -47,6 +48,8 @@ export interface ResolvedDesign {
   logoSource: 'custom' | 'site' | null
   /** šta je sačuvano, a šta podrazumevano (UI prikazuje „iz profila brenda”) */
   saved: { colors: boolean; handle: boolean }
+  /** ljudi na fotografijama i snimcima (D-136): podešavanje i da li lokalni izgled važi za jezik brenda */
+  people: { setting: PeopleSetting; local: boolean }
 }
 
 const FALLBACK_COLORS: DesignColors = {
@@ -97,7 +100,7 @@ export function storedDesign(brand: Pick<BrandRow, 'design'>): StoredDesign {
 }
 
 export async function resolveDesign(
-  brand: Pick<BrandRow, 'id' | 'name' | 'design' | 'logo_asset_id'>,
+  brand: Pick<BrandRow, 'id' | 'name' | 'design' | 'logo_asset_id'> & { content_locale?: string | null },
 ): Promise<ResolvedDesign> {
   const stored = storedDesign(brand)
   const profile = await getCurrentProfileRow(brand.id)
@@ -121,6 +124,10 @@ export async function resolveDesign(
     logoAssetId: stored.logoAssetId ?? profileLogo ?? brand.logo_asset_id ?? null,
     logoSource: stored.logoAssetId ? 'custom' : (profileLogo ?? brand.logo_asset_id) ? 'site' : null,
     saved: { colors: Boolean(stored.colors), handle: stored.handle !== undefined },
+    people: {
+      setting: stored.people ?? 'local',
+      local: peopleLookFor(brand.content_locale, 'local') === 'europe',
+    },
   }
 }
 
@@ -175,12 +182,16 @@ export async function updateDesign(
     if (input.look) next.look = input.look
     else delete next.look
   }
+  if (input.people !== undefined) {
+    if (input.people === 'any') next.people = 'any'
+    else delete next.people
+  }
   // upis kroz service role posle provere uloge, kao ostala podešavanja brenda
   const { data, error } = await createSupabaseAdminClient()
     .from('brands')
     .update({ design: next as unknown as Json })
     .eq('id', brandId)
-    .select('id, name, design, logo_asset_id')
+    .select('id, name, design, logo_asset_id, content_locale')
     .single()
   if (error) throw mapDbError(error)
   return resolveDesign(data)

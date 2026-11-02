@@ -159,6 +159,7 @@ create table brands (
   settings jsonb not null default '{}',        -- UTM podrazumevano, zabranjene reči, hashtag setovi
   report_emails citext[] not null default '{}' check (cardinality(report_emails) <= 5),  -- klijent dobija mesečni PDF (migracija 024)
   design jsonb not null default '{}',            -- dizajn objava: stil, format, fotografije, slajdovi, boje, nalog (migracija 030, D-109); izgled (D-123, D-124): look (light-1..3 | dark-1..3 | custom; stare site-1..3 se prevode), fonts {headings, body}, siteVisual {url, at, source, primary, secondary, accent, light, dark, headings, body}
+-- brands.design.people: 'any' isključuje lokalni izgled ljudi na fotografijama i snimcima (D-136); bez njega brend na srpskom ili ukrajinskom traži evropske ljude
   created_by uuid references profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),
