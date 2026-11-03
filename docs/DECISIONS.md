@@ -1196,3 +1196,12 @@ Odluka:
 - Zaštita na nivou hostinga (Netlify skew protection, usmeravanje stare strane na stari deploy) nije uključena; ovo radi bez nje.
 
 Razlog: vlasniku „nije radio live” odmah posle objave 3.11.2026 (tri klika na Kalendaru, 409 „Failed to find Server Action”).
+
+## D-142 · 3.11.2026 · usvojeno · Emoji u objavama gde ima smisla
+
+Odluka:
+
+- Opisi objava (i karusela) nose emoji umereno i gde ima smisla: 1 do 3 u objavi, uz ključnu poruku, stavke liste ili poziv na akciju, ne u svakom redu i ne umesto reči; u formalnom tonu i na LinkedInu najviše jedan. Tekst na slajdovima ostaje bez emoji-ja.
+- Polje „emoji” iz profila brenda važi samo kad ga je korisnik sam podesio na strani Brain (zaključano polje `voice.emoji`). Procena sa sajta (heuristika: bar pet emoji-ja na sajtu, ili AI analiza) više ne gasi emoji, jer poslovni sajt retko ima emoji, a objave na mrežama ih prirodno nose. Brend bez profila: emoji osim ako je u podešavanjima izričito isključen.
+
+Razlog: vlasnik je tražio emoji na objavama gde ima smisla; skoro svi brendovi su imali „bez emoji-ja” zbog procene sa sajta.

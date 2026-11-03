@@ -176,7 +176,7 @@ export function brandPromptLines(b: BrandContext): string[] {
     b.description ? `Opis: ${b.description}` : null,
     b.tone ? `Ton komunikacije: ${b.tone}` : b.voice?.tone ? null : 'Ton komunikacije: prijateljski i jasan',
     `Obraćanje publici: ${b.address === 'ti' ? 'ti (neformalno)' : 'vi (persiranje)'}`,
-    `Emoji: ${b.emoji ? 'umereno, gde prirodno pristaje' : 'bez emoji-ja'}`,
+    `Emoji: ${b.emoji ? 'gde ima smisla i umereno: 1 do 3 u objavi (uz ključnu poruku, stavke liste ili poziv na akciju), ne u svakom redu i ne umesto reči; za formalan ton i LinkedIn najviše jedan' : 'bez emoji-ja (izbor brenda)'}`,
     b.forbiddenWords?.length ? `Zabranjene reči: ${b.forbiddenWords.join(', ')}` : null,
     b.facts?.length
       ? `Činjenice koje smeš da koristiš:\n${b.facts.map((f) => `  • ${f}`).join('\n')}`

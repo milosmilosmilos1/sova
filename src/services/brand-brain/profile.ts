@@ -268,5 +268,5 @@ export async function getBrandContextForBrand(brandId: string): Promise<BrandCon
   if (!row) return null
   const parsed = brandProfileSchema.safeParse(row.data)
   if (!parsed.success) return null
-  return toBrandContext(parsed.data)
+  return toBrandContext(parsed.data, row.locked_fields ?? [])
 }

@@ -83,7 +83,7 @@ export async function buildBrandContext(
       name: brand.name,
       locale,
       address: settings.address === 'ti' ? 'ti' : 'vi',
-      emoji: settings.emoji === true,
+      emoji: settings.emoji !== false,
       forbiddenWords: Array.isArray(settings.forbidden_words) ? (settings.forbidden_words as string[]) : [],
       tone: typeof settings.tone === 'string' ? settings.tone : null,
       description: typeof settings.description === 'string' ? settings.description : null,

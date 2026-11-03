@@ -229,6 +229,19 @@ describe('compose', () => {
     expect(ctx.services).toEqual(['SEO optimizacija', 'Google oglasi', 'Društvene mreže'])
     expect(ctx.address).toBe('vi')
   })
+  it('emoji (D-142): procena sa sajta ne gasi emoji, a izbor korisnika na strani Brain važi', () => {
+    const noEmoji = {
+      ...heuristic,
+      voice: { ...heuristic.voice, emoji: { ...heuristic.voice.emoji, value: false } },
+    }
+    expect(toBrandContext(noEmoji).emoji).toBe(true)
+    expect(toBrandContext(noEmoji, ['voice.emoji']).emoji).toBe(false)
+    const withEmoji = {
+      ...heuristic,
+      voice: { ...heuristic.voice, emoji: { ...heuristic.voice.emoji, value: true } },
+    }
+    expect(toBrandContext(withEmoji, ['voice.emoji']).emoji).toBe(true)
+  })
   it('prazan profil prolazi šemu i sve putanje imaju polje', () => {
     const empty = emptyProfile({ name: 'X', contentLocale: 'sr-Latn', websiteUrl: null })
     expect(brandProfileSchema.safeParse(empty).success).toBe(true)

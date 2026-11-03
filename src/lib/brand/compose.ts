@@ -121,7 +121,14 @@ export interface BrandContextFromProfile {
   colors: { primary: string; secondary: string; accent: string }
 }
 
-export function toBrandContext(profile: BrandProfile): BrandContextFromProfile {
+/**
+ * Emoji u objavama (D-142): izbor koji je korisnik sam podesio na strani Brain (zaključano polje) važi,
+ * a procena sa sajta ne, jer sajt retko ima emoji i kad ih objave na mrežama prirodno nose.
+ */
+export function toBrandContext(
+  profile: BrandProfile,
+  lockedFields: readonly string[] = [],
+): BrandContextFromProfile {
   const facts = profile.facts.value.map((f) => f.claim)
   for (const d of profile.offer.differentiators.value) if (facts.length < 30) facts.push(d)
   for (const g of profile.offer.guarantees.value) if (facts.length < 30) facts.push(g)
@@ -135,7 +142,7 @@ export function toBrandContext(profile: BrandProfile): BrandContextFromProfile {
     description: profile.identity.description.value,
     tone: profile.voice.tone.value.length ? profile.voice.tone.value.join(', ') : null,
     address: profile.voice.address.value,
-    emoji: profile.voice.emoji.value,
+    emoji: lockedFields.includes('voice.emoji') ? profile.voice.emoji.value : true,
     forbiddenWords: profile.voice.forbidden_words.value,
     facts,
     keyTerms: profile.voice.key_terms.value,
