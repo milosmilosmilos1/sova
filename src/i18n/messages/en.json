@@ -320,8 +320,7 @@
     },
     "people": {
       "label": "People in photos and videos",
-      "local": "Like your audience: European look",
-      "hint": "When Sova picks photos and videos with people on its own, it looks for European people so your audience can relate. Photos and videos you choose yourself stay as they are."
+      "hint": "When Sova picks photos and videos on its own, it only takes ones without people or with people of European appearance, like your audience. It checks the description and the image itself before downloading. Photos and videos you choose yourself stay as they are."
     }
   },
   "flows": {

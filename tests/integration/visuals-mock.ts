@@ -26,6 +26,8 @@ export const visualsState = {
   pexelsSearches: [] as string[],
   /** Pexels pretraga vraća prazan spisak */
   pexelsEmpty: false,
+  /** ime snimka u adresi stranice po ID-ju, kao „a-woman-vacuuming-the-floor” (D-154) */
+  pexelsVideoSlugs: {} as Record<number, string>,
 }
 
 export function resetVisualsState(): void {
@@ -42,6 +44,7 @@ export function resetVisualsState(): void {
   visualsState.canvaVideoTooLarge = false
   visualsState.pexelsSearches = []
   visualsState.pexelsEmpty = false
+  visualsState.pexelsVideoSlugs = {}
 }
 
 /** Dizajn kao u `GET /designs`; sličica nosi odnos stranica prve strane. */
@@ -295,8 +298,14 @@ export function pexelsVideo(id: number, overrides: Record<string, unknown> = {})
     width: portrait ? 1080 : 1920,
     height: portrait ? 1920 : 1080,
     duration: portrait ? 12 : 95,
-    url: `https://www.pexels.com/video/${id}/`,
+    url: `https://www.pexels.com/video/${visualsState.pexelsVideoSlugs[id] ? `${visualsState.pexelsVideoSlugs[id]}-` : ''}${id}/`,
     image: `https://images.pexels.com/videos/${id}/thumb.jpeg`,
+    // kadrovi za proveru ljudi (D-154), kao 15 malih slika u API-ju
+    video_pictures: Array.from({ length: 15 }, (_, nr) => ({
+      id: id * 100 + nr,
+      nr,
+      picture: `https://images.pexels.com/videos/${id}/pictures/preview-${nr}.jpeg?w=123&h=218`,
+    })),
     user: { id: 7, name: `Autor ${id}`, url: `https://www.pexels.com/@autor${id}` },
     video_files: [
       {

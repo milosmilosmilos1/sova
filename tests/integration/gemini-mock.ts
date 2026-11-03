@@ -1,6 +1,8 @@
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 
+import { PEOPLE_CHECK_TAG, type PeopleVerdict } from '@/lib/ai/prompts/people-check'
+
 /**
  * MSW mock Gemini API-ja za integracione testove: red odgovora po pozivu,
  * podrazumevano uspešan JSON tekst. Supabase i ostalo prolaze netaknuto (bypass).
@@ -19,9 +21,22 @@ export function enqueueReply(...replies: MockReply[]): void {
   queue.push(...replies)
 }
 
+/**
+ * Provera ljudi (D-154) ima svoj red: ne troši odgovore ostalih poziva i ne ulazi u `calls`.
+ * Bez odgovora u redu svaka slika je „none”; `fail` vraća grešku 500.
+ */
+const peopleQueue: Array<PeopleVerdict[] | 'fail'> = []
+export const peopleCalls: Array<{ model: string; images: number }> = []
+
+export function enqueuePeopleVerdicts(...replies: Array<PeopleVerdict[] | 'fail'>): void {
+  peopleQueue.push(...replies)
+}
+
 export function resetGeminiMock(): void {
   queue.length = 0
   calls.length = 0
+  peopleQueue.length = 0
+  peopleCalls.length = 0
 }
 
 export const defaultTextOutput = {
@@ -101,6 +116,19 @@ export const geminiServer = setupServer(
         body = await request.json()
       } catch {
         body = null
+      }
+      const raw = JSON.stringify(body ?? null)
+      if (raw.includes(PEOPLE_CHECK_TAG)) {
+        const images = (raw.match(/"inline_?[dD]ata"/g) ?? []).length
+        peopleCalls.push({ model, images })
+        const verdicts = peopleQueue.shift()
+        if (verdicts === 'fail')
+          return HttpResponse.json(buildBody({ kind: 'status', status: 500 }), { status: 500 })
+        const items = Array.from({ length: images }, (_, index) => ({
+          index,
+          verdict: verdicts?.[index] ?? 'none',
+        }))
+        return HttpResponse.json(buildBody({ kind: 'text', json: { items } }))
       }
       calls.push({ model, body })
       const reply = queue.shift() ?? { kind: 'text', json: defaultTextOutput }

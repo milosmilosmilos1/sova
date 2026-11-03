@@ -7,7 +7,7 @@ import type { PexelsSearchInput, PexelsSelectInput } from '@/lib/schemas/visuals
 import { logger } from '@/lib/logger'
 import { mapLimit } from '@/lib/map-limit'
 import { safeFetch, SsrfError } from '@/lib/ssrf'
-import { localPeopleQuery } from '@/lib/visuals/people'
+import { localPeopleQuery, slugText } from '@/lib/visuals/people'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import {
   attributionFor,
@@ -25,7 +25,7 @@ import {
 import { getBrand } from '@/services/brands'
 import { maxVideoBytes, storeServerVideo, type MediaAssetRow } from '@/services/media'
 import { storeServerImage } from '@/services/visuals/store'
-import { brandPeopleLook } from '@/services/visuals/people'
+import { allowedByPeople, type PeopleCandidate } from '@/services/visuals/people-check'
 import { queryVariants, STOCK_PARALLEL, usedStockIds } from '@/services/visuals/used'
 import type { Json } from '@/types/database'
 
@@ -245,6 +245,34 @@ export async function selectPexelsMedia(viewer: Viewer, input: PexelsSelectInput
   })
 }
 
+/** Snimci koje provera ljudi (D-154) gleda u jednom pozivu. */
+const VIDEO_CHECK_BATCH = 5
+/** Najduža provera jedne grupe snimaka. */
+const VIDEO_CHECK_MS = 8_000
+/** Fotografije u jednom pozivu: koliko treba i još nekoliko, za odbijene. */
+const PHOTO_CHECK_BATCH = 10
+const PHOTO_CHECK_SPARE = 3
+/** Zajednički rok svih provera fotografija u jednom izboru. */
+const PHOTO_CHECKS_MS = 12_000
+/** Najviše provera po izboru; posle toga izbor vraća ono što je našao. */
+const MAX_PEOPLE_CHECKS = 3
+
+/** Snimak za proveru ljudi: ime iz adrese, naslovna slika i dva kadra iz snimka. */
+function videoCandidate(video: PexelsVideo): PeopleCandidate<PexelsVideo> {
+  const pics = video.pictures ?? []
+  const frames = [video.image, pics[Math.floor(pics.length / 3)], pics[Math.floor((pics.length * 2) / 3)]]
+  return {
+    item: video,
+    text: slugText(video.pageUrl),
+    frames: frames.filter((f): f is string => Boolean(f)),
+  }
+}
+
+/** Fotografija za proveru ljudi: alt, ime iz adrese i srednja sličica. */
+function photoCandidate(photo: PexelsPhoto): PeopleCandidate<PexelsPhoto> {
+  return { item: photo, text: `${photo.alt ?? ''} ${slugText(photo.pageUrl)}`, frames: [photo.src.medium] }
+}
+
 /**
  * Automatski izbor snimka za upit („Nova objava”, plan, Autopilot): snimak od 3 do 60 sekundi
  * (priča i Reels) koji staje u limit. Snimak koji je brend već dobio se preskače (D-121), pa se
@@ -266,9 +294,10 @@ export async function pickPexelsVideo(input: {
   if (!isPexelsConfigured()) return null
   const { deadline, maxSeconds = 60, maxBytes, ...store } = input
   const used = await usedStockIds(input.brandId, 'pexels-video')
-  // ljudi kao publika brenda (D-136): svaka varijanta upita koja pominje ljude traži evropske ljude
-  const look = await brandPeopleLook(input.brandId)
-  const variants = queryVariants(input.query).map((q) => localPeopleQuery(q, look))
+  // ljudi samo evropskog izgleda (D-136, D-154): upit koji pominje ljude traži evropske ljude, a
+  // snimci se pre preuzimanja proveravaju po imenu i kadrovima
+  const variants = queryVariants(input.query).map(localPeopleQuery)
+  let checks = 0
   for (let v = 0; v < variants.length; v++) {
     for (let page = 1; page <= (v === 0 ? 3 : 1); page++) {
       const videos = await searchVideos({
@@ -277,28 +306,40 @@ export async function pickPexelsVideo(input: {
         perPage: 30,
         page,
       })
-      for (const clip of videos.filter((x) => x.durationSec >= 3 && x.durationSec <= maxSeconds)) {
-        if (used.has(String(clip.id))) continue
-        used.add(String(clip.id))
-        const left = deadline ? deadline - Date.now() : null
-        if (left !== null && left < 8_000) return null
-        try {
-          return await storePexelsMedia({
-            ...store,
-            kind: 'video',
-            id: clip.id,
-            video: clip,
-            maxBytes,
-            downloadTimeoutMs: left !== null ? Math.min(12_000, left - 4_000) : undefined,
-          })
-        } catch (error) {
-          if (error instanceof ApiError && error.code === 'PAYLOAD_TOO_LARGE') continue
-          // sa rokom jedan neispravan ili spor snimak ne zaustavlja izbor: probaj sledeći
-          if (deadline) {
-            logger.warn('pexels_video_skipped', { brandId: input.brandId, clipId: clip.id, error })
-            continue
+      const fresh = videos.filter(
+        (x) => x.durationSec >= 3 && x.durationSec <= maxSeconds && !used.has(String(x.id)),
+      )
+      for (let i = 0; i < fresh.length; i += VIDEO_CHECK_BATCH) {
+        if (checks++ >= MAX_PEOPLE_CHECKS) return null
+        if (deadline && deadline - Date.now() < 8_000) return null
+        const batch = fresh.slice(i, i + VIDEO_CHECK_BATCH)
+        for (const clip of batch) used.add(String(clip.id))
+        const allowed = await allowedByPeople(batch.map(videoCandidate), {
+          label: 'pexels-video',
+          // preuzimanje snimka traži bar 8 s, pa provera završava pre toga
+          until: Math.min(Date.now() + VIDEO_CHECK_MS, deadline ? deadline - 9_000 : Infinity),
+        })
+        for (const clip of allowed) {
+          const left = deadline ? deadline - Date.now() : null
+          if (left !== null && left < 8_000) return null
+          try {
+            return await storePexelsMedia({
+              ...store,
+              kind: 'video',
+              id: clip.id,
+              video: clip,
+              maxBytes,
+              downloadTimeoutMs: left !== null ? Math.min(12_000, left - 4_000) : undefined,
+            })
+          } catch (error) {
+            if (error instanceof ApiError && error.code === 'PAYLOAD_TOO_LARGE') continue
+            // sa rokom jedan neispravan ili spor snimak ne zaustavlja izbor: probaj sledeći
+            if (deadline) {
+              logger.warn('pexels_video_skipped', { brandId: input.brandId, clipId: clip.id, error })
+              continue
+            }
+            throw error
           }
-          throw error
         }
       }
       if (videos.length < 30) break
@@ -321,10 +362,12 @@ export async function pickPexelsPhotos(input: {
 }): Promise<StoredPexels[]> {
   if (!isPexelsConfigured() || input.count <= 0) return []
   const used = await usedStockIds(input.brandId, 'pexels-photo')
-  const look = await brandPeopleLook(input.brandId)
   const chosen: PexelsPhoto[] = []
-  const variants = queryVariants(input.query).map((q) => localPeopleQuery(q, look))
-  for (let v = 0; v < variants.length && chosen.length < input.count; v++) {
+  // ljudi samo evropskog izgleda (D-154): provere imaju zajednički rok, da izbor stane u korak od 30 s
+  const variants = queryVariants(input.query).map(localPeopleQuery)
+  const until = Date.now() + PHOTO_CHECKS_MS
+  let checks = 0
+  search: for (let v = 0; v < variants.length && chosen.length < input.count; v++) {
     for (let page = 1; page <= (v === 0 ? 3 : 1) && chosen.length < input.count; page++) {
       const photos = await searchPhotos({
         query: variants[v]!,
@@ -332,11 +375,15 @@ export async function pickPexelsPhotos(input: {
         perPage: 40,
         page,
       })
-      for (const photo of photos) {
-        if (chosen.length >= input.count) break
-        if (used.has(String(photo.id))) continue
-        used.add(String(photo.id))
-        chosen.push(photo)
+      const fresh = photos.filter((p) => !used.has(String(p.id)))
+      for (let i = 0; i < fresh.length && chosen.length < input.count;) {
+        if (checks++ >= MAX_PEOPLE_CHECKS) break search
+        const size = Math.min(PHOTO_CHECK_BATCH, input.count - chosen.length + PHOTO_CHECK_SPARE)
+        const batch = fresh.slice(i, i + size)
+        i += size
+        for (const photo of batch) used.add(String(photo.id))
+        const allowed = await allowedByPeople(batch.map(photoCandidate), { label: 'pexels-photo', until })
+        chosen.push(...allowed.slice(0, input.count - chosen.length))
       }
       if (photos.length < 40) break
     }

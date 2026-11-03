@@ -61,8 +61,6 @@ export const storedDesignSchema = z
     /** izabrani izgled (D-123): jedna od šest tema sa sajta ili sopstveni; stare oznake se prevode */
     look: z.preprocess((v) => (typeof v === 'string' ? (LEGACY_LOOK_IDS[v] ?? v) : v), z.enum(LOOK_IDS)),
     siteVisual: siteVisualSchema,
-    /** ljudi na fotografijama i snimcima (D-136): `any` isključuje lokalni izgled (podrazumevano je kao publika) */
-    people: z.enum(['local', 'any']),
   })
   .partial()
 export type StoredDesign = z.infer<typeof storedDesignSchema>
@@ -90,8 +88,6 @@ export const updateDesignSchema = z
     fonts: fontPairSchema.nullable().optional(),
     /** izabrani izgled (D-123); null briše oznaku izbora */
     look: z.enum(LOOK_IDS).nullable().optional(),
-    /** ljudi na fotografijama i snimcima (D-136): kao publika ili bilo ko */
-    people: z.enum(['local', 'any']).optional(),
     /** vraća sve na podrazumevano iz profila brenda */
     reset: z.boolean().optional(),
   })

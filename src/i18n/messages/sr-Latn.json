@@ -320,8 +320,7 @@
     },
     "people": {
       "label": "Ljudi na fotografijama i snimcima",
-      "local": "Kao vaša publika: evropski izgled",
-      "hint": "Kad Sova sama bira fotografije i snimke sa ljudima, traži evropske ljude, da se vaša publika poistoveti. Fotografije i snimci koje sami izaberete ostaju kakvi jesu."
+      "hint": "Kad Sova sama bira fotografije i snimke, uzima samo one bez ljudi ili sa ljudima evropskog izgleda, kao vaša publika. Pre preuzimanja proverava opis i samu sliku. Fotografije i snimci koje sami izaberete ostaju kakvi jesu."
     }
   },
   "flows": {

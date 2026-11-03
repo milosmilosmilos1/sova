@@ -32,6 +32,8 @@ export interface PexelsVideo {
   durationSec: number
   pageUrl: string
   image: string
+  /** kadrovi iz snimka (15 malih slika) za proveru ljudi (D-154); stariji keš pretrage ih nema */
+  pictures?: string[]
   user: { name: string; url: string }
   files: PexelsVideoFile[]
 }
@@ -59,6 +61,7 @@ type RawVideo = {
   url: string
   image: string
   user: { name: string; url: string }
+  video_pictures?: Array<{ picture: string; nr: number }>
   video_files: Array<{
     id: number
     quality: string | null
@@ -89,6 +92,7 @@ function toVideo(v: RawVideo): PexelsVideo {
     durationSec: v.duration,
     pageUrl: v.url,
     image: v.image,
+    pictures: [...(v.video_pictures ?? [])].sort((a, b) => a.nr - b.nr).map((p) => p.picture),
     user: { name: v.user.name, url: v.user.url },
     files: v.video_files.map((f) => ({
       id: f.id,

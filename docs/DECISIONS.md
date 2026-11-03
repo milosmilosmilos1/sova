@@ -1145,6 +1145,8 @@ Odluka:
 
 Razlog: vlasnik prodaje na tržištu Srbije i traži da se publika poistoveti sa ljudima u objavama.
 
+Dopuna 3.11.2026 (D-154): pravilo važi za svaki brend i ne može da se isključi, a izgled ljudi se proverava i na slici pre preuzimanja.
+
 ## D-137 · 2.11.2026 · usvojeno · Boje brenda u biraču i iste boje stanja svuda
 
 Odluka:
@@ -1323,3 +1325,18 @@ Odluka:
 - `logoFor` za pločicu uvek vraća original. Logo se priprema iznova pri svakom crtanju (`brandLogo`), pa svaki nov slajd odmah dobija pločicu u bojama, a postojeći slajdovi ostaju kakvi su dok se ne nacrtaju ponovo.
 
 Razlog: vlasnik je na Klima24 slajdu video beli kvadrat umesto logoa.
+
+## D-154 · 3.11.2026 · usvojeno · Na fotografijama i snimcima samo ljudi evropskog izgleda
+
+Odluka:
+
+- Tržište je Balkan, pa fotografije i snimci koje Sova sama bira smeju da prikazuju samo ljude evropskog izgleda. Pravilo važi za svaki brend, i na engleskom. Podešavanje „bilo ko” iz D-136 je ukinuto (nijedan brend na produkciji ga nije koristio), a Vizuelni identitet sada samo objašnjava pravilo.
+- Upit i dalje dobija „european” kad pominje ljude (D-136). Ali Pexels vraća ljude i za upit bez ljudi (snimak čišćenja sa ženom koja usisava), pa Sova sada proverava i same kandidate pre preuzimanja, u dva sloja (`services/visuals/people-check.ts`):
+  - opis: alt fotografije i ime iz adrese stranice („black-woman-vacuuming…”, „asian man…”, „african american family”) odbijaju kandidata odmah (`foreignPeopleText` u `lib/visuals/people.ts`). Poreklo se računa samo uz osobu, pa „indian food” i „japanese garden” prolaze; „black” se računa samo uz osobu, a ne uz odeću ili kosu.
+  - slika: Gemini (model za tekst, bez razmišljanja) dobija sličice u grupi (do 10 fotografija ili 5 snimaka; snimak je naslovna slika i dva kadra jedan pored drugog) i za svaku kaže `none`, `european`, `other` ili `unclear`. Sova uzima sve osim `other`, a u nedoumici model bira `other`.
+- Bez Gemini ključa, kad model ne odgovori ili kad do roka nema vremena, prolazi samo kandidat čiji opis ne pominje ljude. Kandidat čija sličica ne stigne se ne uzima.
+- Rokovi: snimak u temi ima korak od 30 s (D-122), pa provera jedne grupe snimaka traje najviše 8 s i završava 9 s pre roka izbora. Provere fotografija u jednom izboru imaju zajednički rok od 12 s. Najviše tri provere po izboru.
+- Važi za „Novu objavu”, mesečni plan, tokove, Autopilot, video u temi i šablone sa Unsplash-a. Ručni izbor u biblioteci i sopstvene fotografije ostaju kakvi jesu.
+- Proba sa pravim Gemini-jem na 25 pravih snimaka: sve tačno. Četiri Klima24 snimka koje je vlasnik video su odbijena, kao i snimci sa ljudima istočnoazijskog izgleda; žene i stariji muškarac evropskog izgleda prolaze, a ljudi izdaleka i silueta su `unclear`. Grupa od 12 do 13 slika traje 5 do 6 s.
+
+Razlog: vlasnik je na Klima24 videu video tamnoputu ženu i traži da Sova nikad ne uzme fotografiju ili snimak sa ljudima koji nisu evropskog izgleda.
