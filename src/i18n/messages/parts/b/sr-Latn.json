@@ -182,7 +182,8 @@
       "pinTitle": "Naslov pina",
       "loadError": "Table nisu učitane.",
       "noBoards": "Napravite tablu na Pinterest-u pa osvežite stranu.",
-      "hint": "Pinterest traži da svaki pin izaberete sami, pa ga Autopilot ne objavljuje. Opis pina je tekst objave (do 800 znakova), a link je link objave."
+      "hint": "Pinterest traži da svaki pin izaberete sami, pa ga Autopilot ne objavljuje. Opis pina je tekst objave (do 800 znakova), a link je link objave.",
+      "carouselTrim": "Pinterest karusel ima do 5 slika. Od {n} slika Sova šalje prve četiri i poslednju."
     },
     "youtube": {
       "intro": "Short je vertikalan ili kvadratan video do 3 minuta; tekst objave ide u opis videa.",

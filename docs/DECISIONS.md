@@ -1304,3 +1304,12 @@ Odluka:
 - Editor ima odeljak „Objavi kao anketu (LinkedIn i X)” koji upisuje anketu u sve izabrane LinkedIn i X naloge, a pregled na mreži crta anketu.
 
 Razlog: pregled tipova objava; ankete su na LinkedIn-u i X-u najjači format za komentare i doseg, a Sova ih nije imala.
+
+## D-152 · 3.11.2026 · usvojeno · Karusel pin na Pinterestu
+
+Odluka:
+
+- Pinterest dobija vrstu „Karusel” (`PLATFORM_FORMATS.pinterest`: slika, karusel, video). Pinterest provider je karusel pin (`media_source.source_type = 'multiple_image_urls'`, 2 do 5 slika, potvrđeno u zvaničnoj OpenAPI specifikaciji) već umeo, ali Sova ga nije nudila: izbor Instagram + Pinterest je gubio karusel.
+- Karusel duži od 5 slika više ne pada na proveri: Pinterest dobija prve četiri slike i poslednju, da ostanu naslovna i poziv na akciju (`pinterestCarouselImages` u `config/pinterest.ts`). Editor to piše u Pinterest panelu, a pregled na mreži pokazuje tačkice karusela.
+
+Razlog: pregled tipova objava; karuseli rade i na Pinterestu, a dizajnirani karusel od 5 do 7 slajdova je do sada morao u posebnu objavu.

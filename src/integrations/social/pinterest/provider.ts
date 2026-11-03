@@ -3,6 +3,7 @@ import 'server-only'
 import {
   PINTEREST_VIDEO_MAX_MS,
   PINTEREST_VIDEO_MIN_MS,
+  pinterestCarouselImages,
   pinterestOptionProblems,
   pinterestTitle,
   readPinterestOptions,
@@ -331,7 +332,6 @@ export class PinterestProvider implements SocialProvider {
     if (videos.length > 1) problems.push('Pin može imati samo jedan video.')
     if (videos.length && images.length > 1)
       problems.push('Uz video pin ide najviše jedna slika (naslovna slika videa).')
-    if (!videos.length && images.length > 5) problems.push('Pinterest karusel ima najviše 5 slika.')
     const v = videos[0]
     if (v?.durationMs && (v.durationMs < PINTEREST_VIDEO_MIN_MS || v.durationMs > PINTEREST_VIDEO_MAX_MS))
       problems.push('Video pin traje od 4 sekunde do 15 minuta.')
@@ -375,10 +375,12 @@ export class PinterestProvider implements SocialProvider {
         },
       }
     }
+    // karusel pin ima do 5 slika (D-152): duži šalje prve četiri i poslednju
+    const shown = pinterestCarouselImages(images)
     const media_source =
-      images.length === 1
-        ? { source_type: 'image_url', url: imageUrl(images[0]!) }
-        : { source_type: 'multiple_image_urls', items: images.map((m) => ({ url: imageUrl(m) })) }
+      shown.length === 1
+        ? { source_type: 'image_url', url: imageUrl(shown[0]!) }
+        : { source_type: 'multiple_image_urls', items: shown.map((m) => ({ url: imageUrl(m) })) }
     const pin = await this.request<PinBody>(accessToken, 'POST', '/pins', { ...base, media_source })
     return { externalId: pin.id, permalink: pinUrl(pin.id), pending: null }
   }

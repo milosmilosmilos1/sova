@@ -35,7 +35,8 @@ export const PLATFORM_FORMATS: Record<SocialPlatform, readonly PostFormat[]> = {
   tiktok: ['video', 'carousel'],
   x: ['text', 'image', 'carousel', 'video', 'link'],
   youtube: ['video'],
-  pinterest: ['image', 'video'],
+  // karusel pin do 5 slika (D-152)
+  pinterest: ['image', 'carousel', 'video'],
   google_business: ['text', 'image', 'link'],
 }
 

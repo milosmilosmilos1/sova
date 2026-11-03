@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { pinterestTitle, type PinterestOptions } from '@/config/pinterest'
+import { PINTEREST_CAROUSEL_MAX, pinterestTitle, type PinterestOptions } from '@/config/pinterest'
 import type { ApiResponse } from '@/lib/api/response'
 
 interface Board {
@@ -32,6 +32,7 @@ export function PinterestPanel({
   text,
   onChange,
   disabled,
+  imageCount = 0,
 }: {
   accountId: string
   value: PinterestOptions
@@ -39,6 +40,8 @@ export function PinterestPanel({
   text: string
   onChange: (next: PinterestOptions) => void
   disabled: boolean
+  /** broj slika u objavi: karusel pin prima do 5 (D-152) */
+  imageCount?: number
 }) {
   const t = useTranslations('postPanels')
   const boards = useQuery({
@@ -53,6 +56,9 @@ export function PinterestPanel({
   const missing = value.boardId && !known.some((b) => b.id === value.boardId)
   return (
     <div className="mt-3 space-y-3 rounded-md border bg-muted/30 p-3 text-sm">
+      {imageCount > PINTEREST_CAROUSEL_MAX ? (
+        <p className="text-xs text-muted-foreground">{t('pinterest.carouselTrim', { n: imageCount })}</p>
+      ) : null}
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1">
           <Label htmlFor={id('board')}>{t('pinterest.board')}</Label>

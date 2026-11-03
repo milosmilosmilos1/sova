@@ -26,7 +26,7 @@ import { Fragment, useState, type CSSProperties, type ReactNode } from 'react'
 import { readGbpOptions } from '@/config/google-business'
 import { linkedinAsDocument, linkedinDocumentTitle, readLinkedInOptions } from '@/config/linkedin'
 import { readPoll, type PollOptions } from '@/config/poll'
-import { pinterestTitle, readPinterestOptions } from '@/config/pinterest'
+import { PINTEREST_CAROUSEL_MAX, pinterestTitle, readPinterestOptions } from '@/config/pinterest'
 import type { SocialPlatform } from '@/config/platforms'
 import { readXOptions, xThreadParts } from '@/config/x'
 import { readYouTubeOptions, youtubeTitle } from '@/config/youtube'
@@ -744,6 +744,14 @@ function PinterestPin({ target, media }: Props) {
           <span className="absolute top-3 right-3 rounded-full bg-[#e60023] px-4 py-2 text-sm font-semibold text-white">
             {t('netPreview.save')}
           </span>
+          {media.length > 1 ? (
+            // karusel pin (D-152): do 5 slika
+            <span className="absolute bottom-3 left-1/2 flex -translate-x-1/2 gap-1" aria-hidden>
+              {Array.from({ length: Math.min(media.length, PINTEREST_CAROUSEL_MAX) }, (_, i) => (
+                <span key={i} className={cn('size-1.5 rounded-full', i === 0 ? 'bg-white' : 'bg-white/50')} />
+              ))}
+            </span>
+          ) : null}
         </div>
       ) : (
         <NoMedia className="rounded-3xl" />

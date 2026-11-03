@@ -10,6 +10,18 @@ export interface PinterestOptions {
   title: string | null
 }
 
+/** Karusel pin ima od 2 do 5 slika (D-152). */
+export const PINTEREST_CAROUSEL_MAX = 5
+
+/**
+ * Slike za karusel pin: duži karusel šalje prve četiri i poslednju, da ostanu naslovna i poziv na
+ * akciju sa kraja.
+ */
+export function pinterestCarouselImages<T>(images: readonly T[]): T[] {
+  if (images.length <= PINTEREST_CAROUSEL_MAX) return [...images]
+  return [...images.slice(0, PINTEREST_CAROUSEL_MAX - 1), images.at(-1)!]
+}
+
 export const PINTEREST_VIDEO_MIN_MS = 4_000
 export const PINTEREST_VIDEO_MAX_MS = 15 * 60_000
 

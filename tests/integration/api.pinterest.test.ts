@@ -213,18 +213,31 @@ describe('Povezivanje i table', () => {
 })
 
 describe('Provera i objavljivanje', () => {
-  it('bez table, bez medija i karusel od 6 slika ne prolaze proveru', async () => {
+  it('bez table i bez medija ne prolaze proveru', async () => {
     const noBoard = await createPost({ masterText: 'Pin bez table', targets: [{ socialAccountId: pinId }] })
     const p = await problemsOf(noBoard.id)
     expect(p).toContain('Izaberite Pinterest tablu')
     expect(p).toContain('sliku ili video')
+  })
+
+  it('karusel od 6 slika: Pinterest dobija prve četiri i poslednju (D-152)', async () => {
+    pinState.pins = []
     const ids = await Promise.all([1, 2, 3, 4, 5, 6].map((i) => image(i * 40)))
-    const six = await createPost({
-      masterText: 'Šest slika',
+    const job = await scheduled({
+      masterText: 'Šest koraka do čiste klime',
       targets: [{ socialAccountId: pinId, options: pin() }],
-      media: ids.map((mediaAssetId) => ({ mediaAssetId })),
+      media: ids.map((mediaAssetId, sortOrder) => ({ mediaAssetId, sortOrder })),
     })
-    expect(await problemsOf(six.id)).toContain('najviše 5 slika')
+    expect((await runPublishTarget(job, ctx)).outcome).toBe('published')
+    const source = pinState.pins.at(-1)!.media_source as {
+      source_type: string
+      items: Array<{ url: string }>
+    }
+    expect(source.source_type).toBe('multiple_image_urls')
+    expect(source.items).toHaveLength(5)
+    const { data: assets } = await admin.from('media_assets').select('id, storage_path').in('id', ids)
+    const path = (id: string) => assets!.find((a) => a.id === id)!.storage_path
+    expect(source.items.map((i) => ids.findIndex((id) => i.url.includes(path(id))))).toEqual([0, 1, 2, 3, 5])
   })
 
   it('pin sa slikom: tabla, naslov, opis, link sa UTM-om, link na pin', async () => {

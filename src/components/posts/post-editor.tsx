@@ -860,6 +860,11 @@ function EditorForm({
                     <PinterestPanel
                       accountId={a.id}
                       value={readPinterestOptions({ pinterest: sel.options.pinterest })}
+                      imageCount={
+                        form.mediaIds.filter((id) =>
+                          library.data?.find((m) => m.id === id)?.mimeType?.startsWith('image/'),
+                        ).length
+                      }
                       postTitle={form.title}
                       text={sel.text.trim() || form.masterText}
                       disabled={!editable}

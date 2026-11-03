@@ -182,7 +182,8 @@
       "pinTitle": "Pin title",
       "loadError": "Boards didn't load.",
       "noBoards": "Create a board on Pinterest, then refresh the page.",
-      "hint": "Pinterest wants you to choose every pin yourself, so Autopilot doesn't publish pins. The pin description is the post text (up to 800 characters) and the link is the post link."
+      "hint": "Pinterest wants you to choose every pin yourself, so Autopilot doesn't publish pins. The pin description is the post text (up to 800 characters) and the link is the post link.",
+      "carouselTrim": "A Pinterest carousel has up to 5 images. Out of {n} images Sova sends the first four and the last one."
     },
     "youtube": {
       "intro": "A Short is a vertical or square video up to 3 minutes long; the post text goes into the video description.",

@@ -7,6 +7,8 @@ describe('vrste objave (D-107)', () => {
     expect(formatsForPlatforms(['facebook'])).toEqual(['text', 'image', 'carousel', 'video', 'story', 'link'])
     expect(formatsForPlatforms(['facebook', 'instagram'])).toEqual(['image', 'carousel', 'video', 'story'])
     expect(formatsForPlatforms(['instagram', 'youtube'])).toEqual(['video'])
+    // karusel pin (D-152): Instagram i Pinterest dele karusel
+    expect(formatsForPlatforms(['instagram', 'pinterest'])).toEqual(['image', 'carousel', 'video'])
     expect(formatsForPlatforms(['youtube', 'google_business'])).toEqual([])
     expect(formatsForPlatforms([])).toHaveLength(6)
   })
