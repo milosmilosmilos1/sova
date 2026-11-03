@@ -10,10 +10,14 @@ import { useKeepInView } from '@/components/app/nav-link'
 
 import { cn } from '@/lib/utils'
 
-const TABS: Array<{ key: 'voice' | 'visual' | 'styles' | 'brands' | 'billing' | 'account'; href: Route }> = [
+const TABS: Array<{
+  key: 'voice' | 'visual' | 'styles' | 'profiles' | 'brands' | 'billing' | 'account'
+  href: Route
+}> = [
   { key: 'voice', href: '/app/brand' },
   { key: 'visual', href: '/app/brand/visual' },
   { key: 'styles', href: '/app/brand/styles' },
+  { key: 'profiles', href: '/app/brand/profiles' },
   { key: 'brands', href: '/app/brands' },
   { key: 'billing', href: '/app/billing' },
   { key: 'account', href: '/app/settings' },

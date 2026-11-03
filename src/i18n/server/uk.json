@@ -685,6 +685,7 @@
   "YouTube video traži naslov (do 100 znakova).": "Відео YouTube потребує заголовка (до 100 символів).",
   "Za nedelju od {0} nema aktivne strategije, pa Sova nije pripremila nacrte. Predlog je u Inbox-u.": "Для тижня з {0} немає активної стратегії, тому Sova не підготувала чернетки. Пропозиція у «Вхідних».",
   "Za nedelju od {0}: {1} nacrta.": "На тиждень з {0}: {1} {1|чернетка|чернетки|чернеток}.",
+  "Za opise profila treba profil brenda: analizirajte sajt ili popunite stranu Brain.": "Для описів профілю потрібен профіль бренду: проаналізуйте сайт або заповніть сторінку Brain.",
   "Za plan treba {0} tokena. Dopunite tokene pa pokušajte ponovo.": "Для плану потрібно токенів: {0}. Поповніть токени й спробуйте ще раз.",
   "Za predlog treba bar jedan izvor: analiza sajta, PDF o brendu ili povezana mreža sa objavama.": "Для пропозиції потрібне принаймні одне джерело: аналіз сайту, PDF про бренд або підключена мережа з дописами.",
   "Za pun autopilot upišite tačan naziv brenda kao potvrdu.": "Для повного автопілота введіть точну назву бренду для підтвердження.",

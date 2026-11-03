@@ -1205,3 +1205,14 @@ Odluka:
 - Polje „emoji” iz profila brenda važi samo kad ga je korisnik sam podesio na strani Brain (zaključano polje `voice.emoji`). Procena sa sajta (heuristika: bar pet emoji-ja na sajtu, ili AI analiza) više ne gasi emoji, jer poslovni sajt retko ima emoji, a objave na mrežama ih prirodno nose. Brend bez profila: emoji osim ako je u podešavanjima izričito isključen.
 
 Razlog: vlasnik je tražio emoji na objavama gde ima smisla; skoro svi brendovi su imali „bez emoji-ja” zbog procene sa sajta.
+
+## D-143 · 3.11.2026 · usvojeno · Opisi profila po mreži (kartica Profili mreža)
+
+Odluka:
+
+- Nova kartica „Profili mreža” u Brend i nalog (`/app/brand/profiles`). Dugme „Napravi opise” piše opise profila za svih osam mreža iz profila brenda, jednim Gemini pozivom (akcija `profile_bios`, 3 tokena; cena se menja u adminu kroz `token_prices`). Polja i granice: Instagram ime 30 i bio 150, Facebook Intro 101 i opis stranice 255, LinkedIn slogan 120, „O nama” do 2000 i do 20 specijalnosti, TikTok ime 30 i opis 80, X ime 50 i opis 160, YouTube opis kanala 1000 i ključne reči, Pinterest ime 65 i „O profilu” 500, Google opis firme 750 (`lib/ai/prompts/profile-bios.ts`).
+- Sajt brenda: na kraju dužeg opisa Facebooka, LinkedIna, YouTube-a i Pinteresta (dodaje se ako ga model izostavi); Instagram, TikTok i X imaju posebno polje za link, pa ga ekran prikazuje uz dugme za kopiranje; Google ne dozvoljava linkove u opisu, pa ih Sova briše i ispisuje napomenu da sajt ide u polje za veb-sajt.
+- Emoji po pravilu D-142, samo u kratkim opisima Instagrama, TikToka i X-a. Sova ne izmišlja cene, rokove, garancije ni brojke.
+- Rezultat se čuva u `brands.settings.profileKit` (spaja se sa ostalim podešavanjima) i prikazuje sa brojačem znakova i dugmetom „Kopiraj”, jer mreže ne dozvoljavaju da Sova sama upiše opis profila. Generisanje koristi postojeći tip `text` u `ai_generations`, pa nema migracije; neuspeh vraća tokene i ne briše stare opise.
+
+Razlog: vlasnik je tražio modul za opis profila za svaku mrežu, koji troši tokene i ističe sajt kad ga brend ima.

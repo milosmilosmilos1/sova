@@ -685,6 +685,7 @@
   "YouTube video traži naslov (do 100 znakova).": "A YouTube video needs a title (up to 100 characters).",
   "Za nedelju od {0} nema aktivne strategije, pa Sova nije pripremila nacrte. Predlog je u Inbox-u.": "There is no active strategy for the week of {0}, so Sova did not prepare drafts. A suggestion is in the Inbox.",
   "Za nedelju od {0}: {1} nacrta.": "For the week of {0}: {1} {1|draft|drafts}.",
+  "Za opise profila treba profil brenda: analizirajte sajt ili popunite stranu Brain.": "Profile descriptions need a brand profile: analyze the website or fill in the Brain page.",
   "Za plan treba {0} tokena. Dopunite tokene pa pokušajte ponovo.": "The plan needs {0} tokens. Top up your tokens and try again.",
   "Za predlog treba bar jedan izvor: analiza sajta, PDF o brendu ili povezana mreža sa objavama.": "A suggestion needs at least one source: a website analysis, a brand PDF or a connected network with posts.",
   "Za pun autopilot upišite tačan naziv brenda kao potvrdu.": "For full Autopilot, enter the brand's exact name to confirm.",

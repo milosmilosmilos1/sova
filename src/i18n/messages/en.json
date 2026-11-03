@@ -954,6 +954,60 @@
       "avoidEmpty": "Nothing to avoid."
     }
   },
+  "profileKit": {
+    "title": "Profile descriptions",
+    "subtitle": "Sova writes a profile description for each network from the brand profile, within that network's limits. Copy it and paste it into the profile settings on the network.",
+    "generate": "Write descriptions ({tokens, plural, one {# token} other {# tokens}})",
+    "regenerate": "Write again ({tokens, plural, one {# token} other {# tokens}})",
+    "generating": "Sova is writing…",
+    "generatedAt": "Written {when}",
+    "website": "Website in descriptions: {url}",
+    "noWebsite": "The brand has no website. Add it by analyzing the site on the Brain page, and descriptions will point to it.",
+    "noProfile": "Descriptions need a brand profile: analyze the website or fill in the Brain page.",
+    "openBrain": "Open Brain",
+    "empty": "No descriptions yet. Click “Write descriptions”.",
+    "unverified": "Confirm your email to write descriptions.",
+    "copy": "Copy",
+    "copied": "Copied",
+    "copyLabel": "Copy: {field}",
+    "count": "{n} / {max}",
+    "link": "Profile link",
+    "gbpLink": "Google does not allow links in the description: put the website in the website field.",
+    "fields": {
+      "instagram": {
+        "name": "Profile name",
+        "short": "Bio"
+      },
+      "facebook": {
+        "short": "Short bio (Intro)",
+        "long": "Page description"
+      },
+      "linkedin": {
+        "short": "Tagline",
+        "long": "About",
+        "keywords": "Specialties"
+      },
+      "tiktok": {
+        "name": "Name",
+        "short": "Bio"
+      },
+      "x": {
+        "name": "Name",
+        "short": "Bio"
+      },
+      "youtube": {
+        "long": "Channel description",
+        "keywords": "Channel keywords"
+      },
+      "pinterest": {
+        "name": "Name",
+        "long": "About"
+      },
+      "google_business": {
+        "long": "Business description"
+      }
+    }
+  },
   "brandAccount": {
     "eyebrow": "Your settings",
     "title": "Brand and account",
@@ -963,6 +1017,7 @@
       "voice": "Brand voice",
       "visual": "Visual identity",
       "styles": "Styles",
+      "profiles": "Network profiles",
       "brands": "Brands",
       "billing": "Subscription",
       "account": "Account"

@@ -954,6 +954,60 @@
       "avoidEmpty": "Nema ničega što treba izbegavati."
     }
   },
+  "profileKit": {
+    "title": "Opisi profila",
+    "subtitle": "Sova piše opis profila za svaku mrežu iz profila brenda, u granicama te mreže. Kopirajte ga i nalepite u podešavanja profila na mreži.",
+    "generate": "Napravi opise ({tokens, plural, one {# token} few {# tokena} other {# tokena}})",
+    "regenerate": "Napravi ponovo ({tokens, plural, one {# token} few {# tokena} other {# tokena}})",
+    "generating": "Sova piše opise…",
+    "generatedAt": "Napravljeno {when}",
+    "website": "Sajt u opisima: {url}",
+    "noWebsite": "Brend nema sajt. Dodajte ga analizom sajta na strani Brain, pa će opisi voditi na sajt.",
+    "noProfile": "Za opise treba profil brenda: analizirajte sajt ili popunite stranu Brain.",
+    "openBrain": "Otvori Brain",
+    "empty": "Još nema opisa. Kliknite „Napravi opise”.",
+    "unverified": "Potvrdite email da biste pravili opise.",
+    "copy": "Kopiraj",
+    "copied": "Kopirano",
+    "copyLabel": "Kopiraj: {field}",
+    "count": "{n} / {max}",
+    "link": "Link u profilu",
+    "gbpLink": "Google ne dozvoljava linkove u opisu: sajt upišite u polje za veb-sajt.",
+    "fields": {
+      "instagram": {
+        "name": "Ime na profilu",
+        "short": "Bio"
+      },
+      "facebook": {
+        "short": "Kratak opis (Intro)",
+        "long": "Opis stranice"
+      },
+      "linkedin": {
+        "short": "Slogan",
+        "long": "O nama",
+        "keywords": "Specijalnosti"
+      },
+      "tiktok": {
+        "name": "Ime",
+        "short": "Opis"
+      },
+      "x": {
+        "name": "Ime",
+        "short": "Opis"
+      },
+      "youtube": {
+        "long": "Opis kanala",
+        "keywords": "Ključne reči kanala"
+      },
+      "pinterest": {
+        "name": "Ime",
+        "long": "O profilu"
+      },
+      "google_business": {
+        "long": "Opis firme"
+      }
+    }
+  },
   "brandAccount": {
     "eyebrow": "Vaša podešavanja",
     "title": "Brend i nalog",
@@ -963,6 +1017,7 @@
       "voice": "Glas brenda",
       "visual": "Vizuelni identitet",
       "styles": "Stilovi",
+      "profiles": "Profili mreža",
       "brands": "Brendovi",
       "billing": "Pretplata",
       "account": "Nalog"

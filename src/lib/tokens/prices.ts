@@ -28,6 +28,7 @@ export const tokenActionSchema = z.enum([
   'studio_chat',
   'inbox_reply',
   'month_plan',
+  'profile_bios',
 ])
 export type TokenAction = z.infer<typeof tokenActionSchema>
 
@@ -58,6 +59,8 @@ export const DEFAULT_TOKEN_PRICES: Record<TokenAction, number> = {
   inbox_reply: 1,
   /** mesečni plan: teme za sve termine meseca (D-119); svaka objava posle se plaća kao tekst */
   month_plan: 3,
+  /** opisi profila za svih osam mreža u jednom pozivu (D-143) */
+  profile_bios: 3,
 }
 
 export interface ModelPrice {
