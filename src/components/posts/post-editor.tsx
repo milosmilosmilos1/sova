@@ -13,11 +13,13 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { GoogleBusinessPanel } from '@/components/posts/google-business-panel'
+import { LinkedInPanel } from '@/components/posts/linkedin-panel'
 import { PinterestPanel } from '@/components/posts/pinterest-panel'
 import { TikTokPanel } from '@/components/posts/tiktok-panel'
 import { YouTubePanel } from '@/components/posts/youtube-panel'
 import { NetworkBadge, NetworkName } from '@/components/shared/network-badge'
 import { readGbpOptions } from '@/config/google-business'
+import { readLinkedInOptions } from '@/config/linkedin'
 import { readPinterestOptions } from '@/config/pinterest'
 import { readYouTubeOptions } from '@/config/youtube'
 import { PLATFORMS } from '@/config/platforms'
@@ -819,6 +821,25 @@ function EditorForm({
                         set('selected', {
                           ...form.selected,
                           [a.id]: { ...sel, options: { ...sel.options, tiktok } },
+                        })
+                      }
+                    />
+                  ) : null}
+                  {sel.on &&
+                  a.platform === 'linkedin' &&
+                  form.mediaIds.filter((id) =>
+                    library.data?.find((m) => m.id === id)?.mimeType?.startsWith('image/'),
+                  ).length >= 2 ? (
+                    <LinkedInPanel
+                      accountId={a.id}
+                      value={readLinkedInOptions({ linkedin: sel.options.linkedin })}
+                      postTitle={form.title}
+                      text={sel.text.trim() || form.masterText}
+                      disabled={!editable}
+                      onChange={(linkedin) =>
+                        set('selected', {
+                          ...form.selected,
+                          [a.id]: { ...sel, options: { ...sel.options, linkedin } },
                         })
                       }
                     />

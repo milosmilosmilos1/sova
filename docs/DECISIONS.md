@@ -1269,3 +1269,14 @@ Odluka:
 - Logo je logo brenda sa sajta. Kad analiza nije pogodila, „Drugi logo sa sajta” poseti početnu stranu i ponudi do četiri različita logoa (JSON-LD, zaglavlje, futer, og:image, ikonica; isti fajl pod dve adrese jednom). Server preuzima samo adresu koja je i sada među kandidatima sa sajta, ne bilo koju koju pošalje klijent. Izabran ili otpremljen logo postaje logo brenda (`brands.design.logoAssetId`), pa važi i za objave, kao u Vizuelnom identitetu; „Vrati logo sa sajta” briše izbor. Čuvanje logoa deli analiza brenda i izbor (`storeLogoAsset`).
 
 Razlog: vlasnik je na produkciji video naslovne u tamnocrvenoj boji teme, a tražio je tri boje sa sajta i logo sa sajta koji može da se zameni kad Sova ne pogodi.
+
+## D-149 · 3.11.2026 · usvojeno · LinkedIn karusel kao PDF dokument
+
+Odluka:
+
+- Objava sa dve i više slika na LinkedIn-u može da ide kao PDF dokument koji se prevlači strana po strana, umesto mreže slika. Na LinkedIn-u takav karusel radi bolje za slajdove, a fotografije sa događaja bolje izgledaju kao mreža.
+- Podešavanje `post_targets.options.linkedin.carousel`: „Automatski” (podrazumevano), „PDF dokument” ili „Mreža slika”, uz naslov dokumenta (`config/linkedin.ts`). „Automatski” šalje kao dokument samo slajdove koje je nacrtala Sova (svi mediji su `template`); otpremljene fotografije ostaju mreža, kao do sada.
+- PDF pravi Sova, bez nove biblioteke: svaka slika je jedna strana svoje veličine, kao osnovni RGB JPEG (`lib/media/pdf.ts`; test ga otvara pravim čitačem, pdf.js iz `unpdf`). Documents API: `initializeUpload`, PUT fajla, pa objava tek kad je dokument `AVAILABLE` (ručka `linkedin_document`, kao kod videa). Granice: 300 strana i 100 MB.
+- Editor ima panel za LinkedIn kad objava ima bar dve slike, a „Pregled na mreži” u Odobravanju crta dokument: prvu stranu sa naslovom i brojem strana.
+
+Razlog: pregled tipova objava „kao social media menadžer sa 20 godina iskustva”; PDF karusel je najjači format na LinkedIn-u, a Sova je karusele već crtala, pa ih je slala kao mrežu slika.

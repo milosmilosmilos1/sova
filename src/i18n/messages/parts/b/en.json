@@ -238,6 +238,16 @@
         "dates": "Events and offers need a start and an end (date and time).",
         "endAfterStart": "The event has to end after it starts."
       }
+    },
+    "linkedin": {
+      "intro": "On LinkedIn a slide carousel works best as a PDF document people swipe page by page. Event photos look better as an image grid.",
+      "carousel": "Post with several images",
+      "modes": {
+        "auto": "Automatic (slides as PDF, photos as a grid)",
+        "document": "PDF document",
+        "images": "Image grid"
+      },
+      "documentTitle": "Document title"
     }
   },
   "postsList": {

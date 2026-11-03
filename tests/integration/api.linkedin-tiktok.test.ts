@@ -416,6 +416,57 @@ describe('LinkedIn', () => {
     expect(t.external_post_id).toMatch(/^urn:li:share:/)
   })
 
+  it('slajdovi Sove idu kao PDF dokument (Documents API); objava tek kad je dokument AVAILABLE (D-149)', async () => {
+    resetLinkedInTikTokState()
+    liState.documentStatusQueue = ['PROCESSING', 'AVAILABLE']
+    const slides = [
+      await uploadJpeg({ r: 15, g: 118, b: 110 }),
+      await uploadJpeg({ r: 245, g: 158, b: 11 }),
+      await uploadJpeg({ r: 30, g: 41, b: 59 }),
+    ]
+    // slajdovi teme se čuvaju kao `template` medij
+    await admin.from('media_assets').update({ source: 'template' }).in('id', slides)
+    const { job } = await scheduledPost({
+      title: 'Tri greške na sajtu',
+      masterText: 'Tri greške koje koštaju klijente. Prevucite do kraja.',
+      targets: [{ socialAccountId: liOrgId }],
+      media: slides.map((mediaAssetId, sortOrder) => ({ mediaAssetId, sortOrder })),
+    })
+    expect((await runPublishTarget(job, ctx)).outcome).toBe('published')
+    expect(liState.documentInits).toEqual([{ owner: 'urn:li:organization:2414183' }])
+    expect(liState.documentUploads).toHaveLength(1)
+    expect(liState.documentUploads[0]).toMatchObject({
+      contentType: 'application/pdf',
+      auth: 'Bearer li-token-1',
+      head: '%PDF-',
+    })
+    expect(liState.imageInits).toBe(0)
+    expect(liState.documentPolls).toBe(2)
+    const body = liState.posts[0]!.body as { content: { media: { id: string; title: string } } }
+    expect(body.content.media).toEqual({ title: 'Tri greške na sajtu', id: 'urn:li:document:D5510AQ1' })
+    expect((await target(job.targetId)).status).toBe('published')
+  })
+
+  it('fotografije ostaju mreža slika, a izbor „PDF dokument” i njih šalje kao dokument (D-149)', async () => {
+    resetLinkedInTikTokState()
+    const a = await uploadJpeg({ r: 200, g: 30, b: 30 })
+    const b = await uploadJpeg({ r: 30, g: 200, b: 30 })
+    const { job } = await scheduledPost({
+      masterText: 'Katalog radova',
+      targets: [
+        {
+          socialAccountId: liOrgId,
+          options: { linkedin: { carousel: 'document', documentTitle: 'Naš katalog' } },
+        },
+      ],
+      media: [{ mediaAssetId: a }, { mediaAssetId: b, sortOrder: 1 }],
+    })
+    expect((await runPublishTarget(job, ctx)).outcome).toBe('published')
+    const body = liState.posts[0]!.body as { content: { media: { id: string; title: string } } }
+    expect(body.content.media).toEqual({ title: 'Naš katalog', id: 'urn:li:document:D5510AQ1' })
+    expect(liState.imageInits).toBe(0)
+  })
+
   it('video koji LinkedIn ne obradi: target pada sa porukom, objava se ne pravi', async () => {
     resetLinkedInTikTokState()
     liState.videoStatusQueue = ['PROCESSING', 'PROCESSING_FAILED']

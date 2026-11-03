@@ -24,6 +24,7 @@ import { useTranslations } from 'next-intl'
 import { Fragment, useState, type CSSProperties, type ReactNode } from 'react'
 
 import { readGbpOptions } from '@/config/google-business'
+import { linkedinAsDocument, linkedinDocumentTitle, readLinkedInOptions } from '@/config/linkedin'
 import { pinterestTitle, readPinterestOptions } from '@/config/pinterest'
 import type { SocialPlatform } from '@/config/platforms'
 import { readYouTubeOptions, youtubeTitle } from '@/config/youtube'
@@ -56,6 +57,8 @@ export interface MockMedia {
   height: number | null
   /** slika videa koji pregledač još pravi (D-128) */
   poster?: boolean
+  /** slajd koji je nacrtala Sova (LinkedIn ih prikazuje kao PDF dokument, D-149) */
+  designed?: boolean
 }
 
 interface Props {
@@ -286,6 +289,28 @@ function Slides({ media, ratio }: { media: MockMedia[]; ratio: number }) {
       </div>
       {many ? <Dots count={media.length} active={i} className="pt-2" /> : null}
     </div>
+  )
+}
+
+/** LinkedIn PDF dokument (D-149): prva strana sa naslovom i brojem strana, prevlači se kao karusel. */
+function LinkedInDocument({ media, title }: { media: MockMedia[]; title: string }) {
+  const t = useTranslations('review')
+  return (
+    <figure className="mt-2 border-y border-zinc-200 dark:border-zinc-700">
+      <figcaption className="flex items-center justify-between gap-2 bg-zinc-100 px-3 py-1.5 text-xs dark:bg-zinc-800">
+        <span className="truncate font-semibold">{title}</span>
+        <span className={cn('shrink-0', MUTED)}>{t('netPreview.pages', { n: media.length })}</span>
+      </figcaption>
+      <div
+        className="relative overflow-hidden bg-black"
+        style={{ aspectRatio: feedRatio('linkedin', media[0]) }}
+      >
+        <Shot media={media[0]!} />
+        <span className="absolute right-2 bottom-2 rounded bg-black/70 px-1.5 py-0.5 text-xs text-white tabular-nums">
+          1 / {media.length}
+        </span>
+      </div>
+    </figure>
   )
 }
 
@@ -585,7 +610,18 @@ function LinkedInFeed({ target, media }: Props) {
         </span>
       </div>
       <Caption target={target} className="px-3 pt-2" accent={accent} more={t('netPreview.more')} />
-      <FeedMedia platform="linkedin" media={media} max={4} className="mt-2" />
+      {linkedinAsDocument(
+        readLinkedInOptions(target.options),
+        media.filter((m) => !m.video).length,
+        media.length >= 2 && media.every((m) => m.designed),
+      ) ? (
+        <LinkedInDocument
+          media={media}
+          title={linkedinDocumentTitle(readLinkedInOptions(target.options), target.postTitle, target.text)}
+        />
+      ) : (
+        <FeedMedia platform="linkedin" media={media} max={4} className="mt-2" />
+      )}
       <Actions
         stacked
         items={[

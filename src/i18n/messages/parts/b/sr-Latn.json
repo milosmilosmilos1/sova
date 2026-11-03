@@ -238,6 +238,16 @@
         "dates": "Događaj i ponuda traže početak i kraj (datum i sat).",
         "endAfterStart": "Kraj događaja mora biti posle početka."
       }
+    },
+    "linkedin": {
+      "intro": "Na LinkedIn-u se karusel od slajdova najbolje vidi kao PDF dokument koji se prevlači strana po strana. Fotografije sa događaja bolje izgledaju kao mreža slika.",
+      "carousel": "Objava sa više slika",
+      "modes": {
+        "auto": "Automatski (slajdovi kao PDF, fotografije kao mreža)",
+        "document": "PDF dokument",
+        "images": "Mreža slika"
+      },
+      "documentTitle": "Naslov dokumenta"
     }
   },
   "postsList": {

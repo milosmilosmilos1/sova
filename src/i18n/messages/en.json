@@ -502,7 +502,8 @@
       "noMedia": "This network needs an image or a video.",
       "noVideo": "YouTube only publishes videos.",
       "videoPending": "The video is still being made, so its cover is shown.",
-      "xTooLong": "The text is longer than {max} characters, so X will not accept it."
+      "xTooLong": "The text is longer than {max} characters, so X will not accept it.",
+      "pages": "{n, plural, one {# page} other {# pages}}"
     },
     "title": "Approvals",
     "subtitle": "Review what Sova prepared, refine it and decide when it goes out.",

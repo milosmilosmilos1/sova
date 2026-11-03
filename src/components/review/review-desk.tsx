@@ -88,6 +88,7 @@ interface Detail {
       mimeType: string | null
       width: number | null
       height: number | null
+      source?: string | null
     }>
   }
   flowName: string | null
@@ -508,6 +509,7 @@ function DetailForm({
         video: Boolean(m.mimeType?.startsWith('video')),
         width: m.width,
         height: m.height,
+        designed: m.source === 'template',
       }))
     : detail.video?.posterUrl
       ? [{ url: detail.video.posterUrl, video: true, width: null, height: null, poster: true }]

@@ -2,10 +2,17 @@ import 'server-only'
 
 import sharp from 'sharp'
 
+import {
+  LINKEDIN_DOCUMENT_MAX_PAGES,
+  linkedinAsDocument,
+  linkedinDocumentTitle,
+  readLinkedInOptions,
+} from '@/config/linkedin'
 import { validateText } from '@/config/platforms'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import { fetchLinkPreview, type LinkPreview } from '@/lib/link-preview'
+import { imagesToPdf, type PdfPage } from '@/lib/media/pdf'
 import { ProviderError } from '@/integrations/social/errors'
 import type {
   AccountMetrics,
@@ -52,6 +59,7 @@ const MAX_PIXELS = 36_152_320
 const VIDEO_MIN_MS = 3_000
 const VIDEO_MAX_MS = 30 * 60_000
 const VIDEO_MAX_BYTES = 500 * 1024 * 1024
+const DOCUMENT_MAX_BYTES = 100 * 1024 * 1024
 
 export interface LinkedInProviderOptions {
   fetchImpl?: typeof fetch
@@ -348,7 +356,15 @@ export class LinkedInProvider implements SocialProvider {
       problems.push('Video na LinkedIn-u traje od 3 sekunde do 30 minuta.')
     if (v?.sizeBytes && v.sizeBytes > VIDEO_MAX_BYTES)
       problems.push('Video na LinkedIn-u može imati najviše 500 MB.')
-    if (images.length > 20) problems.push('LinkedIn dozvoljava najviše 20 slika u jednoj objavi.')
+    const asDocument = linkedinAsDocument(
+      readLinkedInOptions(input.options),
+      images.length,
+      Boolean(input.designedSlides),
+    )
+    if (asDocument && images.length > LINKEDIN_DOCUMENT_MAX_PAGES)
+      problems.push('LinkedIn dokument može imati najviše 300 strana.')
+    if (!asDocument && images.length > 20)
+      problems.push('LinkedIn dozvoljava najviše 20 slika u jednoj objavi.')
     for (const m of images)
       if (m.width && m.height && m.width * m.height >= MAX_PIXELS)
         problems.push('Slika je prevelika za LinkedIn (najviše oko 36 megapiksela).')
@@ -415,6 +431,59 @@ export class LinkedInProvider implements SocialProvider {
     if (!res.ok)
       throw mapLinkedInError(res.status, (await res.json().catch(() => null)) as LinkedInErrorBody | null)
     return image
+  }
+
+  /**
+   * PDF dokument (D-149): slike postaju strane PDF-a (JPEG), pa Documents API: registracija, PUT
+   * fajla na adresu iz odgovora; objava ide tek kad LinkedIn obradi dokument (ručka `linkedin_document`).
+   */
+  private async uploadDocument(
+    client: LinkedInClient,
+    owner: string,
+    images: NormalizedMedia[],
+    accessToken: string,
+    title: string,
+  ): Promise<string> {
+    const pages: PdfPage[] = []
+    for (const m of images) {
+      const { data, info } = await sharp(await this.download(m))
+        .flatten({ background: '#ffffff' })
+        .toColourspace('srgb')
+        .jpeg({ quality: 90, progressive: false, mozjpeg: false, chromaSubsampling: '4:4:4' })
+        .toBuffer({ resolveWithObject: true })
+      pages.push({ jpeg: data, width: info.width, height: info.height })
+    }
+    const pdf = imagesToPdf(pages, { title })
+    if (pdf.length > DOCUMENT_MAX_BYTES)
+      throw new ProviderError('MEDIA_REJECTED', {
+        message: 'PDF dokument je veći od 100 MB, koliko LinkedIn prima.',
+      })
+    const init = await client.post<{ value?: { uploadUrl?: string; document?: string } }>(
+      '/rest/documents?action=initializeUpload',
+      { initializeUploadRequest: { owner } },
+    )
+    const uploadUrl = init.body?.value?.uploadUrl
+    const document = init.body?.value?.document
+    if (!uploadUrl || !document)
+      throw new ProviderError('UNKNOWN', { message: 'LinkedIn nije vratio adresu za upload dokumenta.' })
+    let res: Response
+    try {
+      res = await this.fetchImpl(uploadUrl, {
+        method: 'PUT',
+        headers: { authorization: `Bearer ${accessToken}`, 'content-type': 'application/pdf' },
+        body: new Uint8Array(pdf),
+        signal: AbortSignal.timeout(60_000),
+      })
+    } catch (error) {
+      throw new ProviderError('PROVIDER_DOWN', {
+        message: 'Upload PDF dokumenta na LinkedIn nije uspeo.',
+        raw: error,
+        retryable: true,
+      })
+    }
+    if (!res.ok)
+      throw mapLinkedInError(res.status, (await res.json().catch(() => null)) as LinkedInErrorBody | null)
+    return document
   }
 
   /**
@@ -532,6 +601,24 @@ export class LinkedInProvider implements SocialProvider {
       }
     }
     const images = input.media.filter((m) => m.mimeType.startsWith('image/'))
+    const options = readLinkedInOptions(input.options)
+    if (linkedinAsDocument(options, images.length, Boolean(input.designedSlides))) {
+      const title = linkedinDocumentTitle(options, input.title, input.text)
+      const documentUrn = await this.uploadDocument(client, author, images, accessToken, title)
+      const text =
+        input.link && !input.text.includes(input.link) ? `${input.text}\n\n${input.link}` : input.text
+      return {
+        externalId: null,
+        permalink: null,
+        pending: {
+          kind: 'linkedin_document',
+          documentUrn,
+          post: this.postBody(author, text, { media: { title, id: documentUrn } }),
+          firstComment: canComment(scopesOf(account), isOrg(account)) ? input.firstComment : null,
+          accountExternalId: account.externalId,
+        },
+      }
+    }
     // slike i članak ne idu zajedno: uz slike link ostaje u tekstu
     const text =
       images.length && input.link && !input.text.includes(input.link)
@@ -566,8 +653,22 @@ export class LinkedInProvider implements SocialProvider {
     return { externalId: urn, permalink: permalinkFor(urn), pending: null }
   }
 
-  /** Video: čeka se AVAILABLE, pa se pravi objava (i prvi komentar). */
+  /** Video i PDF dokument: čeka se AVAILABLE, pa se pravi objava (i prvi komentar). */
   async getPublishStatus(handle: PollHandle, accessToken: string): Promise<PublishStatus> {
+    if (handle.kind === 'linkedin_document') {
+      const client = this.client(accessToken)
+      const d = await client.get<{ status?: string }>(`/rest/documents/${encUrn(handle.documentUrn)}`)
+      if (d.status === 'PROCESSING_FAILED')
+        return {
+          state: 'failed',
+          message: 'LinkedIn nije obradio PDF dokument. Pokušajte ponovo ili pošaljite slike kao mrežu.',
+          retryable: false,
+        }
+      if (d.status !== 'AVAILABLE') return { state: 'pending' }
+      const urn = await this.createPost(client, handle.post)
+      await this.firstComment(client, String(handle.post.author ?? ''), urn, handle.firstComment)
+      return { state: 'published', externalId: urn, permalink: permalinkFor(urn) }
+    }
     if (handle.kind !== 'linkedin_video')
       throw new ProviderError('NOT_SUPPORTED', { message: `LinkedIn ne obrađuje ručku ${handle.kind}.` })
     const client = this.client(accessToken)

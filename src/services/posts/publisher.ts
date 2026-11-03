@@ -237,6 +237,8 @@ async function normalize(b: Bundle): Promise<NormalizedPost> {
     title: b.post.title,
     options: (b.target.options as Record<string, Json> | null) ?? {},
     language: b.brand.content_locale === 'en' ? 'en' : 'sr',
+    // slajdovi teme se čuvaju kao `template` medij (D-108)
+    designedSlides: b.media.length >= 2 && b.media.every((m) => m.asset.source === 'template'),
   }
 }
 

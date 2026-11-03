@@ -70,6 +70,8 @@ export interface NormalizedPost {
   options?: Record<string, Json>
   /** jezik sadržaja brenda (`sr`, `en`): Google poslovni profil `languageCode`, YouTube `defaultLanguage` */
   language?: string | null
+  /** sve slike su slajdovi koje je nacrtala Sova (LinkedIn ih šalje kao PDF dokument, D-149) */
+  designedSlides?: boolean
 }
 
 export interface ValidationResult {
@@ -106,6 +108,14 @@ export type PollHandle =
   | { kind: 'youtube_processing'; videoId: string; accountExternalId: string }
   /** Pinterest video: posle obrade medija pravi se pin sa sačuvanim telom */
   | { kind: 'pinterest_media'; mediaId: string; pin: Record<string, Json>; accountExternalId: string }
+  /** LinkedIn PDF dokument (D-149): objava ide tek kad LinkedIn obradi dokument */
+  | {
+      kind: 'linkedin_document'
+      documentUrn: string
+      post: Record<string, Json>
+      firstComment: string | null
+      accountExternalId: string
+    }
   /** LinkedIn video: objava ide tek kad je video AVAILABLE */
   | {
       kind: 'linkedin_video'
@@ -134,6 +144,8 @@ export function pollHandleId(handle: PollHandle): string {
       return handle.videoId
     case 'linkedin_video':
       return handle.videoUrn
+    case 'linkedin_document':
+      return handle.documentUrn
     case 'ig_carousel_items':
       return handle.itemIds.join(',')
     case 'fb_video':

@@ -31,6 +31,16 @@ export const liState = {
   videoPolls: 0,
   comments: [] as Array<{ postUrn: string; body: Record<string, unknown> }>,
   commentThrottled: false,
+  /** Documents API (D-149): registracije, otpremljeni PDF-ovi i statusi redom (poslednji se ponavlja) */
+  documentInits: [] as Array<Record<string, unknown>>,
+  documentUploads: [] as Array<{
+    contentType: string | null
+    size: number
+    auth: string | null
+    head: string
+  }>,
+  documentStatusQueue: [] as string[],
+  documentPolls: 0,
 }
 
 export const ttState = {
@@ -64,6 +74,10 @@ export function resetLinkedInTikTokState(): void {
   liState.videoPolls = 0
   liState.comments = []
   liState.commentThrottled = false
+  liState.documentInits = []
+  liState.documentUploads = []
+  liState.documentStatusQueue = []
+  liState.documentPolls = 0
   ttState.tokenRequests = []
   ttState.revokes = []
   ttState.photoInits = []
@@ -166,6 +180,42 @@ export const linkedInTikTokHandlers = [
       auth: request.headers.get('authorization'),
     })
     return new HttpResponse(null, { status: 201 })
+  }),
+  http.post(`${LI}/rest/documents`, async ({ request }) => {
+    if (new URL(request.url).searchParams.get('action') !== 'initializeUpload')
+      return HttpResponse.json({ status: 400 }, { status: 400 })
+    const body = (await request.json()) as Record<string, Record<string, unknown>>
+    liState.documentInits.push(body.initializeUploadRequest ?? {})
+    const id = `D5510AQ${liState.documentInits.length}`
+    return HttpResponse.json({
+      value: {
+        uploadUrlExpiresAt: Date.now() + 3_600_000,
+        uploadUrl: `https://www.linkedin.com/dms-uploads/${id}/uploaded-document/0`,
+        document: `urn:li:document:${id}`,
+      },
+    })
+  }),
+  http.put('https://www.linkedin.com/dms-uploads/:id/uploaded-document/0', async ({ request }) => {
+    const buf = Buffer.from(await request.arrayBuffer())
+    liState.documentUploads.push({
+      contentType: request.headers.get('content-type'),
+      size: buf.byteLength,
+      auth: request.headers.get('authorization'),
+      head: buf.subarray(0, 5).toString('latin1'),
+    })
+    return new HttpResponse(null, { status: 201 })
+  }),
+  http.get(`${LI}/rest/documents/:urn`, ({ params }) => {
+    liState.documentPolls++
+    const status =
+      liState.documentStatusQueue.length > 1
+        ? liState.documentStatusQueue.shift()!
+        : (liState.documentStatusQueue[0] ?? 'AVAILABLE')
+    return HttpResponse.json({
+      id: decodeURIComponent(String(params.urn)),
+      owner: 'urn:li:organization:2414183',
+      status,
+    })
   }),
   http.post(`${LI}/rest/videos`, async ({ request }) => {
     const action = new URL(request.url).searchParams.get('action')
