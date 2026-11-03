@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { EDITABLE_PATHS, fieldPathSchema } from '@/lib/brand/profile-schema'
 
 import { websiteUrlSchema } from './workspace'
+import { BANNER_KINDS, BANNER_TEXT_LIMITS } from '@/config/profile-banners'
 
 export const analyzeRequestSchema = z.object({
   websiteUrl: websiteUrlSchema,
@@ -38,4 +39,17 @@ export const unlockFieldsSchema = z.object({
 export const highlightParamsSchema = z.object({
   id: z.uuid(),
   index: z.coerce.number().int().min(0).max(9),
+})
+
+/** Naslovna slika profila (D-145): mreža i tekst iz upita; polje koje nije poslato dobija podrazumevano. */
+export const bannerParamsSchema = z.object({ id: z.uuid(), kind: z.enum(BANNER_KINDS) })
+export const bannerQuerySchema = z.object({
+  title: z.string().max(BANNER_TEXT_LIMITS.title).optional(),
+  subtitle: z.string().max(BANNER_TEXT_LIMITS.subtitle).optional(),
+  footer: z.string().max(BANNER_TEXT_LIMITS.footer).optional(),
+  logo: z.enum(['0', '1']).optional(),
+  preview: z.enum(['1']).optional(),
+  download: z.enum(['1']).optional(),
+  /** menja adresu kad se promene boje ili tekst, da pregledač ne prikaže staru sliku */
+  v: z.string().max(300).optional(),
 })

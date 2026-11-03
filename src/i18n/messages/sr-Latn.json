@@ -1033,6 +1033,39 @@
       "how1": "Napravite priču i odobrite je: Sova je objavljuje na Instagramu.",
       "how2": "Na profilu dodirnite „Novo” (+) ispod opisa i izaberite priče za taj highlight.",
       "how3": "Dodirnite „Uredi naslovnu”, izaberite preuzetu naslovnu iz galerije telefona i upišite naslov."
+    },
+    "banners": {
+      "title": "Naslovne slike profila",
+      "subtitle": "Naslovne za Facebook, LinkedIn, X, YouTube i Pinterest u bojama, fontu i logou brenda, u veličini koju svaka mreža traži. Tekst stoji u delu koji se vidi i na telefonu. Bez tokena.",
+      "fields": {
+        "title": "Naslov",
+        "subtitle": "Podnaslov",
+        "footer": "Sajt ili nalog"
+      },
+      "logo": "Logo na naslovnoj",
+      "design": "Boje, font i logo dolaze iz izgleda brenda.",
+      "designLink": "Vizuelni identitet",
+      "downloadAll": "Preuzmi sve (ZIP)",
+      "download": "Preuzmi",
+      "downloadLabel": "Preuzmi: {name}",
+      "size": "{width} × {height}",
+      "alt": "Naslovna slika za {name}",
+      "kinds": {
+        "facebook": "Facebook stranica",
+        "linkedin_page": "LinkedIn stranica firme",
+        "linkedin_profile": "LinkedIn lični profil",
+        "x": "X profil",
+        "youtube": "YouTube kanal",
+        "pinterest": "Pinterest profil"
+      },
+      "notes": {
+        "facebook": "Računar seče sliku gore i dole, a telefon levo i desno, pa je tekst u sredini.",
+        "linkedin_page": "Logo firme prekriva donji levi ugao, pa je tekst desno.",
+        "linkedin_profile": "Slika profila prekriva levi deo, pa je tekst desno.",
+        "x": "Slika profila prekriva donji levi ugao, pa je tekst desno.",
+        "youtube": "Telefon i računar prikazuju samo traku u sredini, a ceo kadar samo televizor.",
+        "pinterest": "Slika profila stoji dole u sredini, pa je tekst u gornjem delu."
+      }
     }
   },
   "brandAccount": {

@@ -3,6 +3,7 @@ import 'server-only'
 import { z } from 'zod'
 
 import { toContentLocale, type ContentLocale } from '@/config/locales'
+import { BANNER_KINDS, BANNER_TEXT_LIMITS, PROFILE_BANNERS, type BannerKind } from '@/config/profile-banners'
 import { AiError, toApiError } from '@/lib/ai/errors'
 import { generateText } from '@/lib/ai/gemini'
 import { textModelChain } from '@/lib/ai/models'
@@ -10,6 +11,7 @@ import { callWithFallback, costFor } from '@/lib/ai/orchestrator'
 import {
   buildProfileBiosPrompt,
   buildProfileBiosSystemPrompt,
+  clipText,
   normalizeProfileBios,
   profileBiosJsonSchema,
   profileBiosOutputSchema,
@@ -34,11 +36,12 @@ import { getTokenPrice, type TokenAction } from '@/lib/tokens/prices'
 import { confirmReservation } from '@/lib/tokens/reservation'
 import type { Slide } from '@/lib/visuals/design/types'
 import { renderHighlightCover } from '@/lib/visuals/highlight-cover'
+import { renderProfileBanner } from '@/lib/visuals/profile-banners'
 import { zipStore } from '@/lib/zip'
 import { assertDailyQuota, failGeneration, startGeneration } from '@/services/ai/generations'
 import { getCurrentProfileRow } from '@/services/brand-brain/profile'
 import { getBrand, type BrandRow } from '@/services/brands'
-import { resolveDesign } from '@/services/design/brand-design'
+import { brandLogo, resolveDesign, type ResolvedDesign } from '@/services/design/brand-design'
 import { themeOf, type PostDesignContext } from '@/services/design/post-design'
 import { renderDesignSlides } from '@/services/design/render-post'
 import { createPost } from '@/services/posts/posts'
@@ -49,7 +52,8 @@ import type { Json } from '@/types/database'
 /**
  * Profili na mrežama: opisi profila za svih osam mreža (D-143) i Instagram highlights (D-144), svaki
  * jednim Gemini pozivom iz profila brenda. Rezultat se čuva u `brands.settings.profileKit`, pa ostaje
- * dok se ne napravi nov; naslovne highlights-a i priče od njihovih kadrova crtaju se bez tokena.
+ * dok se ne napravi nov; naslovne highlights-a, priče od njihovih kadrova i naslovne slike profila
+ * (D-145) crtaju se bez tokena.
  */
 const storedKitSchema = z.object({
   bios: profileBiosOutputSchema.optional(),
@@ -70,7 +74,18 @@ export interface ProfileKitView {
   hasProfile: boolean
   /** brend ima povezan Instagram, pa priča iz highlights-a dobija nalog */
   hasInstagram: boolean
+  /** podrazumevani tekst naslovnih slika profila i da li brend ima logo (D-145) */
+  banners: BannerText & { hasLogo: boolean }
+  /** menja se sa bojama, fontovima i logoom brenda, da pregled naslovnih ne ostane star */
+  designKey: string
   canEdit: boolean
+}
+
+export interface BannerText {
+  title: string
+  subtitle: string
+  /** sajt ili nalog */
+  footer: string
 }
 
 function storedKit(settings: unknown): StoredKit {
@@ -89,6 +104,9 @@ export async function getProfileKit(viewer: Viewer, brandId: string): Promise<Pr
     listSocialAccounts(viewer, brand.id),
   ])
   const kit = storedKit(brand.settings)
+  const design = await resolveDesign(brand)
+  const profile = row ? brandProfileSchema.safeParse(row.data) : null
+  const banners = await bannerDefaults(brand, design, profile?.success ? profile.data : null, kit)
   return {
     website: brand.website_url,
     bios: kit.bios ?? null,
@@ -96,8 +114,15 @@ export async function getProfileKit(viewer: Viewer, brandId: string): Promise<Pr
     highlights: kit.highlights ?? null,
     highlightsAt: kit.highlightsAt ?? null,
     prices: { bios, highlights },
-    hasProfile: Boolean(row && brandProfileSchema.safeParse(row.data).success),
+    hasProfile: Boolean(profile?.success),
     hasInstagram: accounts.accounts.some((a) => a.platform === 'instagram' && a.status === 'active'),
+    banners: { ...banners, hasLogo: Boolean(design.logoAssetId) },
+    designKey: [
+      design.colors.primary,
+      design.fonts.headings,
+      design.fonts.body,
+      design.logoAssetId ?? '',
+    ].join('|'),
     canEdit: EDIT_ROLES.includes(membership.role),
   }
 }
@@ -430,4 +455,135 @@ export async function createHighlightStory(
   if (!instagram.length) return { postId: post.id, status: 'draft', notes }
   await systemSubmitForReview(post.id, `highlight: ${highlight.title}`, { notify: false })
   return { postId: post.id, status: 'in_review', notes }
+}
+
+// naslovne slike profila (D-145) ----------------------------------------------------------------
+
+/** Sajt bez protokola i „www.”, kako se piše na slici. */
+const siteLabel = (url: string) =>
+  url
+    .replace(/^https?:\/\//i, '')
+    .replace(/^www\./i, '')
+    .replace(/\/+$/, '')
+
+/** Odnos širine i visine logoa iz zapisa fajla, bez preuzimanja slike. */
+async function logoAspect(assetId: string): Promise<number> {
+  const { data } = await createSupabaseAdminClient()
+    .from('media_assets')
+    .select('width, height')
+    .eq('id', assetId)
+    .maybeSingle()
+  return data?.width && data.height ? data.width / data.height : 1
+}
+
+/**
+ * Podrazumevani tekst naslovnih: ime brenda (izostaje kad je logo natpis, jer ime već piše na njemu),
+ * slogan sa sajta, slogan iz opisa za LinkedIn ili prva rečenica opisa, pa sajt ili nalog.
+ */
+async function bannerDefaults(
+  brand: BrandRow,
+  design: ResolvedDesign,
+  profile: BrandProfile | null,
+  kit: StoredKit,
+): Promise<BannerText> {
+  const wordmark = design.logoAssetId ? (await logoAspect(design.logoAssetId)) >= 2.2 : false
+  const description = profile?.identity.description.value ?? ''
+  const subtitle =
+    profile?.identity.tagline.value || kit.bios?.linkedin.short || description.split(/(?<=[.!?])\s+/)[0] || ''
+  return {
+    title: wordmark ? '' : clipText(design.brandName, BANNER_TEXT_LIMITS.title),
+    subtitle: clipText(subtitle.replace(/\s+/g, ' ').trim(), BANNER_TEXT_LIMITS.subtitle),
+    footer: clipText(
+      brand.website_url ? siteLabel(brand.website_url) : (design.handle ?? ''),
+      BANNER_TEXT_LIMITS.footer,
+    ),
+  }
+}
+
+export interface BannerOptions extends Partial<BannerText> {
+  /** false: naslovna bez logoa i kad ga brend ima */
+  logo?: boolean
+  /** manja slika za pregled na ekranu */
+  preview?: boolean
+}
+
+/** Tekst iz upita; polje koje nije poslato dobija podrazumevanu vrednost, a prazno ostaje prazno. */
+export function bannerOptionsFrom(query: {
+  title?: string
+  subtitle?: string
+  footer?: string
+  logo?: '0' | '1'
+  preview?: '1'
+}): BannerOptions {
+  return {
+    title: query.title,
+    subtitle: query.subtitle,
+    footer: query.footer,
+    logo: query.logo !== '0',
+    preview: query.preview === '1',
+  }
+}
+
+const PREVIEW_WIDTH = 960
+
+async function bannerInputs(brand: BrandRow, options: BannerOptions) {
+  const design = await resolveDesign(brand)
+  const missing =
+    options.title === undefined || options.subtitle === undefined || options.footer === undefined
+  const [logo, defaults] = await Promise.all([
+    options.logo === false ? null : brandLogo(design.logoAssetId),
+    missing
+      ? getCurrentProfileRow(brand.id).then((row) => {
+          const parsed = row ? brandProfileSchema.safeParse(row.data) : null
+          return bannerDefaults(
+            brand,
+            design,
+            parsed?.success ? parsed.data : null,
+            storedKit(brand.settings),
+          )
+        })
+      : null,
+  ])
+  return {
+    colors: design.colors,
+    fonts: design.fonts,
+    logo,
+    title: options.title ?? defaults?.title ?? '',
+    subtitle: options.subtitle ?? defaults?.subtitle ?? '',
+    footer: options.footer ?? defaults?.footer ?? '',
+  }
+}
+
+function bannerFile(brand: BrandRow, kind: BannerKind): string {
+  const { width, height } = PROFILE_BANNERS[kind]
+  return `${fileSlug(brand.name)}-${kind.replace('_', '-')}-${width}x${height}.png`
+}
+
+/** Naslovna slika profila za jednu mrežu, u bojama, fontu i logou brenda; bez tokena. */
+export async function profileBanner(
+  viewer: Viewer,
+  brandId: string,
+  kind: BannerKind,
+  options: BannerOptions,
+): Promise<{ png: Buffer; name: string }> {
+  const brand = await getBrand(viewer, brandId)
+  await requireMembership(viewer, brand.workspace_id)
+  const input = await bannerInputs(brand, options)
+  const png = await renderProfileBanner({ kind, ...input }, options.preview ? PREVIEW_WIDTH : undefined)
+  return { png, name: bannerFile(brand, kind) }
+}
+
+/** Sve naslovne u jednom ZIP-u, u punoj veličini; crtaju se redom, da ne zauzmu memoriju odjednom. */
+export async function profileBannersZip(
+  viewer: Viewer,
+  brandId: string,
+  options: BannerOptions,
+): Promise<{ bytes: Buffer; name: string }> {
+  const brand = await getBrand(viewer, brandId)
+  await requireMembership(viewer, brand.workspace_id)
+  const input = await bannerInputs(brand, options)
+  const files: Array<{ name: string; data: Buffer }> = []
+  for (const kind of BANNER_KINDS)
+    files.push({ name: bannerFile(brand, kind), data: await renderProfileBanner({ kind, ...input }) })
+  return { bytes: zipStore(files), name: `${fileSlug(brand.name)}-profile-covers.zip` }
 }

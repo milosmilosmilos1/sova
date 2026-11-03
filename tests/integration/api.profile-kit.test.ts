@@ -3,6 +3,8 @@ import { NextRequest } from 'next/server'
 import sharp from 'sharp'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
+import { GET as bannerGet } from '@/app/api/brands/[id]/profile-kit/banners/[kind]/route'
+import { GET as bannersGet } from '@/app/api/brands/[id]/profile-kit/banners/route'
 import { POST as biosPost } from '@/app/api/brands/[id]/profile-kit/bios/route'
 import { GET as coverGet } from '@/app/api/brands/[id]/profile-kit/highlights/[index]/cover/route'
 import { POST as storyPost } from '@/app/api/brands/[id]/profile-kit/highlights/[index]/story/route'
@@ -25,6 +27,7 @@ import { pexelsHandlers, resetVisualsState, unsplashHandlers } from './visuals-m
  * Profili na mrežama (D-143): opisi za svih osam mreža iz profila brenda, 3 tokena, sajt u opisima gde
  * ga mreža prikazuje, bez linka u opisu Google profila; neuspeh vraća tokene i ne briše stare opise.
  * Instagram highlights (D-144): naslovi i kadrovi za 3 tokena, naslovne 1080×1920 i priča u Odobravanju.
+ * Naslovne slike profila (D-145): podrazumevani tekst iz profila, PNG u veličini mreže, ZIP, bez tokena.
  */
 let owner: TestUser
 let wsId = ''
@@ -366,5 +369,67 @@ describe('profili na mrežama: Instagram highlights (D-144)', () => {
     const bad = await generateHighlights()
     expect(bad.status).toBeGreaterThanOrEqual(400)
     expect(await balance()).toBe(before)
+  })
+})
+
+describe('profili na mrežama: naslovne slike profila (D-145)', () => {
+  const base = () => `/api/brands/${brandId}/profile-kit/banners`
+
+  it('podrazumevani tekst je ime brenda, slogan i sajt; PNG je u veličini mreže, pregled uži', async () => {
+    const before = await balance()
+    const kit = await call<ProfileKitView>(kitGet, `/api/brands/${brandId}/profile-kit`, {
+      token: owner.token,
+      params: { id: brandId },
+    })
+    const { data: stored } = await admin.from('brands').select('settings').eq('id', brandId).single()
+    const slogan = (stored!.settings as { profileKit?: { bios?: { linkedin?: { short?: string } } } })
+      .profileKit?.bios?.linkedin?.short
+    expect(kit.json.data!.banners).toEqual({
+      title: 'Adaptiko',
+      subtitle: slogan ?? 'Adaptacija stanova od projekta do ključa, po fiksnoj ceni.',
+      footer: 'adaptiko.rs',
+      hasLogo: false,
+    })
+    expect(kit.json.data!.designKey).toContain('#')
+
+    const facebook = await raw(bannerGet, `${base()}/facebook`, { id: brandId, kind: 'facebook' })
+    expect(facebook.status).toBe(200)
+    expect(facebook.headers.get('content-type')).toBe('image/png')
+    expect(await sharp(facebook.bytes).metadata()).toMatchObject({ width: 1640, height: 856 })
+
+    const preview = await raw(bannerGet, `${base()}/youtube?preview=1&title=&footer=@adaptiko`, {
+      id: brandId,
+      kind: 'youtube',
+    })
+    expect(await sharp(preview.bytes).metadata()).toMatchObject({ width: 960, height: 540 })
+
+    const download = await raw(bannerGet, `${base()}/linkedin_page?download=1`, {
+      id: brandId,
+      kind: 'linkedin_page',
+    })
+    expect(download.headers.get('content-disposition')).toBe(
+      'attachment; filename="adaptiko-linkedin-page-1128x191.png"',
+    )
+    expect(await balance()).toBe(before)
+  })
+
+  it('ZIP ima svih šest naslovnih; predug tekst i nepoznata mreža se odbijaju', async () => {
+    const zip = await raw(bannersGet, `${base()}?title=Adaptiko%20Beograd&logo=0`, { id: brandId })
+    expect(zip.status).toBe(200)
+    expect(zip.headers.get('content-disposition')).toContain('adaptiko-profile-covers.zip')
+    for (const name of [
+      'adaptiko-facebook-1640x856.png',
+      'adaptiko-linkedin-page-1128x191.png',
+      'adaptiko-linkedin-profile-1584x396.png',
+      'adaptiko-x-1500x500.png',
+      'adaptiko-youtube-2560x1440.png',
+      'adaptiko-pinterest-1600x900.png',
+    ])
+      expect(zip.bytes.includes(Buffer.from(name)), name).toBe(true)
+
+    const long = await raw(bannerGet, `${base()}/x?title=${'a'.repeat(61)}`, { id: brandId, kind: 'x' })
+    expect(long.status).toBe(400)
+    const unknown = await raw(bannerGet, `${base()}/tiktok`, { id: brandId, kind: 'tiktok' })
+    expect(unknown.status).toBe(400)
   })
 })

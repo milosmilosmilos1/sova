@@ -8,6 +8,7 @@ import { admin, cleanup, login, seedWorkspace, type Seeded } from './fixtures'
  * Profili mreža (D-143): sačuvani opisi profila za svaku mrežu, sa brojačem znakova, linkom u profilu i
  * dugmetom za kopiranje; napomena da Google ne dozvoljava link u opisu.
  * Instagram highlights (D-144): naslovne u boji brenda, preuzimanje i priča od kadrova u Odobravanju.
+ * Naslovne slike profila (D-145): pregled za šest mreža, izmena teksta i preuzimanje.
  */
 let seeded: Seeded | undefined
 const SITE = 'https://adaptiko.rs'
@@ -130,4 +131,33 @@ test('profili mreža: Instagram highlights, naslovne, preuzimanje i priča u Odo
   )
 
   expect(await seriousViolations(page, 'instagram highlights')).toEqual([])
+})
+
+test('profili mreža: naslovne slike profila, izmena teksta i preuzimanje (D-145)', async ({ page }) => {
+  await login(page, seeded!)
+  await page.goto('/app/brand/profiles')
+  await expect(page.getByText('Naslovne slike profila')).toBeVisible()
+  const title = page.getByLabel('Naslov', { exact: true })
+  await expect(title).toHaveValue('E2E brend profilekit')
+  await expect(page.getByLabel('Podnaslov')).toHaveValue('Adaptacija stanova')
+  await expect(page.getByLabel('Sajt ili nalog')).toHaveValue('adaptiko.rs')
+  await expect(page.getByRole('img', { name: /^Naslovna slika za / })).toHaveCount(6)
+
+  // pregled je PNG širok 960 px
+  const facebook = page.getByRole('img', { name: 'Naslovna slika za Facebook stranica' })
+  await facebook.scrollIntoViewIfNeeded()
+  await expect.poll(() => facebook.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(960)
+
+  await title.fill('Adaptiko Beograd')
+  await expect(facebook).toHaveAttribute('src', /title=Adaptiko\+Beograd/)
+  await expect(page.getByRole('button', { name: 'Preuzmi: Facebook stranica' })).toHaveAttribute(
+    'href',
+    /\/banners\/facebook\?.*title=Adaptiko\+Beograd.*download=1/,
+  )
+  await expect(page.getByRole('button', { name: 'Preuzmi sve (ZIP)' })).toHaveAttribute(
+    'href',
+    new RegExp(`^/api/brands/${seeded!.brandId}/profile-kit/banners\?`),
+  )
+
+  expect(await seriousViolations(page, 'naslovne profila')).toEqual([])
 })

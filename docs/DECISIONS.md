@@ -1228,3 +1228,14 @@ Odluka:
 - Rezultat se čuva u `brands.settings.profileKit.highlights`, pored opisa profila. Nema migracije: generisanje koristi tip `text` u `ai_generations`, a neuspeh vraća tokene i ne briše stare highlights.
 
 Razlog: vlasnik je tražio modul za highlights, uz sadržaj koji je specifičan za svaku mrežu.
+
+## D-145 · 3.11.2026 · usvojeno · Naslovne slike profila (kartica Profili mreža)
+
+Odluka:
+
+- Kartica „Profili mreža” dobija deo „Naslovne slike profila”: Facebook stranica 1640×856, LinkedIn stranica firme 1128×191, LinkedIn lični profil 1584×396, X 1500×500, YouTube kanal 2560×1440 i Pinterest profil 1600×900 (`config/profile-banners.ts`).
+- Tekst stoji samo u delu koji se vidi na svakom uređaju. Facebook na računaru seče sliku gore i dole, a na telefonu levo i desno, pa je tekst u sredini. YouTube na telefonu i računaru prikazuje samo traku 1546×423 u sredini. Na X-u i LinkedInu slika profila ili logo firme prekrivaju donji levi ugao, pa je tekst desno. Na Pinterestu je slika profila dole u sredini, pa je tekst u gornjem delu.
+- Naslovna je u bojama, fontu i logou brenda (Vizuelni identitet), sa naslovom, podnaslovom i sajtom ili nalogom. Podrazumevani tekst: ime brenda (izostaje kad je logo natpis širi od 2,2:1, jer ime već piše na njemu), slogan sa sajta, slogan za LinkedIn iz opisa profila ili prva rečenica opisa, pa sajt bez „https://” ili nalog. Korisnik menja tekst u tri polja; pregled od 960 px se crta pola sekunde posle izmene.
+- Crta se kroz Satori i resvg, kao slajdovi, bez tokena; preuzima se pojedinačno ili sve kao ZIP. Ništa se ne čuva: tekst ide u adresi slike, a adresa nosi ključ izgleda (boja, fontovi, logo), da pregledač ne prikaže staru sliku posle promene izgleda. Postavljanje na mreže ostaje ručno, jer bi tražilo nove dozvole na svakoj mreži.
+
+Razlog: vlasnik je tražio sadržaj specifičan za svaku mrežu, koliko god ima smisla. Naslovna slika je deo profila koji imaju skoro sve mreže, a svaka traži drugu veličinu i drugačije seče sliku.

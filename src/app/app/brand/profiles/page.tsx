@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 
 import { BrandAccountHeader } from '@/components/brand/brand-account-header'
+import { BannersCard } from '@/components/brand/profile-banners'
 import { HighlightsCard } from '@/components/brand/profile-highlights'
 import { ProfileKitCard } from '@/components/brand/profile-kit'
 import { getCurrentBrand } from '@/lib/auth/brand'
@@ -16,8 +17,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * Brend i nalog, kartica Profili mreža: opisi profila za svaku mrežu (D-143) i Instagram highlights
- * (D-144), oba iz profila brenda.
+ * Brend i nalog, kartica Profili mreža: opisi profila za svaku mrežu (D-143), Instagram highlights
+ * (D-144) i naslovne slike profila (D-145), sve iz profila i izgleda brenda.
  */
 export default async function BrandProfilesPage() {
   const viewer = await getViewer()
@@ -40,6 +41,7 @@ export default async function BrandProfilesPage() {
         initial={kit}
         emailVerified={Boolean(viewer.profile.emailVerifiedAt)}
       />
+      <BannersCard brandId={brand.id} initial={kit} />
     </div>
   )
 }
