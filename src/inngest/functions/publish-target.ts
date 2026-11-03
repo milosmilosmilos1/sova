@@ -1,5 +1,5 @@
 import { inngest } from '@/inngest/client'
-import { events } from '@/inngest/events'
+import { events, targetScheduledEvent } from '@/inngest/events'
 import { logger } from '@/lib/logger'
 import {
   handlePublishRunFailure,
@@ -11,7 +11,7 @@ import {
 /** Događaji koje publisher šalje (ponovno zakazivanje, objavljeno) kao Inngest payload. */
 export function toInngestEvent(ev: OutgoingEvent) {
   return ev.kind === 'scheduled'
-    ? events.postTargetScheduled.create({
+    ? targetScheduledEvent({
         targetId: ev.targetId,
         scheduledAt: ev.scheduledAt,
         version: ev.version,

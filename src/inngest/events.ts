@@ -117,3 +117,17 @@ export const events = {
 } as const
 
 export type SovaEvents = typeof events
+
+/**
+ * „Target zakazan” sa vremenom u obliku koji šema prihvata. Vreme iz baze stiže kao
+ * `2026-11-02T16:05:00+00:00`, a `z.iso.datetime()` traži `Z`, pa je slanje padalo kod čuvara, nastavka
+ * posle pauze i Autopilota (D-140, 3.11.2026).
+ */
+export function targetScheduledEvent(data: {
+  targetId: string
+  scheduledAt: string
+  version: number
+  socialAccountId: string
+}) {
+  return events.postTargetScheduled.create({ ...data, scheduledAt: new Date(data.scheduledAt).toISOString() })
+}

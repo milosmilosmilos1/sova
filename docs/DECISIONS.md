@@ -1183,4 +1183,6 @@ Odluka:
 - Korak koji je platforma prekinula, pa ga Inngest ponavlja, nastavlja objavu: target „objavljuje se” sa istim run ID-jem je njegov, a ne tuđ. Ranije je ponovljen korak odustajao i target je ostajao zaglavljen dok ga čuvar posle 30 minuta ne pokrene ponovo.
 - Pre svakog ponovnog slanja (ponovljen korak, target koji je već imao pokušaj pa ga je čuvar ili korisnik ponovo pokrenuo) Sova pita mrežu da li je objava ipak izašla (poslednjih 10 objava, isti početak teksta, poslednja dva sata), da ne nastane duplikat.
 
+- Dopuna 3.11.2026: signal „target zakazan” nosi vreme kao ISO sa `Z` (`targetScheduledEvent` u `inngest/events.ts`). Vreme iz baze stiže kao `+00:00`, a Inngest ga odbija pri slanju (`z.iso.datetime()`), pa čuvar nijednu zaglavljenu objavu nije mogao da pokrene ponovo; isto je pogađalo nastavak posle pauze i ponovno zakazivanje iz Autopilota. Testovi to nisu videli jer slanje signala u njima ne prolazi kroz proveru.
+
 Razlog: Instagram karusel od pet slika (Adaptiko, 2.11.2026) zaglavio se u „objavljuje se”. Netlify je prekinuo korak posle 30 s, a ponovljen korak je odustao.

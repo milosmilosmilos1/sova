@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { inngest } from '@/inngest/client'
-import { events } from '@/inngest/events'
+import { events, targetScheduledEvent } from '@/inngest/events'
 import { AiError } from '@/lib/ai/errors'
 import { logger } from '@/lib/logger'
 
@@ -113,7 +113,7 @@ export async function enqueueTargetScheduled(
   socialAccountId: string,
 ): Promise<void> {
   try {
-    await inngest.send(events.postTargetScheduled.create({ targetId, scheduledAt, version, socialAccountId }))
+    await inngest.send(targetScheduledEvent({ targetId, scheduledAt, version, socialAccountId }))
   } catch (error) {
     logger.error('enqueue_target_scheduled_failed', { targetId, error })
     throw new AiError(
