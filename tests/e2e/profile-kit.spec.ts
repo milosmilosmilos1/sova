@@ -7,6 +7,7 @@ import { admin, cleanup, login, seedWorkspace, type Seeded } from './fixtures'
 /**
  * Profili mreža (D-143): sačuvani opisi profila za svaku mrežu, sa brojačem znakova, linkom u profilu i
  * dugmetom za kopiranje; napomena da Google ne dozvoljava link u opisu.
+ * Instagram highlights (D-144): naslovne u boji brenda, preuzimanje i priča od kadrova u Odobravanju.
  */
 let seeded: Seeded | undefined
 const SITE = 'https://adaptiko.rs'
@@ -36,9 +37,32 @@ test.beforeAll(async () => {
     pinterest: { name: 'Adaptiko', long: `Ideje za stan.\n\n${SITE}` },
     google_business: { long: 'Adaptacija stanova u Beogradu po fiksnoj ceni.' },
   }
+  const highlights = [
+    {
+      title: 'Usluge',
+      icon: 'services',
+      visual_query: 'apartment renovation',
+      frames: [
+        { title: 'Adaptacija od projekta do ključa', body: 'Jedan koordinator vodi ceo posao.' },
+        { title: 'Zakažite procenu', body: 'Pišite nam u poruke.' },
+      ],
+    },
+    {
+      title: 'Kontakt',
+      icon: 'contact',
+      visual_query: 'phone call',
+      frames: [{ title: 'Pozovite nas', body: 'Radnim danima od 8 do 16.' }],
+    },
+  ]
+  const at = new Date().toISOString()
   const updated = await admin
     .from('brands')
-    .update({ website_url: SITE, settings: { profileKit: { bios, biosAt: new Date().toISOString() } } })
+    .update({
+      website_url: SITE,
+      settings: { profileKit: { bios, biosAt: at, highlights, highlightsAt: at } },
+      // priča se crta bez fotografija, da test ne zove Unsplash i Pexels
+      design: { photoSource: 'none' },
+    })
     .eq('id', seeded.brandId)
   if (updated.error) throw new Error(updated.error.message)
 })
@@ -71,4 +95,39 @@ test('profili mreža: opisi po mreži, brojač, link u profilu i kopiranje (D-14
   expect(copied.replace(/\r\n/g, '\n')).toBe(BIO)
 
   expect(await seriousViolations(page, 'profili mreža')).toEqual([])
+})
+
+test('profili mreža: Instagram highlights, naslovne, preuzimanje i priča u Odobravanju (D-144)', async ({
+  page,
+}) => {
+  await login(page, seeded!)
+  await page.goto('/app/brand/profiles')
+  await expect(page.getByRole('button', { name: /Napravi nove \(3 tokena\)/ })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Preuzmi sve naslovne (ZIP)' })).toHaveAttribute(
+    'href',
+    `/api/brands/${seeded!.brandId}/profile-kit/highlights/covers`,
+  )
+  await expect(page.getByText('Ovako izgledaju na profilu')).toBeVisible()
+
+  // naslovna stiže kao PNG 1080×1920
+  const cover = page.getByRole('img', { name: 'Naslovna za Usluge' })
+  await expect(cover).toBeVisible()
+  await expect.poll(() => cover.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(1080)
+  const item = page.locator('section').filter({ has: cover })
+  await expect(item.getByText('6 / 15')).toBeVisible()
+  await expect(item.getByText('Adaptacija od projekta do ključa')).toBeVisible()
+  await expect(item.getByRole('button', { name: 'Preuzmi naslovnu' })).toHaveAttribute(
+    'href',
+    /\/highlights\/0\/cover\?v=.+&download=1$/,
+  )
+  await expect(page.getByText('Kako ih dodati na profil')).toBeVisible()
+
+  await item.getByRole('button', { name: 'Napravi priču' }).click()
+  await expect(item.getByRole('status')).toContainText('Priča je u Odobravanju.', { timeout: 30_000 })
+  await expect(item.getByRole('link', { name: 'Otvori objavu' })).toHaveAttribute(
+    'href',
+    /^\/app\/posts\/[0-9a-f-]{36}$/,
+  )
+
+  expect(await seriousViolations(page, 'instagram highlights')).toEqual([])
 })

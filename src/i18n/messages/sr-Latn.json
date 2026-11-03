@@ -1006,6 +1006,33 @@
       "google_business": {
         "long": "Opis firme"
       }
+    },
+    "highlights": {
+      "title": "Instagram highlights",
+      "subtitle": "Istaknute priče ispod opisa profila. Sova predlaže teme iz profila brenda, crta naslovne u boji brenda i pravi priče od kadrova. Instagram ne dozvoljava aplikacijama da same prave highlights, pa ih na profil dodajete vi.",
+      "generate": "Napravi highlights ({tokens, plural, one {# token} few {# tokena} other {# tokena}})",
+      "regenerate": "Napravi nove ({tokens, plural, one {# token} few {# tokena} other {# tokena}})",
+      "generating": "Sova planira highlights…",
+      "noProfile": "Za highlights treba profil brenda: analizirajte sajt ili popunite stranu Brain.",
+      "unverified": "Potvrdite email da biste pravili highlights.",
+      "empty": "Još nema highlights-a. Kliknite „Napravi highlights”.",
+      "preview": "Ovako izgledaju na profilu",
+      "downloadAll": "Preuzmi sve naslovne (ZIP)",
+      "name": "Naslov ispod kruga",
+      "coverAlt": "Naslovna za {title}",
+      "downloadCover": "Preuzmi naslovnu",
+      "frames": "Kadrovi priče: {n}",
+      "story": "Napravi priču",
+      "storyPending": "Pravim priču…",
+      "storyReady": "Priča je u Odobravanju.",
+      "storyDraft": "Priča je sačuvana kao nacrt.",
+      "openPost": "Otvori objavu",
+      "noInstagram": "Povežite Instagram da bi priča imala nalog.",
+      "networks": "Mreže",
+      "howTitle": "Kako ih dodati na profil",
+      "how1": "Napravite priču i odobrite je: Sova je objavljuje na Instagramu.",
+      "how2": "Na profilu dodirnite „Novo” (+) ispod opisa i izaberite priče za taj highlight.",
+      "how3": "Dodirnite „Uredi naslovnu”, izaberite preuzetu naslovnu iz galerije telefona i upišite naslov."
     }
   },
   "brandAccount": {

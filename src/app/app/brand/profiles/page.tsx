@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 
 import { BrandAccountHeader } from '@/components/brand/brand-account-header'
+import { HighlightsCard } from '@/components/brand/profile-highlights'
 import { ProfileKitCard } from '@/components/brand/profile-kit'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
@@ -14,7 +15,10 @@ export async function generateMetadata(): Promise<Metadata> {
   return { title: t('profiles') }
 }
 
-/** Brend i nalog, kartica Profili mreža (D-143): opisi profila za svaku mrežu iz profila brenda. */
+/**
+ * Brend i nalog, kartica Profili mreža: opisi profila za svaku mrežu (D-143) i Instagram highlights
+ * (D-144), oba iz profila brenda.
+ */
 export default async function BrandProfilesPage() {
   const viewer = await getViewer()
   if (!viewer) redirect('/login?next=/app/brand/profiles')
@@ -27,6 +31,11 @@ export default async function BrandProfilesPage() {
     <div className="space-y-6">
       <BrandAccountHeader />
       <ProfileKitCard
+        brandId={brand.id}
+        initial={kit}
+        emailVerified={Boolean(viewer.profile.emailVerifiedAt)}
+      />
+      <HighlightsCard
         brandId={brand.id}
         initial={kit}
         emailVerified={Boolean(viewer.profile.emailVerifiedAt)}

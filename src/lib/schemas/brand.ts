@@ -33,3 +33,9 @@ export const restoreProfileSchema = z.object({
 export const unlockFieldsSchema = z.object({
   paths: z.array(fieldPathSchema).min(1).max(40),
 })
+
+/** Highlight po redu na profilu (D-144): brend i redni broj od 0. */
+export const highlightParamsSchema = z.object({
+  id: z.uuid(),
+  index: z.coerce.number().int().min(0).max(9),
+})

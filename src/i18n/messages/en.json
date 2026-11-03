@@ -1006,6 +1006,33 @@
       "google_business": {
         "long": "Business description"
       }
+    },
+    "highlights": {
+      "title": "Instagram highlights",
+      "subtitle": "Featured stories under the profile bio. Sova suggests topics from the brand profile, draws covers in brand colors and turns the frames into stories. Instagram doesn’t let apps create highlights, so you add them to the profile yourself.",
+      "generate": "Create highlights ({tokens, plural, one {# token} other {# tokens}})",
+      "regenerate": "Create new ones ({tokens, plural, one {# token} other {# tokens}})",
+      "generating": "Sova is planning highlights…",
+      "noProfile": "Highlights need a brand profile: analyze the website or fill in the Brain page.",
+      "unverified": "Confirm your email to create highlights.",
+      "empty": "No highlights yet. Click “Create highlights”.",
+      "preview": "How they look on the profile",
+      "downloadAll": "Download all covers (ZIP)",
+      "name": "Title under the circle",
+      "coverAlt": "Cover for {title}",
+      "downloadCover": "Download cover",
+      "frames": "Story frames: {n}",
+      "story": "Create story",
+      "storyPending": "Creating story…",
+      "storyReady": "The story is in Approvals.",
+      "storyDraft": "The story is saved as a draft.",
+      "openPost": "Open post",
+      "noInstagram": "Connect Instagram so the story has an account.",
+      "networks": "Networks",
+      "howTitle": "How to add them to the profile",
+      "how1": "Create the story and approve it: Sova publishes it on Instagram.",
+      "how2": "On the profile, tap “New” (+) under the bio and pick the stories for that highlight.",
+      "how3": "Tap “Edit cover”, pick the downloaded cover from your phone’s gallery and type the title."
     }
   },
   "brandAccount": {

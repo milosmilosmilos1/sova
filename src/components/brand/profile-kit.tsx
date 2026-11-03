@@ -140,7 +140,7 @@ function NetworkBios({
   )
 }
 
-function FieldRow({
+export function FieldRow({
   label,
   value,
   count,
@@ -168,7 +168,7 @@ function FieldRow({
         <span className="text-xs font-medium text-muted-foreground">{label}</span>
         <div className="flex items-center gap-2">
           {max ? (
-            <span className="text-xs text-muted-foreground tabular-nums">
+            <span className="text-xs whitespace-nowrap text-muted-foreground tabular-nums">
               {t('count', { n: count ?? 0, max })}
             </span>
           ) : null}

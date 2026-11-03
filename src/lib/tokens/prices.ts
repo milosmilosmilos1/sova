@@ -29,6 +29,7 @@ export const tokenActionSchema = z.enum([
   'inbox_reply',
   'month_plan',
   'profile_bios',
+  'profile_highlights',
 ])
 export type TokenAction = z.infer<typeof tokenActionSchema>
 
@@ -61,6 +62,8 @@ export const DEFAULT_TOKEN_PRICES: Record<TokenAction, number> = {
   month_plan: 3,
   /** opisi profila za svih osam mreža u jednom pozivu (D-143) */
   profile_bios: 3,
+  /** Instagram highlights: naslovi, ikonice i kadrovi priča (D-144); naslovne i priče se crtaju bez tokena */
+  profile_highlights: 3,
 }
 
 export interface ModelPrice {

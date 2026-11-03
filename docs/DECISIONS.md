@@ -1216,3 +1216,15 @@ Odluka:
 - Rezultat se čuva u `brands.settings.profileKit` (spaja se sa ostalim podešavanjima) i prikazuje sa brojačem znakova i dugmetom „Kopiraj”, jer mreže ne dozvoljavaju da Sova sama upiše opis profila. Generisanje koristi postojeći tip `text` u `ai_generations`, pa nema migracije; neuspeh vraća tokene i ne briše stare opise.
 
 Razlog: vlasnik je tražio modul za opis profila za svaku mrežu, koji troši tokene i ističe sajt kad ga brend ima.
+
+## D-144 · 3.11.2026 · usvojeno · Instagram highlights (kartica Profili mreža)
+
+Odluka:
+
+- Kartica „Profili mreža” dobija deo „Instagram highlights”. Dugme „Napravi highlights” jednim Gemini pozivom predlaže 4 do 6 highlights-a iz profila brenda (akcija `profile_highlights`, 3 tokena): naslov ispod kruga do 15 znakova, ikonicu iz spiska od 18 i 2 do 5 kadrova priče (naslov do 60, tekst do 160 znakova). Model dobija i cene i kontakt sa sajta, a highlight sa utiscima kupaca pravi samo kad ih ima u podacima. Ponovljeni naslovi se brišu (`lib/ai/prompts/profile-highlights.ts`).
+- Naslovnu crta server, bez tokena: kadar 1080×1920 u boji teme brenda, sa ikonicom čitljive boje u krugu na sredini, jer Instagram iz naslovne uzima krug iz sredine. Ikonice su putanje iz lucide-a prepisane u `lib/visuals/highlight-icons.ts`. Strana uvozi servis profila, a Next ne dozvoljava `react-dom/server` u tom delu: dok je crtanje išlo kroz React, cela aplikacija je vraćala 500.
+- Naslovne se preuzimaju pojedinačno ili sve kao ZIP. „Napravi priču” crta kadrove u temi brenda i pravi objavu sa ciljem Instagram priča (do pet slika, objavljuju se redom); objava ide u Odobravanje bez obaveštenja. Bez povezanog Instagrama ostaje nacrt bez naloga, uz napomenu.
+- Instagram ne dozvoljava aplikacijama da prave highlights ni da u njih dodaju priču, pa ekran ima kratko uputstvo: objavite priču, na profilu „Novo” (+), pa „Uredi naslovnu” i preuzeta naslovna iz galerije.
+- Rezultat se čuva u `brands.settings.profileKit.highlights`, pored opisa profila. Nema migracije: generisanje koristi tip `text` u `ai_generations`, a neuspeh vraća tokene i ne briše stare highlights.
+
+Razlog: vlasnik je tražio modul za highlights, uz sadržaj koji je specifičan za svaku mrežu.
