@@ -269,6 +269,38 @@ describe('Nova objava (POST /api/ai/compose)', () => {
     expect(calls).toHaveLength(1)
   })
 
+  it('anketa za LinkedIn i X: Gemini piše uvod i pitanje sa odgovorima, bez slike; uz Instagram se odbija (D-151)', async () => {
+    const r0 = reply(null, null, ['linkedin', 'x'])
+    enqueueReply({
+      ...r0,
+      json: {
+        ...r0.json,
+        poll: {
+          question: 'Koliko često servisirate klimu?',
+          options: ['1. Svake godine', 'Na dve godine', 'Kad se pokvari', 'svake godine'],
+          duration_days: 3,
+        },
+      },
+    })
+    const r = await compose({ format: 'poll', platforms: ['linkedin', 'x'] })
+    expect(r.status).toBe(200)
+    const data = r.json.data as ComposeView & {
+      poll?: { question: string; options: string[]; durationDays: number }
+    }
+    expect(data.poll).toEqual({
+      question: 'Koliko često servisirate klimu?',
+      options: ['Svake godine', 'Na dve godine', 'Kad se pokvari'],
+      durationDays: 3,
+    })
+    expect(data.media).toEqual([])
+    expect(JSON.stringify(calls.at(-1)!.body)).toContain('ANKETA')
+    const { data: post } = await admin.from('posts').select('title').eq('id', data.postId).single()
+    expect(post!.title).toBe('Koliko često servisirate klimu?')
+
+    const mixed = await compose({ format: 'poll', platforms: ['linkedin', 'instagram'] })
+    expect(mixed.status).toBe(400)
+  })
+
   it('provere: bez ključa, vrsta koju mreža ne prima, mreže bez zajedničke vrste; ništa se ne naplaćuje', async () => {
     const before = await balance()
     const noKey = await call(composePost, '/api/ai/compose', {

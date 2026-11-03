@@ -2,6 +2,7 @@ import 'server-only'
 
 import type { NotificationType } from '@/config/notifications'
 import { PLATFORMS, validateText, type SocialPlatform } from '@/config/platforms'
+import { readPoll } from '@/config/poll'
 import { readXOptions, xThreadParts } from '@/config/x'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
@@ -171,7 +172,7 @@ export async function validatePostContent(
     // priča nema opis (D-107): tekst se ne objavljuje, pa se ni ne proverava ni ne poredi
     const story = t.options?.format === 'story'
     const thread =
-      t.platform === 'x'
+      t.platform === 'x' && !readPoll(t.options)
         ? xThreadParts(composeXText({ text: t.text, link: view.linkUrl }), readXOptions(t.options))
         : []
     // nit na X-u (D-150): dug tekst ide u više objava, pa se ne proverava ukupna dužina

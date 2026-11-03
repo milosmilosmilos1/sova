@@ -44,7 +44,8 @@ export const composeSchema = z.object({
   cta: z.string().trim().max(200).optional(),
   includeHashtags: z.boolean().default(true),
   locale: contentLocaleSchema.optional(),
-  format: z.enum([...POST_FORMATS, 'auto']).default('auto'),
+  /** `poll` (D-151): anketa za LinkedIn i X, samo u „Nova objava”, ne i u Autopilotu i planu */
+  format: z.enum([...POST_FORMATS, 'poll', 'auto']).default('auto'),
   source: z.enum(['auto', 'unsplash', 'pexels', 'template']).default('auto'),
   mediaAssetIds: z.array(z.uuid()).max(10).optional(),
   /** fotografije iz biblioteke koje stil brenda crta na slajdovima (D-116, priložene u Studiju) */

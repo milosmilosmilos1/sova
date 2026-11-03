@@ -504,7 +504,8 @@
       "videoPending": "Video se još pravi, pa se vidi njegova slika.",
       "xTooLong": "Tekst je duži od {max} znakova, pa ga X neće prihvatiti.",
       "pages": "{n, plural, one {# strana} few {# strane} other {# strana}}",
-      "threadMore": "i još {n, plural, one {# deo} few {# dela} other {# delova}} niti"
+      "threadMore": "i još {n, plural, one {# deo} few {# dela} other {# delova}} niti",
+      "pollLeft": "Još {n, plural, one {# dan} few {# dana} other {# dana}} za glasanje"
     },
     "title": "Odobravanje",
     "subtitle": "Pregledajte šta je Sova pripremila, doradite i odlučite kada ide publici.",

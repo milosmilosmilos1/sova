@@ -467,6 +467,36 @@ describe('LinkedIn', () => {
     expect(liState.imageInits).toBe(0)
   })
 
+  it('anketa stranice: content.poll sa pitanjem, odgovorima i trajanjem; slika se ne šalje (D-151)', async () => {
+    resetLinkedInTikTokState()
+    const img = await uploadJpeg({ r: 40, g: 90, b: 160 })
+    const { job } = await scheduledPost({
+      masterText: 'Pitamo vas pred sezonu servisa.',
+      targets: [
+        {
+          socialAccountId: liOrgId,
+          options: {
+            poll: {
+              question: 'Koliko često servisirate klimu?',
+              options: ['Svake godine', 'Na dve godine', 'Kad se pokvari'],
+              durationDays: 7,
+            },
+          },
+        },
+      ],
+      media: [{ mediaAssetId: img }],
+    })
+    expect((await runPublishTarget(job, ctx)).outcome).toBe('published')
+    const body = liState.posts[0]!.body as { commentary: string; content: { poll: unknown } }
+    expect(body.content.poll).toEqual({
+      question: 'Koliko često servisirate klimu?',
+      options: [{ text: 'Svake godine' }, { text: 'Na dve godine' }, { text: 'Kad se pokvari' }],
+      settings: { duration: 'SEVEN_DAYS' },
+    })
+    expect(body.commentary).toBe('Pitamo vas pred sezonu servisa.')
+    expect(liState.imageInits).toBe(0)
+  })
+
   it('video koji LinkedIn ne obradi: target pada sa porukom, objava se ne pravi', async () => {
     resetLinkedInTikTokState()
     liState.videoStatusQueue = ['PROCESSING', 'PROCESSING_FAILED']

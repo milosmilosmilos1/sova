@@ -9,6 +9,7 @@ import {
   readLinkedInOptions,
 } from '@/config/linkedin'
 import { validateText } from '@/config/platforms'
+import { incompletePoll, LINKEDIN_POLL_DURATION, pollProblems, readPoll } from '@/config/poll'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import { fetchLinkPreview, type LinkPreview } from '@/lib/link-preview'
@@ -347,6 +348,13 @@ export class LinkedInProvider implements SocialProvider {
 
   validatePost(input: NormalizedPost): ValidationResult {
     const problems = [...validateText('linkedin', input.text).problems]
+    // anketa (D-151) ide bez slike, pa se mediji ne proveravaju
+    if (incompletePoll(input.options)) problems.push('Anketa traži pitanje i bar dva odgovora.')
+    const poll = readPoll(input.options)
+    if (poll) {
+      problems.push(...pollProblems(poll, 'linkedin'))
+      return { ok: problems.length === 0, problems }
+    }
     const images = input.media.filter((m) => m.mimeType.startsWith('image/'))
     const videos = input.media.filter((m) => m.mimeType.startsWith('video/'))
     if (videos.length > 1) problems.push('LinkedIn objava može imati jedan video.')
@@ -579,6 +587,25 @@ export class LinkedInProvider implements SocialProvider {
   async publish(input: NormalizedPost, account: AccountRef, accessToken: string): Promise<PublishResult> {
     const client = this.client(accessToken)
     const author = authorUrn(account)
+    const poll = readPoll(input.options)
+    if (poll) {
+      // anketa (D-151): bez slike; link ostaje u tekstu
+      const text =
+        input.link && !input.text.includes(input.link) ? `${input.text}\n\n${input.link}` : input.text
+      const urn = await this.createPost(
+        client,
+        this.postBody(author, text, {
+          poll: {
+            question: poll.question,
+            options: poll.options.map((o) => ({ text: o })),
+            settings: { duration: LINKEDIN_POLL_DURATION[poll.durationDays] },
+          },
+        }),
+      )
+      if (canComment(scopesOf(account), isOrg(account)))
+        await this.firstComment(client, author, urn, input.firstComment)
+      return { externalId: urn, permalink: permalinkFor(urn), pending: null }
+    }
     const video = input.media.find((m) => m.mimeType.startsWith('video/'))
     if (video) {
       const videoUrn = await this.uploadVideo(client, author, video)

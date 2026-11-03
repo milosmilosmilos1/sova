@@ -255,6 +255,20 @@
       "numbered": "Numbers at the end of each part (1/5)",
       "threadCost": "A thread of {parts, plural, one {# post} other {# posts}} uses {cost, plural, one {# token} other {# tokens}} (1 per post, 6 for a post with a link); you’re charged only once the thread is published.",
       "tooLong": "Without a thread the text can’t be longer than {max} characters, so X won’t accept it."
+    },
+    "poll": {
+      "toggle": "Publish as a poll (LinkedIn and X)",
+      "hint": "The same poll goes to all selected LinkedIn and X accounts. On X the post text is the question; on LinkedIn the question sits below the intro.",
+      "question": "Question",
+      "options": "Answers",
+      "optionLabel": "Answer {n}",
+      "remove": "Remove answer {n}",
+      "add": "Add answer",
+      "optionHint": "2 to 4 answers. An answer can have up to 25 characters on X and 30 on LinkedIn.",
+      "duration": "Duration",
+      "days": "{n, plural, one {# day} other {# days}}",
+      "xMax": "On X a poll lasts at most 7 days.",
+      "media": "LinkedIn and X publish the poll without an image; the image goes only to the other networks."
     }
   },
   "postsList": {

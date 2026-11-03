@@ -59,6 +59,8 @@ export interface PostTextInput {
   /** vrsta objave (D-107); `auto` = model bira među `allowedFormats`; bez nje nema uputstva o vrsti */
   format?: PostFormat | 'auto' | null
   allowedFormats?: readonly PostFormat[]
+  /** anketa za LinkedIn i X (D-151): model piše i pitanje sa odgovorima */
+  poll?: boolean
 }
 
 export const postVariantSchema = z.object({
@@ -78,6 +80,11 @@ export const postTextOutputSchema = z.object({
   format: z.enum(POST_FORMATS).nullable().optional(),
   /** 2–5 reči na engleskom za pretragu fotografija i snimaka (Unsplash, Pexels) */
   visual_query: z.string().nullable().optional(),
+  /** anketa (D-151), samo kad je tražena */
+  poll: z
+    .object({ question: z.string(), options: z.array(z.string()), duration_days: z.number() })
+    .nullable()
+    .optional(),
 })
 
 export type PostTextOutput = z.infer<typeof postTextOutputSchema>
@@ -104,6 +111,15 @@ const FORMAT_WRITING: Record<PostFormat, string> = {
   story:
     'Priča: opis se ne objavljuje, pa hook neka bude kratak natpis do 60 znakova, a body i cta po jedna kratka rečenica.',
   link: 'Objava sa linkom: tekst poziva da se otvori link, a sam link ne piši u tekst.',
+}
+
+/** Anketa za LinkedIn i X (D-151): pitanje i odgovori idu u polje poll, tekst je uvod. */
+function pollLines(input: PostTextInput): string[] {
+  if (!input.poll) return []
+  return [
+    'Objava je ANKETA za LinkedIn i X. U polje poll upiši: question (pitanje do 140 znakova, jasno i lako za odgovor), options (2 do 4 odgovora, svaki do 25 znakova, bez brojeva, emoji-ja i ponavljanja, međusobno jasno različiti, pokrivaju glavne odgovore) i duration_days (1, 3, 7 ili 14; najčešće 3).',
+    'Tekst varijanti je kratak uvod koji daje kontekst i poziva na glasanje i komentar. Za X tekst neka završi pitanjem i stane u 280 znakova; za LinkedIn ne ponavljaj pitanje doslovno. Bez slike i bez linka u anketi.',
+  ]
 }
 
 /** Uputstvo o vrsti objave i pojmovima za pretragu vizuala; prazno kad vrsta nije tražena. */
@@ -264,6 +280,7 @@ export function buildPostTextPrompt(input: PostTextInput): string {
     `Napravi ${input.variantsPerPlatform} ${input.variantsPerPlatform === 1 ? 'varijantu' : 'varijante'} za svaku od mreža:`,
     ...platformLines,
     ...formatLines(input),
+    ...pollLines(input),
     '',
     input.hasImage
       ? 'Priložena je fotografija. Prvo je opiši u polju image_description (šta se vidi, atmosfera, boje), pa tekst gradi na tome. alt_text opisuje fotografiju za čitače ekrana.'

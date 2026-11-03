@@ -243,6 +243,50 @@ describe('Objavljivanje i naplata u tokenima', () => {
     expect(JSON.stringify(s.json.error)).toMatch(/dozvoljava 280/)
   })
 
+  it('anketa: poll sa trajanjem u minutima, bez slike i niti, naplata kao jedna objava (D-151)', async () => {
+    const before = await available()
+    const job = await scheduled({
+      masterText: 'Kafa ili čaj ujutru? Glasajte, rezultate delimo u petak.',
+      targets: [
+        {
+          socialAccountId: xId,
+          options: {
+            poll: { question: 'Kafa ili čaj ujutru?', options: ['Kafa', 'Čaj', 'Oba'], durationDays: 14 },
+          },
+        },
+      ],
+    })
+    expect((await runPublishTarget(job, ctx)).outcome).toBe('published')
+    const sent = xState.posts.at(-1)!
+    expect(sent.poll).toEqual({ options: ['Kafa', 'Čaj', 'Oba'], duration_minutes: 10_080 })
+    expect(sent.media).toBeUndefined()
+    expect(sent.reply).toBeUndefined()
+    expect(await available()).toBe(before - 1)
+  })
+
+  it('nedovršena anketa ne prolazi proveru pri zakazivanju (D-151)', async () => {
+    const created = await call<PostView>(postsPost, '/api/posts', {
+      token: owner.token,
+      body: {
+        brandId,
+        masterText: 'Anketa bez odgovora',
+        targets: [
+          { socialAccountId: xId, options: { poll: { question: 'Da ili ne?', options: ['Da', ''] } } },
+        ],
+      },
+    })
+    const p = created.json.data!
+    const when = new Date(Date.now() + slot++ * 60_000)
+    when.setSeconds(0, 0)
+    const s = await call(actionPost, `/api/posts/${p.id}/schedule`, {
+      token: owner.token,
+      params: { id: p.id, action: 'schedule' },
+      body: { version: p.version, scheduledFor: when.toISOString() },
+    })
+    expect(s.status).toBe(400)
+    expect(JSON.stringify(s.json.error)).toMatch(/Anketa traži pitanje i bar dva odgovora/)
+  })
+
   it('domen bez https:// u tekstu se naplaćuje kao link', async () => {
     const before = await available()
     const job = await scheduled({ masterText: 'Zakažite na tangerineseo.rs ili pozovite' })

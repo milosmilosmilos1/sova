@@ -255,6 +255,20 @@
       "numbered": "Brojevi na kraju delova (1/5)",
       "threadCost": "Nit od {parts, plural, one {# objave} few {# objave} other {# objava}} troši {cost, plural, one {# token} few {# tokena} other {# tokena}} (svaka objava 1, objava sa linkom 6); naplaćuje se tek kad nit izađe.",
       "tooLong": "Bez niti tekst ne sme biti duži od {max} znakova, pa ga X neće prihvatiti."
+    },
+    "poll": {
+      "toggle": "Objavi kao anketu (LinkedIn i X)",
+      "hint": "Ista anketa ide na sve izabrane LinkedIn i X naloge. Na X-u je tekst objave pitanje, a na LinkedIn-u pitanje stoji ispod uvoda.",
+      "question": "Pitanje",
+      "options": "Odgovori",
+      "optionLabel": "Odgovor {n}",
+      "remove": "Ukloni odgovor {n}",
+      "add": "Dodaj odgovor",
+      "optionHint": "Od 2 do 4 odgovora. Na X-u odgovor ima najviše 25 znakova, na LinkedIn-u 30.",
+      "duration": "Trajanje",
+      "days": "{n, plural, one {# dan} few {# dana} other {# dana}}",
+      "xMax": "Na X-u anketa traje najviše 7 dana.",
+      "media": "LinkedIn i X objavljuju anketu bez slike; slika ide samo na ostale mreže."
     }
   },
   "postsList": {

@@ -1,6 +1,7 @@
 import 'server-only'
 
 import type { SocialPlatform } from '@/config/platforms'
+import { readPoll } from '@/config/poll'
 import { readXOptions, xThreadParts } from '@/config/x'
 import type { NotificationType } from '@/config/notifications'
 import { providerFor } from '@/integrations/social/registry'
@@ -625,7 +626,8 @@ export function xChargeAction(post: Pick<NormalizedPost, 'text' | 'link'>): 'x_p
 export function xChargeActions(
   post: Pick<NormalizedPost, 'text' | 'link' | 'options'>,
 ): Array<'x_post' | 'x_post_with_link'> {
-  const parts = xThreadParts(composeXText(post), readXOptions(post.options))
+  // anketa (D-151) je jedna objava, bez niti
+  const parts = readPoll(post.options) ? [] : xThreadParts(composeXText(post), readXOptions(post.options))
   if (parts.length <= 1) return [xChargeAction(post)]
   return parts.map((p) => (containsUrl(p) ? 'x_post_with_link' : 'x_post'))
 }

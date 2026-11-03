@@ -1,6 +1,7 @@
 import 'server-only'
 
 import type { SocialPlatform } from '@/config/platforms'
+import { isPollPlatform, normalizePoll, type PollOptions } from '@/config/poll'
 import { formatFor, formatsForPlatforms, mediaNeed, type PostFormat } from '@/config/post-formats'
 import { variantToText } from '@/lib/ai/prompts/post-text'
 import { ApiError } from '@/lib/api/errors'
@@ -36,6 +37,8 @@ export interface ComposeResult {
   tokensCharged: number
   /** dizajnirana objava (D-108): stil i tekst slajdova */
   styleId?: string
+  /** anketa za LinkedIn i X (D-151) */
+  poll?: PollOptions
   slides?: Array<{ kind: string; title: string; body?: string | null }>
 }
 
@@ -53,6 +56,8 @@ export async function composePost(
 ): Promise<ComposeResult> {
   const brand = await getBrand(viewer, input.brandId)
   await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
+  // anketa (D-151) ide svojim putem: tekst i pitanje sa odgovorima, bez slike
+  if (input.format === 'poll') return composePoll(viewer, brand, { ...input, format: 'poll' }, meta)
   const platforms = input.platforms as SocialPlatform[]
   const allowed = formatsForPlatforms(platforms)
   if (!allowed.length)
@@ -218,5 +223,76 @@ export async function composePost(
     targets: targets.length,
     notes,
     tokensCharged: tokens,
+  }
+}
+
+/**
+ * Anketa za LinkedIn i X (D-151): Gemini piše uvod po mreži i pitanje sa 2 do 4 odgovora; anketa ide u
+ * `options.poll` svakog targeta, bez slike (obe mreže ne dozvoljavaju anketu i medij zajedno).
+ */
+async function composePoll(
+  viewer: Viewer,
+  brand: Awaited<ReturnType<typeof getBrand>>,
+  input: ComposeInput & { format: 'poll' },
+  meta: { requestId: string; idempotencyKey?: string | null },
+): Promise<ComposeResult> {
+  const platforms = input.platforms as SocialPlatform[]
+  if (!platforms.every(isPollPlatform))
+    throw new ApiError('VALIDATION', 'Anketa ide samo na LinkedIn i X. Izaberite samo te mreže.')
+  const notes: string[] = []
+  const text = await generatePostText(
+    viewer,
+    {
+      brandId: brand.id,
+      platforms,
+      topic: input.topic,
+      goal: input.goal,
+      cta: input.cta,
+      includeHashtags: input.includeHashtags,
+      variantsPerPlatform: 1,
+      locale: input.locale,
+      format: 'text',
+      poll: true,
+    },
+    meta,
+  )
+  const poll = normalizePoll(text.output.poll)
+  if (!poll) notes.push('Anketa nije napisana: dodajte pitanje i odgovore u objavi.')
+  const first = text.output.variants[0]!
+  const { accounts } = await listSocialAccounts(viewer, brand.id)
+  const active = accounts.filter(
+    (a) => a.status === 'active' && (platforms as readonly string[]).includes(a.platform),
+  )
+  if (!active.length)
+    notes.push('Nema povezanih naloga za izabrane mreže: nacrt je bez naloga, dodajte ih u objavi.')
+  const byPlatform = new Map(text.output.variants.map((v) => [v.platform, v]))
+  const targets = active.map((a) => ({
+    socialAccountId: a.id,
+    text: variantToText(byPlatform.get(a.platform as SocialPlatform) ?? first).text,
+    ...(poll ? { options: { poll } } : {}),
+  }))
+  const post = await createPost(viewer, {
+    brandId: brand.id,
+    title: (poll?.question ?? first.hook).trim().slice(0, 200) || undefined,
+    masterText: variantToText(first).text,
+    language: input.locale ?? toContentLocale(brand.content_locale),
+    targets,
+    media: [],
+    source: 'ai',
+  })
+  return {
+    postId: post.id,
+    format: 'text',
+    locale: input.locale ?? brand.content_locale,
+    variants: text.output.variants.map((v) => ({
+      platform: v.platform,
+      text: variantToText(v).text,
+      firstComment: v.first_comment,
+    })),
+    media: [],
+    targets: targets.length,
+    notes,
+    tokensCharged: text.tokensCharged,
+    ...(poll ? { poll } : {}),
   }
 }

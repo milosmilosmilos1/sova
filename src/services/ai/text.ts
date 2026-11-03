@@ -103,7 +103,7 @@ export async function buildBrandContext(
  */
 export async function generatePostText(
   viewer: Viewer,
-  input: TextRequestInput,
+  input: TextRequestInput & { poll?: boolean },
   meta: { requestId: string; idempotencyKey?: string | null },
 ): Promise<PostTextResult> {
   const brand = await getBrand(viewer, input.brandId)
@@ -154,6 +154,7 @@ export async function generatePostText(
     publishDate: wallClock(new Date().toISOString(), brand.timezone).date,
     format: input.format ?? null,
     allowedFormats: formatsForPlatforms(input.platforms),
+    poll: input.poll ?? false,
   })
 
   try {

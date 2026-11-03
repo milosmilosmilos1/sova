@@ -539,6 +539,10 @@
       "link": {
         "label": "Link",
         "hint": "Tekst sa linkom i pregledom stranice."
+      },
+      "poll": {
+        "label": "Anketa (LinkedIn i X)",
+        "hint": "Pitanje sa 2 do 4 odgovora, bez slike."
       }
     },
     "text": {

@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Textarea } from '@/components/ui/textarea'
 import { PLATFORM_KEYS, PLATFORMS, type SocialPlatform } from '@/config/platforms'
+import { isPollPlatform } from '@/config/poll'
 import { formatsForPlatforms, mediaNeed, type PostFormat, type PostFormatChoice } from '@/config/post-formats'
 import type { ApiResponse } from '@/lib/api/response'
 import {
@@ -1528,7 +1529,7 @@ function ComposePanel({
   const tl = useTranslations('contentLocale')
   const [platforms, setPlatforms] = useState<SocialPlatform[]>(['instagram', 'facebook'])
   const [locale, setLocale] = useState(brandLocale)
-  const [format, setFormat] = useState<PostFormatChoice>('auto')
+  const [format, setFormat] = useState<PostFormatChoice | 'poll'>('auto')
   const [source, setSource] = useState<'auto' | 'unsplash' | 'pexels' | 'template'>('auto')
   const [topic, setTopic] = useState('')
   const [goal, setGoal] = useState('engagement')
@@ -1552,9 +1553,18 @@ function ComposePanel({
   const size = design.data?.size ?? 'portrait'
 
   const allowed = formatsForPlatforms(platforms)
+  // anketa (D-151) samo kad su izabrani LinkedIn ili X, bez ostalih mreža
+  const pollAllowed = platforms.length > 0 && platforms.every(isPollPlatform)
   // vrsta koja ne ide na novo izabrane mreže vraća se na „AI bira”
-  const chosen: PostFormatChoice = format !== 'auto' && !allowed.includes(format) ? 'auto' : format
-  const needsVisual = chosen === 'auto' || mediaNeed(chosen).kind !== 'none'
+  const chosen: PostFormatChoice | 'poll' =
+    format === 'poll'
+      ? pollAllowed
+        ? 'poll'
+        : 'auto'
+      : format !== 'auto' && !allowed.includes(format)
+        ? 'auto'
+        : format
+  const needsVisual = chosen === 'auto' || (chosen !== 'poll' && mediaNeed(chosen).kind !== 'none')
   const designable = chosen === 'auto' || chosen === 'image' || chosen === 'carousel' || chosen === 'story'
   const designed = look === 'design' && designable && (chosen !== 'auto' || allowed.includes('image'))
   const textPrice = prices?.text ?? 2
@@ -1637,7 +1647,7 @@ function ComposePanel({
             <select
               id="compose-format"
               value={chosen}
-              onChange={(e) => setFormat(e.target.value as PostFormatChoice)}
+              onChange={(e) => setFormat(e.target.value as PostFormatChoice | 'poll')}
               className={selectClass}
             >
               <option value="auto">{t('compose.formatAuto')}</option>
@@ -1646,6 +1656,7 @@ function ComposePanel({
                   {t(`formats.${f}.label`)}
                 </option>
               ))}
+              {pollAllowed ? <option value="poll">{t('formats.poll.label')}</option> : null}
             </select>
           </div>
           {needsVisual && !designed ? (

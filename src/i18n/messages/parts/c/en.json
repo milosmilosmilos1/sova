@@ -539,6 +539,10 @@
       "link": {
         "label": "Link",
         "hint": "Text with a link and a page preview."
+      },
+      "poll": {
+        "label": "Poll (LinkedIn and X)",
+        "hint": "A question with 2 to 4 answers, no image."
       }
     },
     "text": {

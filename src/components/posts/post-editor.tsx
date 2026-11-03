@@ -14,6 +14,7 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { GoogleBusinessPanel } from '@/components/posts/google-business-panel'
 import { LinkedInPanel } from '@/components/posts/linkedin-panel'
+import { PollPanel } from '@/components/posts/poll-panel'
 import { PinterestPanel } from '@/components/posts/pinterest-panel'
 import { TikTokPanel } from '@/components/posts/tiktok-panel'
 import { XPanel } from '@/components/posts/x-panel'
@@ -21,6 +22,7 @@ import { YouTubePanel } from '@/components/posts/youtube-panel'
 import { NetworkBadge, NetworkName } from '@/components/shared/network-badge'
 import { readGbpOptions } from '@/config/google-business'
 import { readLinkedInOptions } from '@/config/linkedin'
+import { isPollPlatform, rawPoll, type PollOptions } from '@/config/poll'
 import { readXOptions } from '@/config/x'
 import { readPinterestOptions } from '@/config/pinterest'
 import { readYouTubeOptions } from '@/config/youtube'
@@ -901,6 +903,30 @@ function EditorForm({
                 </div>
               )
             })}
+            {(() => {
+              // anketa (D-151): ista na svim izabranim LinkedIn i X nalozima
+              const pollIds = (accounts.data?.accounts ?? [])
+                .filter((a) => form.selected[a.id]?.on && isPollPlatform(a.platform))
+                .map((a) => a.id)
+              if (!pollIds.length) return null
+              const setPoll = (poll: PollOptions | null) => {
+                const next = { ...form.selected }
+                for (const id of pollIds) {
+                  const { poll: _old, ...rest } = next[id]!.options
+                  void _old
+                  next[id] = { ...next[id]!, options: poll ? { ...rest, poll } : rest }
+                }
+                set('selected', next)
+              }
+              return (
+                <PollPanel
+                  value={rawPoll(form.selected[pollIds[0]!]!.options)}
+                  onChange={setPoll}
+                  hasMedia={form.mediaIds.length > 0}
+                  disabled={!editable}
+                />
+              )
+            })()}
           </CardContent>
         </Card>
 

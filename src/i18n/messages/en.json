@@ -504,7 +504,8 @@
       "videoPending": "The video is still being made, so its cover is shown.",
       "xTooLong": "The text is longer than {max} characters, so X will not accept it.",
       "pages": "{n, plural, one {# page} other {# pages}}",
-      "threadMore": "and {n, plural, one {# more part} other {# more parts}} of the thread"
+      "threadMore": "and {n, plural, one {# more part} other {# more parts}} of the thread",
+      "pollLeft": "{n, plural, one {# day} other {# days}} left to vote"
     },
     "title": "Approvals",
     "subtitle": "Review what Sova prepared, refine it and decide when it goes out.",

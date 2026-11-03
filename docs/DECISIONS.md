@@ -1292,3 +1292,15 @@ Odluka:
 - Editor pokazuje cenu cele niti i, za dug tekst, prekidače „Pošalji kao nit” i „Brojevi”; pregled na mreži crta prvu objavu i odgovore ispod.
 
 Razlog: pregled tipova objava; nit je osnovni format X-a za sve što ne staje u 280 znakova, a Sova je dug tekst do sada odbijala.
+
+## D-151 · 3.11.2026 · usvojeno · Ankete na LinkedIn-u i X-u
+
+Odluka:
+
+- Nova vrsta objave „Anketa (LinkedIn i X)”: pitanje, 2 do 4 odgovora i trajanje 1, 3, 7 ili 14 dana (`config/poll.ts`). Facebook i Instagram ankete nemaju u API-ju, pa se anketa nudi samo kad su izabrani LinkedIn ili X, bez ostalih mreža.
+- Anketa se čuva u `post_targets.options.poll` svakog LinkedIn i X targeta (ista vrednost); tekst objave je uvod. LinkedIn: `content.poll` (pitanje do 140 znakova, odgovori do 30, trajanje `ONE_DAY` do `FOURTEEN_DAYS`). X: `poll` sa trajanjem u minutima (najviše 7 dana), odgovori do 25 znakova, tekst objave je pitanje i mora stati u 280 znakova (bez niti). Obe mreže ne dozvoljavaju anketu i sliku zajedno, pa anketa ide bez slike, a slika samo na ostale mreže. Na X-u se anketa naplaćuje kao jedna objava.
+- Uključena, a nedovršena anketa (bez pitanja ili sa manje od dva odgovora) ne prolazi proveru pri zakazivanju, da objava ne ode kao običan tekst.
+- „Nova objava” u Studiju nudi anketu; Gemini piše uvod po mreži i pitanje sa odgovorima (bez numeracije i ponavljanja, u granicama X-a). Autopilot i mesečni plan ankete ne prave: vrste objava u njima ostaju iste (`POST_FORMATS`).
+- Editor ima odeljak „Objavi kao anketu (LinkedIn i X)” koji upisuje anketu u sve izabrane LinkedIn i X naloge, a pregled na mreži crta anketu.
+
+Razlog: pregled tipova objava; ankete su na LinkedIn-u i X-u najjači format za komentare i doseg, a Sova ih nije imala.

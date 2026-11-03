@@ -25,6 +25,7 @@ import { Fragment, useState, type CSSProperties, type ReactNode } from 'react'
 
 import { readGbpOptions } from '@/config/google-business'
 import { linkedinAsDocument, linkedinDocumentTitle, readLinkedInOptions } from '@/config/linkedin'
+import { readPoll, type PollOptions } from '@/config/poll'
 import { pinterestTitle, readPinterestOptions } from '@/config/pinterest'
 import type { SocialPlatform } from '@/config/platforms'
 import { readXOptions, xThreadParts } from '@/config/x'
@@ -289,6 +290,36 @@ function Slides({ media, ratio }: { media: MockMedia[]; ratio: number }) {
         ) : null}
       </div>
       {many ? <Dots count={media.length} active={i} className="pt-2" /> : null}
+    </div>
+  )
+}
+
+/** Anketa (D-151): pitanje (LinkedIn), odgovori kao dugmad i trajanje, kao pre glasanja. */
+function PollCard({ poll, variant }: { poll: PollOptions; variant: 'linkedin' | 'x' }) {
+  const t = useTranslations('review')
+  const days = variant === 'x' ? Math.min(poll.durationDays, 7) : poll.durationDays
+  return (
+    <div
+      className={cn(
+        'space-y-2',
+        variant === 'linkedin' ? 'mx-3 mt-2 rounded-lg border border-zinc-300 p-3 dark:border-zinc-600' : '',
+      )}
+    >
+      {variant === 'linkedin' ? <p className="font-semibold">{poll.question}</p> : null}
+      {poll.options.map((o, i) => (
+        <span
+          key={i}
+          className={cn(
+            'block rounded-full border px-3 py-1.5 text-center font-semibold',
+            variant === 'linkedin'
+              ? 'border-[#0a66c2] text-[#0a66c2] dark:border-[#70b5f9] dark:text-[#70b5f9]'
+              : 'border-sky-600 text-sky-700 dark:border-sky-400 dark:text-sky-400',
+          )}
+        >
+          {o}
+        </span>
+      ))}
+      <p className={cn('text-xs', MUTED)}>{t('netPreview.pollLeft', { n: days })}</p>
     </div>
   )
 }
@@ -611,11 +642,13 @@ function LinkedInFeed({ target, media }: Props) {
         </span>
       </div>
       <Caption target={target} className="px-3 pt-2" accent={accent} more={t('netPreview.more')} />
-      {linkedinAsDocument(
-        readLinkedInOptions(target.options),
-        media.filter((m) => !m.video).length,
-        media.length >= 2 && media.every((m) => m.designed),
-      ) ? (
+      {readPoll(target.options) ? (
+        <PollCard poll={readPoll(target.options)!} variant="linkedin" />
+      ) : linkedinAsDocument(
+          readLinkedInOptions(target.options),
+          media.filter((m) => !m.video).length,
+          media.length >= 2 && media.every((m) => m.designed),
+        ) ? (
         <LinkedInDocument
           media={media}
           title={linkedinDocumentTitle(readLinkedInOptions(target.options), target.postTitle, target.text)}
@@ -664,12 +697,16 @@ function XFeed({ target, media }: Props) {
             {t('netPreview.xTooLong', { max: X_TEXT_MAX })}
           </p>
         ) : null}
-        <FeedMedia
-          platform="x"
-          media={media}
-          max={4}
-          className="rounded-2xl border border-zinc-200 dark:border-zinc-800"
-        />
+        {readPoll(target.options) ? (
+          <PollCard poll={readPoll(target.options)!} variant="x" />
+        ) : (
+          <FeedMedia
+            platform="x"
+            media={media}
+            max={4}
+            className="rounded-2xl border border-zinc-200 dark:border-zinc-800"
+          />
+        )}
         <div className={cn('flex justify-between pt-1', MUTED)}>
           {[MessageCircle, Repeat2, Heart, ChartNoAxesColumn, Bookmark].map((Icon, k) => (
             <Icon key={k} className="size-[18px]" aria-hidden />

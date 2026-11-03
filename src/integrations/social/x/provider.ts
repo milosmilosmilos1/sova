@@ -3,6 +3,7 @@ import 'server-only'
 import sharp from 'sharp'
 
 import { validateText } from '@/config/platforms'
+import { incompletePoll, pollProblems, readPoll, xPollMinutes, type PollOptions } from '@/config/poll'
 import { readXOptions, xThreadParts } from '@/config/x'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
@@ -304,6 +305,14 @@ export class XProvider implements SocialProvider {
 
   validatePost(input: NormalizedPost): ValidationResult {
     const text = composeXText(input)
+    // anketa (D-151) je jedna objava bez slike: nema niti i tekst mora stati u 280 znakova
+    if (incompletePoll(input.options))
+      return { ok: false, problems: ['Anketa traži pitanje i bar dva odgovora.'] }
+    const poll = readPoll(input.options)
+    if (poll) {
+      const problems = [...validateText('x', text).problems, ...pollProblems(poll, 'x')]
+      return { ok: problems.length === 0, problems }
+    }
     const parts = xThreadParts(text, readXOptions(input.options))
     // nit (D-150): proverava se svaki deo, a ne ceo tekst
     const problems =
@@ -421,12 +430,16 @@ export class XProvider implements SocialProvider {
     text: string,
     mediaIds: string[],
     replyTo?: string,
+    poll?: PollOptions,
   ): Promise<string> {
     const res = await this.request<{ data?: { id?: string } }>(accessToken, 'POST', '/tweets', {
       json: {
         ...(text ? { text } : {}),
         ...(mediaIds.length ? { media: { media_ids: mediaIds } } : {}),
         ...(replyTo ? { reply: { in_reply_to_tweet_id: replyTo } } : {}),
+        ...(poll
+          ? { poll: { options: poll.options, duration_minutes: xPollMinutes(poll.durationDays) } }
+          : {}),
       },
     })
     if (!res.data?.id) throw new ProviderError('UNKNOWN', { message: 'X nije vratio ID objave.' })
@@ -454,8 +467,14 @@ export class XProvider implements SocialProvider {
   }
 
   async publish(input: NormalizedPost, account: AccountRef, accessToken: string): Promise<PublishResult> {
-    const [text = '', ...rest] = xThreadParts(composeXText(input), readXOptions(input.options))
     const username = typeof account.metadata.username === 'string' ? account.metadata.username : null
+    const poll = readPoll(input.options)
+    if (poll) {
+      // anketa (D-151): bez slike i bez niti
+      const id = await this.createPost(accessToken, composeXText(input), [], undefined, poll)
+      return { externalId: id, permalink: xPermalink(username, id), pending: null }
+    }
+    const [text = '', ...rest] = xThreadParts(composeXText(input), readXOptions(input.options))
     const video = input.media.find((m) => m.mimeType.startsWith('video/'))
     if (video) {
       const v = await this.uploadVideo(video, accessToken)
