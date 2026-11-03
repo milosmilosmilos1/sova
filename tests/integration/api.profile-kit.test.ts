@@ -6,6 +6,8 @@ import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { GET as bannerGet } from '@/app/api/brands/[id]/profile-kit/banners/[kind]/route'
 import { GET as bannersGet } from '@/app/api/brands/[id]/profile-kit/banners/route'
 import { POST as biosPost } from '@/app/api/brands/[id]/profile-kit/bios/route'
+import { POST as pinnedPost } from '@/app/api/brands/[id]/profile-kit/extras/pinned/[index]/route'
+import { POST as extrasPost } from '@/app/api/brands/[id]/profile-kit/extras/route'
 import { GET as coverGet } from '@/app/api/brands/[id]/profile-kit/highlights/[index]/cover/route'
 import { POST as storyPost } from '@/app/api/brands/[id]/profile-kit/highlights/[index]/story/route'
 import { GET as coversGet } from '@/app/api/brands/[id]/profile-kit/highlights/covers/route'
@@ -28,6 +30,7 @@ import { pexelsHandlers, resetVisualsState, unsplashHandlers } from './visuals-m
  * ga mreža prikazuje, bez linka u opisu Google profila; neuspeh vraća tokene i ne briše stare opise.
  * Instagram highlights (D-144): naslovi i kadrovi za 3 tokena, naslovne 1080×1920 i priča u Odobravanju.
  * Naslovne slike profila (D-145): podrazumevani tekst iz profila, PNG u veličini mreže, ZIP, bez tokena.
+ * Dodaci po mreži (D-146): 3 tokena, čuvanje uz ostale delove, nacrt od objave za vrh profila.
  */
 let owner: TestUser
 let wsId = ''
@@ -431,5 +434,106 @@ describe('profili na mrežama: naslovne slike profila (D-145)', () => {
     expect(long.status).toBe(400)
     const unknown = await raw(bannerGet, `${base()}/tiktok`, { id: brandId, kind: 'tiktok' })
     expect(unknown.status).toBe(400)
+  })
+})
+
+describe('profili na mrežama: dodaci po mreži (D-146)', () => {
+  const extrasReply = {
+    pinterest_boards: [
+      { name: 'Adaptacija malog stana', description: 'Ideje za male stanove.' },
+      { name: 'Kupatila pre i posle', description: 'Renovirana kupatila.' },
+    ],
+    youtube_playlists: [{ title: 'Pre i posle', description: 'Završeni stanovi.' }],
+    youtube_trailer: {
+      hook: 'Renovirate stan?',
+      script: 'Ovde vidite kako radimo, korak po korak.',
+      cta: 'Pretplatite se.',
+    },
+    google_services: [
+      { name: 'Adaptacija stanova', description: 'Od projekta do ključa. Više na https://adaptiko.rs' },
+    ],
+    ice_breakers: [{ question: 'Koliko traje adaptacija?', answer: 'Zavisi od stana; pišite nam.' }],
+    pinned_posts: [
+      {
+        title: 'Ko smo',
+        why: 'Prvi utisak.',
+        text: 'Adaptiko renovira stanove od projekta do ključa.\n\nadaptiko.rs',
+      },
+    ],
+  }
+  const generateExtras = () =>
+    call<{ kit: ProfileKitView; tokensCharged: number }>(
+      extrasPost,
+      `/api/brands/${brandId}/profile-kit/extras`,
+      {
+        token: owner.token,
+        params: { id: brandId },
+        headers: { 'idempotency-key': crypto.randomUUID() },
+      },
+    )
+  const pinned = (index: number) =>
+    call<{ postId: string }>(pinnedPost, `/api/brands/${brandId}/profile-kit/extras/pinned/${index}`, {
+      token: owner.token,
+      params: { id: brandId, index: String(index) },
+      method: 'POST',
+    })
+  type Kit = { profileKit?: { extras?: unknown; highlights?: unknown; bios?: unknown }; autopilot?: unknown }
+
+  it('pravi dodatke za 3 tokena i čuva ih uz ostale delove; Google usluga je bez linka', async () => {
+    const { data: was } = await admin.from('brands').select('settings').eq('id', brandId).single()
+    const before = await balance()
+    enqueueReply({ kind: 'text', json: extrasReply })
+    const r = await generateExtras()
+    expect(r.status).toBe(200)
+    expect(r.json.data!.tokensCharged).toBe(3)
+    expect(await balance()).toBe(before - 3)
+    const x = r.json.data!.kit.extras!
+    expect(x.pinterest_boards.map((b) => b.name)).toEqual(['Adaptacija malog stana', 'Kupatila pre i posle'])
+    expect(x.google_services[0]!.description).not.toContain('https://')
+    expect(r.json.data!.kit.prices.extras).toBe(3)
+    expect(JSON.stringify(calls[0]!.body)).toContain('pinterest_boards')
+
+    const { data: now } = await admin.from('brands').select('settings').eq('id', brandId).single()
+    const settings = now!.settings as Kit
+    expect(settings.profileKit?.extras).toEqual(x)
+    expect(settings.autopilot).toEqual({ level3AccountIds: [] })
+    // opisi i highlights ostaju kakvi su bili
+    expect(settings.profileKit?.highlights).toEqual((was!.settings as Kit).profileKit?.highlights)
+    expect(settings.profileKit?.bios).toEqual((was!.settings as Kit).profileKit?.bios)
+  })
+
+  it('objava za vrh profila postaje nacrt bez tokena; nepostojeća daje 404', async () => {
+    const before = await balance()
+    const r = await pinned(0)
+    expect(r.status).toBe(200)
+    const { data: post } = await admin
+      .from('posts')
+      .select('status, title, master_text')
+      .eq('id', r.json.data!.postId)
+      .single()
+    expect(post).toMatchObject({ status: 'draft', title: 'Ko smo' })
+    expect(post!.master_text).toContain('Adaptiko renovira stanove')
+    expect(await balance()).toBe(before)
+    expect((await pinned(5)).status).toBe(404)
+  })
+
+  it('odgovor bez većine delova vraća tokene i ne briše sačuvane dodatke', async () => {
+    const { data: was } = await admin.from('brands').select('settings').eq('id', brandId).single()
+    const before = await balance()
+    enqueueReply({
+      kind: 'text',
+      json: {
+        ...extrasReply,
+        pinterest_boards: [],
+        youtube_playlists: [],
+        google_services: [],
+        ice_breakers: [],
+      },
+    })
+    const r = await generateExtras()
+    expect(r.status).toBeGreaterThanOrEqual(400)
+    expect(await balance()).toBe(before)
+    const { data: now } = await admin.from('brands').select('settings').eq('id', brandId).single()
+    expect(now!.settings).toEqual(was!.settings)
   })
 })

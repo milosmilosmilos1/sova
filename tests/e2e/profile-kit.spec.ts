@@ -9,6 +9,7 @@ import { admin, cleanup, login, seedWorkspace, type Seeded } from './fixtures'
  * dugmetom za kopiranje; napomena da Google ne dozvoljava link u opisu.
  * Instagram highlights (D-144): naslovne u boji brenda, preuzimanje i priča od kadrova u Odobravanju.
  * Naslovne slike profila (D-145): pregled za šest mreža, izmena teksta i preuzimanje.
+ * Dodaci po mreži (D-146): table, pitanja za početak razgovora, kopiranje i nacrt od objave za vrh.
  */
 let seeded: Seeded | undefined
 const SITE = 'https://adaptiko.rs'
@@ -55,12 +56,22 @@ test.beforeAll(async () => {
       frames: [{ title: 'Pozovite nas', body: 'Radnim danima od 8 do 16.' }],
     },
   ]
+  const extras = {
+    pinterest_boards: [{ name: 'Adaptacija malog stana', description: 'Ideje za male stanove u Beogradu.' }],
+    youtube_playlists: [{ title: 'Pre i posle', description: 'Završeni stanovi.' }],
+    youtube_trailer: { hook: 'Renovirate stan?', script: 'Ovde vidite kako radimo.', cta: 'Pretplatite se.' },
+    google_services: [{ name: 'Adaptacija stanova', description: 'Od projekta do ključa.' }],
+    ice_breakers: [{ question: 'Koliko traje adaptacija?', answer: 'Zavisi od stana; pišite nam.' }],
+    pinned_posts: [
+      { title: 'Ko smo', why: 'Prvi utisak.', text: 'Adaptiko renovira stanove od projekta do ključa.' },
+    ],
+  }
   const at = new Date().toISOString()
   const updated = await admin
     .from('brands')
     .update({
       website_url: SITE,
-      settings: { profileKit: { bios, biosAt: at, highlights, highlightsAt: at } },
+      settings: { profileKit: { bios, biosAt: at, highlights, highlightsAt: at, extras, extrasAt: at } },
       // priča se crta bez fotografija, da test ne zove Unsplash i Pexels
       design: { photoSource: 'none' },
     })
@@ -83,7 +94,9 @@ test('profili mreža: opisi po mreži, brojač, link u profilu i kopiranje (D-14
   await expect(page.getByRole('button', { name: /Napravi ponovo \(3 tokena\)/ })).toBeVisible()
   await expect(page.getByText(`Sajt u opisima: ${SITE}`)).toBeVisible()
 
-  const instagram = page.locator('section').filter({ has: page.getByRole('heading', { name: 'Instagram' }) })
+  const instagram = page
+    .locator('section')
+    .filter({ has: page.getByRole('heading', { name: 'Instagram', exact: true }) })
   await expect(instagram.getByText('Adaptiko | Adaptacija stanova')).toBeVisible()
   await expect(instagram.getByText(`${Array.from(BIO).length} / 150`)).toBeVisible()
   await expect(instagram.getByText(SITE)).toBeVisible()
@@ -160,4 +173,36 @@ test('profili mreža: naslovne slike profila, izmena teksta i preuzimanje (D-145
   )
 
   expect(await seriousViolations(page, 'naslovne profila')).toEqual([])
+})
+
+test('profili mreža: sadržaj po mreži, kopiranje i nacrt od objave za vrh profila (D-146)', async ({
+  page,
+  context,
+}) => {
+  await context.grantPermissions(['clipboard-read', 'clipboard-write'])
+  await login(page, seeded!)
+  await page.goto('/app/brand/profiles')
+  await expect(page.getByRole('button', { name: /Napravi nov sadržaj \(3 tokena\)/ })).toBeVisible()
+  const section = (name: string | RegExp) =>
+    page.locator('section').filter({ has: page.getByRole('heading', { name }) })
+
+  const boards = section('Pinterest: table')
+  await expect(boards.getByText('Adaptacija malog stana')).toBeVisible()
+  await expect(boards.getByText(`${'Adaptacija malog stana'.length} / 50`)).toBeVisible()
+  await expect(section('Google profil: usluge').getByText('Adaptacija stanova')).toBeVisible()
+
+  const ice = section(/pitanja za početak razgovora/)
+  await ice.getByRole('button', { name: 'Kopiraj: Pitanje' }).click()
+  await expect(ice.getByRole('button', { name: 'Kopiraj: Pitanje' })).toContainText('Kopirano')
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toBe('Koliko traje adaptacija?')
+
+  const pinned = section('Objave za vrh profila')
+  await pinned.getByRole('button', { name: 'Napravi nacrt' }).click()
+  await expect(pinned.getByRole('status')).toContainText('Nacrt je napravljen.')
+  await expect(pinned.getByRole('link', { name: 'Otvori nacrt' })).toHaveAttribute(
+    'href',
+    /^\/app\/posts\/[0-9a-f-]{36}$/,
+  )
+
+  expect(await seriousViolations(page, 'sadržaj po mreži')).toEqual([])
 })

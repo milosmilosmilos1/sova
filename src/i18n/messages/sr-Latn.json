@@ -1066,6 +1066,50 @@
         "youtube": "Telefon i računar prikazuju samo traku u sredini, a ceo kadar samo televizor.",
         "pinterest": "Slika profila stoji dole u sredini, pa je tekst u gornjem delu."
       }
+    },
+    "extras": {
+      "title": "Sadržaj za profile po mreži",
+      "subtitle": "Delovi profila koje svaka mreža ima posebno: objave za vrh profila, table na Pinterestu, usluge na Google profilu, plejliste i najava kanala na YouTube-u i pitanja za početak razgovora na Instagramu i Messengeru. Sova ih piše iz profila brenda; kopirajte ih na mrežu.",
+      "generate": "Napravi sadržaj ({tokens, plural, one {# token} few {# tokena} other {# tokena}})",
+      "regenerate": "Napravi nov sadržaj ({tokens, plural, one {# token} few {# tokena} other {# tokena}})",
+      "generating": "Sova piše sadržaj za profile…",
+      "noProfile": "Za ovaj sadržaj treba profil brenda: analizirajte sajt ili popunite stranu Brain.",
+      "unverified": "Potvrdite email da biste pravili sadržaj za profile.",
+      "empty": "Još nema sadržaja. Kliknite „Napravi sadržaj”.",
+      "sections": {
+        "pinned": "Objave za vrh profila",
+        "boards": "Pinterest: table",
+        "services": "Google profil: usluge",
+        "playlists": "YouTube: plejliste",
+        "trailer": "YouTube: najava kanala",
+        "iceBreakers": "Instagram i Messenger: pitanja za početak razgovora"
+      },
+      "hints": {
+        "pinned": "Tri objave koje stoje prve na Instagramu, TikToku i X-u, ili istaknute na Facebooku i LinkedInu. Napravite nacrt, dodajte sliku i prikačite objavu posle objavljivanja.",
+        "boards": "Ime i opis table sa rečima koje ljudi traže na Pinterestu.",
+        "services": "U Google profilu firme: Usluge, pa Dodaj uslugu. Opis bez linkova.",
+        "playlists": "Plejliste na stranici kanala, da posetilac nađe snimke po temi.",
+        "trailer": "Snimak od 30 do 60 sekundi koji YouTube pušta posetiocima koji još nisu pretplaćeni.",
+        "iceBreakers": "Do četiri pitanja koja se nude kad neko prvi put otvori poruke; upisuju se u podešavanjima poruka na Instagramu i u Meta Business Suite."
+      },
+      "fields": {
+        "boardName": "Ime table",
+        "boardDescription": "Opis table",
+        "serviceName": "Usluga",
+        "serviceDescription": "Opis usluge",
+        "playlistTitle": "Naziv plejliste",
+        "playlistDescription": "Opis plejliste",
+        "hook": "Prva rečenica",
+        "script": "Tekst za snimak",
+        "cta": "Poziv na pretplatu",
+        "question": "Pitanje",
+        "answer": "Odgovor",
+        "postText": "Tekst objave"
+      },
+      "draft": "Napravi nacrt",
+      "drafting": "Pravim nacrt…",
+      "draftReady": "Nacrt je napravljen.",
+      "openDraft": "Otvori nacrt"
     }
   },
   "brandAccount": {

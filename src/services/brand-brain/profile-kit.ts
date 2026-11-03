@@ -18,6 +18,15 @@ import {
   type ProfileBios,
 } from '@/lib/ai/prompts/profile-bios'
 import {
+  buildExtrasPrompt,
+  buildExtrasSystemPrompt,
+  extrasJsonSchema,
+  extrasOutputSchema,
+  extrasUsable,
+  normalizeExtras,
+  type ProfileExtras,
+} from '@/lib/ai/prompts/profile-extras'
+import {
   buildHighlightsPrompt,
   buildHighlightsSystemPrompt,
   highlightsJsonSchema,
@@ -60,6 +69,8 @@ const storedKitSchema = z.object({
   biosAt: z.string().optional(),
   highlights: highlightsOutputSchema.shape.highlights.optional(),
   highlightsAt: z.string().optional(),
+  extras: extrasOutputSchema.optional(),
+  extrasAt: z.string().optional(),
 })
 type StoredKit = z.infer<typeof storedKitSchema>
 
@@ -69,7 +80,9 @@ export interface ProfileKitView {
   biosAt: string | null
   highlights: Highlight[] | null
   highlightsAt: string | null
-  prices: { bios: number; highlights: number }
+  extras: ProfileExtras | null
+  extrasAt: string | null
+  prices: { bios: number; highlights: number; extras: number }
   /** brend ima profil (analiza sajta ili ručno popunjen Brain), bez njega opisi nemaju iz čega */
   hasProfile: boolean
   /** brend ima povezan Instagram, pa priča iz highlights-a dobija nalog */
@@ -97,10 +110,11 @@ function storedKit(settings: unknown): StoredKit {
 export async function getProfileKit(viewer: Viewer, brandId: string): Promise<ProfileKitView> {
   const brand = await getBrand(viewer, brandId)
   const membership = await requireMembership(viewer, brand.workspace_id)
-  const [row, bios, highlights, accounts] = await Promise.all([
+  const [row, bios, highlights, extras, accounts] = await Promise.all([
     getCurrentProfileRow(brand.id),
     getTokenPrice('profile_bios'),
     getTokenPrice('profile_highlights'),
+    getTokenPrice('profile_extras'),
     listSocialAccounts(viewer, brand.id),
   ])
   const kit = storedKit(brand.settings)
@@ -113,7 +127,9 @@ export async function getProfileKit(viewer: Viewer, brandId: string): Promise<Pr
     biosAt: kit.biosAt ?? null,
     highlights: kit.highlights ?? null,
     highlightsAt: kit.highlightsAt ?? null,
-    prices: { bios, highlights },
+    extras: kit.extras ?? null,
+    extrasAt: kit.extrasAt ?? null,
+    prices: { bios, highlights, extras },
     hasProfile: Boolean(profile?.success),
     hasInstagram: accounts.accounts.some((a) => a.platform === 'instagram' && a.status === 'active'),
     banners: { ...banners, hasLogo: Boolean(design.logoAssetId) },
@@ -455,6 +471,59 @@ export async function createHighlightStory(
   if (!instagram.length) return { postId: post.id, status: 'draft', notes }
   await systemSubmitForReview(post.id, `highlight: ${highlight.title}`, { notify: false })
   return { postId: post.id, status: 'in_review', notes }
+}
+
+// dodaci za profile po mreži (D-146) ------------------------------------------------------------
+
+/** „Napravi dodatke”: Pinterest table, YouTube, Google usluge, pitanja i prikačene objave, jednim pozivom. */
+export function generateProfileExtras(
+  viewer: Viewer,
+  brandId: string,
+  meta: { requestId: string; idempotencyKey?: string | null },
+) {
+  return generateKit<ProfileExtras>(viewer, brandId, meta, {
+    action: 'profile_extras',
+    label: 'profile-extras',
+    noProfile: () =>
+      new ApiError(
+        'VALIDATION',
+        'Za dodatke za profile treba profil brenda: analizirajte sajt ili popunite stranu Brain.',
+      ),
+    contact: true,
+    system: buildExtrasSystemPrompt(),
+    prompt: buildExtrasPrompt,
+    jsonSchema: extrasJsonSchema(),
+    maxOutputTokens: 6144,
+    parse: (json) => {
+      const parsed = extrasOutputSchema.safeParse(json)
+      if (!parsed.success) return null
+      const extras = normalizeExtras(parsed.data)
+      return extrasUsable(extras) ? extras : null
+    },
+    save: (kit, extras, at) => ({ ...kit, extras, extrasAt: at }),
+  })
+}
+
+/** Nacrt od objave za vrh profila: tekst je gotov, mreže korisnik bira u objavi. */
+export async function createPinnedDraft(
+  viewer: Viewer,
+  brandId: string,
+  index: number,
+): Promise<{ postId: string }> {
+  const brand = await getBrand(viewer, brandId)
+  await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
+  const pinned = storedKit(brand.settings).extras?.pinned_posts[index]
+  if (!pinned) throw new ApiError('NOT_FOUND', 'Objava za vrh profila nije pronađena.')
+  const post = await createPost(viewer, {
+    brandId: brand.id,
+    title: pinned.title,
+    masterText: pinned.text,
+    language: toContentLocale(brand.content_locale),
+    targets: [],
+    media: [],
+    source: 'ai',
+  })
+  return { postId: post.id }
 }
 
 // naslovne slike profila (D-145) ----------------------------------------------------------------

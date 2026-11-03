@@ -1239,3 +1239,14 @@ Odluka:
 - Crta se kroz Satori i resvg, kao slajdovi, bez tokena; preuzima se pojedinačno ili sve kao ZIP. Ništa se ne čuva: tekst ide u adresi slike, a adresa nosi ključ izgleda (boja, fontovi, logo), da pregledač ne prikaže staru sliku posle promene izgleda. Postavljanje na mreže ostaje ručno, jer bi tražilo nove dozvole na svakoj mreži.
 
 Razlog: vlasnik je tražio sadržaj specifičan za svaku mrežu, koliko god ima smisla. Naslovna slika je deo profila koji imaju skoro sve mreže, a svaka traži drugu veličinu i drugačije seče sliku.
+
+## D-146 · 3.11.2026 · usvojeno · Sadržaj za profile po mreži (kartica Profili mreža)
+
+Odluka:
+
+- Kartica „Profili mreža” dobija deo „Sadržaj za profile po mreži”. Jedno dugme (akcija `profile_extras`, 3 tokena) jednim Gemini pozivom piše delove profila koje svaka mreža ima posebno: tri objave za vrh profila (Instagram, TikTok i X ih kače, Facebook i LinkedIn ističu), do pet tabli za Pinterest (ime do 50 znakova, opis do 300 od dozvoljenih 500), tri do četiri plejliste i najavu kanala od 30 do 60 sekundi za YouTube, do šest usluga za Google profil (naziv do 80, opis do 250 od dozvoljenih 300, bez linkova) i tačno četiri pitanja za početak razgovora na Instagramu i Messengeru (do 80 znakova, sa kratkim odgovorom). Šema i prompt su u `lib/ai/prompts/profile-extras.ts`.
+- Polja su kraća od granica mreža, da odgovor stigne pre nego što Netlify preseče zahtev; brojač na ekranu pokazuje granicu mreže. Model dobija kontakt i cene sa sajta i ne izmišlja utiske, brojke ni garancije. Odgovor koji nema bar četiri od šest delova se odbija, a tokeni se vraćaju.
+- Objava za vrh profila jednim klikom postaje nacrt, bez tokena; mreže i sliku korisnik bira u objavi. Pitanja za početak razgovora se za sada samo kopiraju, jer automatski odgovori traže Meta dozvole za poruke koje još čekaju odobrenje (D-117).
+- Rezultat se čuva u `brands.settings.profileKit.extras`, pored opisa i highlights-a; nema migracije.
+
+Razlog: vlasnik je tražio sadržaj specifičan za svaku mrežu, koliko god ima smisla.

@@ -53,3 +53,6 @@ export const bannerQuerySchema = z.object({
   /** menja adresu kad se promene boje ili tekst, da pregledač ne prikaže staru sliku */
   v: z.string().max(300).optional(),
 })
+
+/** Objava za vrh profila iz dodataka (D-146): redni broj u listi. */
+export const pinnedParamsSchema = z.object({ id: z.uuid(), index: z.coerce.number().int().min(0).max(9) })

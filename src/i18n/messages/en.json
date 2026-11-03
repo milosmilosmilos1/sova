@@ -1066,6 +1066,50 @@
         "youtube": "Phones and computers show only the middle strip; only TVs show the whole image.",
         "pinterest": "The profile photo sits at the bottom center, so the text is in the upper part."
       }
+    },
+    "extras": {
+      "title": "Content for each network’s profile",
+      "subtitle": "Profile parts each network has on its own: posts for the top of the profile, Pinterest boards, services on the Google profile, YouTube playlists and channel trailer, and conversation starters on Instagram and Messenger. Sova writes them from the brand profile; copy them to the network.",
+      "generate": "Create content ({tokens, plural, one {# token} other {# tokens}})",
+      "regenerate": "Create new content ({tokens, plural, one {# token} other {# tokens}})",
+      "generating": "Sova is writing profile content…",
+      "noProfile": "This content needs a brand profile: analyze the website or fill in the Brain page.",
+      "unverified": "Confirm your email to create profile content.",
+      "empty": "No content yet. Click “Create content”.",
+      "sections": {
+        "pinned": "Posts for the top of the profile",
+        "boards": "Pinterest: boards",
+        "services": "Google profile: services",
+        "playlists": "YouTube: playlists",
+        "trailer": "YouTube: channel trailer",
+        "iceBreakers": "Instagram and Messenger: conversation starters"
+      },
+      "hints": {
+        "pinned": "Three posts that come first on Instagram, TikTok and X, or featured on Facebook and LinkedIn. Create a draft, add an image and pin the post once it’s published.",
+        "boards": "Board name and description with the words people search for on Pinterest.",
+        "services": "In the Google Business Profile: Services, then Add service. No links in the description.",
+        "playlists": "Playlists on the channel page, so visitors find videos by topic.",
+        "trailer": "A 30 to 60 second video YouTube plays to visitors who haven’t subscribed yet.",
+        "iceBreakers": "Up to four questions offered when someone opens your messages for the first time; set them in Instagram’s message settings and in Meta Business Suite."
+      },
+      "fields": {
+        "boardName": "Board name",
+        "boardDescription": "Board description",
+        "serviceName": "Service",
+        "serviceDescription": "Service description",
+        "playlistTitle": "Playlist title",
+        "playlistDescription": "Playlist description",
+        "hook": "Opening line",
+        "script": "Script",
+        "cta": "Subscribe call",
+        "question": "Question",
+        "answer": "Answer",
+        "postText": "Post text"
+      },
+      "draft": "Create draft",
+      "drafting": "Creating draft…",
+      "draftReady": "The draft is ready.",
+      "openDraft": "Open draft"
     }
   },
   "brandAccount": {
