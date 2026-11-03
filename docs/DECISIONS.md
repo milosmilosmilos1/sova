@@ -1186,3 +1186,13 @@ Odluka:
 - Dopuna 3.11.2026: signal „target zakazan” nosi vreme kao ISO sa `Z` (`targetScheduledEvent` u `inngest/events.ts`). Vreme iz baze stiže kao `+00:00`, a Inngest ga odbija pri slanju (`z.iso.datetime()`), pa čuvar nijednu zaglavljenu objavu nije mogao da pokrene ponovo; isto je pogađalo nastavak posle pauze i ponovno zakazivanje iz Autopilota. Testovi to nisu videli jer slanje signala u njima ne prolazi kroz proveru.
 
 Razlog: Instagram karusel od pet slika (Adaptiko, 2.11.2026) zaglavio se u „objavljuje se”. Netlify je prekinuo korak posle 30 s, a ponovljen korak je odustao.
+
+## D-141 · 3.11.2026 · usvojeno · Stara otvorena strana posle nove objave se sama osveži
+
+Odluka:
+
+- Svaka objava menja oznake serverskih radnji (Next 16), pa strana otvorena pre objave šalje oznake koje novi server ne prepoznaje („Failed to find Server Action”, odgovor 409/404 sa `x-nextjs-action-not-found`). Klik na birač brenda ili radnog prostora, odjavu i druge forme tada tiho ne radi, a greška stiže do stranice greške.
+- Stranica greške (`app/error.tsx` i `app/global-error.tsx`) tu grešku prepoznaje (`unstable_isUnrecognizedActionError`), ne prijavljuje je Sentry-ju, piše „Stigla je nova verzija Sove” i sama osveži stranu (`lib/stale-deploy.ts`), najviše jednom u minutu, da druga greška ne napravi petlju. Dugme „Osveži stranu” ostaje kao rezerva.
+- Zaštita na nivou hostinga (Netlify skew protection, usmeravanje stare strane na stari deploy) nije uključena; ovo radi bez nje.
+
+Razlog: vlasniku „nije radio live” odmah posle objave 3.11.2026 (tri klika na Kalendaru, 409 „Failed to find Server Action”).

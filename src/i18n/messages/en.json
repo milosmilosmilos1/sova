@@ -40,6 +40,9 @@
     "notFoundText": "The link may be wrong or the page has moved.",
     "errorTitle": "Something went wrong",
     "errorText": "The error has been recorded. Try again, and if it keeps happening contact support with the ID below.",
+    "newVersionTitle": "A new version of Sova is here",
+    "newVersionText": "The page refreshes by itself. If it does not, click the button below and repeat what you were doing.",
+    "reload": "Refresh page",
     "offline": "No internet connection. We will retry when the connection is back."
   },
   "health": {

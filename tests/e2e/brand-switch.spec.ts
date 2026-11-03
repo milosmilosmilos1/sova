@@ -53,3 +53,30 @@ test('birač brenda: brendovi u svojim bojama, izbor prebacuje na drugi brend (D
   await expect(page.getByRole('combobox', { name: 'Brend' })).toContainText('Drugi brend')
   await expect(page.getByText('vlasnik · Drugi brend')).toBeVisible()
 })
+
+test('stara strana posle nove objave: radnja koju server ne prepozna osveži stranu, bez greške (D-141)', async ({
+  page,
+}) => {
+  await login(page, seeded!)
+  // isto kao kad je strana otvorena pre objave: server ne prepoznaje oznaku serverske radnje
+  let stale = 0
+  await page.route('**/app**', async (route) => {
+    const req = route.request()
+    if (req.method() === 'POST' && req.headers()['next-action'] && stale === 0) {
+      stale += 1
+      return route.fulfill({
+        status: 404,
+        headers: { 'x-nextjs-action-not-found': '1', 'content-type': 'text/plain' },
+        body: 'Server action not found.',
+      })
+    }
+    return route.continue()
+  })
+  const reloaded = page.waitForEvent('load')
+  await page.getByRole('combobox', { name: 'Brend' }).click()
+  await page.getByRole('option', { name: 'Drugi brend' }).click()
+  await reloaded
+  expect(stale).toBe(1)
+  await expect(page.getByRole('combobox', { name: 'Brend' })).toBeVisible()
+  await expect(page.getByText('Nešto je pošlo naopako')).toHaveCount(0)
+})

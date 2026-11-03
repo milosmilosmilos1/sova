@@ -40,6 +40,9 @@
     "notFoundText": "Link je možda pogrešan ili je stranica premeštena.",
     "errorTitle": "Nešto je pošlo naopako",
     "errorText": "Greška je zabeležena. Pokušajte ponovo, a ako se ponavlja javite podršci sa ID-jem ispod.",
+    "newVersionTitle": "Stigla je nova verzija Sove",
+    "newVersionText": "Strana se osvežava sama. Ako se ne osveži, kliknite dugme ispod pa ponovite ono što ste radili.",
+    "reload": "Osveži stranu",
     "offline": "Nema veze sa internetom. Pokušaćemo ponovo kad se veza vrati."
   },
   "health": {
