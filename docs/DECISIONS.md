@@ -1313,3 +1313,13 @@ Odluka:
 - Karusel duži od 5 slika više ne pada na proveri: Pinterest dobija prve četiri slike i poslednju, da ostanu naslovna i poziv na akciju (`pinterestCarouselImages` u `config/pinterest.ts`). Editor to piše u Pinterest panelu, a pregled na mreži pokazuje tačkice karusela.
 
 Razlog: pregled tipova objava; karuseli rade i na Pinterestu, a dizajnirani karusel od 5 do 7 slajdova je do sada morao u posebnu objavu.
+
+## D-153 · 3.11.2026 · usvojeno · Logo pločica na slajdu ostaje u svojim bojama
+
+Odluka:
+
+- Logo koji nosi svoju pozadinu (pločica, ikonica aplikacije, kao favicon Klima24: tamnoplavi kvadrat sa belim „24” i plavim prstenom) se na slajdu ne pretvara u jednobojnu verziju. Po D-134 Sova je na tamnoj podlozi crtala belu verziju logoa, a bela verzija pločice je ceo kvadrat u beloj boji, pa se znak nije video.
+- `prepareBrandLogo` označava pločicu (`BrandLogo.tile`): unutar neprovidnog dela ima mnogo oštrih prelaza boje (znak na pločici), a malo ivica prema providnom delu. Natpis sa odvojenim slovima ima obrnut odnos i i dalje dobija belu ili tamnu verziju po podlozi.
+- `logoFor` za pločicu uvek vraća original. Logo se priprema iznova pri svakom crtanju (`brandLogo`), pa svaki nov slajd odmah dobija pločicu u bojama, a postojeći slajdovi ostaju kakvi su dok se ne nacrtaju ponovo.
+
+Razlog: vlasnik je na Klima24 slajdu video beli kvadrat umesto logoa.

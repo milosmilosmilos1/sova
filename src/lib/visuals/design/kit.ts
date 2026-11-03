@@ -199,6 +199,8 @@ export function logoBox(aspect: number, height: number): { width: number; height
  * slova na tamnocrvenoj, narandžast znak na narandžastoj).
  */
 export function logoFor(logo: BrandLogo, color: string, bg: string): string {
+  // pločica ima svoju pozadinu, pa se njen znak vidi na svakoj podlozi (D-153)
+  if (logo.tile) return logo.src
   const hidden = logo.inks
     .filter((ink) => contrast(ink.color, bg) < 2.5)
     .reduce((sum, ink) => sum + ink.share, 0)

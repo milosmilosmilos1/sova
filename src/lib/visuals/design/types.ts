@@ -59,6 +59,11 @@ export interface BrandLogo {
   aspect: number
   /** glavne boje logoa i njihov udeo (0–1), najveći prvi */
   inks: Array<{ color: string; share: number }>
+  /**
+   * logo nosi svoju pozadinu (pločica, ikonica aplikacije): vidljiv deo pokriva skoro ceo okvir, pa
+   * jednobojna verzija bi bila samo beo ili taman kvadrat bez znaka (D-153)
+   */
+  tile?: boolean
 }
 
 export interface DesignContext {

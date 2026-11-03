@@ -124,7 +124,37 @@ export async function prepareBrandLogo(bytes: Buffer, mimeType: string): Promise
     png(tinted(ink, { r: 255, g: 255, b: 255 }), w, h),
     png(tinted(ink, DARK_INK), w, h),
   ])
-  return { src, light: white, dark: darkVersion, aspect: w / h, inks: inkColors(ink) }
+  return {
+    src,
+    light: white,
+    dark: darkVersion,
+    aspect: w / h,
+    inks: inkColors(ink),
+    tile: isTile(ink, w, h),
+  }
+}
+
+/**
+ * Pločica (D-153): znak stoji unutar neprovidne pozadine, bez providnog razmaka oko sebe. Broje se
+ * granice dve različite boje unutar neprovidnog dela (cifre na pločici) i granice prema providnom
+ * (obris slova natpisa). Kod natpisa preovlađuje obris, pa jednobojna verzija čuva oblik; kod pločice
+ * preovlađuju unutrašnje granice, a jednobojna verzija bi bila prazan kvadrat.
+ */
+function isTile(data: Uint8Array, width: number, height: number): boolean {
+  const opaque = (i: number) => data[i + 3]! > 200
+  let inner = 0
+  let outline = 0
+  for (let y = 0; y < height; y++)
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4
+      if (!opaque(i)) continue
+      for (const j of [x + 1 < width ? i + 4 : -1, y + 1 < height ? i + width * 4 : -1]) {
+        if (j < 0) continue
+        if (!opaque(j)) outline++
+        else if (dist(data, i, [data[j]!, data[j + 1]!, data[j + 2]!]) > 80) inner++
+      }
+    }
+  return inner > 40 && inner >= outline * 0.5
 }
 
 const hex = (r: number, g: number, b: number) =>

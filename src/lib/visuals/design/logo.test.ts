@@ -109,6 +109,20 @@ describe('logo za slajd (D-134)', () => {
     expect(logoFor(whiteLogo, '#FFFFFF', '#14161F')).toBe('boje')
   })
 
+  it('pločica (ikonica sa svojom pozadinom) ostaje u svojim bojama i na podlozi iste boje (D-153)', async () => {
+    // kao favicon Klima24: tamnoplava zaobljena pločica sa belim znakom, providni uglovi
+    const tile = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512">
+<rect width="512" height="512" rx="110" fill="#0A2540"/><rect x="110" y="190" width="240" height="150" fill="#FFFFFF"/>
+<circle cx="400" cy="130" r="45" fill="#2F6BFF"/></svg>`)
+    const logo = (await prepareBrandLogo(tile, 'image/svg+xml'))!
+    expect(logo.tile).toBe(true)
+    expect(logo.aspect).toBeCloseTo(1, 1)
+    // na tamnoplavoj podlozi bi bela verzija bila beo kvadrat bez znaka
+    expect(logoFor(logo, '#FFFFFF', '#0B2447')).toBe(logo.src)
+    const jpg = await sharp(Buffer.from(WORDMARK)).jpeg({ quality: 92 }).toBuffer()
+    expect((await prepareBrandLogo(jpg, 'image/jpeg'))!.tile).toBe(false)
+  })
+
   it('veličina po obliku: natpis 3:1 je visok kao zadato, znak malo viši, dugačak natpis ne prelazi 4,2 visine', () => {
     expect(logoBox(3, 50)).toEqual({ width: 150, height: 50 })
     const square = logoBox(1, 50)
