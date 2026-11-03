@@ -248,6 +248,13 @@
         "images": "Mreža slika"
       },
       "documentTitle": "Naslov dokumenta"
+    },
+    "x": {
+      "thread": "Pošalji kao nit ({parts, plural, one {# objava} few {# objave} other {# objava}})",
+      "threadHint": "Tekst je duži od 280 znakova. Sova ga deli po pasusima i rečenicama; prva objava nosi sliku, ostale idu kao odgovori.",
+      "numbered": "Brojevi na kraju delova (1/5)",
+      "threadCost": "Nit od {parts, plural, one {# objave} few {# objave} other {# objava}} troši {cost, plural, one {# token} few {# tokena} other {# tokena}} (svaka objava 1, objava sa linkom 6); naplaćuje se tek kad nit izađe.",
+      "tooLong": "Bez niti tekst ne sme biti duži od {max} znakova, pa ga X neće prihvatiti."
     }
   },
   "postsList": {

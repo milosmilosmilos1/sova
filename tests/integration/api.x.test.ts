@@ -198,6 +198,51 @@ describe('Objavljivanje i naplata u tokenima', () => {
     expect(await available()).toBe(before - 7)
   })
 
+  it('dug tekst ide kao nit: svaki deo odgovara na prethodni, naplata po objavi (D-150)', async () => {
+    const before = await available()
+    const para = (n: number) =>
+      `Korak ${n}: servis klime počinje proverom pritiska, čišćenjem filtera i isparivača, pa merenjem temperature na izlazu. Tek tada znamo da li treba dopuna gasa ili samo dubinsko pranje.`
+    const job = await scheduled({
+      masterText: [1, 2, 3].map(para).join('\n\n'),
+      linkUrl: 'https://tangerineseo.rs/servis',
+    })
+    const sentBefore = xState.posts.length
+    expect((await runPublishTarget(job, ctx)).outcome).toBe('published')
+    const sent = xState.posts.slice(sentBefore)
+    expect(sent.length).toBeGreaterThan(1)
+    expect(sent[0]!.reply).toBeUndefined()
+    // svaki sledeći deo odgovara na prethodni, a prvi deo je objava naloga
+    const ids = sent.map((_, i) => String(xState.postSeq - sent.length + 1 + i))
+    sent.slice(1).forEach((b, i) => expect(b.reply).toEqual({ in_reply_to_tweet_id: ids[i] }))
+    sent.forEach((b, i) => expect(String(b.text).endsWith(` ${i + 1}/${sent.length}`)).toBe(true))
+    expect(String(sent.at(-1)!.text)).toContain('https://tangerineseo.rs/servis?utm_')
+    const t = await target(job.targetId)
+    expect(t.external_post_id).toBe(ids[0])
+    // deo sa linkom 6 tokena, ostali po 1
+    expect(await available()).toBe(before - 6 - (sent.length - 1))
+  })
+
+  it('isključena nit: dug tekst ne prolazi proveru pri zakazivanju (D-150)', async () => {
+    const created = await call<PostView>(postsPost, '/api/posts', {
+      token: owner.token,
+      body: {
+        brandId,
+        masterText: 'Dug tekst. '.repeat(40),
+        targets: [{ socialAccountId: xId, options: { x: { thread: false } } }],
+      },
+    })
+    const p = created.json.data!
+    const when = new Date(Date.now() + slot++ * 60_000)
+    when.setSeconds(0, 0)
+    const s = await call(actionPost, `/api/posts/${p.id}/schedule`, {
+      token: owner.token,
+      params: { id: p.id, action: 'schedule' },
+      body: { version: p.version, scheduledFor: when.toISOString() },
+    })
+    expect(s.status).toBe(400)
+    expect(JSON.stringify(s.json.error)).toMatch(/dozvoljava 280/)
+  })
+
   it('domen bez https:// u tekstu se naplaćuje kao link', async () => {
     const before = await available()
     const job = await scheduled({ masterText: 'Zakažite na tangerineseo.rs ili pozovite' })

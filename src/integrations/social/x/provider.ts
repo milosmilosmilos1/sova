@@ -3,8 +3,10 @@ import 'server-only'
 import sharp from 'sharp'
 
 import { validateText } from '@/config/platforms'
+import { readXOptions, xThreadParts } from '@/config/x'
 import { env } from '@/lib/env'
-import { findUrls } from '@/lib/x-text'
+import { logger } from '@/lib/logger'
+import { composeXText, findUrls, X_THREAD_MAX_PARTS, xWeightedLength, X_TEXT_MAX } from '@/lib/x-text'
 import { ProviderError, type ProviderErrorCode } from '@/integrations/social/errors'
 import type {
   AccountMetrics,
@@ -109,11 +111,7 @@ export function mapXError(status: number, body: XErrorBody | null): ProviderErro
 }
 
 /** Tekst objave na X-u: link objave ide na kraj teksta (X nema posebno polje za link). */
-export function composeXText(input: Pick<NormalizedPost, 'text' | 'link'>): string {
-  const text = input.text.trim()
-  if (!input.link || text.includes(input.link)) return text
-  return text ? `${text}\n\n${input.link}` : input.link
-}
+export { composeXText }
 
 /** Poređenje bez linkova: X u odgovoru menja linkove u t.co. */
 function withoutUrls(text: string): string {
@@ -306,7 +304,16 @@ export class XProvider implements SocialProvider {
 
   validatePost(input: NormalizedPost): ValidationResult {
     const text = composeXText(input)
-    const problems = [...validateText('x', text).problems]
+    const parts = xThreadParts(text, readXOptions(input.options))
+    // nit (D-150): proverava se svaki deo, a ne ceo tekst
+    const problems =
+      parts.length > 1
+        ? parts.length > X_THREAD_MAX_PARTS
+          ? [`Nit na X-u može imati najviše ${X_THREAD_MAX_PARTS} objava; skratite tekst.`]
+          : parts.some((p) => xWeightedLength(p) > X_TEXT_MAX)
+            ? ['Deo niti je duži od 280 znakova; skratite ga.']
+            : []
+        : [...validateText('x', text).problems]
     const images = input.media.filter((m) => m.mimeType.startsWith('image/'))
     const videos = input.media.filter((m) => m.mimeType.startsWith('video/'))
     if (!text && !input.media.length) problems.push('Objava nema ni tekst ni medij.')
@@ -409,16 +416,45 @@ export class XProvider implements SocialProvider {
     return { id, processing: Boolean(state && state !== 'succeeded') }
   }
 
-  private async createPost(accessToken: string, text: string, mediaIds: string[]): Promise<string> {
+  private async createPost(
+    accessToken: string,
+    text: string,
+    mediaIds: string[],
+    replyTo?: string,
+  ): Promise<string> {
     const res = await this.request<{ data?: { id?: string } }>(accessToken, 'POST', '/tweets', {
-      json: { ...(text ? { text } : {}), ...(mediaIds.length ? { media: { media_ids: mediaIds } } : {}) },
+      json: {
+        ...(text ? { text } : {}),
+        ...(mediaIds.length ? { media: { media_ids: mediaIds } } : {}),
+        ...(replyTo ? { reply: { in_reply_to_tweet_id: replyTo } } : {}),
+      },
     })
     if (!res.data?.id) throw new ProviderError('UNKNOWN', { message: 'X nije vratio ID objave.' })
     return res.data.id
   }
 
+  /**
+   * Ostatak niti (D-150): svaki deo odgovara na prethodni. Prva objava je već javna, pa greška dela
+   * ne obara objavu: deo se pokuša još jednom, pa se nit završava tu.
+   */
+  private async thread(accessToken: string, firstId: string, rest: string[]): Promise<void> {
+    let parent = firstId
+    for (const [i, part] of rest.entries()) {
+      try {
+        parent = await this.createPost(accessToken, part, [], parent)
+      } catch {
+        try {
+          parent = await this.createPost(accessToken, part, [], parent)
+        } catch (error) {
+          logger.warn('x_thread_reply_failed', { firstId, part: i + 2, error })
+          return
+        }
+      }
+    }
+  }
+
   async publish(input: NormalizedPost, account: AccountRef, accessToken: string): Promise<PublishResult> {
-    const text = composeXText(input)
+    const [text = '', ...rest] = xThreadParts(composeXText(input), readXOptions(input.options))
     const username = typeof account.metadata.username === 'string' ? account.metadata.username : null
     const video = input.media.find((m) => m.mimeType.startsWith('video/'))
     if (video) {
@@ -427,15 +463,24 @@ export class XProvider implements SocialProvider {
         return {
           externalId: null,
           permalink: null,
-          pending: { kind: 'x_media', mediaId: v.id, text, accountExternalId: account.externalId, username },
+          pending: {
+            kind: 'x_media',
+            mediaId: v.id,
+            text,
+            ...(rest.length ? { rest } : {}),
+            accountExternalId: account.externalId,
+            username,
+          },
         }
       const id = await this.createPost(accessToken, text, [v.id])
+      await this.thread(accessToken, id, rest)
       return { externalId: id, permalink: xPermalink(username, id), pending: null }
     }
     const mediaIds: string[] = []
     for (const m of input.media.filter((x) => x.mimeType.startsWith('image/')).slice(0, 4))
       mediaIds.push(await this.uploadImage(m, accessToken))
     const id = await this.createPost(accessToken, text, mediaIds)
+    await this.thread(accessToken, id, rest)
     return { externalId: id, permalink: xPermalink(username, id), pending: null }
   }
 
@@ -458,6 +503,7 @@ export class XProvider implements SocialProvider {
       }
     if (info && info.state !== 'succeeded') return { state: 'pending' }
     const id = await this.createPost(accessToken, handle.text, [handle.mediaId])
+    await this.thread(accessToken, id, handle.rest ?? [])
     return { state: 'published', externalId: id, permalink: xPermalink(handle.username, id) }
   }
 
@@ -467,7 +513,7 @@ export class XProvider implements SocialProvider {
     account: AccountRef,
     accessToken: string,
   ): Promise<string | null> {
-    const want = withoutUrls(composeXText(input))
+    const want = withoutUrls(xThreadParts(composeXText(input), readXOptions(input.options))[0] ?? '')
     if (!want) return null
     const res = await this.request<{ data?: XPost[] }>(
       accessToken,

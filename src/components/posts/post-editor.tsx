@@ -16,10 +16,12 @@ import { GoogleBusinessPanel } from '@/components/posts/google-business-panel'
 import { LinkedInPanel } from '@/components/posts/linkedin-panel'
 import { PinterestPanel } from '@/components/posts/pinterest-panel'
 import { TikTokPanel } from '@/components/posts/tiktok-panel'
+import { XPanel } from '@/components/posts/x-panel'
 import { YouTubePanel } from '@/components/posts/youtube-panel'
 import { NetworkBadge, NetworkName } from '@/components/shared/network-badge'
 import { readGbpOptions } from '@/config/google-business'
 import { readLinkedInOptions } from '@/config/linkedin'
+import { readXOptions } from '@/config/x'
 import { readPinterestOptions } from '@/config/pinterest'
 import { readYouTubeOptions } from '@/config/youtube'
 import { PLATFORMS } from '@/config/platforms'
@@ -36,7 +38,6 @@ import {
   cropTarget,
   type AspectRange,
 } from '@/lib/media/crop'
-import { containsUrl } from '@/lib/x-text'
 import { wallClock, zonedToUtc } from '@/lib/zoned-time'
 
 /**
@@ -165,12 +166,6 @@ function fromLocalInput(value: string, timeZone: string): string | null {
 }
 
 /** X je pay-per-use: objava sa linkom (i domenom bez https://) košta više (D-013, D-083). */
-function XCostNote({ withLink }: { withLink: boolean }) {
-  const t = useTranslations('postEditor')
-  const cost = withLink ? 6 : 1
-  return <p className="mt-2 text-xs text-muted-foreground">{t(withLink ? 'xCostLink' : 'xCost', { cost })}</p>
-}
-
 /** Natpis odnosa po jeziku: `aspectLabel` piše decimalni zarez (1,91:1), a engleski traži tačku. */
 function ratioText(ratio: number, locale: AppLocale): string {
   const label = aspectLabel(ratio)
@@ -845,9 +840,17 @@ function EditorForm({
                     />
                   ) : null}
                   {sel.on && a.platform === 'x' ? (
-                    <XCostNote
-                      withLink={
-                        Boolean(form.linkUrl.trim()) || containsUrl(sel.text.trim() || form.masterText)
+                    <XPanel
+                      accountId={a.id}
+                      value={readXOptions({ x: sel.options.x })}
+                      text={sel.text.trim() || form.masterText}
+                      link={form.linkUrl.trim() || null}
+                      disabled={!editable}
+                      onChange={(x) =>
+                        set('selected', {
+                          ...form.selected,
+                          [a.id]: { ...sel, options: { ...sel.options, x } },
+                        })
                       }
                     />
                   ) : null}

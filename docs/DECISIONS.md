@@ -1280,3 +1280,15 @@ Odluka:
 - Editor ima panel za LinkedIn kad objava ima bar dve slike, a „Pregled na mreži” u Odobravanju crta dokument: prvu stranu sa naslovom i brojem strana.
 
 Razlog: pregled tipova objava „kao social media menadžer sa 20 godina iskustva”; PDF karusel je najjači format na LinkedIn-u, a Sova je karusele već crtala, pa ih je slala kao mrežu slika.
+
+## D-150 · 3.11.2026 · usvojeno · Nit na X-u za dug tekst
+
+Odluka:
+
+- Tekst za X duži od 280 znakova (sa linkom na kraju) ide kao nit: Sova ga deli po pasusima, pa po rečenicama, pa po rečima, spaja susedne delove dok staju i dodaje „1/5” na kraju dela (`splitXThread` u `lib/x-text.ts`). Link se ne seče, a X ga broji kao 23 znaka. Prva objava nosi sliku ili video, a ostali delovi idu kao odgovori na prethodni (`reply.in_reply_to_tweet_id`), i posle obrade videa.
+- Podešavanje `post_targets.options.x`: nit je uključena dok je korisnik ne isključi, a brojevi isto (`config/x.ts`). Bez niti dug tekst ne prolazi proveru pri zakazivanju, kao do sada. Nit ima najviše 25 objava.
+- Svaki deo je posebna objava na X-u, pa se i naplaćuje posebno: deo sa linkom po ceni objave sa linkom (6), ostali po 1 tokenu. Rezervacija ide za celu nit pre slanja.
+- Prva objava je javna čim izađe, pa greška kasnijeg dela ne obara objavu: deo se pokuša još jednom, pa se nit završava tu, uz zapis u logu. Posle pada se ponovo traži prva objava niti, da se ne pošalje dvaput.
+- Editor pokazuje cenu cele niti i, za dug tekst, prekidače „Pošalji kao nit” i „Brojevi”; pregled na mreži crta prvu objavu i odgovore ispod.
+
+Razlog: pregled tipova objava; nit je osnovni format X-a za sve što ne staje u 280 znakova, a Sova je dug tekst do sada odbijala.

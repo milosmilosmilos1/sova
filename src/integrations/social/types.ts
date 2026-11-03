@@ -129,6 +129,8 @@ export type PollHandle =
       kind: 'x_media'
       mediaId: string
       text: string
+      /** ostali delovi niti (D-150), idu kao odgovori posle prve objave */
+      rest?: string[]
       accountExternalId: string
       username: string | null
     }

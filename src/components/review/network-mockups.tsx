@@ -27,6 +27,7 @@ import { readGbpOptions } from '@/config/google-business'
 import { linkedinAsDocument, linkedinDocumentTitle, readLinkedInOptions } from '@/config/linkedin'
 import { pinterestTitle, readPinterestOptions } from '@/config/pinterest'
 import type { SocialPlatform } from '@/config/platforms'
+import { readXOptions, xThreadParts } from '@/config/x'
 import { readYouTubeOptions, youtubeTitle } from '@/config/youtube'
 import { CAPTION_RULES, captionParts, clipCaption, feedRatio, placementOf } from '@/lib/posts/preview'
 import { cn } from '@/lib/utils'
@@ -639,7 +640,9 @@ function LinkedInFeed({ target, media }: Props) {
 
 function XFeed({ target, media }: Props) {
   const t = useTranslations('review')
-  const text = target.text.trim()
+  // nit (D-150): prva objava ovde, ostali delovi kao odgovori ispod
+  const parts = xThreadParts(target.text, readXOptions(target.options))
+  const text = (parts.length > 1 ? parts[0] : target.text)?.trim() ?? ''
   return (
     <div className="flex gap-3 bg-white px-3 py-3 text-[15px] text-zinc-900 dark:bg-black dark:text-zinc-100">
       <Avatar target={target} size={40} />
@@ -656,7 +659,7 @@ function XFeed({ target, media }: Props) {
             <Rich text={text} accent="text-sky-700 dark:text-sky-400" />
           </p>
         ) : null}
-        {xWeightedLength(text) > X_TEXT_MAX ? (
+        {parts.length <= 1 && xWeightedLength(text) > X_TEXT_MAX ? (
           <p className="text-xs font-medium text-red-700 dark:text-red-400">
             {t('netPreview.xTooLong', { max: X_TEXT_MAX })}
           </p>
@@ -672,6 +675,18 @@ function XFeed({ target, media }: Props) {
             <Icon key={k} className="size-[18px]" aria-hidden />
           ))}
         </div>
+        {parts.length > 1 ? (
+          <ol className="space-y-2 border-l-2 border-zinc-200 pl-3 dark:border-zinc-800">
+            {parts.slice(1, 4).map((p, i) => (
+              <li key={i} className="break-words whitespace-pre-line">
+                <Rich text={p} accent="text-sky-700 dark:text-sky-400" />
+              </li>
+            ))}
+            {parts.length > 4 ? (
+              <li className={cn('text-xs', MUTED)}>{t('netPreview.threadMore', { n: parts.length - 4 })}</li>
+            ) : null}
+          </ol>
+        ) : null}
       </div>
     </div>
   )

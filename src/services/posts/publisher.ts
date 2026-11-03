@@ -1,6 +1,7 @@
 import 'server-only'
 
 import type { SocialPlatform } from '@/config/platforms'
+import { readXOptions, xThreadParts } from '@/config/x'
 import type { NotificationType } from '@/config/notifications'
 import { providerFor } from '@/integrations/social/registry'
 import { pollHandleId, type NormalizedPost, type PollHandle } from '@/integrations/social/types'
@@ -38,7 +39,7 @@ import { markAccountStatus, refFor, type SocialAccountRow } from '@/services/soc
 import { accessTokenFor } from '@/services/social/tokens'
 import { publicMediaUrl, type MediaVariant } from '@/lib/media/public-url'
 import { getTokenPrice } from '@/lib/tokens/prices'
-import { containsUrl } from '@/lib/x-text'
+import { composeXText, containsUrl } from '@/lib/x-text'
 import { confirmReservation, releaseReservation, reserveTokens } from '@/lib/tokens/reservation'
 import type { Database, Json } from '@/types/database'
 
@@ -607,14 +608,32 @@ async function recheck(job: PublishJob, runId: string | null, now: Date): Promis
  * $0.20). Rezervacija pre slanja, potvrda posle uspeha, oslobađanje pri grešci; rok rezervacije 60 min
  * pokriva i obradu videa.
  */
+/** Opis naplate za poruku o tokenima: nit, objava sa linkom ili objava. */
+function xChargeLabel(post: NormalizedPost): string {
+  const actions = xChargeActions(post)
+  // bez oblika reči uz broj: „nit (broj objava: 3)”
+  if (actions.length > 1) return `nit (broj objava: ${actions.length})`
+  return actions[0] === 'x_post_with_link' ? 'objava sa linkom' : 'objava'
+}
+
 export function xChargeAction(post: Pick<NormalizedPost, 'text' | 'link'>): 'x_post' | 'x_post_with_link' {
   // X sam pretvara i domen bez https:// u link, pa i on menja cenu
   return post.link || containsUrl(post.text) ? 'x_post_with_link' : 'x_post'
 }
 
+/** Nit (D-150): svaki deo je posebna objava na X-u; deo sa linkom po ceni objave sa linkom. */
+export function xChargeActions(
+  post: Pick<NormalizedPost, 'text' | 'link' | 'options'>,
+): Array<'x_post' | 'x_post_with_link'> {
+  const parts = xThreadParts(composeXText(post), readXOptions(post.options))
+  if (parts.length <= 1) return [xChargeAction(post)]
+  return parts.map((p) => (containsUrl(p) ? 'x_post_with_link' : 'x_post'))
+}
+
 async function reservePublishCharge(b: Bundle, post: NormalizedPost): Promise<string | null> {
   if (b.target.platform !== 'x') return null
-  const amount = await getTokenPrice(xChargeAction(post))
+  const prices = await Promise.all(xChargeActions(post).map((a) => getTokenPrice(a)))
+  const amount = prices.reduce((sum, p) => sum + p, 0)
   if (amount <= 0) return null
   return reserveTokens({
     workspaceId: b.post.workspace_id,
@@ -751,9 +770,7 @@ async function attemptOnce(
         ? {
             kind: 'permanent',
             code: 'INSUFFICIENT_TOKENS',
-            message: `Nema dovoljno tokena za objavu na X (${
-              xChargeAction(normalized) === 'x_post_with_link' ? 'objava sa linkom' : 'objava'
-            }). Dopunite tokene pa objavite ponovo.`,
+            message: `Nema dovoljno tokena za objavu na X (${xChargeLabel(normalized)}). Dopunite tokene pa objavite ponovo.`,
             detail: error.message,
             httpStatus: null,
           }

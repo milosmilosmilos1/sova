@@ -248,6 +248,13 @@
         "images": "Image grid"
       },
       "documentTitle": "Document title"
+    },
+    "x": {
+      "thread": "Send as a thread ({parts, plural, one {# post} other {# posts}})",
+      "threadHint": "The text is longer than 280 characters. Sova splits it by paragraphs and sentences; the first post carries the image and the rest go as replies.",
+      "numbered": "Numbers at the end of each part (1/5)",
+      "threadCost": "A thread of {parts, plural, one {# post} other {# posts}} uses {cost, plural, one {# token} other {# tokens}} (1 per post, 6 for a post with a link); you’re charged only once the thread is published.",
+      "tooLong": "Without a thread the text can’t be longer than {max} characters, so X won’t accept it."
     }
   },
   "postsList": {

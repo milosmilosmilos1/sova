@@ -2,6 +2,7 @@ import 'server-only'
 
 import type { NotificationType } from '@/config/notifications'
 import { PLATFORMS, validateText, type SocialPlatform } from '@/config/platforms'
+import { readXOptions, xThreadParts } from '@/config/x'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, requireMembership, type Membership } from '@/lib/auth/workspace'
@@ -31,6 +32,7 @@ import {
   type PostView,
 } from '@/services/posts/posts'
 import { loadAccountRow, refFor } from '@/services/social/account-rows'
+import { composeXText, X_THREAD_MAX_PARTS } from '@/lib/x-text'
 
 /**
  * Radnje nad objavom (brif 9, SCHEMA „Dozvoljeni prelazi”): sve idu kroz RPC `transition_post`
@@ -168,7 +170,20 @@ export async function validatePostContent(
     if (!t.text.trim() && !media.length) list.push('Objava nema ni tekst ni medij.')
     // priča nema opis (D-107): tekst se ne objavljuje, pa se ni ne proverava ni ne poredi
     const story = t.options?.format === 'story'
-    const text = story ? { problems: [] as string[] } : validateText(t.platform, t.text)
+    const thread =
+      t.platform === 'x'
+        ? xThreadParts(composeXText({ text: t.text, link: view.linkUrl }), readXOptions(t.options))
+        : []
+    // nit na X-u (D-150): dug tekst ide u više objava, pa se ne proverava ukupna dužina
+    const text =
+      story || thread.length > 1
+        ? {
+            problems:
+              thread.length > X_THREAD_MAX_PARTS
+                ? [`Nit na X-u može imati najviše ${X_THREAD_MAX_PARTS} objava; skratite tekst.`]
+                : ([] as string[]),
+          }
+        : validateText(t.platform, t.text)
     list.push(...text.problems)
     if (t.accountStatus && t.accountStatus !== 'active')
       list.push(`Nalog nije aktivan (${t.accountStatus}); povežite ga ponovo pre objave.`)
