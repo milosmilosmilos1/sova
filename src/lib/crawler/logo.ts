@@ -1,3 +1,5 @@
+import { createHash } from 'node:crypto'
+
 import { fileTypeFromBuffer } from 'file-type'
 import sharp from 'sharp'
 
@@ -42,59 +44,89 @@ function looksLikeSvg(buf: Buffer, contentType: string): boolean {
   return head.startsWith('<svg') || (head.startsWith('<?xml') && head.includes('<svg'))
 }
 
+/** Jedan kandidat: SVG (očišćen) ili raster dovoljno veliki za logo; inače `null`. */
+export async function loadLogo(c: LogoCandidate, deps: CrawlDeps): Promise<LogoResult | null> {
+  try {
+    const res = await deps.fetch(c.src, {
+      timeoutMs: 8_000,
+      maxBytes: 5 * 1024 * 1024,
+      headers: { accept: 'image/*,*/*;q=0.5' },
+    })
+    if (!res.ok || !res.body.length) return null
+    if (looksLikeSvg(res.body, res.contentType)) {
+      const svg = sanitizeSvg(res.body.toString('utf8'))
+      const png = await sharp(Buffer.from(svg), { density: 192 })
+        .resize({ width: 512, height: 512, fit: 'inside', withoutEnlargement: false })
+        .png()
+        .toBuffer({ resolveWithObject: true })
+      return {
+        sourceUrl: c.src,
+        reason: c.reason,
+        mimeType: 'image/svg+xml',
+        bytes: Buffer.from(svg),
+        png: png.data,
+        width: png.info.width,
+        height: png.info.height,
+        isSvg: true,
+      }
+    }
+    const type = await fileTypeFromBuffer(res.body)
+    if (!type || !/^image\/(png|jpeg|webp|gif|x-icon|vnd\.microsoft\.icon|avif)$/.test(type.mime)) return null
+    let image = sharp(res.body, { limitInputPixels: 30_000_000, animated: false })
+    const meta = await image.metadata()
+    if (!meta.width || !meta.height) return null
+    if (meta.width < 48 || meta.height < 16) return null
+    if (meta.width > 1600 || meta.height > 1600)
+      image = image.resize({ width: 1600, height: 1600, fit: 'inside' })
+    const png = await image.png().toBuffer({ resolveWithObject: true })
+    return {
+      sourceUrl: c.src,
+      reason: c.reason,
+      mimeType:
+        type.mime === 'image/x-icon' || type.mime === 'image/vnd.microsoft.icon' ? 'image/png' : type.mime,
+      bytes: type.mime === 'image/x-icon' || type.mime === 'image/vnd.microsoft.icon' ? png.data : res.body,
+      png: png.data,
+      width: png.info.width,
+      height: png.info.height,
+      isSvg: false,
+    }
+  } catch {
+    return null
+  }
+}
+
 /** Preuzima prvi upotrebljiv logo iz liste kandidata (po skoru). */
 export async function fetchLogo(candidates: LogoCandidate[], deps: CrawlDeps): Promise<LogoResult | null> {
   const seen = new Set<string>()
   for (const c of candidates) {
     if (seen.has(c.src) || seen.size >= 6) continue
     seen.add(c.src)
-    try {
-      const res = await deps.fetch(c.src, {
-        timeoutMs: 8_000,
-        maxBytes: 5 * 1024 * 1024,
-        headers: { accept: 'image/*,*/*;q=0.5' },
-      })
-      if (!res.ok || !res.body.length) continue
-      if (looksLikeSvg(res.body, res.contentType)) {
-        const svg = sanitizeSvg(res.body.toString('utf8'))
-        const png = await sharp(Buffer.from(svg), { density: 192 })
-          .resize({ width: 512, height: 512, fit: 'inside', withoutEnlargement: false })
-          .png()
-          .toBuffer({ resolveWithObject: true })
-        return {
-          sourceUrl: c.src,
-          reason: c.reason,
-          mimeType: 'image/svg+xml',
-          bytes: Buffer.from(svg),
-          png: png.data,
-          width: png.info.width,
-          height: png.info.height,
-          isSvg: true,
-        }
-      }
-      const type = await fileTypeFromBuffer(res.body)
-      if (!type || !/^image\/(png|jpeg|webp|gif|x-icon|vnd\.microsoft\.icon|avif)$/.test(type.mime)) continue
-      let image = sharp(res.body, { limitInputPixels: 30_000_000, animated: false })
-      const meta = await image.metadata()
-      if (!meta.width || !meta.height) continue
-      if (meta.width < 48 || meta.height < 16) continue
-      if (meta.width > 1600 || meta.height > 1600)
-        image = image.resize({ width: 1600, height: 1600, fit: 'inside' })
-      const png = await image.png().toBuffer({ resolveWithObject: true })
-      return {
-        sourceUrl: c.src,
-        reason: c.reason,
-        mimeType:
-          type.mime === 'image/x-icon' || type.mime === 'image/vnd.microsoft.icon' ? 'image/png' : type.mime,
-        bytes: type.mime === 'image/x-icon' || type.mime === 'image/vnd.microsoft.icon' ? png.data : res.body,
-        png: png.data,
-        width: png.info.width,
-        height: png.info.height,
-        isSvg: false,
-      }
-    } catch {
-      continue
-    }
+    const logo = await loadLogo(c, deps)
+    if (logo) return logo
   }
   return null
+}
+
+/**
+ * Do `max` upotrebljivih logoa sa strane, redom po skoru (D-148): kad analiza izabere pogrešan
+ * (logo klijenta, ikonica umesto natpisa), korisnik bira drugi sa istog sajta.
+ */
+export async function fetchLogos(
+  candidates: LogoCandidate[],
+  deps: CrawlDeps,
+  max = 4,
+): Promise<LogoResult[]> {
+  const unique = candidates.filter((c, i) => candidates.findIndex((x) => x.src === c.src) === i).slice(0, 8)
+  const loaded = await Promise.all(unique.map((c) => loadLogo(c, deps)))
+  // isti logo pod dve adrese (JSON-LD i zaglavlje) nudi se jednom
+  const seen = new Set<string>()
+  return loaded
+    .filter((l): l is LogoResult => {
+      if (!l) return false
+      const key = createHash('sha1').update(l.png).digest('hex')
+      if (seen.has(key)) return false
+      seen.add(key)
+      return true
+    })
+    .slice(0, max)
 }

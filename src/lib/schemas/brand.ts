@@ -56,3 +56,14 @@ export const bannerQuerySchema = z.object({
 
 /** Objava za vrh profila iz dodataka (D-146): redni broj u listi. */
 export const pinnedParamsSchema = z.object({ id: z.uuid(), index: z.coerce.number().int().min(0).max(9) })
+
+/** Boja slika profila (D-148); `null` vraća prvu boju sa sajta. */
+export const profileLookSchema = z.object({
+  color: z
+    .string()
+    .regex(/^#[0-9a-fA-F]{6}$/)
+    .nullable(),
+})
+
+/** Logo sa sajta koji korisnik bira među kandidatima sa početne strane (D-148). */
+export const siteLogoPickSchema = z.object({ sourceUrl: z.url().max(2048) })

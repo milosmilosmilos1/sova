@@ -5,6 +5,7 @@ import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 
+import { useProfileLook } from '@/components/brand/profile-look'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -28,7 +29,11 @@ export function BannersCard({ brandId, initial }: { brandId: string; initial: Pr
     subtitle: initial.banners.subtitle,
     footer: initial.banners.footer,
   })
-  const [logo, setLogo] = useState(initial.banners.hasLogo)
+  const { look, key: lookKey } = useProfileLook(initial.look)
+  // logo se pojavi i kad ga korisnik izabere tek na ovoj strani (D-148)
+  const hasLogo = Boolean(look.logoAssetId)
+  const [hideLogo, setHideLogo] = useState(false)
+  const logo = hasLogo && !hideLogo
   const [shown, setShown] = useState({ ...fields, logo })
   useEffect(() => {
     const id = window.setTimeout(() => setShown({ ...fields, logo }), 500)
@@ -42,7 +47,7 @@ export function BannersCard({ brandId, initial }: { brandId: string; initial: Pr
       subtitle: shown.subtitle,
       footer: shown.footer,
       logo: shown.logo ? '1' : '0',
-      v: initial.designKey,
+      v: `${initial.designKey}-${lookKey}`,
       ...extra,
     }).toString()
 
@@ -68,9 +73,9 @@ export function BannersCard({ brandId, initial }: { brandId: string; initial: Pr
         </div>
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-4 text-sm">
-            {initial.banners.hasLogo ? (
+            {hasLogo ? (
               <label className="flex items-center gap-2">
-                <Switch checked={logo} onCheckedChange={(v) => setLogo(Boolean(v))} aria-label={t('logo')} />
+                <Switch checked={logo} onCheckedChange={(v) => setHideLogo(!v)} aria-label={t('logo')} />
                 {t('logo')}
               </label>
             ) : null}

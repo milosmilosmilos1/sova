@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js'
+import { http, HttpResponse } from 'msw'
 import { NextRequest } from 'next/server'
 import sharp from 'sharp'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
@@ -12,12 +13,15 @@ import { GET as coverGet } from '@/app/api/brands/[id]/profile-kit/highlights/[i
 import { POST as storyPost } from '@/app/api/brands/[id]/profile-kit/highlights/[index]/story/route'
 import { GET as coversGet } from '@/app/api/brands/[id]/profile-kit/highlights/covers/route'
 import { POST as highlightsPost } from '@/app/api/brands/[id]/profile-kit/highlights/route'
-import { GET as kitGet } from '@/app/api/brands/[id]/profile-kit/route'
+import { GET as logosGet, POST as logosPost } from '@/app/api/brands/[id]/design/logos/route'
+import { GET as kitGet, PATCH as kitPatch } from '@/app/api/brands/[id]/profile-kit/route'
 import { POST as workspacesPost } from '@/app/api/workspaces/route'
 import { resetPexelsCacheForTests } from '@/integrations/pexels/client'
 import { resetUnsplashCacheForTests } from '@/integrations/unsplash/client'
 import { emptyProfile } from '@/lib/brand/profile-schema'
+import { setCrawlDepsForTests } from '@/lib/crawler/deps'
 import { resetMemoryRateLimit } from '@/lib/ratelimit'
+import { safeFetch } from '@/lib/ssrf'
 import { configureFontLoader } from '@/lib/visuals/fonts'
 import type { ProfileKitView } from '@/services/brand-brain/profile-kit'
 
@@ -31,6 +35,7 @@ import { pexelsHandlers, resetVisualsState, unsplashHandlers } from './visuals-m
  * Instagram highlights (D-144): naslovi i kadrovi za 3 tokena, naslovne 1080×1920 i priča u Odobravanju.
  * Naslovne slike profila (D-145): podrazumevani tekst iz profila, PNG u veličini mreže, ZIP, bez tokena.
  * Dodaci po mreži (D-146): 3 tokena, čuvanje uz ostale delove, nacrt od objave za vrh profila.
+ * Boja i logo (D-148): tri boje sa sajta, izabrana boja na naslovnoj, drugi logo sa sajta.
  */
 let owner: TestUser
 let wsId = ''
@@ -538,5 +543,148 @@ describe('profili na mrežama: dodaci po mreži (D-146)', () => {
     expect(await balance()).toBe(before)
     const { data: now } = await admin.from('brands').select('settings').eq('id', brandId).single()
     expect(now!.settings).toEqual(was!.settings)
+  })
+})
+
+describe('profili na mrežama: boja i logo za slike profila (D-148)', () => {
+  const LOGO_SITE = 'https://logos-site.test'
+  const png = (w: number, h: number, color: string) =>
+    sharp({ create: { width: w, height: h, channels: 4, background: color } })
+      .png()
+      .toBuffer()
+  const image = async (w: number, h: number, color: string) =>
+    new HttpResponse(new Uint8Array(await png(w, h, color)), { headers: { 'content-type': 'image/png' } })
+
+  beforeAll(() => {
+    geminiServer.use(
+      http.get(`${LOGO_SITE}/`, () =>
+        HttpResponse.html(`<!doctype html><html><head><title>Logos Site</title>
+<link rel="apple-touch-icon" href="/apple.png">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Logos Site","logo":"${LOGO_SITE}/logo.png"}</script>
+</head><body><header><a href="/"><img src="/logo.png" alt="Logos Site logo"></a>
+<a href="/"><img src="/logo-dark.png" alt="Logos Site"></a></header><main><h1>Logos Site</h1></main></body></html>`),
+      ),
+      http.get(`${LOGO_SITE}/robots.txt`, () => HttpResponse.text('User-agent: *\n')),
+      http.get(`${LOGO_SITE}/logo.png`, () => image(300, 100, '#FF6600')),
+      http.get(`${LOGO_SITE}/logo-dark.png`, () => image(300, 100, '#111111')),
+      http.get(`${LOGO_SITE}/apple.png`, () => image(180, 180, '#003366')),
+    )
+    setCrawlDepsForTests({
+      fetch: (input, options) =>
+        safeFetch(input, { ...options, resolve: async () => ['93.184.216.34'], fetchImpl: fetch }),
+      now: Date.now,
+    })
+  })
+  afterAll(() => setCrawlDepsForTests(null))
+
+  const kit = () =>
+    call<ProfileKitView>(kitGet, `/api/brands/${brandId}/profile-kit`, {
+      token: owner.token,
+      params: { id: brandId },
+    })
+  const saveColor = (color: string | null) =>
+    call<ProfileKitView>(kitPatch, `/api/brands/${brandId}/profile-kit`, {
+      token: owner.token,
+      params: { id: brandId },
+      method: 'PATCH',
+      body: { color },
+    })
+  /** boja gornjeg levog piksela naslovne (početak preliva je izabrana boja) */
+  const corner = async () => {
+    const cover = await raw(coverGet, `/api/brands/${brandId}/profile-kit/highlights/0/cover`, {
+      id: brandId,
+      index: '0',
+    })
+    const { data } = await sharp(cover.bytes)
+      .extract({ left: 0, top: 0, width: 1, height: 1 })
+      .raw()
+      .toBuffer({
+        resolveWithObject: true,
+      })
+    return [...data.subarray(0, 3)]
+  }
+  /** ista boja, uz razliku od par nijansi zbog preliva */
+  const near = (rgb: number[], hex: string) =>
+    [1, 3, 5].every((i, k) => Math.abs(parseInt(hex.slice(i, i + 2), 16) - rgb[k]!) <= 4)
+
+  it('tri boje sa sajta; izabrana boja važi za naslovnu, a bez izbora prva sa sajta', async () => {
+    const { data: brand } = await admin.from('brands').select('design').eq('id', brandId).single()
+    const design = (brand!.design as Record<string, unknown> | null) ?? {}
+    await admin
+      .from('brands')
+      .update({
+        design: {
+          ...design,
+          siteVisual: {
+            url: SITE,
+            at: new Date().toISOString(),
+            source: 'site',
+            primary: '#FF6600',
+            secondary: '#003366',
+            accent: '#22AA55',
+            light: '#FFFFFF',
+            dark: '#111111',
+            headings: 'Inter',
+            body: 'Inter',
+          },
+        },
+      })
+      .eq('id', brandId)
+    const view = await kit()
+    expect(view.json.data!.look).toMatchObject({
+      colors: ['#FF6600', '#003366', '#22AA55'],
+      color: '#FF6600',
+      chosen: false,
+      hasWebsite: true,
+    })
+    expect(near(await corner(), '#FF6600')).toBe(true)
+
+    const saved = await saveColor('#003366')
+    expect(saved.status).toBe(200)
+    expect(saved.json.data!.look).toMatchObject({ color: '#003366', chosen: true })
+    expect(near(await corner(), '#003366')).toBe(true)
+
+    const back = await saveColor(null)
+    expect(back.json.data!.look).toMatchObject({ color: '#FF6600', chosen: false })
+    expect((await saveColor('plava')).status).toBe(400)
+  })
+
+  it('drugi logo sa sajta: ponudi različite logoe, izabran postaje logo brenda', async () => {
+    await admin.from('brands').update({ website_url: LOGO_SITE }).eq('id', brandId)
+    try {
+      const list = await call<{ logos: Array<{ sourceUrl: string; preview: string }> }>(
+        logosGet,
+        `/api/brands/${brandId}/design/logos`,
+        { token: owner.token, params: { id: brandId } },
+      )
+      expect(list.status).toBe(200)
+      const urls = list.json.data!.logos.map((l) => l.sourceUrl)
+      // isti logo iz JSON-LD-a i zaglavlja se nudi jednom
+      expect(urls).toEqual([`${LOGO_SITE}/logo.png`, `${LOGO_SITE}/logo-dark.png`, `${LOGO_SITE}/apple.png`])
+      expect(list.json.data!.logos[0]!.preview).toMatch(/^data:image\/png;base64,/)
+
+      const picked = await call<{ logoAssetId: string; logoSource: string }>(
+        logosPost,
+        `/api/brands/${brandId}/design/logos`,
+        { token: owner.token, params: { id: brandId }, body: { sourceUrl: `${LOGO_SITE}/apple.png` } },
+      )
+      expect(picked.status).toBe(200)
+      expect(picked.json.data!.logoSource).toBe('custom')
+      const view = await kit()
+      expect(view.json.data!.look).toMatchObject({
+        logoSource: 'custom',
+        logoAssetId: picked.json.data!.logoAssetId,
+      })
+      expect(view.json.data!.look.logoUrl).toBeTruthy()
+
+      const foreign = await call(logosPost, `/api/brands/${brandId}/design/logos`, {
+        token: owner.token,
+        params: { id: brandId },
+        body: { sourceUrl: 'https://drugi-sajt.test/logo.png' },
+      })
+      expect(foreign.status).toBe(400)
+    } finally {
+      await admin.from('brands').update({ website_url: SITE }).eq('id', brandId)
+    }
   })
 })

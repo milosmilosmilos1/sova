@@ -38,6 +38,7 @@ import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import { toBrandContext } from '@/lib/brand/compose'
+import { profileColorChoices } from '@/lib/brand/site-colors'
 import { brandProfileSchema, type BrandProfile } from '@/lib/brand/profile-schema'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError } from '@/lib/supabase/errors'
@@ -50,7 +51,8 @@ import { zipStore } from '@/lib/zip'
 import { assertDailyQuota, failGeneration, startGeneration } from '@/services/ai/generations'
 import { getCurrentProfileRow } from '@/services/brand-brain/profile'
 import { getBrand, type BrandRow } from '@/services/brands'
-import { brandLogo, resolveDesign, type ResolvedDesign } from '@/services/design/brand-design'
+import { signedUrl } from '@/services/media'
+import { brandLogo, resolveDesign, storedDesign, type ResolvedDesign } from '@/services/design/brand-design'
 import { themeOf, type PostDesignContext } from '@/services/design/post-design'
 import { renderDesignSlides } from '@/services/design/render-post'
 import { createPost } from '@/services/posts/posts'
@@ -71,6 +73,11 @@ const storedKitSchema = z.object({
   highlightsAt: z.string().optional(),
   extras: extrasOutputSchema.optional(),
   extrasAt: z.string().optional(),
+  /** boja za naslovne highlights-a, profilnu i naslovne slike (D-148); bez nje prva boja sa sajta */
+  color: z
+    .string()
+    .regex(/^#[0-9A-F]{6}$/)
+    .optional(),
 })
 type StoredKit = z.infer<typeof storedKitSchema>
 
@@ -91,7 +98,24 @@ export interface ProfileKitView {
   banners: BannerText & { hasLogo: boolean }
   /** menja se sa bojama, fontovima i logoom brenda, da pregled naslovnih ne ostane star */
   designKey: string
+  /** boja i logo za naslovne highlights-a, profilnu i naslovne slike (D-148) */
+  look: ProfileLook
   canEdit: boolean
+}
+
+export interface ProfileLook {
+  /** izabrana boja; bez izbora prva boja sa sajta */
+  color: string
+  /** tri boje sa sajta za izbor */
+  colors: string[]
+  /** korisnik je sam izabrao boju */
+  chosen: boolean
+  logoUrl: string | null
+  /** menja se kad se promeni logo, da pregled slika ne ostane star */
+  logoAssetId: string | null
+  logoSource: 'custom' | 'site' | null
+  /** brend ima sajt, pa može da ponudi druge logoe sa njega */
+  hasWebsite: boolean
 }
 
 export interface BannerText {
@@ -121,6 +145,7 @@ export async function getProfileKit(viewer: Viewer, brandId: string): Promise<Pr
   const design = await resolveDesign(brand)
   const profile = row ? brandProfileSchema.safeParse(row.data) : null
   const banners = await bannerDefaults(brand, design, profile?.success ? profile.data : null, kit)
+  const colors = siteColors(brand, design, profile?.success ? profile.data : null)
   return {
     website: brand.website_url,
     bios: kit.bios ?? null,
@@ -139,6 +164,15 @@ export async function getProfileKit(viewer: Viewer, brandId: string): Promise<Pr
       design.fonts.body,
       design.logoAssetId ?? '',
     ].join('|'),
+    look: {
+      color: kit.color ?? colors[0] ?? design.colors.primary,
+      colors,
+      chosen: Boolean(kit.color),
+      logoUrl: await logoUrl(design.logoAssetId),
+      logoAssetId: design.logoAssetId,
+      logoSource: design.logoSource,
+      hasWebsite: Boolean(brand.website_url),
+    },
     canEdit: EDIT_ROLES.includes(membership.role),
   }
 }
@@ -381,7 +415,7 @@ export async function highlightCover(
 ): Promise<{ png: Buffer; name: string }> {
   const { brand, highlight } = await highlightOf(viewer, brandId, index)
   const design = await resolveDesign(brand)
-  const png = await renderHighlightCover({ icon: highlight.icon, primary: design.colors.primary })
+  const png = await renderHighlightCover({ icon: highlight.icon, primary: await profileColor(brand, design) })
   return { png, name: `${index + 1}-${fileSlug(highlight.title)}.png` }
 }
 
@@ -395,10 +429,11 @@ export async function highlightCoversZip(
   const highlights = storedKit(brand.settings).highlights ?? []
   if (!highlights.length) throw new ApiError('NOT_FOUND', 'Highlight nije pronađen.')
   const design = await resolveDesign(brand)
+  const primary = await profileColor(brand, design)
   const files = await Promise.all(
     highlights.map(async (h, i) => ({
       name: `${i + 1}-${fileSlug(h.title)}.png`,
-      data: await renderHighlightCover({ icon: h.icon, primary: design.colors.primary }),
+      data: await renderHighlightCover({ icon: h.icon, primary }),
     })),
   )
   return { bytes: zipStore(files), name: `${fileSlug(brand.name)}-highlights.zip` }
@@ -526,6 +561,68 @@ export async function createPinnedDraft(
   return { postId: post.id }
 }
 
+// boja i logo za slike profila (D-148) ---------------------------------------------------------
+
+/** Tri boje sa sajta: poslednja poseta sajtu (izgled brenda), inače boje iz analize brenda. */
+function siteColors(brand: BrandRow, design: ResolvedDesign, profile: BrandProfile | null): string[] {
+  const visual = storedDesign(brand).siteVisual
+  const palette = profile?.visual.colors.value
+  const site = visual
+    ? [visual.primary, visual.secondary, visual.accent, ...(palette?.candidates ?? [])]
+    : palette
+      ? [palette.primary, palette.secondary, palette.accent, ...palette.candidates]
+      : []
+  return profileColorChoices({
+    site,
+    dark: visual?.dark ?? palette?.neutral_dark ?? null,
+    theme: [design.colors.primary, design.colors.secondary],
+  })
+}
+
+/** Boja slika profila: izabrana, inače prva boja sa sajta, inače boja teme. */
+async function profileColor(brand: BrandRow, design: ResolvedDesign): Promise<string> {
+  const chosen = storedKit(brand.settings).color
+  if (chosen) return chosen
+  const row = await getCurrentProfileRow(brand.id)
+  const parsed = row ? brandProfileSchema.safeParse(row.data) : null
+  return siteColors(brand, design, parsed?.success ? parsed.data : null)[0] ?? design.colors.primary
+}
+
+/** Privremena adresa logoa za pregled na ekranu. */
+async function logoUrl(assetId: string | null): Promise<string | null> {
+  if (!assetId) return null
+  const { data } = await createSupabaseAdminClient()
+    .from('media_assets')
+    .select('bucket, storage_path')
+    .eq('id', assetId)
+    .is('deleted_at', null)
+    .maybeSingle()
+  return data ? signedUrl(data, 3600) : null
+}
+
+/** Izbor boje za slike profila; `null` vraća prvu boju sa sajta. */
+export async function saveProfileColor(
+  viewer: Viewer,
+  brandId: string,
+  color: string | null,
+): Promise<ProfileKitView> {
+  const brand = await getBrand(viewer, brandId)
+  await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
+  const admin = createSupabaseAdminClient()
+  // ostali ključevi podešavanja (Autopilot, opisi, highlights) ostaju kakvi jesu
+  const { data: fresh } = await admin.from('brands').select('settings').eq('id', brand.id).single()
+  const settings = (fresh?.settings as Record<string, Json> | null) ?? {}
+  const kit: StoredKit = { ...storedKit(settings) }
+  if (color) kit.color = color.toUpperCase()
+  else delete kit.color
+  const { error } = await admin
+    .from('brands')
+    .update({ settings: { ...settings, profileKit: kit as unknown as Json } })
+    .eq('id', brand.id)
+  if (error) throw mapDbError(error)
+  return getProfileKit(viewer, brand.id)
+}
+
 // naslovne slike profila (D-145) ----------------------------------------------------------------
 
 /** Sajt bez protokola i „www.”, kako se piše na slici. */
@@ -615,7 +712,7 @@ async function bannerInputs(brand: BrandRow, options: BannerOptions) {
   ])
   return {
     brandName: design.brandName,
-    colors: design.colors,
+    colors: { ...design.colors, primary: await profileColor(brand, design) },
     fonts: design.fonts,
     logo,
     title: options.title ?? defaults?.title ?? '',

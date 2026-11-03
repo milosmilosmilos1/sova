@@ -7,6 +7,7 @@ import { useFormatter, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { FieldRow } from '@/components/brand/profile-kit'
+import { useProfileLook } from '@/components/brand/profile-look'
 import { api } from '@/components/shared/api-client'
 import { ErrorBox } from '@/components/shared/error-box'
 import { Button } from '@/components/ui/button'
@@ -32,6 +33,7 @@ export function HighlightsCard({
   const tk = useTranslations('profileKit')
   const format = useFormatter()
   const [kit, setKit] = useState(initial)
+  const { key: lookKey } = useProfileLook(initial.look)
   const base = `/api/brands/${brandId}/profile-kit/highlights`
   const generate = useMutation({
     mutationFn: () =>
@@ -44,7 +46,9 @@ export function HighlightsCard({
   const ready = kit.canEdit && kit.hasProfile && emailVerified
   const highlights = kit.highlights ?? []
   // nove naslovne posle svakog pravljenja; pregledač ih inače čuva pet minuta
-  const cover = (i: number) => `${base}/${i}/cover?v=${encodeURIComponent(kit.highlightsAt ?? '')}`
+  // nove naslovne posle pravljenja i posle izbora boje ili logoa (D-148)
+  const cover = (i: number) =>
+    `${base}/${i}/cover?v=${encodeURIComponent(`${kit.highlightsAt ?? ''}-${lookKey}`)}`
 
   return (
     <Card>

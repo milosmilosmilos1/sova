@@ -7,6 +7,7 @@ import { BannersCard } from '@/components/brand/profile-banners'
 import { ExtrasCard } from '@/components/brand/profile-extras'
 import { HighlightsCard } from '@/components/brand/profile-highlights'
 import { ProfileKitCard } from '@/components/brand/profile-kit'
+import { ProfileLookCard, ProfileLookProvider } from '@/components/brand/profile-look'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { getCurrentWorkspace } from '@/lib/auth/workspace'
@@ -38,12 +39,16 @@ export default async function BrandProfilesPage() {
         emailVerified={Boolean(viewer.profile.emailVerifiedAt)}
       />
       <ExtrasCard brandId={brand.id} initial={kit} emailVerified={Boolean(viewer.profile.emailVerifiedAt)} />
-      <HighlightsCard
-        brandId={brand.id}
-        initial={kit}
-        emailVerified={Boolean(viewer.profile.emailVerifiedAt)}
-      />
-      <BannersCard brandId={brand.id} initial={kit} />
+      {/* boja i logo važe za naslovne highlights-a, profilnu i naslovne slike (D-148) */}
+      <ProfileLookProvider initial={kit.look}>
+        <ProfileLookCard brandId={brand.id} canEdit={kit.canEdit} />
+        <HighlightsCard
+          brandId={brand.id}
+          initial={kit}
+          emailVerified={Boolean(viewer.profile.emailVerifiedAt)}
+        />
+        <BannersCard brandId={brand.id} initial={kit} />
+      </ProfileLookProvider>
     </div>
   )
 }

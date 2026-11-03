@@ -1113,6 +1113,30 @@
       "drafting": "Creating draft…",
       "draftReady": "The draft is ready.",
       "openDraft": "Open draft"
+    },
+    "look": {
+      "title": "Color and logo for profile images",
+      "subtitle": "Used for highlight covers, the profile picture and cover images. The colors come from your website; the logo comes from the website too, and if it’s not the right one, pick another or upload your own.",
+      "colorTitle": "Color",
+      "colorLabel": "Color {color}",
+      "custom": "Your color",
+      "colorHint": "The first three colors come from the brand’s website.",
+      "logoTitle": "Logo",
+      "logoCustom": "Your logo",
+      "logoSite": "Logo from the website",
+      "logoNone": "No logo",
+      "logoAlt": "Brand logo",
+      "logoEmpty": "No logo",
+      "searching": "Sova is looking for the logo on the website…",
+      "fromSite": "Another logo from the website",
+      "uploading": "Saving logo…",
+      "upload": "Upload logo",
+      "reset": "Use the website logo",
+      "notImage": "The logo must be a PNG, JPG or WebP file.",
+      "optionsHint": "Logos found on the website. Click the right one.",
+      "optionLabel": "Choose logo {n}",
+      "noOptions": "No other logo was found on the website. Upload your own.",
+      "logoHint": "The logo is also used for posts, as in Visual identity. A PNG with a transparent background works best."
     }
   },
   "brandAccount": {

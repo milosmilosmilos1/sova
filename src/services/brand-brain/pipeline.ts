@@ -1,7 +1,5 @@
 import 'server-only'
 
-import { createHash, randomUUID } from 'node:crypto'
-
 import { fileTypeFromBuffer } from 'file-type'
 import robotsParser from 'robots-parser'
 import sharp from 'sharp'
@@ -52,6 +50,7 @@ import {
 } from '@/services/brand-brain/crawl'
 import { indexBrandPages, type IndexResult } from '@/services/brand-brain/embed'
 import { getCurrentProfileRow, insertProfileVersion, parseProfile } from '@/services/brand-brain/profile'
+import { storeLogoAsset } from '@/services/design/site-logos'
 import type { Json } from '@/types/database'
 
 /**
@@ -514,67 +513,14 @@ async function stepFetchBatch(
 // ---------------------------------------------------------------------------------------------
 // visual
 
-const LOGO_MIME_OK = new Set(['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'])
-
 async function storeLogo(job: AnalysisJob, logo: LogoResult): Promise<VisualStep['logo']> {
-  const admin = createSupabaseAdminClient()
-  const usePng = !LOGO_MIME_OK.has(logo.mimeType)
-  const bytes = usePng ? logo.png : logo.bytes
-  const mimeType = usePng ? 'image/png' : logo.mimeType
-  const sha256 = createHash('sha256').update(bytes).digest('hex')
-  // isti logo kao pri prošloj analizi ostaje ista slika: objave nacrtane njime ostaju u temi
-  const { data: same } = await admin
-    .from('media_assets')
-    .select('id, mime_type')
-    .eq('brand_id', job.brandId)
-    .eq('sha256', sha256)
-    .is('deleted_at', null)
-    .order('created_at', { ascending: true })
-    .limit(1)
-    .maybeSingle()
-  if (same) return { assetId: same.id, sourceUrl: logo.sourceUrl, mimeType: same.mime_type }
-  const ext =
-    mimeType === 'image/svg+xml'
-      ? 'svg'
-      : mimeType === 'image/jpeg'
-        ? 'jpg'
-        : mimeType === 'image/webp'
-          ? 'webp'
-          : 'png'
-  const id = randomUUID()
-  const storagePath = `ws/${job.workspaceId}/brand/${job.brandId}/logo/${id}.${ext}`
-  const upload = await admin.storage
-    .from('brand-assets')
-    .upload(storagePath, bytes, { contentType: mimeType, upsert: false })
-  if (upload.error) {
-    logger.warn('logo_upload_failed', { crawlId: job.crawlId, error: upload.error })
-    return null
-  }
-  const { error } = await admin.from('media_assets').insert({
-    id,
-    workspace_id: job.workspaceId,
-    brand_id: job.brandId,
-    kind: 'image',
-    source: 'upload',
-    bucket: 'brand-assets',
-    storage_path: storagePath,
-    mime_type: mimeType,
-    size_bytes: bytes.length,
-    width: logo.width,
-    height: logo.height,
-    sha256,
-    alt_text: 'Logo',
-    tags: ['logo'],
-    attribution: { source: 'website', url: logo.sourceUrl, reason: logo.reason },
-    is_ai_generated: false,
-    uploaded_by: null,
+  const stored = await storeLogoAsset({
+    workspaceId: job.workspaceId,
+    brandId: job.brandId,
+    logo,
+    log: { crawlId: job.crawlId },
   })
-  if (error) {
-    logger.warn('logo_asset_insert_failed', { crawlId: job.crawlId, error })
-    await admin.storage.from('brand-assets').remove([storagePath])
-    return null
-  }
-  return { assetId: id, sourceUrl: logo.sourceUrl, mimeType }
+  return stored ? { assetId: stored.assetId, sourceUrl: logo.sourceUrl, mimeType: stored.mimeType } : null
 }
 
 async function stepVisual(job: AnalysisJob, prepared: PrepareResult): Promise<VisualStep> {

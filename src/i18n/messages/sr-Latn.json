@@ -1113,6 +1113,30 @@
       "drafting": "Pravim nacrt…",
       "draftReady": "Nacrt je napravljen.",
       "openDraft": "Otvori nacrt"
+    },
+    "look": {
+      "title": "Boja i logo za slike profila",
+      "subtitle": "Važi za naslovne highlights-a, profilnu i naslovne slike. Boje su sa vašeg sajta; logo je sa sajta, a ako nije pravi, izaberite drugi ili otpremite svoj.",
+      "colorTitle": "Boja",
+      "colorLabel": "Boja {color}",
+      "custom": "Svoja boja",
+      "colorHint": "Prve tri boje su sa sajta brenda.",
+      "logoTitle": "Logo",
+      "logoCustom": "Vaš logo",
+      "logoSite": "Logo sa sajta",
+      "logoNone": "Nema logoa",
+      "logoAlt": "Logo brenda",
+      "logoEmpty": "Bez logoa",
+      "searching": "Sova traži logo na sajtu…",
+      "fromSite": "Drugi logo sa sajta",
+      "uploading": "Čuvam logo…",
+      "upload": "Otpremi logo",
+      "reset": "Vrati logo sa sajta",
+      "notImage": "Logo mora biti PNG, JPG ili WebP.",
+      "optionsHint": "Logoi nađeni na sajtu. Kliknite na pravi.",
+      "optionLabel": "Izaberi logo {n}",
+      "noOptions": "Na sajtu nije nađen drugi logo. Otpremite svoj.",
+      "logoHint": "Logo važi i za objave, kao u Vizuelnom identitetu. Najbolje je PNG sa providnom pozadinom."
     }
   },
   "brandAccount": {

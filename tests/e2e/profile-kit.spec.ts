@@ -10,6 +10,7 @@ import { admin, cleanup, login, seedWorkspace, type Seeded } from './fixtures'
  * Instagram highlights (D-144): naslovne u boji brenda, preuzimanje i priča od kadrova u Odobravanju.
  * Naslovne slike profila (D-145): pregled za šest mreža, izmena teksta i preuzimanje.
  * Dodaci po mreži (D-146): table, pitanja za početak razgovora, kopiranje i nacrt od objave za vrh.
+ * Boja i logo (D-148): tri boje sa sajta, izbor boje menja naslovne highlights-a.
  */
 let seeded: Seeded | undefined
 const SITE = 'https://adaptiko.rs'
@@ -73,7 +74,21 @@ test.beforeAll(async () => {
       website_url: SITE,
       settings: { profileKit: { bios, biosAt: at, highlights, highlightsAt: at, extras, extrasAt: at } },
       // priča se crta bez fotografija, da test ne zove Unsplash i Pexels
-      design: { photoSource: 'none' },
+      design: {
+        photoSource: 'none',
+        siteVisual: {
+          url: SITE,
+          at,
+          source: 'site',
+          primary: '#FF6600',
+          secondary: '#003366',
+          accent: '#22AA55',
+          light: '#FFFFFF',
+          dark: '#111111',
+          headings: 'Inter',
+          body: 'Inter',
+        },
+      },
     })
     .eq('id', seeded.brandId)
   if (updated.error) throw new Error(updated.error.message)
@@ -206,4 +221,24 @@ test('profili mreža: sadržaj po mreži, kopiranje i nacrt od objave za vrh pro
   )
 
   expect(await seriousViolations(page, 'sadržaj po mreži')).toEqual([])
+})
+
+test('profili mreža: tri boje sa sajta, izbor boje menja naslovne highlights-a (D-148)', async ({ page }) => {
+  await login(page, seeded!)
+  await page.goto('/app/brand/profiles')
+  await expect(page.getByText('Boja i logo za slike profila', { exact: true })).toBeVisible()
+  const first = page.getByRole('button', { name: 'Boja #FF6600' })
+  await expect(first).toHaveAttribute('aria-pressed', 'true')
+  await expect(page.getByRole('button', { name: 'Boja #22AA55' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Otpremi logo' })).toBeVisible()
+
+  const cover = page.getByRole('img', { name: 'Naslovna za Usluge' })
+  await expect(cover).toHaveAttribute('src', /FF6600/)
+  await page.getByRole('button', { name: 'Boja #003366' }).click()
+  await expect(page.getByRole('button', { name: 'Boja #003366' })).toHaveAttribute('aria-pressed', 'true')
+  await expect(first).toHaveAttribute('aria-pressed', 'false')
+  await expect(cover).toHaveAttribute('src', /003366/)
+  await expect.poll(() => cover.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBe(1080)
+
+  expect(await seriousViolations(page, 'boja i logo')).toEqual([])
 })

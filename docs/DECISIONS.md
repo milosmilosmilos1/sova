@@ -1259,3 +1259,13 @@ Odluka:
 - Ista slika važi za sve mreže i ide u ZIP sa naslovnim, bez tokena (vrsta `avatar` u `config/profile-banners.ts`).
 
 Razlog: profilnu sliku ima svaka mreža, a mali brendovi često nemaju logo u pravoj veličini ili spremljen za krug.
+
+## D-148 · 3.11.2026 · usvojeno · Boja i logo za slike profila
+
+Odluka:
+
+- Na kartici „Profili mreža”, iznad highlights-a, nova kartica „Boja i logo za slike profila”. Boja važi za naslovne highlights-a, profilnu i naslovne slike. Nudi tri boje sa sajta brenda: poslednja poseta sajtu iz izgleda brenda (glavna, sporedna, naglasak), inače boje iz analize brenda. Biraju se samo prave boje, bez sivih, skoro belih i skoro istih (razlika ispod 48 u RGB); crno-beli sajt dobija svoju tamnu boju, pa boje teme (`lib/brand/site-colors.ts`). Ima i „Svoja boja”.
+- Izbor se čuva u `brands.settings.profileKit.color`. Bez izbora važi prva boja sa sajta, pa se prati promena sajta; izbor prve boje briše sačuvanu vrednost.
+- Logo je logo brenda sa sajta. Kad analiza nije pogodila, „Drugi logo sa sajta” poseti početnu stranu i ponudi do četiri različita logoa (JSON-LD, zaglavlje, futer, og:image, ikonica; isti fajl pod dve adrese jednom). Server preuzima samo adresu koja je i sada među kandidatima sa sajta, ne bilo koju koju pošalje klijent. Izabran ili otpremljen logo postaje logo brenda (`brands.design.logoAssetId`), pa važi i za objave, kao u Vizuelnom identitetu; „Vrati logo sa sajta” briše izbor. Čuvanje logoa deli analiza brenda i izbor (`storeLogoAsset`).
+
+Razlog: vlasnik je na produkciji video naslovne u tamnocrvenoj boji teme, a tražio je tri boje sa sajta i logo sa sajta koji može da se zameni kad Sova ne pogodi.
