@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 
 import { BANNER_KINDS, PROFILE_BANNERS } from '@/config/profile-banners'
 
-import { bannerTree, renderProfileBanner, type BannerInput } from './profile-banners'
+import { bannerTree, monogram, renderProfileBanner, type BannerInput } from './profile-banners'
 
 const colors = {
   primary: '#0F766E',
@@ -14,6 +14,7 @@ const colors = {
 }
 const input = (kind: BannerInput['kind'], extra: Partial<BannerInput> = {}): BannerInput => ({
   kind,
+  brandName: 'Adaptiko',
   colors,
   fonts: { headings: 'Inter', body: 'Inter' },
   title: 'Adaptiko',
@@ -61,6 +62,15 @@ describe('naslovne slike profila (D-145)', () => {
       body: 'Inter',
     })
     expect(kids(kids(light).at(-1)!)[0]!.props.style!.color).toBe('#111111')
+  })
+
+  it('profilna slika bez logoa nosi početna slova brenda, u krugu koji mreže iseku', async () => {
+    expect(monogram('Adaptiko')).toBe('A')
+    expect(monogram('pekara zlatni klas')).toBe('PZ')
+    const content = kids(bannerTree(input('avatar'), { headings: 'Inter', body: 'Inter' })).at(-1)!
+    expect(kids(content)[0]!.props.children).toBe('A')
+    const meta = await sharp(await renderProfileBanner(input('avatar'))).metadata()
+    expect(meta).toMatchObject({ width: 1080, height: 1080 })
   })
 
   it('PNG je u veličini mreže, a pregled je uži', async () => {

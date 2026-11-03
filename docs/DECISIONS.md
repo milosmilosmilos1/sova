@@ -1250,3 +1250,12 @@ Odluka:
 - Rezultat se čuva u `brands.settings.profileKit.extras`, pored opisa i highlights-a; nema migracije.
 
 Razlog: vlasnik je tražio sadržaj specifičan za svaku mrežu, koliko god ima smisla.
+
+## D-147 · 3.11.2026 · usvojeno · Profilna slika za sve mreže
+
+Odluka:
+
+- Kartica sa naslovnim (sada „Profilna i naslovne slike”) dobija profilnu sliku 1080×1080: logo brenda na boji brenda, u kvadratu upisanom u krug iz sredine, jer svaka mreža seče krug. Dugačak natpis se smanjuje da stane u krug. Bez logoa, ili kad je logo isključen, Sova piše početna slova imena brenda (najviše dva) u fontu naslova.
+- Ista slika važi za sve mreže i ide u ZIP sa naslovnim, bez tokena (vrsta `avatar` u `config/profile-banners.ts`).
+
+Razlog: profilnu sliku ima svaka mreža, a mali brendovi često nemaju logo u pravoj veličini ili spremljen za krug.

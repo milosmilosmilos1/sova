@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { BANNER_KINDS, BANNER_TEXT_LIMITS, PROFILE_BANNERS, type BannerKind } from '@/config/profile-banners'
+import { cn } from '@/lib/utils'
 import type { ProfileKitView } from '@/services/brand-brain/profile-kit'
 
 type Fields = { title: string; subtitle: string; footer: string }
@@ -104,8 +105,9 @@ function BannerTile({ kind, src, download }: { kind: BannerKind; src: string; do
   const t = useTranslations('profileKit.banners')
   const { width, height } = PROFILE_BANNERS[kind]
   const name = t(`kinds.${kind}`)
+  const avatar = kind === 'avatar'
   return (
-    <section className="space-y-2 rounded-lg border p-3">
+    <section className={cn('space-y-2 rounded-lg border p-3', avatar && 'lg:col-span-2')}>
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="text-sm font-semibold">
           {name}{' '}
@@ -124,16 +126,33 @@ function BannerTile({ kind, src, download }: { kind: BannerKind; src: string; do
           {t('download')}
         </Button>
       </div>
-      {/* eslint-disable-next-line @next/next/no-img-element -- naslovna iz API-ja, bez optimizacije */}
-      <img
-        src={src}
-        alt={t('alt', { name })}
-        width={width}
-        height={height}
-        loading="lazy"
-        className="h-auto w-full rounded-md border bg-muted"
-      />
-      <p className="text-xs text-muted-foreground">{t(`notes.${kind}`)}</p>
+      {avatar ? (
+        <div className="flex flex-wrap items-center gap-4">
+          {/* eslint-disable-next-line @next/next/no-img-element -- slika iz API-ja, bez optimizacije */}
+          <img
+            src={src}
+            alt={t('avatarAlt')}
+            width={width}
+            height={height}
+            loading="lazy"
+            className="size-28 rounded-full border bg-muted object-cover"
+          />
+          <p className="max-w-xl text-xs text-muted-foreground">{t('notes.avatar')}</p>
+        </div>
+      ) : (
+        <>
+          {/* eslint-disable-next-line @next/next/no-img-element -- naslovna iz API-ja, bez optimizacije */}
+          <img
+            src={src}
+            alt={t('alt', { name })}
+            width={width}
+            height={height}
+            loading="lazy"
+            className="h-auto w-full rounded-md border bg-muted"
+          />
+          <p className="text-xs text-muted-foreground">{t(`notes.${kind}`)}</p>
+        </>
+      )}
     </section>
   )
 }

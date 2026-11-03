@@ -614,6 +614,7 @@ async function bannerInputs(brand: BrandRow, options: BannerOptions) {
       : null,
   ])
   return {
+    brandName: design.brandName,
     colors: design.colors,
     fonts: design.fonts,
     logo,
@@ -642,7 +643,7 @@ export async function profileBanner(
   return { png, name: bannerFile(brand, kind) }
 }
 
-/** Sve naslovne u jednom ZIP-u, u punoj veličini; crtaju se redom, da ne zauzmu memoriju odjednom. */
+/** Profilna i sve naslovne u jednom ZIP-u, u punoj veličini; crtaju se redom, da ne zauzmu memoriju odjednom. */
 export async function profileBannersZip(
   viewer: Viewer,
   brandId: string,

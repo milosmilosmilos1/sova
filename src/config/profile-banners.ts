@@ -3,9 +3,10 @@ import type { SocialPlatform } from '@/config/platforms'
 /**
  * Naslovne slike profila (D-145): Facebook, LinkedIn (stranica firme i lični profil), X, YouTube i
  * Pinterest, svaka u veličini koju mreža traži. Tekst stoji u delu koji se vidi na svakom uređaju
- * (`safe`), a ne ispod slike profila ili logoa koji prekrivaju donji levi ugao.
+ * (`safe`), a ne ispod slike profila ili logoa koji prekrivaju donji levi ugao. Profilna slika (D-147) je
+ * jedna za sve mreže: logo ili početna slova brenda u krugu koji svaka mreža iseca iz sredine.
  */
-export const BANNER_KINDS = [
+export const COVER_KINDS = [
   'facebook',
   'linkedin_page',
   'linkedin_profile',
@@ -13,6 +14,7 @@ export const BANNER_KINDS = [
   'youtube',
   'pinterest',
 ] as const
+export const BANNER_KINDS = ['avatar', ...COVER_KINDS] as const
 export type BannerKind = (typeof BANNER_KINDS)[number]
 
 interface Rect {
@@ -24,8 +26,16 @@ interface Rect {
 
 export const PROFILE_BANNERS: Record<
   BannerKind,
-  { platform: SocialPlatform; width: number; height: number; safe: Rect; align: 'center' | 'end' }
+  { platform: SocialPlatform | null; width: number; height: number; safe: Rect; align: 'center' | 'end' }
 > = {
+  // svaka mreža seče krug iz sredine; logo stoji u kvadratu upisanom u taj krug
+  avatar: {
+    platform: null,
+    width: 1080,
+    height: 1080,
+    safe: { x: 158, y: 158, width: 764, height: 764 },
+    align: 'center',
+  },
   // računar prikazuje 1640×624 (seče gore i dole), telefon 1522×856 (seče levo i desno)
   facebook: {
     platform: 'facebook',

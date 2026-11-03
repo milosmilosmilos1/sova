@@ -14,6 +14,8 @@ import type { SatoriNode } from './templates'
 /** Crtanje naslovne slike profila (D-145); veličine i deo koji se vidi su u `config/profile-banners`. */
 export interface BannerInput {
   kind: BannerKind
+  /** za početna slova na profilnoj slici bez logoa */
+  brandName: string
   colors: DesignColors
   fonts: { headings: string; body: string }
   title: string
@@ -23,8 +25,73 @@ export interface BannerInput {
   logo: BrandLogo | null
 }
 
+/** Početna slova imena za profilnu sliku bez logoa: „Pekara Zlatni klas” daje „PZ”. */
+export function monogram(name: string): string {
+  const words = name.trim().split(/\s+/).filter(Boolean)
+  return (
+    words
+      .slice(0, 2)
+      .map((w) => Array.from(w)[0]!.toLocaleUpperCase())
+      .join('') || '?'
+  )
+}
+
+/** Profilna slika (D-147): logo ili početna slova u sredini, na boji brenda. */
+function avatarTree(input: BannerInput, fonts: { headings: string; body: string }): SatoriNode {
+  const { width, height, safe } = PROFILE_BANNERS.avatar
+  const primary = input.colors.primary
+  const ink = readable(primary)
+  let content: SatoriNode | null
+  if (input.logo) {
+    const fitted = logoBox(input.logo.aspect, safe.height * 0.42)
+    // dugačak natpis ne sme da izađe iz kruga
+    const scale = Math.min(1, (safe.width * 0.9) / fitted.width)
+    content = img(logoFor(input.logo, ink, primary), {
+      width: px(fitted.width * scale),
+      height: px(fitted.height * scale),
+    })
+  } else {
+    const letters = monogram(input.brandName)
+    content = text(
+      {
+        fontFamily: fonts.headings,
+        fontWeight: 700,
+        fontSize: px(safe.height * (Array.from(letters).length > 1 ? 0.42 : 0.55)),
+        lineHeight: 1,
+        color: ink,
+      },
+      letters,
+    )
+  }
+  return box(
+    {
+      position: 'relative',
+      width: px(width),
+      height: px(height),
+      overflow: 'hidden',
+      backgroundColor: primary,
+      backgroundImage: `linear-gradient(135deg, ${primary} 0%, ${mix(primary, '#000000', 0.25)} 100%)`,
+    },
+    [
+      col(
+        {
+          position: 'absolute',
+          left: px(safe.x),
+          top: px(safe.y),
+          width: px(safe.width),
+          height: px(safe.height),
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        [content],
+      ),
+    ],
+  )
+}
+
 /** Satori stablo naslovne; `fonts` su porodice koje su zaista učitane. */
 export function bannerTree(input: BannerInput, fonts: { headings: string; body: string }): SatoriNode {
+  if (input.kind === 'avatar') return avatarTree(input, fonts)
   const spec = PROFILE_BANNERS[input.kind]
   const { safe } = spec
   const primary = input.colors.primary

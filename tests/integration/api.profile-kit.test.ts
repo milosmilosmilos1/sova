@@ -395,6 +395,8 @@ describe('profili na mrežama: naslovne slike profila (D-145)', () => {
     })
     expect(kit.json.data!.designKey).toContain('#')
 
+    const avatar = await raw(bannerGet, `${base()}/avatar`, { id: brandId, kind: 'avatar' })
+    expect(await sharp(avatar.bytes).metadata()).toMatchObject({ width: 1080, height: 1080 })
     const facebook = await raw(bannerGet, `${base()}/facebook`, { id: brandId, kind: 'facebook' })
     expect(facebook.status).toBe(200)
     expect(facebook.headers.get('content-type')).toBe('image/png')
@@ -416,11 +418,12 @@ describe('profili na mrežama: naslovne slike profila (D-145)', () => {
     expect(await balance()).toBe(before)
   })
 
-  it('ZIP ima svih šest naslovnih; predug tekst i nepoznata mreža se odbijaju', async () => {
+  it('ZIP ima profilnu i svih šest naslovnih; predug tekst i nepoznata mreža se odbijaju', async () => {
     const zip = await raw(bannersGet, `${base()}?title=Adaptiko%20Beograd&logo=0`, { id: brandId })
     expect(zip.status).toBe(200)
     expect(zip.headers.get('content-disposition')).toContain('adaptiko-profile-covers.zip')
     for (const name of [
+      'adaptiko-avatar-1080x1080.png',
       'adaptiko-facebook-1640x856.png',
       'adaptiko-linkedin-page-1128x191.png',
       'adaptiko-linkedin-profile-1584x396.png',

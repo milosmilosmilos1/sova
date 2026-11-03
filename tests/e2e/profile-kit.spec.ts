@@ -149,7 +149,8 @@ test('profili mreža: Instagram highlights, naslovne, preuzimanje i priča u Odo
 test('profili mreža: naslovne slike profila, izmena teksta i preuzimanje (D-145)', async ({ page }) => {
   await login(page, seeded!)
   await page.goto('/app/brand/profiles')
-  await expect(page.getByText('Naslovne slike profila')).toBeVisible()
+  await expect(page.getByText('Profilna i naslovne slike', { exact: true })).toBeVisible()
+  await expect(page.getByRole('img', { name: 'Profilna slika brenda' })).toBeVisible()
   const title = page.getByLabel('Naslov', { exact: true })
   await expect(title).toHaveValue('E2E brend profilekit')
   await expect(page.getByLabel('Podnaslov')).toHaveValue('Adaptacija stanova')
