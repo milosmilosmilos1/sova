@@ -1361,3 +1361,12 @@ Odluka:
 - Gemini odbija zahtev sa rokom kraćim od oko 10 s greškom 400 pre nego što počne. `generateText` sada šalje bar 10 s, a kraći rok pozivaoca meri sam i prekida poziv (`AbortController`). Greška je pogađala proveru ljudi iz D-154 (rok do 8 s: svaka provera je padala na rezervu po opisu, koja propušta samo snimke čiji opis ne pominje ljude) i analizu sajta kad do kraja koraka ostane manje od 10 s.
 
 Razlog: testerka iz Ukrajine je napisala da Sova „počinje da predlaže fraze na srpskom”. Njen brend je napravljen na srpskom, a Studio je odgovarao na jeziku brenda.
+
+## D-157 · 5.11.2026 · usvojeno · Slajd preko celog ekrana
+
+Odluka:
+
+- U Odobravanju i Studiju (zajednički pregled objave, `DetailPanes`) klik na slajd ili dugme „Uvećaj slajd” otvara slajd preko celog ekrana (`components/shared/media-lightbox.tsx`). Kroz slajdove se ide strelicama na ekranu, tasterima ← i → ili prevlačenjem prstom; Esc ili X zatvara, a slajd koji je bio otvoren ostaje izabran i u pregledu. Video se pušta u istom prozoru.
+- Tastere sluša prozor u fazi hvatanja, jer dijalog drži fokus i ne pušta taster dalje.
+
+Razlog: testerka je napisala da kod objave sa više slajdova vidi samo prvi i ne može da ga otvori u većoj veličini, kao fotografiju.

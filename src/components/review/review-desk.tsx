@@ -9,6 +9,7 @@ import {
   FileText,
   Film,
   LoaderCircle,
+  Maximize2,
   Pencil,
   RefreshCw,
   Search,
@@ -30,6 +31,7 @@ import { ThemeVideoQueue } from '@/components/review/theme-video-queue'
 import { api, bulkRequest } from '@/components/shared/api-client'
 import { BulkBar, SelectAllBox, SelectBox, useSelection } from '@/components/shared/bulk'
 import { ErrorBox } from '@/components/shared/error-box'
+import { MediaLightbox } from '@/components/shared/media-lightbox'
 import { MediaThumb } from '@/components/shared/media-thumb'
 import { VideoDialog } from '@/components/review/video-dialog'
 import { NetworkName } from '@/components/shared/network-badge'
@@ -468,6 +470,7 @@ function DetailForm({
   const locale = useLocale()
   const { post } = detail
   const [slide, setSlide] = useState(kept?.slide ?? 0)
+  const [zoom, setZoom] = useState(false)
   const [netTab, setNetTab] = useState<string>('base')
   const [master, setMaster] = useState(kept?.master ?? post.masterText)
   const [firstComment, setFirstComment] = useState(kept?.firstComment ?? post.firstComment ?? '')
@@ -575,13 +578,29 @@ function DetailForm({
                     aria-label={t('preview.slide', { n: slide + 1, total: media.length })}
                   />
                 ) : (
-                  // eslint-disable-next-line @next/next/no-img-element -- potpisan URL slajda
-                  <img
-                    src={media[slide]!.url!}
-                    alt={t('preview.slide', { n: slide + 1, total: media.length })}
-                    className="mx-auto max-h-[70vh] w-auto object-contain"
-                  />
+                  // klik otvara slajd preko celog ekrana (D-157)
+                  <button
+                    type="button"
+                    onClick={() => setZoom(true)}
+                    className="block w-full cursor-zoom-in"
+                    aria-label={t('preview.enlarge')}
+                  >
+                    {/* eslint-disable-next-line @next/next/no-img-element -- potpisan URL slajda */}
+                    <img
+                      src={media[slide]!.url!}
+                      alt={t('preview.slide', { n: slide + 1, total: media.length })}
+                      className="mx-auto max-h-[70vh] w-auto object-contain"
+                    />
+                  </button>
                 )}
+                <button
+                  type="button"
+                  onClick={() => setZoom(true)}
+                  className="absolute top-3 right-3 grid size-9 place-items-center rounded-full bg-background/90 shadow"
+                  aria-label={t('preview.enlarge')}
+                >
+                  <Maximize2 className="size-4" aria-hidden />
+                </button>
                 {media.length > 1 ? (
                   <>
                     <button
@@ -642,6 +661,20 @@ function DetailForm({
                   </button>
                 ))}
               </div>
+            ) : null}
+            {media.length ? (
+              <MediaLightbox
+                items={media.map((m) => ({ url: m.url!, video: Boolean(m.mimeType?.startsWith('video')) }))}
+                index={slide}
+                onIndexChange={setSlide}
+                open={zoom}
+                onOpenChange={setZoom}
+                labels={{
+                  slide: (n, total) => t('preview.slide', { n, total }),
+                  prev: t('preview.prev'),
+                  next: t('preview.next'),
+                }}
+              />
             ) : null}
             <div className="flex flex-wrap justify-end gap-2">
               {post.targets.length ? (

@@ -554,7 +554,8 @@
       "prev": "Previous slide",
       "next": "Next slide",
       "slide": "Slide {n} of {total}",
-      "noMedia": "Post without a visual."
+      "noMedia": "Post without a visual.",
+      "enlarge": "Enlarge slide"
     },
     "actions": {
       "edit": "Edit post",

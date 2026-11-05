@@ -554,7 +554,8 @@
       "prev": "Prethodni slajd",
       "next": "Sledeći slajd",
       "slide": "Slajd {n} od {total}",
-      "noMedia": "Objava bez vizuala."
+      "noMedia": "Objava bez vizuala.",
+      "enlarge": "Uvećaj slajd"
     },
     "actions": {
       "edit": "Uredi objavu",
