@@ -145,10 +145,12 @@ export async function updateDesign(
   await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
   const stored = storedDesign(brand)
   // poslednja poseta sajtu nije podešavanje, pa ostaje i posle vraćanja na podrazumevano
+  // poslednja poseta sajtu i otpremljeni fontovi (D-159) nisu podešavanje, pa ostaju i posle vraćanja
   const next: StoredDesign = input.reset
-    ? stored.siteVisual
-      ? { siteVisual: stored.siteVisual }
-      : {}
+    ? {
+        ...(stored.siteVisual ? { siteVisual: stored.siteVisual } : {}),
+        ...(stored.customFonts ? { customFonts: stored.customFonts } : {}),
+      }
     : { ...stored }
   if (input.styleId !== undefined) next.styleId = input.styleId
   if (input.size !== undefined) next.size = input.size

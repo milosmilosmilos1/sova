@@ -311,7 +311,15 @@
       "pick": "Izaberite jednu od sedam tema.",
       "lightGroup": "Svetle teme",
       "darkGroup": "Tamne teme",
-      "customGroup": "Po vašem izboru"
+      "customGroup": "Po vašem izboru",
+      "fontOwn": "{font} (vaš font)",
+      "fontGoogle": "Drugi Google font",
+      "fontGooglePlaceholder": "npr. Poppins",
+      "fontGoogleAdd": "Dodaj",
+      "fontGoogleMissing": "Google Fonts nema font „{font}”. Proverite ime na fonts.google.com.",
+      "fontUpload": "Otpremi svoj font",
+      "fontUploadHint": "TTF, OTF ili WOFF do 2 MB; važi u svim stilovima.",
+      "fontRemove": "Ukloni font"
     },
     "harmonize": {
       "offTheme": "{count, plural, one {# nacrt koji čeka nije} few {# nacrta koja čekaju nisu} other {# nacrta koji čekaju nisu}} u temi brenda. Sova ih može nacrtati u temi, sa istim tekstom i fotografijama, bez tokena.",

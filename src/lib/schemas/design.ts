@@ -31,6 +31,27 @@ export type DesignColorsInput = z.infer<typeof designColorsSchema>
 export const fontNameSchema = z.string().trim().regex(FONT_NAME, { error: 'Nepoznat font.' })
 export const fontPairSchema = z.object({ headings: fontNameSchema, body: fontNameSchema })
 
+/** Sopstveni font brenda (D-159): ime za prikaz i porodica „Custom <id>” za crtanje. */
+export const customFontSchema = z.object({
+  family: z.string().regex(/^Custom [a-z0-9]{12}$/),
+  name: z.string().trim().min(1).max(40),
+  format: z.enum(['ttf', 'otf', 'woff']),
+})
+export type CustomFont = z.infer<typeof customFontSchema>
+export const CUSTOM_FONTS_MAX = 6
+export const CUSTOM_FONT_MAX_BYTES = 2 * 1024 * 1024
+
+export const uploadFontSchema = z.object({
+  name: z.string().trim().min(1).max(40),
+  /** fajl kao base64 (fontovi su mali; isto telo kao ostali zahtevi) */
+  data: z
+    .string()
+    .min(16)
+    .max(Math.ceil((CUSTOM_FONT_MAX_BYTES * 4) / 3) + 8),
+})
+export const removeFontQuerySchema = z.object({ family: z.string().regex(/^Custom [a-z0-9]{12}$/) })
+export const googleFontQuerySchema = z.object({ family: fontNameSchema })
+
 /** Boje i fontovi sa poslednje posete sajtu (D-123), da se sajt ne otvara pri svakom izboru. */
 export const siteVisualSchema = z.object({
   url: z.string().max(2000),
@@ -61,6 +82,8 @@ export const storedDesignSchema = z
     /** izabrani izgled (D-123): jedna od šest tema sa sajta ili sopstveni; stare oznake se prevode */
     look: z.preprocess((v) => (typeof v === 'string' ? (LEGACY_LOOK_IDS[v] ?? v) : v), z.enum(LOOK_IDS)),
     siteVisual: siteVisualSchema,
+    /** sopstveni fontovi brenda (D-159) */
+    customFonts: z.array(customFontSchema).max(CUSTOM_FONTS_MAX),
   })
   .partial()
 export type StoredDesign = z.infer<typeof storedDesignSchema>

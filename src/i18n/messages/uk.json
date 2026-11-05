@@ -311,7 +311,15 @@
       "pick": "Оберіть одну із семи тем.",
       "lightGroup": "Світлі теми",
       "darkGroup": "Темні теми",
-      "customGroup": "На ваш вибір"
+      "customGroup": "На ваш вибір",
+      "fontOwn": "{font} (ваш шрифт)",
+      "fontGoogle": "Інший шрифт Google",
+      "fontGooglePlaceholder": "напр. Poppins",
+      "fontGoogleAdd": "Додати",
+      "fontGoogleMissing": "У Google Fonts немає шрифту «{font}». Перевірте назву на fonts.google.com.",
+      "fontUpload": "Завантажити свій шрифт",
+      "fontUploadHint": "TTF, OTF або WOFF до 2 МБ; діє в усіх стилях.",
+      "fontRemove": "Видалити шрифт"
     },
     "harmonize": {
       "offTheme": "{count, plural, one {# чернетка, що чекає, не в темі} few {# чернетки, що чекають, не в темі} many {# чернеток, що чекають, не в темі} other {# чернетки, що чекають, не в темі}} бренду. Sova може перемалювати їх у темі з тим самим текстом і фото, без токенів.",

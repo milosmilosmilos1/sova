@@ -1379,3 +1379,13 @@ Odluka:
 - Facebook ostaje na 10 slika po objavi, jer granica za objavu sa više fotografija nije jasno objavljena, a 10 radi. Duži karusel više ne pada na proveri: Facebook dobija prvih devet slajdova i poslednji, da ostanu naslovna i poziv na akciju (`firstAndLast` u `config/platforms.ts`), kao Pinterest u D-152.
 
 Razlog: testerka je tražila više od 10 slajdova po objavi.
+
+## D-159 · 5.11.2026 · usvojeno · Sopstveni font i bilo koji Google font
+
+Odluka:
+
+- U sopstvenom izgledu (Vizuelni identitet) uz 15 predloženih fontova stoji polje „Drugi Google font”: korisnik upiše ime, Sova preuzme font sa Google Fonts-a da proveri da postoji (`GET /api/fonts/google?family=`, `googleFontExists`) i doda ga u izbor. Crtač je i do sada umeo da učita bilo koji Google font po imenu; ograničenje je bilo samo u biraču.
+- „Otpremi svoj font”: TTF, OTF ili WOFF do 2 MB (`POST /api/brands/{id}/design/fonts`, base64). Sova proverava zaglavlje fajla i da crtač slajdova zaista čita font (probni crtež latinice sa kvačicama); WOFF2 odbija sa uputstvom, jer ga crtač ne čita. Font se čuva u skladištu `brand-assets` (`fonts/<id>`), a u `brands.design.customFonts` ime za prikaz i porodica „Custom <id>” (najviše šest). Jedinstvena porodica znači da keš fontova ne meša fontove dva brenda.
+- Sopstveni font je prvi u izboru („Ime (vaš font)”) i važi u svim stilovima kao izabran Google font. „Ukloni font” briše fajl i ime, a izgled koji ga je koristio vraća fontove sa sajta. Vraćanje dizajna na podrazumevano ne briše otpremljene fontove.
+
+Razlog: testerka je napisala da u Vizuelnom identitetu ne može da doda svoj font, samo iz kratkog spiska.

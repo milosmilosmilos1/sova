@@ -22,6 +22,42 @@ const LEGACY_UA =
 let remoteEnabled = true
 const cache = new Map<string, Promise<FontEntry | null>>()
 
+/**
+ * Sopstveni font brenda (D-159): porodica „Custom <id>”, fajl `fonts/<id>` u skladištu `brand-assets`.
+ * Ime je jedinstveno, pa keš po imenu ne meša fontove dva brenda.
+ */
+export const CUSTOM_FONT = /^Custom ([a-z0-9]{12})$/
+export const CUSTOM_FONT_BUCKET = 'brand-assets'
+export const customFontPath = (id: string) => `fonts/${id}`
+
+/** Font fajl koji Satori čita: TTF, OTF ili WOFF (WOFF2 ne čita). */
+export function fontFormat(data: Uint8Array): 'ttf' | 'otf' | 'woff' | 'woff2' | null {
+  if (data.byteLength < 12) return null
+  const magic = Buffer.from(data.buffer, data.byteOffset, 4)
+  const tag = magic.toString('latin1')
+  if (tag === 'wOFF') return 'woff'
+  if (tag === 'wOF2') return 'woff2'
+  if (tag === 'OTTO') return 'otf'
+  if (magic.readUInt32BE(0) === 0x00010000 || tag === 'true') return 'ttf'
+  return null
+}
+
+async function fetchCustom(id: string, weight: 400 | 700): Promise<FontEntry | null> {
+  try {
+    // tek ovde: jedinični testovi crtaju bez baze i bez ključeva
+    const { createSupabaseAdminClient } = await import('@/lib/supabase/admin')
+    const { data } = await createSupabaseAdminClient()
+      .storage.from(CUSTOM_FONT_BUCKET)
+      .download(customFontPath(id))
+    if (!data) return null
+    const bytes = await data.arrayBuffer()
+    if (!fontFormat(new Uint8Array(bytes))) return null
+    return { name: `Custom ${id}`, data: bytes, weight, style: 'normal' }
+  } catch {
+    return null
+  }
+}
+
 /** Testovi isključuju mrežu: koristi se samo ugrađeni Inter. */
 export function configureFontLoader(options: { remote: boolean }): void {
   remoteEnabled = options.remote
@@ -29,6 +65,11 @@ export function configureFontLoader(options: { remote: boolean }): void {
 
 export function resetFontCacheForTests(): void {
   cache.clear()
+}
+
+/** Obrisan sopstveni font više ne sme da se crta iz keša. */
+export function forgetFont(family: string): void {
+  for (const w of [400, 700]) cache.delete(`${family.toLowerCase()}:${w}`)
 }
 
 async function bundled(weight: 400 | 700): Promise<FontEntry> {
@@ -69,18 +110,26 @@ function load(family: string, weight: 400 | 700): Promise<FontEntry | null> {
   const key = `${family.toLowerCase()}:${weight}`
   let p = cache.get(key)
   if (!p) {
+    const custom = CUSTOM_FONT.exec(family)
     p =
       family === BUNDLED_FAMILY
         ? bundled(weight)
-        : remoteEnabled
-          ? fetchGoogle(family, weight)
-          : Promise.resolve(null)
+        : custom
+          ? fetchCustom(custom[1]!, weight)
+          : remoteEnabled
+            ? fetchGoogle(family, weight)
+            : Promise.resolve(null)
     cache.set(key, p)
     p.then((v) => {
       if (!v) cache.delete(key)
     }).catch(() => cache.delete(key))
   }
   return p
+}
+
+/** Da li Google Fonts ima porodicu sa tim imenom (D-159): korisnik upisuje bilo koji Google font. */
+export async function googleFontExists(family: string): Promise<boolean> {
+  return Boolean(await load(family, 400))
 }
 
 /**

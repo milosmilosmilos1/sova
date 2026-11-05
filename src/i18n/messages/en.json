@@ -311,7 +311,15 @@
       "pick": "Choose one of the seven themes.",
       "lightGroup": "Light themes",
       "darkGroup": "Dark themes",
-      "customGroup": "Your own"
+      "customGroup": "Your own",
+      "fontOwn": "{font} (your font)",
+      "fontGoogle": "Another Google font",
+      "fontGooglePlaceholder": "e.g. Poppins",
+      "fontGoogleAdd": "Add",
+      "fontGoogleMissing": "Google Fonts has no font called “{font}”. Check the name on fonts.google.com.",
+      "fontUpload": "Upload your font",
+      "fontUploadHint": "TTF, OTF or WOFF up to 2 MB; works in every style.",
+      "fontRemove": "Remove font"
     },
     "harmonize": {
       "offTheme": "{count, plural, one {# draft waiting is} other {# drafts waiting are}} not in the brand theme. Sova can redraw them in the theme with the same text and photos, at no token cost.",

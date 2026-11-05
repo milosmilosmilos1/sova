@@ -43,8 +43,10 @@ export interface LooksView {
   /** početne vrednosti sopstvenog izgleda: trenutne boje i font brenda i stil u kom se pravi */
   custom: { styleId: StyleId; primary: string; secondary: string; tertiary: string; font: string }
   current: LookId | null
-  /** fontovi za izbor: prvo oni sa sajta, pa ponuđeni */
+  /** fontovi za izbor: sopstveni, pa oni sa sajta, pa ponuđeni */
   fonts: string[]
+  /** sopstveni fontovi brenda (D-159): porodica za crtanje i ime za prikaz */
+  customFonts: Array<{ family: string; name: string }>
 }
 
 const VISIT_TTL_MS = 30 * 24 * 3600 * 1000
@@ -81,7 +83,14 @@ function buildView(
   const fresh =
     stored.siteVisual?.source === 'site' && Date.now() - Date.parse(stored.siteVisual.at) < VISIT_TTL_MS
   const siteFonts = visual ? [visual.headings, visual.body] : []
-  const fonts = [...new Set([...siteFonts, ...LOOK_FONTS].filter((f) => FONT_NAME.test(f)))]
+  const own = (stored.customFonts ?? []).map((f) => ({ family: f.family, name: f.name }))
+  // izabran Google font van spiska ostaje u izboru (D-159)
+  const chosen = stored.fonts ? [stored.fonts.headings, stored.fonts.body] : []
+  const fonts = [
+    ...new Set(
+      [...own.map((f) => f.family), ...siteFonts, ...chosen, ...LOOK_FONTS].filter((f) => FONT_NAME.test(f)),
+    ),
+  ]
   return {
     website: brand.website_url,
     site: visual
@@ -99,6 +108,7 @@ function buildView(
     },
     current: design.look,
     fonts,
+    customFonts: own,
   }
 }
 

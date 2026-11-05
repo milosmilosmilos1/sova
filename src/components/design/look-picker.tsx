@@ -1,7 +1,7 @@
 'use client'
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Check, Globe, LoaderCircle, Play, RefreshCw } from 'lucide-react'
+import { Check, Globe, LoaderCircle, Play, RefreshCw, Trash2, Upload } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 
@@ -25,6 +25,7 @@ export interface LooksView {
   custom: { styleId: StyleId; primary: string; secondary: string; tertiary: string; font: string }
   current: LookId | null
   fonts: string[]
+  customFonts: Array<{ family: string; name: string }>
 }
 
 /** Izabrani izgled kako ide u `PATCH /api/brands/{id}/design`. */
@@ -310,6 +311,9 @@ function LookOptions({
     font: view.fonts.includes(view.custom.font) ? view.custom.font : (view.fonts[0] ?? 'Inter'),
   })
   // pregled sopstvenog izgleda ne traži novu sliku za svaki pomeraj birača boje
+  // Google font upisan po imenu ili tek otpremljen sopstveni font (D-159), dok pogled ne stigne ponovo
+  const [extraFonts, setExtraFonts] = useState<string[]>([])
+  const ownName = (family: string) => view.customFonts.find((f) => f.family === family)?.name ?? null
   const deferred = useSettled(custom, 450)
   const valid = [deferred.primary, deferred.secondary, deferred.tertiary].every((c) => HEX.test(c))
   const customOption: Omit<LookOption, 'id'> = {
@@ -462,15 +466,28 @@ function LookOptions({
                     onChange={(e) => edit({ font: e.target.value })}
                     className="h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-sm"
                   >
-                    {view.fonts.map((f) => (
+                    {[...new Set([...view.fonts, ...extraFonts, custom.font])].map((f) => (
                       <option key={f} value={f}>
-                        {view.site && (f === options[0]?.fonts.headings || f === options[0]?.fonts.body)
-                          ? t('fontFromSite', { font: f })
-                          : f}
+                        {ownName(f)
+                          ? t('fontOwn', { font: ownName(f)! })
+                          : view.site && (f === options[0]?.fonts.headings || f === options[0]?.fonts.body)
+                            ? t('fontFromSite', { font: f })
+                            : f}
                       </option>
                     ))}
                   </select>
                 </div>
+                <FontSources
+                  brandId={brandId}
+                  disabled={disabled}
+                  selectedOwn={Boolean(ownName(custom.font))}
+                  selected={custom.font}
+                  onFont={(font) => {
+                    setExtraFonts((list) => (list.includes(font) ? list : [...list, font]))
+                    edit({ font })
+                  }}
+                  onRemoved={() => edit({ font: view.fonts.find((f) => !ownName(f)) ?? 'Inter' })}
+                />
                 <p className="text-xs text-muted-foreground">{t('tertiaryHint')}</p>
               </div>
             </div>
@@ -480,6 +497,143 @@ function LookOptions({
           </div>
         </section>
       </div>
+    </div>
+  )
+}
+
+/** Fajl u base64 bez prefiksa `data:` (fontovi su mali, do 2 MB). */
+function fileBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(String(reader.result).split(',')[1] ?? '')
+    reader.onerror = () => reject(reader.error)
+    reader.readAsDataURL(file)
+  })
+}
+
+/**
+ * Font van spiska (D-159): bilo koji Google font po imenu (Sova proveri da postoji) ili sopstveni font
+ * brenda (TTF, OTF ili WOFF), koji važi u svim stilovima.
+ */
+function FontSources({
+  brandId,
+  disabled,
+  selected,
+  selectedOwn,
+  onFont,
+  onRemoved,
+}: {
+  brandId: string
+  disabled: boolean
+  selected: string
+  selectedOwn: boolean
+  onFont: (family: string) => void
+  onRemoved: () => void
+}) {
+  const t = useTranslations('design.looks')
+  const qc = useQueryClient()
+  const [name, setName] = useState('')
+  const [missing, setMissing] = useState<string | null>(null)
+  const google = useMutation({
+    mutationFn: (family: string) =>
+      api<{ family: string; found: boolean }>(`/api/fonts/google?family=${encodeURIComponent(family)}`),
+    onSuccess: (r) => {
+      if (!r.found) return setMissing(r.family)
+      setMissing(null)
+      setName('')
+      onFont(r.family)
+    },
+  })
+  const upload = useMutation({
+    mutationFn: async (file: File) =>
+      api<{ family: string; name: string }>(`/api/brands/${brandId}/design/fonts`, {
+        method: 'POST',
+        json: {
+          name: file.name.replace(/\.[^.]+$/, '').slice(0, 40) || 'Font',
+          data: await fileBase64(file),
+        },
+      }),
+    onSuccess: async (font) => {
+      await qc.invalidateQueries({ queryKey: ['looks', brandId] })
+      onFont(font.family)
+    },
+  })
+  const remove = useMutation({
+    mutationFn: () =>
+      api(`/api/brands/${brandId}/design/fonts?family=${encodeURIComponent(selected)}`, { method: 'DELETE' }),
+    onSuccess: async () => {
+      await qc.invalidateQueries({ queryKey: ['looks', brandId] })
+      onRemoved()
+    },
+  })
+  const trimmed = name.trim()
+  return (
+    <div className="space-y-2">
+      <form
+        className="flex items-center gap-2"
+        onSubmit={(e) => {
+          e.preventDefault()
+          if (trimmed) google.mutate(trimmed)
+        }}
+      >
+        <label htmlFor={`look-google-font-${brandId}`} className="w-24 shrink-0 text-sm sm:w-36">
+          {t('fontGoogle')}
+        </label>
+        <Input
+          id={`look-google-font-${brandId}`}
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder={t('fontGooglePlaceholder')}
+          maxLength={40}
+          disabled={disabled || google.isPending}
+          className="h-9 min-w-0 flex-1"
+        />
+        <Button type="submit" size="sm" variant="outline" disabled={disabled || !trimmed || google.isPending}>
+          {google.isPending ? <LoaderCircle className="animate-spin" aria-hidden /> : null}
+          {t('fontGoogleAdd')}
+        </Button>
+      </form>
+      {missing ? (
+        <p role="alert" className="text-xs text-destructive">
+          {t('fontGoogleMissing', { font: missing })}
+        </p>
+      ) : null}
+      <div className="flex flex-wrap items-center gap-2">
+        <Button
+          size="sm"
+          variant="outline"
+          disabled={disabled || upload.isPending}
+          nativeButton={false}
+          render={<label />}
+        >
+          {upload.isPending ? <LoaderCircle className="animate-spin" aria-hidden /> : <Upload aria-hidden />}
+          {t('fontUpload')}
+          <input
+            type="file"
+            accept=".ttf,.otf,.woff,font/ttf,font/otf,font/woff"
+            className="sr-only"
+            disabled={disabled || upload.isPending}
+            onChange={(e) => {
+              const file = e.target.files?.[0]
+              e.target.value = ''
+              if (file) upload.mutate(file)
+            }}
+          />
+        </Button>
+        {selectedOwn ? (
+          <Button
+            size="sm"
+            variant="ghost"
+            disabled={disabled || remove.isPending}
+            onClick={() => remove.mutate()}
+          >
+            <Trash2 aria-hidden />
+            {t('fontRemove')}
+          </Button>
+        ) : null}
+        <span className="text-xs text-muted-foreground">{t('fontUploadHint')}</span>
+      </div>
+      <ErrorBox error={google.error ?? upload.error ?? remove.error} />
     </div>
   )
 }
