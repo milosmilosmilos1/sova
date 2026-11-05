@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { contrast } from '@/lib/visuals/design/kit'
 
-import { brandSwatch } from './swatch'
+import { brandLogoUrl, brandSwatch } from './swatch'
 
 const IDS = [
   '0b6f3c2e-6f0a-4c56-9d0e-6a1f2b3c4d5e',
@@ -15,8 +15,8 @@ const IDS = [
 
 describe('boja brenda u aplikaciji (D-137)', () => {
   it('koristi boju brenda, a slovo je čitljivo na njoj', () => {
-    expect(brandSwatch(IDS[0]!, '#990000')).toEqual({ color: '#990000', ink: '#ffffff' })
-    expect(brandSwatch(IDS[0]!, '#ffd43b')).toEqual({ color: '#FFD43B', ink: '#111111' })
+    expect(brandSwatch(IDS[0]!, '#990000')).toEqual({ color: '#990000', ink: '#ffffff', logo: null })
+    expect(brandSwatch(IDS[0]!, '#ffd43b')).toEqual({ color: '#FFD43B', ink: '#111111', logo: null })
   })
 
   it('brend bez boje dobija rezervnu: uvek istu za isti brend, a brendovi se međusobno razlikuju', () => {
@@ -28,5 +28,11 @@ describe('boja brenda u aplikaciji (D-137)', () => {
       expect(s.color).toMatch(/^#[0-9A-F]{6}$/)
       expect(contrast(s.color, s.ink)).toBeGreaterThanOrEqual(4.5)
     }
+  })
+
+  it('ikonica logoa ide uz boju, a adresa nosi oznaku logoa (D-155)', () => {
+    const url = brandLogoUrl(IDS[0]!, IDS[1]!)
+    expect(url).toBe(`/api/brands/${IDS[0]}/logo?v=${IDS[1]!.slice(0, 8)}`)
+    expect(brandSwatch(IDS[0]!, '#990000', url)).toEqual({ color: '#990000', ink: '#ffffff', logo: url })
   })
 })
