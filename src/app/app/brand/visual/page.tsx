@@ -4,6 +4,7 @@ import { getTranslations } from 'next-intl/server'
 
 import { BrandAccountHeader } from '@/components/brand/brand-account-header'
 import { DesignLookCard, DesignVisualCard } from '@/components/design/design-card'
+import { FigmaTemplatesCard } from '@/components/design/figma-templates-card'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
@@ -28,6 +29,11 @@ export default async function BrandVisualPage() {
     <div className="space-y-6">
       <BrandAccountHeader />
       <DesignLookCard brandId={brand.id} canEdit={EDIT_ROLES.includes(current.role)} />
+      <FigmaTemplatesCard
+        brandId={brand.id}
+        workspaceId={current.workspaceId}
+        canEdit={EDIT_ROLES.includes(current.role)}
+      />
       <DesignVisualCard brandId={brand.id} canEdit={EDIT_ROLES.includes(current.role)} />
     </div>
   )

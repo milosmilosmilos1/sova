@@ -1,3 +1,4 @@
+import { FIGMA_TEMPLATES_MAX, figmaTemplateSchema } from '@/lib/figma/template'
 import { z } from 'zod'
 
 import {
@@ -84,6 +85,12 @@ export const storedDesignSchema = z
     siteVisual: siteVisualSchema,
     /** sopstveni fontovi brenda (D-159) */
     customFonts: z.array(customFontSchema).max(CUSTOM_FONTS_MAX),
+    /** šabloni iz Figme (D-162) i šablon po kom se crtaju objave brenda */
+    templates: z.array(figmaTemplateSchema).max(FIGMA_TEMPLATES_MAX),
+    templateId: z
+      .string()
+      .regex(/^[a-z0-9]{10}$/)
+      .nullable(),
   })
   .partial()
 export type StoredDesign = z.infer<typeof storedDesignSchema>

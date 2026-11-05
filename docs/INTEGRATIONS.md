@@ -134,6 +134,7 @@ Greške se mapiraju u `ProviderError { code, retryable, userMessage (srpski), ra
 - **Scope-ovi**: `file_content:read` (sadržaj i izvoz slika), `file_metadata:read`. Stari `files:read` je ukinut.
 - **Pozivi**: `GET /v1/files/:key?depth=3` (strane, sekcije, okviri), `GET /v1/files/:key/nodes?ids=` (ceo sadržaj okvira), `GET /v1/images/:key?ids=&format=png&scale=` (adrese slika važe 30 dana).
 - **Limiti (od 17.11.2025)**: Tier 1 (čitanje fajla, okvira i izvoz slike): mesto View/Collab do 20 mesečno; Dev/Full 10 (Starter), 15 (Professional), 20 (Organization) u minuti. Limit prati plan fajla. 429 sa `Retry-After`.
+- **Šabloni (D-162)**: okvir 4:5, 1:1 ili 9:16; ukrasi u grupi `#pozadina` (izvozi se kao PNG), slojevi `#naslov` (obavezan), `#tekst`, `#oznaka`, `#broj`, `#nalog`, `#brojac`, `#logo`, `#foto`. Čuvanje troši jedno čitanje okvira (`/files/:key/nodes`) i jedan izvoz pozadine.
 - **Kod**: `src/integrations/figma/client.ts`, `src/services/figma/*`, `src/lib/figma/*`.
 
 ## 12. Unsplash

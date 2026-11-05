@@ -720,7 +720,12 @@
       "fonts": "Headings: {headings} · Text: {body}",
       "fontNotGoogle": "Sova can’t download a font that isn’t a Google font: upload it in Visual identity (Upload your font).",
       "apply": "Apply to the brand theme",
-      "applied": "Applied"
+      "applied": "Applied",
+      "templateTitle": "Template for the brand’s posts",
+      "templateHint": "Pick one to three frames (cover, content, call to action). In the frame, put decorations into a #pozadina group and text into #naslov and #tekst layers; #oznaka, #broj, #nalog, #brojac, #logo and #foto also work. Sova then draws every post to that layout.",
+      "templateName": "Template name",
+      "templateSave": "Save as template ({n} frames)",
+      "templateSaved": "Template “{name}” is saved. <link>Switch it on in Visual identity.</link>"
     }
   }
 }

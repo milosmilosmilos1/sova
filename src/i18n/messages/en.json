@@ -330,6 +330,33 @@
     "people": {
       "label": "People in photos and videos",
       "hint": "When Sova picks photos and videos on its own, it only takes ones without people or with people of European appearance, like your audience. It checks the description and the image itself before downloading. Photos and videos you choose yourself stay as they are."
+    },
+    "figmaTemplates": {
+      "title": "Templates from Figma",
+      "description": "A layout made in Figma that Sova uses to draw the brand’s posts: a background and places for the headline, text, logo and photo. A switched-on template applies to posts of its format; the rest follow the theme.",
+      "empty": "The brand has no template yet. How to make one:",
+      "guide": {
+        "frame": "In Figma, make a 1080×1350 frame (post), 1080×1080 or 1080×1920 (story).",
+        "background": "Put all decorations, shapes and images into one group called #pozadina.",
+        "layers": "Put text into #naslov and #tekst layers (optionally #oznaka, #broj, #nalog, #brojac), and the places for the logo and photo into #logo and #foto layers.",
+        "import": "In Studio, under the “From Figma” tool, paste the link, pick the frames and click “Save as template”."
+      },
+      "import": "Import from Figma",
+      "active": "draws posts",
+      "activate": "Use for posts",
+      "deactivate": "Switch off",
+      "remove": "Remove",
+      "formats": {
+        "portrait": "post 4:5",
+        "square": "square 1:1",
+        "story": "story 9:16"
+      },
+      "kinds": {
+        "cover": "Cover slide",
+        "point": "Content slide",
+        "cta": "Call to action"
+      },
+      "hint": "The preview uses sample text and the brand logo. Drafts not drawn with the template are offered in “Match the theme”."
     }
   },
   "flows": {

@@ -111,6 +111,48 @@ const SLIDE = {
   ],
 }
 
+/** Šablon (D-162): okvir 540×675 sa #pozadina, #naslov, #tekst, #foto i #logo. */
+const TEMPLATE = {
+  id: '5:1',
+  name: 'Šablon naslovni',
+  type: 'FRAME',
+  fills: [{ type: 'SOLID', color: rgb('#0A2540') }],
+  absoluteBoundingBox: box(540, 675),
+  children: [
+    { id: '5:2', name: '#pozadina', type: 'GROUP', absoluteBoundingBox: box(540, 675), children: [] },
+    {
+      id: '5:3',
+      name: '#naslov',
+      type: 'TEXT',
+      absoluteBoundingBox: { x: 40, y: 420, width: 460, height: 110 },
+      style: { fontFamily: 'Inter', fontWeight: 700, fontSize: 40, lineHeightPx: 44 },
+      fills: [{ type: 'SOLID', color: rgb('#FFFFFF') }],
+    },
+    {
+      id: '5:4',
+      name: '#tekst',
+      type: 'TEXT',
+      absoluteBoundingBox: { x: 40, y: 540, width: 460, height: 60 },
+      style: { fontFamily: 'Inter', fontSize: 18 },
+      fills: [{ type: 'SOLID', color: rgb('#C9D1DC') }],
+    },
+    {
+      id: '5:5',
+      name: '#foto',
+      type: 'RECTANGLE',
+      cornerRadius: 16,
+      absoluteBoundingBox: { x: 40, y: 40, width: 460, height: 340 },
+    },
+    {
+      id: '5:6',
+      name: '#logo',
+      type: 'INSTANCE',
+      absoluteBoundingBox: { x: 40, y: 620, width: 80, height: 40 },
+      children: [],
+    },
+  ],
+}
+
 const S3 = 'https://figma-alpha-api.s3.us-west-2.amazonaws.com/images'
 
 function authorized(request: Request): boolean {
@@ -147,7 +189,12 @@ export const figmaHandlers = [
     const ids = (new URL(request.url).searchParams.get('ids') ?? '').split(',')
     return HttpResponse.json({
       name: FILE.name,
-      nodes: Object.fromEntries(ids.map((id) => [id, id === '1:1' ? { document: SLIDE } : null])),
+      nodes: Object.fromEntries(
+        ids.map((id) => [
+          id,
+          id === '1:1' ? { document: SLIDE } : id === '5:1' ? { document: TEMPLATE } : null,
+        ]),
+      ),
     })
   }),
   http.get('https://api.figma.com/v1/files/:key', ({ request, params }) => {

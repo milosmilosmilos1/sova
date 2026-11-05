@@ -1412,6 +1412,20 @@ Odluka:
 
 Razlog: testerka je tražila Figmu pored Canve; vlasnik je odabrao uvoz okvira i brend iz Figme kao prvi korak, a Figma šablone kao mogući sledeći.
 
+## D-162 · 5.11.2026 · usvojeno · Figma šabloni: raspored iz Figme po kom Sova crta objave
+
+Odluka:
+
+- Vlasnik je izabrao Figmu kao mesto gde nastaju lepši rasporedi objava: dizajner (ili gotov besplatan šablon iz Figma Community) napravi okvir, a Sova jednom pročita raspored i posle crta svaku objavu brenda po njemu, sa svojim tekstom, logoom i fotografijom. Klijenti ništa ne povezuju; Figmu povezuje onaj ko uvozi šablon.
+- Pravilo okvira: okvir 4:5, 1:1 ili 9:16 (bilo koje širine; Sova ga preračunava na 1080); svi ukrasi u grupi `#pozadina`; tekst u slojevima `#naslov` (obavezan), `#tekst`, `#oznaka`, `#broj`, `#nalog`, `#brojac`; mesta za logo i fotografiju `#logo` i `#foto` (sa zaobljenjem ugla). Imena ne zavise od velikih slova i kvačica (`lib/figma/template.ts`). Sloj sa sadržajem unutar `#pozadina` je greška, jer bi ostao na slici; okvir bez `#pozadina` ili `#naslov` se odbija sa uputstvom.
+- Studio → alati → „Iz Figme” → „Sačuvaj kao šablon” (jedan do tri okvira: naslovni, sadržaj, poziv na akciju; jedan okvir važi za sve): jedno čitanje okvira i jedan izvoz pozadine. Pozadina se čuva kao PNG Sovinog crteža (izvor `template`), pa je galerija ne nudi kao fotografiju; raspored (mesto, font, težina, veličina, prored, razmak slova, poravnanje, velika slova, boja) ide u `brands.design.templates` (do 12), bez migracije.
+- Vizuelni identitet → „Šabloni iz Figme”: pregled svakog okvira sa primerom teksta (na jeziku korisnika) i logoom brenda, „Koristi za objave” (`brands.design.templateId`), „Isključi” i „Ukloni”. Kartica sa uputstvom se vidi kad je Figma dostupna ili brend ima šablon.
+- Crtanje (`renderTemplateSlide`): slika `#pozadina` na svom mestu preko boje okvira, fotografija u `#foto` bez obrade stila, logo u `#logo`, tekst u fontu i boji iz Figme; duži tekst se smanjuje dok ne stane (najviše na pola veličine). Font koji nije Google font pada na Inter dok se ne otpremi (D-159). Uključen šablon važi u glavnom putu crtanja (Nova objava, plan, tokovi, Autopilot, „Generiši ponovo”, tekst na slikama) za objave svog formata; priča uz šablon objave i video ostaju u temi.
+- Objava pamti šablon kojim je nacrtana (`posts.design.templateId`): tekst na slikama je crta istim šablonom, a „Uskladi sa temom” nudi nacrte nacrtane bez uključenog šablona (ili starim šablonom).
+- Administrator platforme (vlasnik Sove) Figmu ima uvek, bez prekidača `figma`, da može da uvozi šablone; ostali radni prostori je dobijaju preko `rollout.workspaces`.
+
+Razlog: vlasnik je tražio da objave koje Sova pravi budu lepše uz Figmu; uvoz rasporeda rešava i pomeranje elemenata koje je tražila testerka, jer se raspored crta u Figmi.
+
 ## D-163 · 5.11.2026 · usvojeno · Tekst u videu iznad natpisa mreže, krupniji opis
 
 Odluka:

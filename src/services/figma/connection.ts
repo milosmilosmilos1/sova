@@ -37,13 +37,20 @@ export interface FigmaStatus {
   expiresAt: string | null
 }
 
+/** Prekidač za radni prostor; administrator platforme (vlasnik Sove) Figmu ima uvek, za šablone (D-162). */
+async function figmaEnabled(viewer: Viewer, workspaceId: string): Promise<boolean> {
+  return (
+    viewer.profile.platformRole === 'platform_admin' || (await isFeatureEnabledFor(FIGMA_FLAG, workspaceId))
+  )
+}
+
 function callbackUrl(): string {
   return `${env.NEXT_PUBLIC_APP_URL}/api/integrations/figma/callback`
 }
 
 export async function getFigmaStatus(viewer: Viewer, workspaceId: string): Promise<FigmaStatus> {
   await requireMembership(viewer, workspaceId)
-  const enabled = await isFeatureEnabledFor(FIGMA_FLAG, workspaceId)
+  const enabled = await figmaEnabled(viewer, workspaceId)
   const { data } = await viewer.supabase
     .from('figma_connections')
     .select('status, token_expires_at')
@@ -68,7 +75,7 @@ export async function beginFigmaConnect(
   await requireMembership(viewer, workspaceId, EDIT_ROLES)
   if (!isFigmaConfigured())
     throw new ApiError('AI_UNAVAILABLE', 'Figma integracija nije podešena (nedostaju ključevi).')
-  if (!(await isFeatureEnabledFor(FIGMA_FLAG, workspaceId)))
+  if (!(await figmaEnabled(viewer, workspaceId)))
     throw new ApiError('FORBIDDEN', 'Uvoz iz Figme još nije uključen za ovaj radni prostor.')
   const { verifier, challenge } = createPkce()
   const state = randomBytes(24).toString('base64url')

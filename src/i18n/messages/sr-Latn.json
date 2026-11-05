@@ -330,6 +330,33 @@
     "people": {
       "label": "Ljudi na fotografijama i snimcima",
       "hint": "Kad Sova sama bira fotografije i snimke, uzima samo one bez ljudi ili sa ljudima evropskog izgleda, kao vaša publika. Pre preuzimanja proverava opis i samu sliku. Fotografije i snimci koje sami izaberete ostaju kakvi jesu."
+    },
+    "figmaTemplates": {
+      "title": "Šabloni iz Figme",
+      "description": "Raspored napravljen u Figmi po kom Sova crta objave brenda: pozadina i mesta za naslov, tekst, logo i fotografiju. Uključen šablon važi za objave svog formata, a ostale idu u temi.",
+      "empty": "Brend još nema šablon. Kako da ga napravite:",
+      "guide": {
+        "frame": "U Figmi napravite okvir 1080×1350 (objava), 1080×1080 ili 1080×1920 (priča).",
+        "background": "Sve ukrase, oblike i slike stavite u jednu grupu koja se zove #pozadina.",
+        "layers": "Tekst stavite u slojeve #naslov i #tekst (po želji #oznaka, #broj, #nalog, #brojac), a mesta za logo i fotografiju u slojeve #logo i #foto.",
+        "import": "U Studiju, u alatima „Iz Figme”, nalepite link, izaberite okvire i kliknite „Sačuvaj kao šablon”."
+      },
+      "import": "Uvezi iz Figme",
+      "active": "crta objave",
+      "activate": "Koristi za objave",
+      "deactivate": "Isključi",
+      "remove": "Ukloni",
+      "formats": {
+        "portrait": "objava 4:5",
+        "square": "kvadrat 1:1",
+        "story": "priča 9:16"
+      },
+      "kinds": {
+        "cover": "Naslovni slajd",
+        "point": "Slajd sa sadržajem",
+        "cta": "Poziv na akciju"
+      },
+      "hint": "Pregled je sa primerom teksta i logoom brenda. Nacrti koji nisu u šablonu nude se u „Uskladi sa temom”."
     }
   },
   "flows": {

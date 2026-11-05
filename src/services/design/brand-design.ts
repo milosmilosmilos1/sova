@@ -17,6 +17,7 @@ import {
 } from '@/lib/visuals/design/catalog'
 import { contrast, mix, readable } from '@/lib/visuals/design/kit'
 import type { LookId } from '@/lib/visuals/design/looks'
+import type { FigmaTemplate } from '@/lib/figma/template'
 import type { BrandLogo, DesignColors } from '@/lib/visuals/design/types'
 import { brandIconPng, prepareBrandLogo } from '@/lib/visuals/design/logo'
 import { getCurrentProfileRow } from '@/services/brand-brain/profile'
@@ -47,6 +48,8 @@ export interface ResolvedDesign {
   logoSource: 'custom' | 'site' | null
   /** šta je sačuvano, a šta podrazumevano (UI prikazuje „iz profila brenda”) */
   saved: { colors: boolean; handle: boolean }
+  /** Figma šablon po kom se crtaju objave (D-162); važi za objave istog formata */
+  template: FigmaTemplate | null
 }
 
 const FALLBACK_COLORS: DesignColors = {
@@ -121,6 +124,7 @@ export async function resolveDesign(
     logoAssetId: stored.logoAssetId ?? profileLogo ?? brand.logo_asset_id ?? null,
     logoSource: stored.logoAssetId ? 'custom' : (profileLogo ?? brand.logo_asset_id) ? 'site' : null,
     saved: { colors: Boolean(stored.colors), handle: stored.handle !== undefined },
+    template: (stored.templateId && stored.templates?.find((t) => t.id === stored.templateId)) || null,
   }
 }
 
@@ -150,6 +154,7 @@ export async function updateDesign(
     ? {
         ...(stored.siteVisual ? { siteVisual: stored.siteVisual } : {}),
         ...(stored.customFonts ? { customFonts: stored.customFonts } : {}),
+        ...(stored.templates ? { templates: stored.templates } : {}),
       }
     : { ...stored }
   if (input.styleId !== undefined) next.styleId = input.styleId

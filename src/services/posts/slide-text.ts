@@ -1,5 +1,8 @@
 import 'server-only'
 
+import { templateFits, templateFrameFor } from '@/lib/figma/template'
+import { renderTemplateSlide } from '@/lib/visuals/design/template-render'
+import { templateBackground } from '@/services/design/template-assets'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
@@ -97,9 +100,12 @@ async function loadWork(viewer: Viewer, postId: string): Promise<TextWork> {
       'Ovu sliku nije nacrtala Sova, pa se tekst na njoj ne menja ovde. Opis objave možete da menjate.',
     )
   const brandTheme = await resolveDesign(await getBrand(viewer, post.brand_id))
+  // objava nacrtana šablonom (D-162) ostaje u njemu; ostale ostaju u stilu i kad brend ima šablon
+  const template =
+    design.templateId && brandTheme.template?.id === design.templateId ? brandTheme.template : null
   const theme =
     design.colors && design.fonts
-      ? { ...brandTheme, styleId: design.styleId, colors: design.colors, fonts: design.fonts }
+      ? { ...brandTheme, styleId: design.styleId, colors: design.colors, fonts: design.fonts, template }
       : null
   return { post, design: design as TextDesign, brandTheme, theme }
 }
@@ -271,13 +277,38 @@ export async function previewSlideText(
   const styleId = slideStyle(work)
   const style = getStyle(styleId)
   const photos = work.design.copy.photoAssetIds
+  const format = work.design.format === 'story' ? 'story' : work.design.size
+  const template = templateFits(theme.template, format) ? theme.template : null
   const order = photoOrder(
-    slides.map((s, i) => wantsPhoto(style, s.kind, i)),
+    slides.map((s, i) =>
+      template
+        ? templateFrameFor(template, s.kind).layers.some((l) => l.role === 'photo')
+        : wantsPhoto(style, s.kind, i),
+    ),
     photos.length,
     Boolean(work.design.ownPhotos),
   )
   const k = order[input.index] ?? null
-  const photo = k === null ? null : await slidePhoto(work.post.brand_id, photos[k]!, style, theme.colors)
+  const photoStyle: StyleDef = template ? { ...style, photoTreatment: 'none' } : style
+  const photo = k === null ? null : await slidePhoto(work.post.brand_id, photos[k]!, photoStyle, theme.colors)
+  if (template) {
+    const frame = templateFrameFor(template, slide.kind)
+    const drawn = await renderTemplateSlide({
+      frame,
+      format: template.format,
+      background: await templateBackground(frame.background.assetId),
+      slide,
+      index: input.index,
+      total: slides.length,
+      brandName: theme.brandName,
+      handle: theme.handle,
+      logo,
+      photo,
+      outputWidth: PREVIEW_WIDTH,
+      format_out: 'jpeg',
+    })
+    return { bytes: drawn.bytes, mimeType: drawn.mimeType }
+  }
   const out = await renderSlide({
     styleId,
     slide,

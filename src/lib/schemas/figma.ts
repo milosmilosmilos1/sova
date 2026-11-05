@@ -31,6 +31,22 @@ export const figmaImportSchema = z.object({
     .max(20),
 })
 
+export const figmaTemplateSaveSchema = z.object({
+  brandId: z.uuid(),
+  fileKey,
+  name: z.string().trim().min(1).max(80),
+  /** naslovni, sadržaj, poziv na akciju (jedan okvir važi za sve) */
+  nodeIds: z.array(nodeId).min(1).max(3),
+})
+
+const templateId = z.string().regex(/^[a-z0-9]{10}$/)
+export const templateActivateSchema = z.object({ templateId: templateId.nullable() })
+export const templateIdQuerySchema = z.object({ templateId })
+export const templatePreviewQuerySchema = z.object({
+  templateId,
+  kind: z.enum(['cover', 'point', 'cta']).default('cover'),
+})
+
 export const figmaBrandSchema = z.object({
   brandId: z.uuid(),
   fileKey,

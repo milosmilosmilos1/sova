@@ -20,8 +20,18 @@ export interface FigmaNode {
   children?: FigmaNode[]
   fills?: FigmaPaint[] | unknown
   absoluteBoundingBox?: { x: number; y: number; width: number; height: number } | null
-  style?: { fontFamily?: string; fontWeight?: number; fontSize?: number }
+  style?: {
+    fontFamily?: string
+    fontWeight?: number
+    fontSize?: number
+    lineHeightPx?: number
+    letterSpacing?: number
+    textAlignHorizontal?: 'LEFT' | 'CENTER' | 'RIGHT' | 'JUSTIFIED'
+    textAlignVertical?: 'TOP' | 'CENTER' | 'BOTTOM'
+    textCase?: 'ORIGINAL' | 'UPPER' | 'LOWER' | 'TITLE' | 'SMALL_CAPS' | 'SMALL_CAPS_FORCED'
+  }
   characters?: string
+  cornerRadius?: number
 }
 
 export interface FigmaBrand {

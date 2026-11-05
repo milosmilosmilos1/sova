@@ -720,7 +720,12 @@
       "fonts": "Naslovi: {headings} · Tekst: {body}",
       "fontNotGoogle": "Font koji nije Google font Sova ne može sama da preuzme: otpremite ga u Vizuelnom identitetu (Otpremi svoj font).",
       "apply": "Primeni na temu brenda",
-      "applied": "Primenjeno"
+      "applied": "Primenjeno",
+      "templateTitle": "Šablon za objave brenda",
+      "templateHint": "Izaberite jedan do tri okvira (naslovni, sadržaj, poziv na akciju). U okviru ukrase stavite u grupu #pozadina, a tekst u slojeve #naslov i #tekst; može i #oznaka, #broj, #nalog, #brojac, #logo i #foto. Sova posle crta svaku objavu po tom rasporedu.",
+      "templateName": "Naziv šablona",
+      "templateSave": "Sačuvaj kao šablon ({n} okv.)",
+      "templateSaved": "Šablon „{name}” je sačuvan. <link>Uključite ga u Vizuelnom identitetu.</link>"
     }
   }
 }

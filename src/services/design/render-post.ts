@@ -1,9 +1,13 @@
 import 'server-only'
 
+import { templateFits, templateFrameFor, type FigmaTemplate } from '@/lib/figma/template'
+import { renderTemplateSlide } from '@/lib/visuals/design/template-render'
+import { templateBackground } from '@/services/design/template-assets'
 import { GALLERY_SOURCES, galleryWords, rankGalleryPhotos } from '@/lib/gallery/pick'
 import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getStyle, wantsPhoto, type StyleId } from '@/lib/visuals/design'
+import type { StyleDef } from '@/lib/visuals/design/types'
 import { photoOrder, slideRanges } from '@/lib/visuals/design/batches'
 import type { PhotoSource } from '@/lib/visuals/design/catalog'
 import { preparePhoto, renderSlide } from '@/lib/visuals/design/render'
@@ -171,6 +175,20 @@ export interface DesignRenderInput {
   variant?: ThemeVariant
 }
 
+/** Figma šablon brenda (D-162) kad važi za format ove objave; inače stil. */
+function activeTemplate(input: DesignRenderInput): FigmaTemplate | null {
+  return templateFits(input.design.template, input.format) ? input.design.template : null
+}
+
+/** Koji slajd traži fotografiju: po stilu, a sa šablonom kad njegov okvir ima sloj #foto. */
+function photoNeeds(input: DesignRenderInput, style: StyleDef, template: FigmaTemplate | null): boolean[] {
+  return input.slides.map((s, i) =>
+    template
+      ? templateFrameFor(template, s.kind).layers.some((l) => l.role === 'photo')
+      : wantsPhoto(style, s.kind, i),
+  )
+}
+
 export interface PickedDesignPhotos {
   photoIds: string[]
   notes: string[]
@@ -182,8 +200,9 @@ export interface PickedDesignPhotos {
  */
 export async function pickDesignPhotos(input: DesignRenderInput): Promise<PickedDesignPhotos> {
   const style = getStyle(input.styleId)
-  const needed = input.slides.filter((s, i) => wantsPhoto(style, s.kind, i)).length
-  const count = needed === 0 ? 0 : style.photo === 'cover' ? 1 : Math.min(needed, 10)
+  const template = activeTemplate(input)
+  const needed = photoNeeds(input, style, template).filter(Boolean).length
+  const count = needed === 0 ? 0 : !template && style.photo === 'cover' ? 1 : Math.min(needed, 10)
   const notes: string[] = []
   let photos: MediaAssetRow[] = []
   const pick = (n: number) =>
@@ -228,8 +247,11 @@ export async function renderDesignRange(
   to: number,
 ): Promise<{ assetIds: string[]; width: number; height: number }> {
   const style = getStyle(input.styleId)
+  const template = activeTemplate(input)
   const colors = input.colors ?? input.design.colors
-  const needs = input.slides.map((s, i) => wantsPhoto(style, s.kind, i))
+  const needs = photoNeeds(input, style, template)
+  // fotografija u okviru #foto šablona ide kakva jeste, bez obrade stila (crno-belo, duoton)
+  const photoStyle: StyleDef = template ? { ...style, photoTreatment: 'none' } : style
   const order = photoOrder(needs, photoIds.length, Boolean(input.cyclePhotos))
   const wanted = [...new Set(order.slice(from, to).filter((k): k is number => k !== null))]
   const rows = await loadPhotoMap(
@@ -242,7 +264,7 @@ export async function renderDesignRange(
       const row = rows.get(photoIds[k]!)
       if (!row) return
       try {
-        prepared.set(k, await preparePhoto(await downloadAsset(row), style, colors))
+        prepared.set(k, await preparePhoto(await downloadAsset(row), photoStyle, colors))
       } catch (error) {
         logger.warn('design_photo_prepare_failed', { assetId: row.id, error })
       }
@@ -257,21 +279,36 @@ export async function renderDesignRange(
       const slide = input.slides[i]!
       const k = order[i] ?? null
       const photo = k === null ? null : (prepared.get(k) ?? null)
-      const rendered = await renderSlide({
-        styleId: input.styleId,
-        slide,
-        format: input.format,
-        colors,
-        brandFonts: input.design.fonts,
-        lockFonts: input.design.fontsLocked,
-        brandName: input.design.brandName,
-        handle: input.design.handle,
-        logo,
-        photo,
-        index: i,
-        total: input.slides.length,
-        variant: input.variant,
-      })
+      const frame = template ? templateFrameFor(template, slide.kind) : null
+      const rendered =
+        template && frame
+          ? await renderTemplateSlide({
+              frame,
+              format: template.format,
+              background: await templateBackground(frame.background.assetId),
+              slide,
+              index: i,
+              total: input.slides.length,
+              brandName: input.design.brandName,
+              handle: input.design.handle,
+              logo,
+              photo,
+            })
+          : await renderSlide({
+              styleId: input.styleId,
+              slide,
+              format: input.format,
+              colors,
+              brandFonts: input.design.fonts,
+              lockFonts: input.design.fontsLocked,
+              brandName: input.design.brandName,
+              handle: input.design.handle,
+              logo,
+              photo,
+              index: i,
+              total: input.slides.length,
+              variant: input.variant,
+            })
       size = { width: rendered.width, height: rendered.height }
       const stored = storeServerImage({
         workspaceId: input.workspaceId,
@@ -281,10 +318,11 @@ export async function renderDesignRange(
         source: 'template',
         folder: 'design',
         altText: [slide.title, slide.body].filter(Boolean).join('. ').slice(0, 500),
-        tags: ['design', input.styleId],
+        tags: ['design', template ? 'figma-template' : input.styleId],
         sourceData: {
           design: true,
           styleId: input.styleId,
+          templateId: template?.id ?? null,
           format: input.format,
           kind: slide.kind,
           index: i,

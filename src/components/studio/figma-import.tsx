@@ -119,6 +119,20 @@ export function FigmaImportPanel({ workspaceId, brandId }: { workspaceId: string
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['design', brandId] }),
   })
+  const [templateName, setTemplateName] = useState('')
+  const saveTemplate = useMutation({
+    mutationFn: () =>
+      api<{ id: string; name: string }>('/api/figma/templates', {
+        method: 'POST',
+        json: {
+          brandId,
+          fileKey: view!.fileKey,
+          name: (templateName.trim() || view!.fileName).slice(0, 80),
+          nodeIds: ordered.slice(0, 3).map((f) => f.id),
+        },
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['figma-templates', brandId] }),
+  })
   const toggle = (id: string) =>
     setChosen((list) =>
       list.includes(id) ? list.filter((x) => x !== id) : list.length >= 20 ? list : [...list, id],
@@ -257,6 +271,41 @@ export function FigmaImportPanel({ workspaceId, brandId }: { workspaceId: string
                   )}
                 </div>
                 <p className="text-xs text-muted-foreground">{t('orderHint')}</p>
+                <div className="space-y-2 rounded-md border border-dashed p-3">
+                  <p className="text-sm font-medium">{t('templateTitle')}</p>
+                  <p className="text-xs text-muted-foreground">{t('templateHint')}</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Input
+                      value={templateName}
+                      onChange={(e) => setTemplateName(e.target.value)}
+                      placeholder={view.fileName}
+                      aria-label={t('templateName')}
+                      maxLength={80}
+                      className="max-w-64"
+                    />
+                    <Button
+                      variant="outline"
+                      onClick={() => saveTemplate.mutate()}
+                      disabled={!ordered.length || ordered.length > 3 || saveTemplate.isPending}
+                    >
+                      {saveTemplate.isPending ? <LoaderCircle className="animate-spin" aria-hidden /> : null}
+                      {t('templateSave', { n: Math.min(3, ordered.length) })}
+                    </Button>
+                  </div>
+                  {saveTemplate.isSuccess ? (
+                    <p className="text-xs text-emerald-700 dark:text-emerald-400">
+                      {t.rich('templateSaved', {
+                        name: saveTemplate.data.name,
+                        link: (chunks) => (
+                          <a className="underline" href="/app/brand/visual">
+                            {chunks}
+                          </a>
+                        ),
+                      })}
+                    </p>
+                  ) : null}
+                  <ErrorBox error={saveTemplate.error} />
+                </div>
                 <ErrorBox error={importer.error ?? brand.error ?? draft.error ?? apply.error} />
               </div>
             ) : null}

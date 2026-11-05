@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { templateFits } from '@/lib/figma/template'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import { enqueueHarmonize } from '@/lib/jobs/enqueue'
@@ -62,8 +63,15 @@ export function inTheme(
       : !(drawn?.logoSince && Date.parse(drawn.logoSince) > Date.parse(drawn.createdAt))) &&
     // logo nacrtan starijim načinom (beli okvir, ista boja na svakoj podlozi) crta se ponovo (D-134)
     (!theme.logoAssetId || design.logoVersion === LOGO_VERSION)
+  // Figma šablon (D-162) važi za objave svog formata; video ga nema
+  const format = design.format === 'story' ? 'story' : design.size
+  const fits = design.format !== 'video' && templateFits(theme.template, format)
+  // šablon drugog formata ne važi za objavu, pa se zapamćen šablon tada ne poredi
+  const template = fits ? theme.template!.id : null
+  const drawnTemplate = fits ? (design.templateId ?? null) : null
   return (
     design.styleId === style &&
+    drawnTemplate === template &&
     // video starijeg rasporeda (snimak u fotografiji teme, tekst preko pola kadra) crta se ponovo (D-135)
     (design.format !== 'video' || design.video?.layout === VIDEO_LAYOUT) &&
     upper(design.colors) === upper(theme.colors as unknown as Record<string, string>) &&

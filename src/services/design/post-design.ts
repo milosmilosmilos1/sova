@@ -48,6 +48,12 @@ export const postDesignSchema = z.object({
   logoAssetId: z.uuid().nullable().optional(),
   /** način crtanja logoa (D-134: bez pozadine, verzija po podlozi); starije objave ga nemaju */
   logoVersion: z.number().int().min(1).optional(),
+  /** Figma šablon kojim je objava nacrtana (D-162); bez njega stil */
+  templateId: z
+    .string()
+    .regex(/^[a-z0-9]{10}$/)
+    .nullable()
+    .optional(),
   copy: z
     .object({
       slides: z.array(designSlideSchema).min(1).max(SLIDES_MAX),
@@ -91,11 +97,13 @@ export function themeOf(design: {
   colors: PostDesignContext['colors'] & object
   fonts: { headings: string; body: string }
   logoAssetId: string | null
-}): Pick<PostDesignContext, 'colors' | 'fonts' | 'logoAssetId' | 'logoVersion'> {
+  template?: { id: string } | null
+}): Pick<PostDesignContext, 'colors' | 'fonts' | 'logoAssetId' | 'logoVersion' | 'templateId'> {
   return {
     colors: design.colors,
     fonts: design.fonts,
     logoAssetId: design.logoAssetId,
     logoVersion: LOGO_VERSION,
+    templateId: design.template?.id ?? null,
   }
 }
