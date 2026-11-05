@@ -1,6 +1,7 @@
 import { z } from 'zod'
 
 import { CONTENT_LOCALES, type ContentLocale } from '@/config/locales'
+import type { AppLocale } from '@/i18n/config'
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { FORMAT_LABEL, POST_FORMATS, type PostFormat } from '@/config/post-formats'
 import { SLIDES_MAX, SLIDES_MIN, STYLE_IDS, type StyleId } from '@/lib/visuals/design/catalog'
@@ -84,6 +85,8 @@ export interface StudioPromptInput {
   brandLocale: ContentLocale
   /** jezik objave izabran u podešavanjima ili null */
   locale: ContentLocale | null
+  /** jezik interfejsa korisnika: jezik razgovora kad se iz poruke ne vidi (D-156) */
+  uiLocale: AppLocale
   platforms: SocialPlatform[]
   allowedFormats: PostFormat[]
   format: PostFormat | 'auto'
@@ -102,6 +105,20 @@ const LOCALE_NAME: Record<ContentLocale, string> = {
   'sr-Cyrl': 'srpski, ćirilica',
   en: 'engleski',
   uk: 'ukrajinski',
+}
+
+/** Jezik razgovora (D-156): interfejs ima srpski latinicom, engleski i ukrajinski. */
+const UI_LOCALE_NAME: Record<AppLocale, string> = {
+  'sr-Latn': 'srpski, latinica',
+  en: 'engleski',
+  uk: 'ukrajinski',
+}
+
+/** Uputstvo na samom jeziku razgovora: model tada ne sklizne u srodan jezik (poljski umesto ukrajinskog). */
+const REPLY_IN: Record<AppLocale, string> = {
+  'sr-Latn': 'Odgovaraj na srpskom, latinicom.',
+  en: 'Reply in English.',
+  uk: 'Відповідай українською мовою.',
 }
 
 const REPLY_MAX = 1500
@@ -171,6 +188,8 @@ export function buildStudioPrompt(input: StudioPromptInput): string {
       ? 'Vrstu objave biraš ti, među dozvoljenima, ili je korisnik kaže u poruci.'
       : `Korisnik je za sledeću objavu izabrao vrstu ${input.format} (${FORMAT_LABEL[input.format]}): koristi nju.`,
     `Jezik objava: ${LOCALE_NAME[postLocale]}${input.locale ? ' (izabrao korisnik)' : ' (jezik brenda)'}, osim kad korisnik u poruci traži drugi.`,
+    // jezik objava nije jezik razgovora: ukrajinska korisnica brenda na srpskom dobija odgovor na ukrajinskom
+    `Jezik razgovora: ${UI_LOCALE_NAME[input.uiLocale]} (jezik aplikacije korisnika). reply i suggestions su na tom jeziku, osim kad je nova poruka korisnika cela rečenica na drugom jeziku: tada na jeziku poruke. Naziv stila, broj ili jedna reč nisu jezik poruke. Jezik objava i ranije poruke Sove ne određuju jezik razgovora. ${REPLY_IN[input.uiLocale]}`,
     `Stil slajdova brenda: ${input.styleName}. Drugi stilovi (id: naziv): ${input.styles.map((s) => `${s.id}: ${s.name}`).join('; ')}.`,
     ...(input.current ? currentLines(input.current) : ['', 'Desno trenutno nije otvorena nijedna objava.']),
     ...(input.link ? linkLines(input.link) : []),
@@ -207,7 +226,7 @@ export function buildStudioPrompt(input: StudioPromptInput): string {
     '  reply: kratko šta je promenjeno.',
     '- "reply": sve ostalo (pitanja, ideje, saveti, plan objava, objašnjenje kako nešto radi u Sovi). Odgovor do 900 znakova; kratka lista je u redu. Pitanje umesto objave postavi samo kad ne znaš o čemu da pišeš.',
     'Polja koja ne pripadaju izabranoj radnji su null.',
-    'suggestions: dva ili tri kratka sledeća koraka koje bi korisnik mogao da napiše (do 60 znakova, na njegovom jeziku), npr. „Skrati opis” ili „Napravi i priču od ovoga”.',
+    'suggestions: dva ili tri kratka sledeća koraka koje bi korisnik mogao da napiše (do 60 znakova, na jeziku razgovora), npr. „Skrati opis” ili „Napravi i priču od ovoga”.',
   ]
     .filter((l): l is string => l !== null)
     .join('\n')

@@ -130,22 +130,32 @@ function assertNotBlocked(response: ResponseLike, model: string): void {
   }
 }
 
+/**
+ * Gemini odbija rok kraći od oko 10 s (400 „deadline”) pre nego što počne (D-156), pa API dobija bar
+ * toliko, a kraći rok pozivaoca (provera ljudi, prevod odgovora, korak od 30 s) Sova meri sama.
+ */
+const API_MIN_TIMEOUT_MS = 10_000
+
 export async function generateText(req: TextRequest): Promise<TextResult> {
   const ai = getGeminiClient()
   const started = Date.now()
+  const timeoutMs = req.timeoutMs ?? 30_000
+  const local = timeoutMs < API_MIN_TIMEOUT_MS ? new AbortController() : null
   const config: GenerateContentConfig = {
     systemInstruction: req.system,
     temperature: req.temperature ?? 0.7,
     maxOutputTokens: req.maxOutputTokens ?? 4096,
     safetySettings: SAFETY,
-    httpOptions: { timeout: req.timeoutMs ?? 30_000 },
+    httpOptions: { timeout: Math.max(API_MIN_TIMEOUT_MS, timeoutMs) },
     thinkingConfig: { thinkingLevel: THINKING[req.thinking ?? 'low'] },
+    ...(local ? { abortSignal: local.signal } : {}),
   }
   if (req.jsonSchema) {
     config.responseMimeType = 'application/json'
     config.responseJsonSchema = req.jsonSchema
   }
   let response: ResponseLike
+  const timer = local ? setTimeout(() => local.abort(), timeoutMs) : null
   try {
     response = (await ai.models.generateContent({
       model: req.model,
@@ -153,7 +163,15 @@ export async function generateText(req: TextRequest): Promise<TextResult> {
       config,
     })) as unknown as ResponseLike
   } catch (error) {
+    if (local?.signal.aborted)
+      throw new AiError('TIMEOUT', 'Model nije odgovorio na vreme.', {
+        retryable: true,
+        model: req.model,
+        cause: error,
+      })
     throw classifyProviderError(error, req.model)
+  } finally {
+    if (timer) clearTimeout(timer)
   }
   assertNotBlocked(response, req.model)
   const text = response.text ?? ''

@@ -1350,3 +1350,14 @@ Odluka:
 - Da li je logo kvadratan, `listBrandSwatches` čita iz veličine u biblioteci, u istom prolazu kao boje; ikonica koja ne stigne ostavlja slovo.
 
 Razlog: vlasnik je tražio logoe u biraču brenda umesto slova.
+
+## D-156 · 5.11.2026 · usvojeno · Jezik razgovora u Studiju, jezik novog brenda i najkraći rok za Gemini
+
+Odluka:
+
+- Studio razgovara na jeziku aplikacije korisnika (`profiles.locale`), a na jeziku poruke samo kad je poruka bar tri reči i jezik se jasno vidi (ukrajinska slova, srpska ćirilica, srpska latinica sa kvačicama; `conversationLocale` u `lib/ai/reply-language.ts`). Jezik objava brenda više ne određuje jezik odgovora. Upit nosi jezik razgovora i uputstvo na samom tom jeziku („Відповідай українською мовою.”).
+- Samo uputstvo nije bilo dovoljno: u probama sa pravim Gemini-jem ukrajinska poruka uz brend na srpskom dobijala je odgovor na srpskom, na ukrajinskom latinicom, a jednom i na poljskom. Zato Studio posle odgovora proverava pismo i slova (`isInLocale`) i, kad odgovor ili predlozi nisu na jeziku razgovora, jednim kratkim pozivom ih prevodi (`services/studio/reply-language.ts`); neuspeo prevod ostavlja odgovor kakav jeste. Posle izmene šest od šest proba je na ukrajinskom.
+- Nov brend, prvi u radnom prostoru i svaki sledeći bez izabranog jezika, dobija jezik objava po jeziku aplikacije: ukrajinski korisnik dobija ukrajinski, a engleski engleski (`contentLocaleForUi`). Do sada je svaki brend nastajao na srpskom.
+- Gemini odbija zahtev sa rokom kraćim od oko 10 s greškom 400 pre nego što počne. `generateText` sada šalje bar 10 s, a kraći rok pozivaoca meri sam i prekida poziv (`AbortController`). Greška je pogađala proveru ljudi iz D-154 (rok do 8 s: svaka provera je padala na rezervu po opisu, koja propušta samo snimke čiji opis ne pominje ljude) i analizu sajta kad do kraja koraka ostane manje od 10 s.
+
+Razlog: testerka iz Ukrajine je napisala da Sova „počinje da predlaže fraze na srpskom”. Njen brend je napravljen na srpskom, a Studio je odgovarao na jeziku brenda.

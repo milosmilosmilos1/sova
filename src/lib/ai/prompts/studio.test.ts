@@ -50,6 +50,7 @@ function input(over: Partial<StudioPromptInput> = {}): StudioPromptInput {
     },
     brandLocale: 'sr-Latn',
     locale: null,
+    uiLocale: 'sr-Latn',
     platforms: ['instagram', 'facebook'],
     allowedFormats: ['image', 'carousel', 'video', 'story'],
     format: 'auto',
@@ -166,6 +167,11 @@ describe('studio: upit', () => {
     expect(prompt).toContain('carousel (Karusel)')
     expect(prompt).toContain('izabrao vrstu story')
     expect(prompt).toContain('Jezik objava: engleski (izabrao korisnik)')
+    // jezik razgovora je jezik korisnika, ne jezik objava (D-156)
+    expect(prompt).toContain('Jezik razgovora: srpski, latinica (jezik aplikacije korisnika)')
+    expect(buildStudioPrompt(input({ uiLocale: 'uk' }))).toContain(
+      'Jezik razgovora: ukrajinski (jezik aplikacije korisnika)',
+    )
     expect(prompt).toContain('quote: Citat')
     expect(prompt).toContain('«Napravi karusel o letnjem servisu»')
     expect(prompt).toContain('Desno trenutno nije otvorena nijedna objava.')

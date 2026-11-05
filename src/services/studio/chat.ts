@@ -10,6 +10,7 @@ import { AiError, toApiError } from '@/lib/ai/errors'
 import { generateText, type ImageInput } from '@/lib/ai/gemini'
 import { textModelChain } from '@/lib/ai/models'
 import { callWithFallback, costFor } from '@/lib/ai/orchestrator'
+import { conversationLocale } from '@/lib/ai/reply-language'
 import {
   buildStudioPrompt,
   buildStudioSystemPrompt,
@@ -53,6 +54,7 @@ import { listSocialAccounts } from '@/services/social/accounts'
 import type { Database, Json } from '@/types/database'
 
 import { fetchLinkFacts } from './link-facts'
+import { inConversationLanguage } from '@/services/studio/reply-language'
 
 /**
  * Studio kao razgovor (D-116). Svaka poruka je jedan poziv Gemini-ja (1 token) koji odluči šta
@@ -478,6 +480,7 @@ export async function sendStudioMessage(
     brand: context,
     brandLocale: toContentLocale(brand.content_locale),
     locale: input.settings.locale ?? null,
+    uiLocale: viewer.profile.locale,
     platforms,
     allowedFormats,
     format: input.settings.format,
@@ -539,6 +542,8 @@ export async function sendStudioMessage(
       allowedFormats,
       hasPhotos: photos.length > 0,
     })
+    // jezik razgovora (D-156): odgovor na jeziku brenda ili srodnom jeziku se prevodi pre čuvanja
+    decision = await inConversationLanguage(decision, conversationLocale(input.text, viewer.profile.locale))
     const cost = await costFor(outcome.model, {
       inputTokens: outcome.result.usage.inputTokens,
       outputTokens: outcome.result.usage.outputTokens,

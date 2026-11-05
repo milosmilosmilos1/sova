@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { contentLocaleForUi } from '@/config/locales'
 import { randomUUID } from 'node:crypto'
 
 import { ApiError } from '@/lib/api/errors'
@@ -146,7 +147,7 @@ export async function createBrand(viewer: Viewer, input: CreateBrandInput): Prom
     name: input.name,
     website_url: input.websiteUrl ?? null,
     timezone: input.timezone,
-    content_locale: input.contentLocale,
+    content_locale: input.contentLocale ?? contentLocaleForUi(viewer.profile.locale),
     created_by: viewer.user.id,
   })
   if (error) throw mapDbError(error, 'Brend nije sačuvan.')

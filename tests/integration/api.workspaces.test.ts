@@ -135,6 +135,45 @@ describe('API: brendovi i limiti plana', () => {
     }
   })
 
+  it('korisnik sa ukrajinskim interfejsom dobija brend na ukrajinskom, a izbor jezika i dalje važi (D-156)', async () => {
+    const { admin } = await import('./helpers')
+    await admin.from('profiles').update({ locale: 'uk' }).eq('id', b.id)
+    await admin
+      .from('plans')
+      .update({ limits: { brands: 3, social_accounts: 2, members: 1, crawl_pages: 30 } })
+      .eq('code', 'free')
+    try {
+      const ws = await call<{ workspaceId: string; brandId: string }>(workspacesPost, '/api/workspaces', {
+        token: b.token,
+        body: { name: 'Ukrajinski prostor', type: 'business' },
+      })
+      expect(ws.status).toBe(200)
+      const { data: first } = await admin
+        .from('brands')
+        .select('content_locale')
+        .eq('id', ws.json.data!.brandId)
+        .single()
+      expect(first!.content_locale).toBe('uk')
+      const second = await call<{ content_locale: string }>(brandsPost, '/api/brands', {
+        token: b.token,
+        body: { workspaceId: ws.json.data!.workspaceId, name: 'Drugi' },
+      })
+      expect(second.json.data?.content_locale).toBe('uk')
+      const chosen = await call<{ content_locale: string }>(brandsPost, '/api/brands', {
+        token: b.token,
+        body: { workspaceId: ws.json.data!.workspaceId, name: 'Srpski', contentLocale: 'sr-Cyrl' },
+      })
+      expect(chosen.json.data?.content_locale).toBe('sr-Cyrl')
+      await admin.from('workspaces').delete().eq('id', ws.json.data!.workspaceId)
+    } finally {
+      await admin.from('profiles').update({ locale: 'sr-Latn' }).eq('id', b.id)
+      await admin
+        .from('plans')
+        .update({ limits: { brands: 1, social_accounts: 2, members: 1, crawl_pages: 30 } })
+        .eq('code', 'free')
+    }
+  })
+
   it('B ne može da napravi brend u A-ovom workspace-u', async () => {
     const r = await call(brandsPost, '/api/brands', {
       token: b.token,

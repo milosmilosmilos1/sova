@@ -13,6 +13,11 @@ export function isContentLocale(value: unknown): value is ContentLocale {
   return typeof value === 'string' && (CONTENT_LOCALES as readonly string[]).includes(value)
 }
 
+/** Jezik objava novog brenda po jeziku interfejsa (D-156): ukrajinski korisnik ne dobija srpski brend. */
+export function contentLocaleForUi(uiLocale: string): ContentLocale {
+  return uiLocale === 'en' || uiLocale === 'uk' ? uiLocale : 'sr-Latn'
+}
+
 /** Jezik brenda iz baze; nepoznata vrednost pada na srpski latinicom. */
 export function toContentLocale(value: unknown): ContentLocale {
   return isContentLocale(value) ? value : 'sr-Latn'

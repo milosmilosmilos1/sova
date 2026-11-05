@@ -104,7 +104,8 @@ export const createBrandSchema = z.object({
   name,
   websiteUrl: websiteUrlSchema,
   timezone: timeZoneField.default('Europe/Belgrade'),
-  contentLocale: contentLocaleSchema.default('sr-Latn'),
+  /** bez izbora: jezik interfejsa korisnika (D-156) */
+  contentLocale: contentLocaleSchema.optional(),
 })
 
 export const updateBrandSchema = z

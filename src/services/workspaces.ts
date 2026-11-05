@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { contentLocaleForUi } from '@/config/locales'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, listMemberships, requireMembership, type Membership } from '@/lib/auth/workspace'
@@ -26,6 +27,15 @@ export async function createWorkspace(
   })
   if (error) throw mapDbError(error, 'Kreiranje radnog prostora nije uspelo.')
   const result = data as { workspace_id: string; brand_id: string }
+  // prvi brend piše na jeziku interfejsa (D-156); funkcija u bazi ga pravi na srpskom
+  const locale = contentLocaleForUi(viewer.profile.locale)
+  if (locale !== 'sr-Latn') {
+    const { error: localeError } = await viewer.supabase
+      .from('brands')
+      .update({ content_locale: locale })
+      .eq('id', result.brand_id)
+    if (localeError) throw mapDbError(localeError, 'Kreiranje radnog prostora nije uspelo.')
+  }
   return { workspaceId: result.workspace_id, brandId: result.brand_id }
 }
 
