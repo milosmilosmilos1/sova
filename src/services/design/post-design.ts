@@ -3,7 +3,7 @@ import { z } from 'zod'
 import { CONTENT_LOCALES } from '@/config/locales'
 import { PLATFORMS } from '@/config/platforms'
 import { designColorsSchema, fontPairSchema } from '@/lib/schemas/design'
-import { PHOTO_SOURCES, POST_SIZES, STYLE_IDS } from '@/lib/visuals/design/catalog'
+import { PHOTO_SOURCES, POST_SIZES, SLIDES_MAX, STYLE_IDS } from '@/lib/visuals/design/catalog'
 import { LOGO_VERSION } from '@/lib/visuals/design/types'
 
 /** Tekst jednog slajda kako ga je napisao Gemini (D-116: Studio menja pojedinačne slajdove). */
@@ -27,7 +27,7 @@ export const postDesignSchema = z.object({
   cta: z.string().max(300).nullable(),
   format: z.enum(['carousel', 'single', 'story', 'video']),
   styleId: z.enum(STYLE_IDS),
-  slides: z.number().int().min(1).max(10),
+  slides: z.number().int().min(1).max(SLIDES_MAX),
   photoSource: z.enum(PHOTO_SOURCES),
   size: z.enum(POST_SIZES),
   locale: z.enum(CONTENT_LOCALES),
@@ -50,8 +50,8 @@ export const postDesignSchema = z.object({
   logoVersion: z.number().int().min(1).optional(),
   copy: z
     .object({
-      slides: z.array(designSlideSchema).min(1).max(10),
-      photoAssetIds: z.array(z.uuid()).max(10).default([]),
+      slides: z.array(designSlideSchema).min(1).max(SLIDES_MAX),
+      photoAssetIds: z.array(z.uuid()).max(SLIDES_MAX).default([]),
     })
     .optional(),
   /**

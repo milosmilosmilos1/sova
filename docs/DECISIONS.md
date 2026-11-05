@@ -1370,3 +1370,12 @@ Odluka:
 - Tastere sluša prozor u fazi hvatanja, jer dijalog drži fokus i ne pušta taster dalje.
 
 Razlog: testerka je napisala da kod objave sa više slajdova vidi samo prvi i ne može da ga otvori u većoj veličini, kao fotografiju.
+
+## D-158 · 5.11.2026 · usvojeno · Karusel do 20 slajdova
+
+Odluka:
+
+- Karusel ima do 20 slajdova umesto 10 (`SLIDES_MAX`), u Vizuelnom identitetu, „Novoj objavi”, Studiju, tokovima, tekstu slajdova i zapisu dizajna objave. Instagram API prima 20 (zvanična dokumentacija: „Carousels are limited to 20 images, videos, or a mix of the two.”), LinkedIn 20 slika ili PDF, TikTok 35 fotografija. Priča ostaje do pet slajdova.
+- Facebook ostaje na 10 slika po objavi, jer granica za objavu sa više fotografija nije jasno objavljena, a 10 radi. Duži karusel više ne pada na proveri: Facebook dobija prvih devet slajdova i poslednji, da ostanu naslovna i poziv na akciju (`firstAndLast` u `config/platforms.ts`), kao Pinterest u D-152.
+
+Razlog: testerka je tražila više od 10 slajdova po objavi.

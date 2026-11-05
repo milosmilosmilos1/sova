@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { SLIDES_MAX } from '@/lib/visuals/design/catalog'
 
 /**
  * Tekst na slikama (D-129). Granice su šire od onoga što Sova piše sama (naslov do 60 znakova),
@@ -17,7 +18,7 @@ export const slideTextSchema = z.object({
 /** Čuvanje: tekst svih slajdova redom, za verziju objave koju je korisnik video. */
 export const slideTextSaveSchema = z.object({
   version: z.number().int().min(1),
-  slides: z.array(slideTextSchema).min(1).max(10),
+  slides: z.array(slideTextSchema).min(1).max(SLIDES_MAX),
 })
 export type SlideTextSaveInput = z.infer<typeof slideTextSaveSchema>
 

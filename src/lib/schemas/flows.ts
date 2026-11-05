@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { contentLocaleSchema } from '@/config/locales'
-import { PHOTO_SOURCES, STYLE_IDS } from '@/lib/visuals/design/catalog'
+import { PHOTO_SOURCES, SLIDES_MAX, STYLE_IDS } from '@/lib/visuals/design/catalog'
 
 /** Tokovi automatizacije (D-108, faza 3). */
 export const FLOW_FORMATS = ['carousel', 'single', 'story'] as const
@@ -21,7 +21,7 @@ const fields = {
   ctaMode: z.enum(['none', 'dm']),
   format: z.enum(FLOW_FORMATS),
   styleId: z.enum(STYLE_IDS).nullable(),
-  slides: z.number().int().min(1).max(10).nullable(),
+  slides: z.number().int().min(1).max(SLIDES_MAX).nullable(),
   photoSource: z.enum(PHOTO_SOURCES).nullable(),
   /** galerija (D-114): fotografije samo iz ove kategorije; null = cela galerija */
   galleryCategoryId: z.uuid().nullable(),

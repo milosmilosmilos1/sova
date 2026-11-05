@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+import { SLIDES_MAX } from '@/lib/visuals/design/catalog'
+
 import { WRITE_IN } from '@/config/locales'
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 
@@ -17,7 +19,7 @@ export interface CarouselPromptInput {
   topic: string
   cta: string | null
   format: DesignedFormat
-  /** ukupan broj slajdova (karusel 3–10, priča 1–5, jedna objava 1) */
+  /** ukupan broj slajdova (karusel 3–20, priča 1–5, jedna objava 1) */
   slides: number
   platforms: SocialPlatform[]
   includeHashtags: boolean
@@ -36,7 +38,7 @@ export const carouselSlideSchema = z.object({
 })
 
 export const carouselOutputSchema = z.object({
-  slides: z.array(carouselSlideSchema).min(1).max(10),
+  slides: z.array(carouselSlideSchema).min(1).max(SLIDES_MAX),
   caption: z.string(),
   /** kratak opis za X (do 250 znakova) */
   short_caption: z.string(),

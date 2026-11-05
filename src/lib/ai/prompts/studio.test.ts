@@ -80,11 +80,11 @@ describe('studio: odluka modela', () => {
 
   it('nova objava: vrsta koju mreže ne primaju postaje auto, slajdovi u granicama, fotografije u dizajn', () => {
     const out = normalizeStudioDecision(
-      decision({ action: 'create', brief: { ...brief, format: 'link', slides: 14 }, suggestions: [] }),
+      decision({ action: 'create', brief: { ...brief, format: 'link', slides: 25 }, suggestions: [] }),
       { ...ctx, hasPhotos: true, allowedFormats: [...ctx.allowedFormats] },
     )
     expect(out.action).toBe('create')
-    expect(out.brief).toMatchObject({ format: 'auto', slides: 10, photos: 'in_design' })
+    expect(out.brief).toMatchObject({ format: 'auto', slides: 20, photos: 'in_design' })
     const noPhotos = normalizeStudioDecision(
       decision({ action: 'create', brief: { ...brief, photos: 'as_is' } }),
       { ...ctx, allowedFormats: [...ctx.allowedFormats] },

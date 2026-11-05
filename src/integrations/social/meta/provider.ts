@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { PLATFORMS, validateText } from '@/config/platforms'
+import { firstAndLast, PLATFORMS, validateText } from '@/config/platforms'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import { aspectFits, aspectLabel } from '@/lib/media/crop'
@@ -343,7 +343,9 @@ export class MetaProvider implements SocialProvider {
     if (isStory(input)) return this.storyProblems(input)
     const text = validateText(platform, input.text)
     const problems = [...text.problems]
-    if (input.media.length > c.imageMaxPerPost)
+    // Facebook dobija prvih devet slika i poslednju (D-158), pa duži karusel slika nije greška
+    const trimmed = platform === 'facebook' && !input.media.some(isVideo)
+    if (input.media.length > c.imageMaxPerPost && !trimmed)
       problems.push(`${c.label} dozvoljava najviše ${c.imageMaxPerPost} slika ili videa po objavi.`)
     problems.push(...this.videoProblems(platform, input.media))
     for (const m of input.media) {
@@ -451,8 +453,9 @@ export class MetaProvider implements SocialProvider {
       })
       postId = r.post_id ?? r.id
     } else {
+      // karusel duži od 10 slika: prvih devet i poslednja (D-158)
       const ids = await inChunks(
-        input.media,
+        firstAndLast(input.media, PLATFORMS.facebook.imageMaxPerPost),
         5,
         async (m) =>
           (

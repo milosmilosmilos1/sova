@@ -26,6 +26,15 @@ export interface PlatformConstraints {
  * Ograničenja mreža. Vrednosti su iz zvanične dokumentacije pročitane 23.10.2026
  * (docs/INTEGRATIONS.md); svaka se ponovo proverava pri implementaciji mreže u fazi 8.
  */
+/**
+ * Duži karusel na mreži sa manjom granicom (Facebook 10, D-158): prvi slajdovi i poslednji, da ostanu
+ * naslovna i poziv na akciju.
+ */
+export function firstAndLast<T>(items: readonly T[], max: number): T[] {
+  if (items.length <= max) return [...items]
+  return [...items.slice(0, max - 1), items.at(-1)!]
+}
+
 export const PLATFORMS: Record<SocialPlatform, PlatformConstraints> = {
   facebook: {
     label: 'Facebook',

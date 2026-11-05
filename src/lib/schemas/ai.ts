@@ -47,7 +47,7 @@ export const composeSchema = z.object({
   /** `poll` (D-151): anketa za LinkedIn i X, samo u „Nova objava”, ne i u Autopilotu i planu */
   format: z.enum([...POST_FORMATS, 'poll', 'auto']).default('auto'),
   source: z.enum(['auto', 'unsplash', 'pexels', 'template']).default('auto'),
-  mediaAssetIds: z.array(z.uuid()).max(10).optional(),
+  mediaAssetIds: z.array(z.uuid()).max(SLIDES_MAX).optional(),
   /** fotografije iz biblioteke koje stil brenda crta na slajdovima (D-116, priložene u Studiju) */
   photoAssetIds: z.array(z.uuid()).max(4).optional(),
   linkUrl: z.url().max(2048).optional(),

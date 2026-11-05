@@ -288,6 +288,26 @@ describe('Meta povezivanje', () => {
     expect(JSON.parse(feed.body['attached_media[1]']!)).toHaveProperty('media_fbid')
     expect(r3.externalId).toMatch(/^page-1_/)
 
+    // karusel od 12 slika (D-158): provera ga ne odbija, a Facebook dobija prvih devet i poslednju
+    const long: NormalizedPost = {
+      ...photo,
+      media: Array.from({ length: 12 }, (_, i) => ({
+        ...photo.media[0]!,
+        url: `https://cdn.test/s${i + 1}.jpg`,
+      })),
+    }
+    expect(provider.validatePost(long, fbRef).ok).toBe(true)
+    const before = metaState.publishes.length
+    await provider.publish(long, fbRef, fbToken)
+    const uploads = metaState.publishes
+      .slice(before)
+      .filter((p) => p.path === 'page-1/photos')
+      .map((p) => p.body.url)
+    expect(uploads).toHaveLength(10)
+    expect(uploads).toContain('https://cdn.test/s9.jpg')
+    expect(uploads).toContain('https://cdn.test/s12.jpg')
+    expect(uploads).not.toContain('https://cdn.test/s10.jpg')
+
     const ig: NormalizedPost = { ...photo, text: 'IG objava #sova', isAiGenerated: true }
     const r4 = await provider.publish(ig, igRef, fbToken)
     expect(r4.externalId).toMatch(/^ig-post-/)

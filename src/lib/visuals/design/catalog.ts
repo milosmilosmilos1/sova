@@ -65,5 +65,6 @@ export const POST_SIZES = ['portrait', 'square'] as const
 export type PostSize = (typeof POST_SIZES)[number]
 
 export const SLIDES_MIN = 3
-export const SLIDES_MAX = 10
+/** karusel do 20 slajdova, koliko prima Instagram API (D-158) */
+export const SLIDES_MAX = 20
 export const SLIDES_DEFAULT = 5
