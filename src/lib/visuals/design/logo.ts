@@ -1,6 +1,9 @@
 import sharp from 'sharp'
 
 import { toDataUri } from '../render'
+import { ICON_MAX_ASPECT } from '@/lib/brands/swatch'
+
+import { contrast } from './kit'
 import type { BrandLogo } from './types'
 
 /**
@@ -196,4 +199,26 @@ function inkColors(data: Uint8Array): Array<{ color: string; share: number }> {
     .sort((a, b) => b.n - a.n)
     .slice(0, 4)
     .map((g) => ({ color: hex(g.r / g.n, g.g / g.n, g.b / g.n), share: g.n / total }))
+}
+
+/**
+ * Znak brenda u aplikaciji (D-155): kvadratan logo kao PNG ikonica. Pločica ide preko cele ikonice,
+ * a znak bez pozadine stoji na beloj ili tamnoj podlozi, kojoj god je kontrast sa bojom znaka veći.
+ * Širok natpis na 20 px nije čitljiv, pa vraća `null` (aplikacija tada crta početno slovo).
+ */
+export async function brandIconPng(logo: BrandLogo, size = 96): Promise<Buffer | null> {
+  if (logo.aspect > ICON_MAX_ASPECT || logo.aspect < 1 / ICON_MAX_ASPECT) return null
+  const bytes = Buffer.from(logo.src.split(',')[1] ?? '', 'base64')
+  if (logo.tile) return sharp(bytes).resize(size, size, { fit: 'cover' }).png().toBuffer()
+  const ink = logo.inks[0]?.color ?? '#111827'
+  const background = contrast(ink, '#FFFFFF') >= contrast(ink, '#0F172A') ? '#FFFFFF' : '#0F172A'
+  const inner = Math.round(size * 0.76)
+  const mark = await sharp(bytes)
+    .resize(inner, inner, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+    .png()
+    .toBuffer()
+  return sharp({ create: { width: size, height: size, channels: 4, background } })
+    .composite([{ input: mark, gravity: 'center' }])
+    .png()
+    .toBuffer()
 }

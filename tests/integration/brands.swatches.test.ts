@@ -3,7 +3,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 
 import { POST as workspacesPost } from '@/app/api/workspaces/route'
 import { getViewerFromRequest, type Viewer } from '@/lib/auth/viewer'
-import { brandSwatch } from '@/lib/brands/swatch'
+import { GET as logoGet } from '@/app/api/brands/[id]/logo/route'
+import { brandLogoUrl, brandSwatch } from '@/lib/brands/swatch'
+import { storeServerImage } from '@/services/visuals/store'
 import { listBrandSwatches } from '@/services/brands'
 
 import { admin, call, createTestUser, deleteTestUser, type TestUser } from './helpers'
@@ -87,7 +89,7 @@ describe('boje brendova u biraču (D-137)', () => {
     const archived = await brand(ws.workspaceId, 'Arhiviran', { deleted_at: new Date().toISOString() })
 
     const swatches = await listBrandSwatches(viewer, ws.workspaceId)
-    expect(swatches[ws.brandId]).toEqual({ color: '#990000', ink: '#ffffff' })
+    expect(swatches[ws.brandId]).toEqual({ color: '#990000', ink: '#ffffff', logo: null })
     expect(swatches[site]?.color).toBe('#F26B1D')
     expect(swatches[plain]).toEqual(brandSwatch(plain))
     expect(swatches[archived]).toBeUndefined()
@@ -107,5 +109,75 @@ describe('boje brendova u biraču (D-137)', () => {
     } finally {
       await deleteTestUser(stranger)
     }
+  })
+})
+
+describe('logo u znaku brenda (D-155)', () => {
+  it('kvadratan logo daje ikonicu u znaku i na putanji, širok natpis ostaje slovo', async () => {
+    const ws = await workspace('Agencija logoa')
+    const sharp = (await import('sharp')).default
+    const square = await sharp({ create: { width: 256, height: 256, channels: 3, background: '#0A2540' } })
+      .composite([
+        {
+          input: await sharp({ create: { width: 120, height: 80, channels: 3, background: '#FFFFFF' } })
+            .png()
+            .toBuffer(),
+          left: 60,
+          top: 90,
+        },
+      ])
+      .png()
+      .toBuffer()
+    const wide = await sharp({ create: { width: 800, height: 120, channels: 3, background: '#FFFFFF' } })
+      .composite([
+        {
+          input: await sharp({ create: { width: 700, height: 80, channels: 3, background: '#201E1D' } })
+            .png()
+            .toBuffer(),
+          left: 50,
+          top: 20,
+        },
+      ])
+      .png()
+      .toBuffer()
+    const store = (bytes: Buffer, brandId: string) =>
+      storeServerImage({
+        workspaceId: ws.workspaceId,
+        brandId,
+        bytes,
+        mimeType: 'image/png',
+        source: 'upload',
+        folder: 'logos',
+        uploadedBy: user.id,
+      })
+    const squareAsset = await store(square, ws.brandId)
+    await admin
+      .from('brands')
+      .update({ design: { logoAssetId: squareAsset.id } })
+      .eq('id', ws.brandId)
+    const wideBrand = await brand(ws.workspaceId, 'Natpis')
+    const wideAsset = await store(wide, wideBrand)
+    await admin.from('brands').update({ logo_asset_id: wideAsset.id }).eq('id', wideBrand)
+
+    const swatches = await listBrandSwatches(viewer, ws.workspaceId)
+    expect(swatches[ws.brandId]!.logo).toBe(brandLogoUrl(ws.brandId, squareAsset.id))
+    expect(swatches[wideBrand]!.logo).toBeNull()
+
+    // putanja vraća PNG, pa se čita bez `call` (koji očekuje JSON)
+    const get = (id: string) =>
+      logoGet(
+        new NextRequest(`http://localhost:3001/api/brands/${id}/logo`, {
+          headers: { authorization: `Bearer ${user.token}`, origin: 'http://localhost:3001' },
+        }),
+        { params: Promise.resolve({ id }) },
+      )
+    const ok = await get(ws.brandId)
+    expect(ok.status).toBe(200)
+    expect(ok.headers.get('content-type')).toBe('image/png')
+    expect(await sharp(Buffer.from(await ok.arrayBuffer())).metadata()).toMatchObject({
+      width: 96,
+      height: 96,
+    })
+    expect((await get(wideBrand)).status).toBe(404)
   })
 })

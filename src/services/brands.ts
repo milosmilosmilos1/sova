@@ -5,7 +5,7 @@ import { randomUUID } from 'node:crypto'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
-import { brandSwatch, type BrandSwatch } from '@/lib/brands/swatch'
+import { brandLogoUrl, brandSwatch, ICON_MAX_ASPECT, type BrandSwatch } from '@/lib/brands/swatch'
 import { logger } from '@/lib/logger'
 import { storedDesignSchema } from '@/lib/schemas/design'
 import type { CreateBrandInput } from '@/lib/schemas/workspace'
@@ -50,8 +50,9 @@ export async function listBrands(viewer: Viewer, workspaceId: string): Promise<B
 
 /**
  * Boja svakog brenda za birač brenda, listu brendova i početnu (D-137): izabrana u Vizuelnom identitetu,
- * inače sa sajta (trenutni profil brenda), inače rezervna. Jedan upit; greška ne obara stranu, jer
- * `brandSwatch` i bez podataka daje boju.
+ * inače sa sajta (trenutni profil brenda), inače rezervna. Greška ne obara stranu, jer `brandSwatch` i
+ * bez podataka daje boju. Brend sa kvadratnim logoom dobija i ikonicu logoa (D-155), istim redom kao
+ * slajdovi: sopstveni logo, logo sa sajta, logo brenda.
  */
 export async function listBrandSwatches(
   viewer: Viewer,
@@ -59,7 +60,9 @@ export async function listBrandSwatches(
 ): Promise<Record<string, BrandSwatch>> {
   const { data, error } = await viewer.supabase
     .from('brands')
-    .select('id, design, brand_profiles(colors:data->visual->colors->value)')
+    .select(
+      'id, design, logo_asset_id, brand_profiles(colors:data->visual->colors->value, logo:data->visual->logo->value->>asset_id)',
+    )
     .eq('workspace_id', workspaceId)
     .is('deleted_at', null)
     .eq('brand_profiles.is_current', true)
@@ -70,14 +73,43 @@ export async function listBrandSwatches(
   const rows = (data ?? []) as unknown as Array<{
     id: string
     design: unknown
-    brand_profiles: Array<{ colors: { primary?: unknown } | null }>
+    logo_asset_id: string | null
+    brand_profiles: Array<{ colors: { primary?: unknown } | null; logo: string | null }>
   }>
+  const logoOf = new Map(
+    rows.map((row) => {
+      const stored = storedDesignSchema.safeParse(row.design ?? {})
+      const custom = stored.success ? stored.data.logoAssetId : undefined
+      return [row.id, custom ?? row.brand_profiles[0]?.logo ?? row.logo_asset_id ?? null]
+    }),
+  )
+  const ids = [...new Set([...logoOf.values()].filter((id): id is string => Boolean(id)))]
+  // širok natpis na 20 px nije čitljiv: ikonica samo za kvadratan logo (veličina iz biblioteke)
+  const square = new Set<string>()
+  if (ids.length) {
+    const { data: assets } = await viewer.supabase
+      .from('media_assets')
+      .select('id, width, height')
+      .in('id', ids)
+    for (const a of assets ?? []) {
+      const aspect = a.width && a.height ? a.width / a.height : 1
+      if (aspect <= ICON_MAX_ASPECT && aspect >= 1 / ICON_MAX_ASPECT) square.add(a.id)
+    }
+  }
   return Object.fromEntries(
     rows.map((row) => {
       const stored = storedDesignSchema.safeParse(row.design ?? {})
       const site = row.brand_profiles[0]?.colors?.primary
       const chosen = stored.success ? stored.data.colors?.primary : undefined
-      return [row.id, brandSwatch(row.id, chosen ?? (typeof site === 'string' ? site : null))]
+      const logo = logoOf.get(row.id)
+      return [
+        row.id,
+        brandSwatch(
+          row.id,
+          chosen ?? (typeof site === 'string' ? site : null),
+          logo && square.has(logo) ? brandLogoUrl(row.id, logo) : null,
+        ),
+      ]
     }),
   )
 }

@@ -18,7 +18,7 @@ import {
 import { contrast, mix, readable } from '@/lib/visuals/design/kit'
 import type { LookId } from '@/lib/visuals/design/looks'
 import type { BrandLogo, DesignColors } from '@/lib/visuals/design/types'
-import { prepareBrandLogo } from '@/lib/visuals/design/logo'
+import { brandIconPng, prepareBrandLogo } from '@/lib/visuals/design/logo'
 import { getCurrentProfileRow } from '@/services/brand-brain/profile'
 import { getBrand, type BrandRow } from '@/services/brands'
 import { downloadAsset, getAsset } from '@/services/media'
@@ -122,6 +122,13 @@ export async function resolveDesign(
     logoSource: stored.logoAssetId ? 'custom' : (profileLogo ?? brand.logo_asset_id) ? 'site' : null,
     saved: { colors: Boolean(stored.colors), handle: stored.handle !== undefined },
   }
+}
+
+/** Ikonica logoa za znak brenda u aplikaciji (D-155); `null` kad brend nema kvadratan logo. */
+export async function brandIcon(viewer: Viewer, brandId: string): Promise<Buffer | null> {
+  const design = await getDesignView(viewer, brandId)
+  const logo = await brandLogo(design.logoAssetId)
+  return logo ? brandIconPng(logo) : null
 }
 
 export async function getDesignView(viewer: Viewer, brandId: string): Promise<ResolvedDesign> {

@@ -1340,3 +1340,13 @@ Odluka:
 - Proba sa pravim Gemini-jem na 25 pravih snimaka: sve tačno. Četiri Klima24 snimka koje je vlasnik video su odbijena, kao i snimci sa ljudima istočnoazijskog izgleda; žene i stariji muškarac evropskog izgleda prolaze, a ljudi izdaleka i silueta su `unclear`. Grupa od 12 do 13 slika traje 5 do 6 s.
 
 Razlog: vlasnik je na Klima24 videu video tamnoputu ženu i traži da Sova nikad ne uzme fotografiju ili snimak sa ljudima koji nisu evropskog izgleda.
+
+## D-155 · 5.11.2026 · usvojeno · Logo brenda u biraču brenda
+
+Odluka:
+
+- Znak brenda u biraču brenda, na listi brendova i na početnoj je ikonica logoa kad brend ima kvadratan logo (odnos stranica do 1,6), istim redom kao slajdovi: sopstveni logo, logo sa sajta, logo brenda. Širok natpis (TangerineSEO) je na 20 px nečitljiv, pa takav brend i brend bez logoa zadržavaju početno slovo na boji brenda (D-137).
+- Ikonicu crta server (`GET /api/brands/{id}/logo`, PNG 96 × 96, `brandIconPng` u `lib/visuals/design/logo.ts`) iz logoa pripremljenog za slajdove: pločica (D-153) ide preko cele ikonice, a znak bez pozadine stoji na beloj ili tamnoj podlozi, kojoj god je kontrast sa bojom znaka veći. Adresa nosi oznaku logoa, pa se kešira nedelju dana i menja se čim brend izabere drugi logo.
+- Da li je logo kvadratan, `listBrandSwatches` čita iz veličine u biblioteci, u istom prolazu kao boje; ikonica koja ne stigne ostavlja slovo.
+
+Razlog: vlasnik je tražio logoe u biraču brenda umesto slova.

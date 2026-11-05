@@ -2,7 +2,7 @@ import sharp from 'sharp'
 import { describe, expect, it } from 'vitest'
 
 import { logoBox, logoFor } from './kit'
-import { prepareBrandLogo } from './logo'
+import { brandIconPng, prepareBrandLogo } from './logo'
 import type { BrandLogo } from './types'
 
 /** Natpis kao TangerineSEO: tamna i narandžasta slova sa znakom, na beloj pozadini (JPG). */
@@ -121,6 +121,42 @@ describe('logo za slajd (D-134)', () => {
     expect(logoFor(logo, '#FFFFFF', '#0B2447')).toBe(logo.src)
     const jpg = await sharp(Buffer.from(WORDMARK)).jpeg({ quality: 92 }).toBuffer()
     expect((await prepareBrandLogo(jpg, 'image/jpeg'))!.tile).toBe(false)
+  })
+
+  it('ikonica brenda (D-155): pločica preko cele ikonice, znak na podlozi sa većim kontrastom, natpis bez ikonice', async () => {
+    const tile = Buffer.from(`<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512">
+<rect width="512" height="512" rx="110" fill="#0A2540"/><rect x="110" y="190" width="240" height="150" fill="#FFFFFF"/>
+<circle cx="400" cy="130" r="45" fill="#2F6BFF"/></svg>`)
+    const tileIcon = await pixels(
+      `data:image/png;base64,${(await brandIconPng((await prepareBrandLogo(tile, 'image/svg+xml'))!))!.toString('base64')}`,
+    )
+    expect([tileIcon.width, tileIcon.height]).toEqual([96, 96])
+    // gornja ivica pločice je njena tamnoplava boja (uglovi su providni, kao kod favicona)
+    expect([...tileIcon.at(48, 3)].slice(0, 3)).toEqual([10, 37, 64])
+
+    // zlatan znak na providnoj pozadini (kao BelgradeMidnight): podloga je tamna, jer zlato na beloj slabo odskače
+    const mark = await sharp({
+      create: { width: 300, height: 300, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } },
+    })
+      .composite([
+        {
+          input: await sharp({ create: { width: 200, height: 200, channels: 4, background: '#E8C46A' } })
+            .png()
+            .toBuffer(),
+          left: 50,
+          top: 50,
+        },
+      ])
+      .png()
+      .toBuffer()
+    const markIcon = await pixels(
+      `data:image/png;base64,${(await brandIconPng((await prepareBrandLogo(mark, 'image/png'))!))!.toString('base64')}`,
+    )
+    expect([...markIcon.at(1, 1)].slice(0, 3)).toEqual([15, 23, 42])
+    expect(markIcon.at(48, 48)[0]).toBeGreaterThan(200)
+
+    const jpg = await sharp(Buffer.from(WORDMARK)).jpeg({ quality: 92 }).toBuffer()
+    expect(await brandIconPng((await prepareBrandLogo(jpg, 'image/jpeg'))!)).toBeNull()
   })
 
   it('veličina po obliku: natpis 3:1 je visok kao zadato, znak malo viši, dugačak natpis ne prelazi 4,2 visine', () => {
