@@ -12,22 +12,11 @@ export const THEME_VIDEO = { width: 1080, height: 1920, fps: 30 } as const
 const MAX_TEXT_SCENES = 4
 
 /**
- * Stilovi koji u videu puštaju snimak preko celog kadra (D-135): teme imaju svoj raspored za video,
- * a ostali već crtaju fotografiju preko celog slajda.
+ * Stilovi koji u videu puštaju snimak preko celog kadra (D-135) i imaju video raspored sa tekstom iznad
+ * natpisa mreže (D-163). Ostali stilovi sa fotografijom preko celog slajda (Naslovna, Duoton, Događaj,
+ * Snimak, Mim) drže tekst pri dnu, gde ga pokriva ime naloga, pa njihov video ide u Posteru.
  */
-const FULL_FRAME_VIDEO: readonly StyleId[] = [
-  'poster',
-  'split',
-  'sticker',
-  'aurora',
-  'blocks',
-  'framed',
-  'cover',
-  'duotone',
-  'event',
-  'snap',
-  'meme',
-]
+const FULL_FRAME_VIDEO: readonly StyleId[] = ['poster', 'split', 'sticker', 'aurora', 'blocks', 'framed']
 
 /**
  * Stil videa: stil teme kad pušta snimak preko celog kadra, inače Poster. Stil sa malom fotografijom
@@ -38,10 +27,11 @@ export function videoStyleFor(styleId: StyleId): StyleId {
 }
 
 /**
- * Raspored video kadra: 2 je snimak preko celog kadra, 3 i tekst u donjoj četvrtini (D-135). Video nacrtan
- * starijim rasporedom nudi se za usklađivanje.
+ * Raspored video kadra: 2 je snimak preko celog kadra, 3 i tekst u donjoj četvrtini (D-135), 4 tekst
+ * iznad donjih 30% (natpisi mreže) i krupniji opis (D-163). Video nacrtan starijim rasporedom nudi se za
+ * usklađivanje.
  */
-export const VIDEO_LAYOUT = 3
+export const VIDEO_LAYOUT = 4
 
 /**
  * Kadrovi od slajdova: svaki kadar sa tekstom crta se kao naslovni slajd teme, jer naslovni slajd

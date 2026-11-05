@@ -9,6 +9,8 @@ import {
   handleText,
   icon,
   img,
+  layered,
+  logoFor,
   mix,
   pointNumber,
   px,
@@ -17,8 +19,7 @@ import {
   swipeHint,
   text,
   topBar,
-  layered,
-  logoFor,
+  VIDEO_SAFE_BOTTOM,
 } from './kit'
 import type { DesignContext, StyleDef } from './types'
 
@@ -124,11 +125,11 @@ const poster: StyleDef = {
       text(
         {
           fontFamily: ctx.fonts.body,
-          fontSize: px(30 * s),
-          lineHeight: 1.4,
+          fontSize: px((ctx.video ? 38 : 30) * s),
+          lineHeight: ctx.video ? 1.3 : 1.4,
           color: alpha(fg, 0.88),
-          width: px(W(ctx, p) * 0.85),
-          ...(ctx.video ? { lineClamp: 2 } : {}),
+          width: px(W(ctx, p) * (ctx.video ? 1 : 0.85)),
+          ...(ctx.video ? { lineClamp: 3 } : {}),
         },
         slide.body,
       ),
@@ -184,7 +185,14 @@ const poster: StyleDef = {
           })
         : shade(ctx, 0.15, 0.85),
       topBar(ctx, alpha(fg, 0.85)),
-      col({ gap: px(20 * s) }, [...words, bottomRow]),
+      // u videu tekst stoji odmah iznad donjeg pojasa, koji ostaje snimku i natpisima mreže (D-163)
+      col(
+        {
+          gap: px(20 * s),
+          ...(ctx.video ? { marginBottom: px(Math.max(0, ctx.size.height * VIDEO_SAFE_BOTTOM - p)) } : {}),
+        },
+        [...words, bottomRow],
+      ),
     ])
   },
 }
@@ -504,7 +512,7 @@ const framed: StyleDef = {
       swipeHint(ctx, strip),
     ])
     if (ctx.video) {
-      // kadar videa (D-135): snimak preko celog kadra u belom okviru, traka i tekst u donjoj četvrtini
+      // kadar videa (D-135): snimak preko celog kadra u belom okviru, traka i tekst iznad natpisa mreže (D-163)
       const inset = 24 * s
       const vp = 56 * s
       const vTitle = fit(slide.title, {
@@ -559,15 +567,16 @@ const framed: StyleDef = {
           text(
             {
               fontFamily: ctx.fonts.body,
-              fontSize: px(26 * s),
-              lineHeight: 1.4,
+              fontSize: px(34 * s),
+              lineHeight: 1.3,
               color: mix(readable(bg), bg, 0.25),
-              lineClamp: 2,
+              lineClamp: 3,
             },
             slide.body,
           ),
           bottomRow,
         ]),
+        box({ minHeight: px(Math.max(0, ctx.size.height * VIDEO_SAFE_BOTTOM - vp)) }),
       ])
     }
     return root(ctx, { backgroundColor: bg, padding: px(p), justifyContent: 'space-between' }, [

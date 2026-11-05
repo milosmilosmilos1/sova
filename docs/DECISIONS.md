@@ -1411,3 +1411,14 @@ Odluka:
 - Ograničenja Figme: čitanje fajla i izvoz slike su najstrože ograničeni zahtevi (mesto bez prava uređivanja oko 20 mesečno, sa pravom uređivanja 10 do 20 u minuti); greška 429 kaže korisniku da je Figma ograničila uvoz.
 
 Razlog: testerka je tražila Figmu pored Canve; vlasnik je odabrao uvoz okvira i brend iz Figme kao prvi korak, a Figma šablone kao mogući sledeći.
+
+## D-163 · 5.11.2026 · usvojeno · Tekst u videu iznad natpisa mreže, krupniji opis
+
+Odluka:
+
+- Na Reels-u, TikTok-u i Shorts-u donji deo kadra pokrivaju ime naloga, opis i „Prikaži više”, pa je tekst teme (pri dnu kadra, D-135) bio ispod njih. Sada donjih 30% kadra (`VIDEO_SAFE_BOTTOM` u `kit.ts`) ostaje snimku i natpisima mreže, a blok sa tekstom stoji odmah iznad, u svih šest video rasporeda (Pola-pola, Nalepnica, Aurora, Blokovi, Poster, Okvir). Traka Pola-pola više nije zakačena za samo dno, a senka pri dnu je viša, da se tekst i natpisi mreže čitaju.
+- Opis ispod naslova je krupniji: 36 umesto 27 (Poster 38 umesto 30, Okvir 34 umesto 26), do tri reda umesto dva. Naslov ostaje iste veličine.
+- Stilovi sa fotografijom preko celog slajda bez svog video rasporeda (Naslovna, Duoton, Događaj, Snimak, Mim) drže tekst pri dnu, pa njihov video ide u Posteru.
+- Raspored videa je sada 4 (`VIDEO_LAYOUT`): video nacrtan ranije nudi se u „Uskladi sa temom”, a MP4 posle toga pravi pregledač kao i do sada.
+
+Razlog: vlasnik je na Adaptiko videu video da natpisi Facebook-a pokrivaju tekst i tražio da se tekst podigne i da opis bude krupniji.

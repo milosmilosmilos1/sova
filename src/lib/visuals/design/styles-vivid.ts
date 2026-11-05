@@ -17,10 +17,11 @@ import {
   px,
   readable,
   sc,
+  type Style,
   swipeHint,
   text,
   topBar,
-  type Style,
+  VIDEO_SAFE_BOTTOM,
 } from './kit'
 import type { DesignContext, Slide, StyleDef } from './types'
 
@@ -114,17 +115,19 @@ function videoFrame(ctx: DesignContext, p: number, decor: Child[], content: Chil
       left: 0,
       bottom: 0,
       width: px(Wd),
-      height: px(Hd * 0.32),
-      backgroundImage: 'linear-gradient(0deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0) 100%)',
+      height: px(Hd * 0.62),
+      backgroundImage: 'linear-gradient(0deg, rgba(0,0,0,0.55) 0%, rgba(0,0,0,0.35) 45%, rgba(0,0,0,0) 100%)',
     }),
     ...decor,
     topBar(ctx, '#FFFFFF'),
     box({ flexGrow: 1 }),
     ...content,
+    // donji pojas ostaje snimku i natpisima mreže (D-163)
+    box({ minHeight: px(Math.max(0, Hd * VIDEO_SAFE_BOTTOM - p)) }),
   ])
 }
 
-/** Naslov u kadru videa: dva-tri reda, da sav tekst stane u donju četvrtinu ekrana (D-135). */
+/** Naslov u kadru videa: dva-tri reda, iznad pojasa za natpise mreže (D-135, D-163). */
 function videoTitle(ctx: DesignContext, title: string, width: number): number {
   return fit(title, {
     max: 76 * sc(ctx),
@@ -136,16 +139,16 @@ function videoTitle(ctx: DesignContext, title: string, width: number): number {
   })
 }
 
-/** Opis u kadru videa: manja slova i najviše dva reda (D-135). */
+/** Opis u kadru videa: krupan da se čita na telefonu, najviše tri reda (D-135, D-163). */
 function videoBody(ctx: DesignContext, value: string | null | undefined, color: string, width: number) {
   return text(
     {
       fontFamily: ctx.fonts.body,
-      fontSize: px(27 * sc(ctx)),
-      lineHeight: 1.35,
+      fontSize: px(36 * sc(ctx)),
+      lineHeight: 1.3,
       color,
       width: px(width),
-      lineClamp: 2,
+      lineClamp: 3,
     },
     value,
   )
@@ -463,7 +466,7 @@ const split: StyleDef = {
       boxShadow: `0 ${px(10 * s)} ${px(24 * s)} rgba(0,0,0,0.25)`,
     }
     if (ctx.video) {
-      // kadar videa (D-135): snimak preko celog kadra, panel u boji podloge u donjoj četvrtini
+      // kadar videa (D-135): snimak preko celog kadra, traka u boji podloge iznad natpisa mreže (D-163)
       const vp = 56 * s
       return videoFrame(
         ctx,
@@ -474,7 +477,7 @@ const split: StyleDef = {
             {
               position: 'absolute',
               left: 0,
-              bottom: 0,
+              bottom: px(Hd * VIDEO_SAFE_BOTTOM),
               width: px(Wd),
               backgroundColor: t.bg,
               color: t.fg,

@@ -35,6 +35,12 @@ export const px = (n: number) => `${Math.round(n)}px`
 /** Razmera prema širini 1080 (priča i kvadrat imaju istu širinu). */
 export const sc = (ctx: DesignContext) => ctx.size.width / 1080
 
+/**
+ * Donji deo kadra videa koji pokrivaju natpisi mreže (ime naloga, opis, „Prikaži više” na Reels-u,
+ * TikTok-u i Shorts-u): tekst teme staje iznad njega (D-163).
+ */
+export const VIDEO_SAFE_BOTTOM = 0.3
+
 let widthScale = 1
 
 /**
