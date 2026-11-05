@@ -21,6 +21,8 @@ export const TEST_SECRETS: Record<string, string> = {
   PEXELS_API_KEY: 'test-pexels-key-0123456789',
   CANVA_CLIENT_ID: 'test-canva-client',
   CANVA_CLIENT_SECRET: 'test-canva-secret-0123456789',
+  FIGMA_CLIENT_ID: 'test-figma-client',
+  FIGMA_CLIENT_SECRET: 'test-figma-secret-0123456789',
   META_APP_ID: '1234567890123',
   META_APP_SECRET: 'test-meta-app-secret-0123456789',
   LINKEDIN_CLIENT_ID: 'test-linkedin-client',

@@ -62,6 +62,9 @@ export function buildServerEnvSchema(mode: EnvMode) {
     PEXELS_API_KEY: z.string().min(10).optional(),
     CANVA_CLIENT_ID: prodOnly(z.string().min(5)),
     CANVA_CLIENT_SECRET: prodOnly(z.string().min(10)),
+    // uvoz iz Figme (D-161); bez ključeva Sova ne nudi Figmu
+    FIGMA_CLIENT_ID: z.string().min(5).optional(),
+    FIGMA_CLIENT_SECRET: z.string().min(10).optional(),
     FIRECRAWL_API_KEY: z.string().optional(),
 
     // Obaveštenja na telefonu (D-118, Web Push); bez ključeva Sova ne nudi obaveštenja na uređaju

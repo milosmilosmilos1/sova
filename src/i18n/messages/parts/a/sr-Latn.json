@@ -206,6 +206,19 @@
       "expired": "veza je istekla",
       "notConnected": "nije povezano",
       "connect": "Poveži Canvu"
+    },
+    "figma": {
+      "description": "Okvire iz Figma fajla uvozite kao slike i slajdove, a boje, fontove i logo kao temu brenda. Veza je lična (po korisniku), Sova samo čita fajlove.",
+      "connectedNotice": "Figma je povezana.",
+      "deniedNotice": "Povezivanje je otkazano u Figmi.",
+      "checking": "Proveravam vezu…",
+      "loadFailed": "Status Figme nije učitan.",
+      "notConfigured": "Figma integracija još nije podešena na serveru (ključevi aplikacije).",
+      "connected": "povezano",
+      "disconnect": "Prekini vezu",
+      "expired": "veza je istekla",
+      "notConnected": "nije povezano",
+      "connect": "Poveži Figmu"
     }
   },
   "security": {

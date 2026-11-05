@@ -29,6 +29,7 @@ export const configured = {
   pexels: Boolean(env.PEXELS_API_KEY),
   push: Boolean(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY),
   canva: Boolean(env.CANVA_CLIENT_ID && env.CANVA_CLIENT_SECRET),
+  figma: Boolean(env.FIGMA_CLIENT_ID && env.FIGMA_CLIENT_SECRET),
   google: Boolean(env.GOOGLE_CLIENT_ID && env.GOOGLE_CLIENT_SECRET),
   meta: Boolean(env.META_APP_ID && env.META_APP_SECRET),
   linkedin: Boolean(env.LINKEDIN_CLIENT_ID && env.LINKEDIN_CLIENT_SECRET),

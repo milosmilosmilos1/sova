@@ -5,6 +5,7 @@ import { getTranslations } from 'next-intl/server'
 
 import { BrandAccountHeader } from '@/components/brand/brand-account-header'
 import { CanvaCard } from '@/components/app/canva-card'
+import { FigmaCard } from '@/components/app/figma-card'
 import { NotificationPrefsCard } from '@/components/app/notification-prefs-card'
 import { PrivacyCard } from '@/components/app/privacy-card'
 import {
@@ -37,6 +38,7 @@ export default async function SettingsPage({ searchParams }: PageProps<'/app/set
   if (!current) redirect('/app/onboarding')
   const sp = await searchParams
   const canvaNotice = typeof sp.canva === 'string' ? sp.canva : null
+  const figmaNotice = typeof sp.figma === 'string' ? sp.figma : null
   const [brands, plan, auth] = await Promise.all([
     listBrands(viewer, current.workspaceId),
     getWorkspacePlan(current.workspaceId),
@@ -173,6 +175,8 @@ export default async function SettingsPage({ searchParams }: PageProps<'/app/set
       </Card>
 
       <CanvaCard workspaceId={current.workspaceId} canEdit={canEdit} notice={canvaNotice} />
+
+      <FigmaCard workspaceId={current.workspaceId} canEdit={canEdit} notice={figmaNotice} />
 
       <PrivacyCard
         email={viewer.user.email}

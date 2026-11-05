@@ -1398,3 +1398,16 @@ Odluka:
 - Slobodno pomeranje elemenata na slajdu (naslov, tekst, logo) nije urađeno: svaki stil ima svoj raspored, pa to traži nov način crtanja i uređivač. Predlog čeka odluku vlasnika.
 
 Razlog: testerka je napisala da stilova ima malo; u izboru teme videla je samo sedam.
+
+## D-161 · 5.11.2026 · usvojeno · Uvoz iz Figme: okviri kao slajdovi i brend iz Figme
+
+Odluka:
+
+- Vlasnik je napravio Figma OAuth aplikaciju „Sova API” (u probi: povezati može samo njegov tim) i odobrio novu tabelu. Sova traži samo `file_content:read` i `file_metadata:read`; Figma API samo čita, pa Sova ne može da pravi ni menja dizajn u Figmi.
+- Veza po (radni prostor, korisnik) kao Canva: prijava sa PKCE (S256) na `www.figma.com/oauth`, token `POST api.figma.com/v1/oauth/token` (Basic auth), tokeni AES-256-GCM u novoj tabeli `figma_connections` (migracija 041). Pristup važi 90 dana i obnavlja se dva dana pre isteka istim refresh tokenom (`/v1/oauth/refresh` ne vraća nov); odbijena obnova označava vezu `needs_reauth`.
+- Prekidač `figma` (migracija ga dodaje isključenog): dok Figma ne odobri aplikaciju, uvoz vide samo radni prostori iz `rollout.workspaces`, da drugi korisnici ne dobijaju grešku kao sa Canvom.
+- Studio → alati → „Iz Figme”: link fajla (i grane; `node-id` iz linka je unapred izabran) → okviri sa strana i iz sekcija sa sličicama (jedno čitanje fajla i jedan izvoz sličica) → izabrani okviri, redom izbora, idu u biblioteku brenda kao JPG (Instagram prima samo JPG), u razmeri u kojoj je najčešća širina okvira oko 1080 px (jedan izvoz) → „Napravi objavu od ovih slika” pravi nacrt sa tim slikama kao slajdovima. Bez tokena i bez AI-ja.
+- „Boje, fontovi i logo iz izabranih”: jedno čitanje izabranih okvira; boja brenda je zasićena boja sa najviše površine (siva, krem i crna se preskaču), druga je dovoljno različita, podloga je boja okvira; font naslova je font najvećeg teksta, a font teksta onaj sa najviše slova među manjima (`lib/figma/brand.ts`); sloj čije ime sadrži „logo” se izvozi kao providan PNG u biblioteku. „Primeni na temu brenda” upisuje sopstvenu temu, a font koji nije Google font Sova ne menja i traži da se otpremi (D-159).
+- Ograničenja Figme: čitanje fajla i izvoz slike su najstrože ograničeni zahtevi (mesto bez prava uređivanja oko 20 mesečno, sa pravom uređivanja 10 do 20 u minuti); greška 429 kaže korisniku da je Figma ograničila uvoz.
+
+Razlog: testerka je tražila Figmu pored Canve; vlasnik je odabrao uvoz okvira i brend iz Figme kao prvi korak, a Figma šablone kao mogući sledeći.

@@ -342,6 +342,23 @@ create table canva_connections (
   unique (workspace_id, user_id)
 );
 
+-- Figma veza (D-161, migracija 041): kao canva_connections; korisnik čita samo kolone bez tokena
+create table figma_connections (
+  id uuid primary key default gen_random_uuid(),
+  workspace_id uuid not null references workspaces(id) on delete cascade,
+  user_id uuid not null references profiles(id) on delete cascade,
+  figma_user_id text not null,
+  access_token_enc bytea not null,
+  refresh_token_enc bytea not null,
+  key_version smallint not null default 1,
+  token_expires_at timestamptz not null,       -- 90 dana, obnova dva dana pre isteka
+  scopes text[] not null default '{}',
+  status social_account_status not null default 'active',
+  created_at timestamptz not null default now(),
+  updated_at timestamptz not null default now(),
+  unique (workspace_id, user_id)
+);
+
 create table historical_posts (
   id uuid primary key default gen_random_uuid(),
   brand_id uuid not null references brands(id) on delete cascade,

@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { previewUrl, StylePicker } from '@/components/design/style-picker'
 import { NetworkName } from '@/components/shared/network-badge'
+import { FigmaImportPanel } from '@/components/studio/figma-import'
 
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -210,6 +211,9 @@ export function StudioClient({
           <TabsTrigger value="canva" className="flex-none">
             {t('tabs.canva', { price: balance.data?.prices.canva_export ?? 2 })}
           </TabsTrigger>
+          <TabsTrigger value="figma" className="flex-none">
+            {t('tabs.figma')}
+          </TabsTrigger>
           {aiImages ? (
             <>
               <TabsTrigger value="photo" className="flex-none">
@@ -241,6 +245,9 @@ export function StudioClient({
         </TabsContent>
         <TabsContent value="pexels">
           <PexelsPanel brandId={brandId} />
+        </TabsContent>
+        <TabsContent value="figma">
+          <FigmaImportPanel workspaceId={workspaceId} brandId={brandId} />
         </TabsContent>
         <TabsContent value="canva">
           <CanvaImportPanel

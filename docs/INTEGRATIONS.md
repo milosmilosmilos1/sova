@@ -127,6 +127,15 @@ Greške se mapiraju u `ProviderError { code, retryable, userMessage (srpski), ra
 - **Napomena**: Canva najavljuje promenu ID-jeva brand template-a sa 6 meseci migracije. Čuvamo ID uz datum i spremni smo za remapiranje.
 - **Ugrađeno (faza 7, 24.10.2026, docs pročitane isti dan)**: autorizacija `https://www.canva.com/api/oauth/authorize` (PKCE S256, `redirect_uri` mora biti registrovan), token `POST https://api.canva.com/rest/v1/oauth/token` (form-urlencoded, Basic auth, `expires_in` 14400, refresh token jednokratan), `GET /v1/users/me` (`team_user.user_id/team_id`), `POST /v1/asset-uploads` (octet-stream + `Asset-Upload-Metadata: {name_base64}`, polling `GET /v1/asset-uploads/{jobId}`), `POST /v1/designs` (`design_type` preset `doc|email|presentation|whiteboard` ili custom 40–8000 px, `asset_id`, `title`; `edit_url` važi 30 dana, prazni dizajni se brišu posle 7 dana), `POST /v1/exports` (`format {type: png|jpg, width, quality}`; polling `GET /v1/exports/{id}`; URL-ovi važe 24 h; greške `license_required`/`approval_required` za plaćene opcije). Rate limiti: dizajn 20/min, export polling 120/min, upload 30/min. Kod: `src/integrations/canva/client.ts`, `src/services/canva/*`.
 
+## 11a. Figma (D-161, dokumentacija pročitana 5.11.2026)
+
+- **Aplikacija**: https://www.figma.com/developers/apps, vlasnik je tim vlasnika Sove; callback `https://sovaai.netlify.app/api/integrations/figma/callback`; ključevi u Netlify env `FIGMA_CLIENT_ID` i `FIGMA_CLIENT_SECRET` (uvozi vlasnik). Javna aplikacija ide na Figmin pregled; interna (tim) radi bez pregleda.
+- **OAuth**: `GET https://www.figma.com/oauth` (`client_id`, `redirect_uri`, `scope` odvojen razmakom, `state`, `response_type=code`, `code_challenge` S256). Token `POST https://api.figma.com/v1/oauth/token` (form-urlencoded, `Authorization: Basic`, `redirect_uri`, `code`, `grant_type=authorization_code`, `code_verifier`; kod važi 30 s); odgovor `user_id_string`, `access_token`, `expires_in`, `refresh_token`. Obnova `POST /v1/oauth/refresh` sa `refresh_token` (vraća samo nov pristup; refresh token ostaje). Pristup važi 90 dana.
+- **Scope-ovi**: `file_content:read` (sadržaj i izvoz slika), `file_metadata:read`. Stari `files:read` je ukinut.
+- **Pozivi**: `GET /v1/files/:key?depth=3` (strane, sekcije, okviri), `GET /v1/files/:key/nodes?ids=` (ceo sadržaj okvira), `GET /v1/images/:key?ids=&format=png&scale=` (adrese slika važe 30 dana).
+- **Limiti (od 17.11.2025)**: Tier 1 (čitanje fajla, okvira i izvoz slike): mesto View/Collab do 20 mesečno; Dev/Full 10 (Starter), 15 (Professional), 20 (Organization) u minuti. Limit prati plan fajla. 429 sa `Retry-After`.
+- **Kod**: `src/integrations/figma/client.ts`, `src/services/figma/*`, `src/lib/figma/*`.
+
 ## 12. Unsplash
 
 - **Limiti**: demo 50 zahteva/h, production 1.000/h posle prijave („Apply for Production” u developer portalu, aplikacija mora poštovati smernice; prijava čim UI radi, u fazi 7). Broje se samo pozivi ka `api.unsplash.com`, ne slike sa `images.unsplash.com`.

@@ -485,7 +485,8 @@
       "pexels": "Pexels video i fotografije",
       "canva": "Iz Canve ({price})",
       "photo": "Slika iz fotografije ({price})",
-      "prompt": "Slika iz prompta ({price})"
+      "prompt": "Slika iz prompta ({price})",
+      "figma": "Iz Figme"
     },
     "upload": {
       "label": "Fotografija (JPG, PNG, WebP, do 20 MB)",
@@ -691,6 +692,35 @@
       "open": "Otvori nacrt i zakaži",
       "videoLabel": "Video uz objavu",
       "visualAlt": "Vizual uz objavu"
+    },
+    "figmaImport": {
+      "title": "Uvoz iz Figme",
+      "description": "Nalepite link Figma fajla, izaberite okvire i uvezite ih kao slike u biblioteku brenda, redom kojim ste ih izabrali, kao slajdove karusela. Bez tokena i bez AI-ja.",
+      "checking": "Proveravam vezu sa Figmom…",
+      "notConfigured": "Figma nije podešena na serveru.",
+      "disabled": "Uvoz iz Figme još nije uključen za vaš nalog.",
+      "connect": "<link>Povežite Figmu</link> da biste uvozili okvire iz svojih fajlova.",
+      "linkLabel": "Link Figma fajla",
+      "show": "Prikaži okvire",
+      "linkHint": "Link iz Figme (Share → Copy link). Fajl mora biti podeljen sa vašim Figma nalogom.",
+      "chosen": "Izabrano {n} od {total}",
+      "noFrames": "U ovom fajlu nema okvira (frame).",
+      "noThumb": "Bez sličice",
+      "import": "Uvezi izabrane ({n})",
+      "brand": "Boje, fontovi i logo iz izabranih",
+      "clear": "Poništi izbor",
+      "all": "Izaberi sve (do 20)",
+      "orderHint": "Broj na sličici je redosled slajda. Sloj čije ime sadrži „logo” postaje logo brenda.",
+      "imported": "Uvezeno u biblioteku brenda: {n}",
+      "failed": "Nisu uvezeni: {names}",
+      "draft": "Napravi objavu od ovih slika",
+      "proposal": "Predlog za temu brenda",
+      "logoAlt": "Logo iz Figme",
+      "noLogo": "Nema sloja „logo”",
+      "fonts": "Naslovi: {headings} · Tekst: {body}",
+      "fontNotGoogle": "Font koji nije Google font Sova ne može sama da preuzme: otpremite ga u Vizuelnom identitetu (Otpremi svoj font).",
+      "apply": "Primeni na temu brenda",
+      "applied": "Primenjeno"
     }
   }
 }

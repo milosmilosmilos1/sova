@@ -206,6 +206,19 @@
       "expired": "connection expired",
       "notConnected": "not connected",
       "connect": "Connect Canva"
+    },
+    "figma": {
+      "description": "Import frames from a Figma file as images and slides, and colours, fonts and the logo as your brand theme. The connection is personal (per user); Sova only reads files.",
+      "connectedNotice": "Figma is connected.",
+      "deniedNotice": "Connecting was cancelled in Figma.",
+      "checking": "Checking the connection…",
+      "loadFailed": "Couldn’t load the Figma status.",
+      "notConfigured": "The Figma integration isn’t set up on the server yet (app keys).",
+      "connected": "connected",
+      "disconnect": "Disconnect",
+      "expired": "connection expired",
+      "notConnected": "not connected",
+      "connect": "Connect Figma"
     }
   },
   "security": {

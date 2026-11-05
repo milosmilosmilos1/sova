@@ -421,6 +421,32 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"figma_connections": {
+                  Row: {
+                    "access_token_enc": string,"created_at": string,"figma_user_id": string,"id": string,"key_version": number,"refresh_token_enc": string,"scopes": (string)[],"status": Database["public"]['Enums']["social_account_status"],"token_expires_at": string,"updated_at": string,"user_id": string,"workspace_id": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "access_token_enc": string,"created_at"?: string,"figma_user_id": string,"id"?: string,"key_version"?: number,"refresh_token_enc": string,"scopes"?: (string)[],"status"?: Database["public"]['Enums']["social_account_status"],"token_expires_at": string,"updated_at"?: string,"user_id": string,"workspace_id": string
+                  }
+                  Update: {
+                    "access_token_enc"?: string,"created_at"?: string,"figma_user_id"?: string,"id"?: string,"key_version"?: number,"refresh_token_enc"?: string,"scopes"?: (string)[],"status"?: Database["public"]['Enums']["social_account_status"],"token_expires_at"?: string,"updated_at"?: string,"user_id"?: string,"workspace_id"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "figma_connections_user_id_fkey"
+      columns: ["user_id"]
+isOneToOne: false
+      referencedRelation: "profiles"
+      referencedColumns: ["id"]
+    },{
+      foreignKeyName: "figma_connections_workspace_id_fkey"
+      columns: ["workspace_id"]
+isOneToOne: false
+      referencedRelation: "workspaces"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"competitors": {
                   Row: {
                     "brand_id": string,"created_at": string,"id": string,"last_analyzed_at": string | null,"name": string | null,"summary": Json | null,"url": string

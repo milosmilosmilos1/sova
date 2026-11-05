@@ -485,7 +485,8 @@
       "pexels": "Pexels videos and photos",
       "canva": "From Canva ({price})",
       "photo": "Image from a photo ({price})",
-      "prompt": "Image from a prompt ({price})"
+      "prompt": "Image from a prompt ({price})",
+      "figma": "From Figma"
     },
     "upload": {
       "label": "Photo (JPG, PNG, WebP, up to 20 MB)",
@@ -691,6 +692,35 @@
       "open": "Open the draft and schedule",
       "videoLabel": "Video for the post",
       "visualAlt": "Visual for the post"
+    },
+    "figmaImport": {
+      "title": "Import from Figma",
+      "description": "Paste a Figma file link, pick frames and import them as images into the brand library, in the order you picked them, as carousel slides. No tokens and no AI.",
+      "checking": "Checking the Figma connection…",
+      "notConfigured": "Figma isn’t set up on the server.",
+      "disabled": "Importing from Figma isn’t switched on for your account yet.",
+      "connect": "<link>Connect Figma</link> to import frames from your files.",
+      "linkLabel": "Figma file link",
+      "show": "Show frames",
+      "linkHint": "A link from Figma (Share → Copy link). The file must be shared with your Figma account.",
+      "chosen": "{n} of {total} selected",
+      "noFrames": "There are no frames in this file.",
+      "noThumb": "No preview",
+      "import": "Import selected ({n})",
+      "brand": "Colours, fonts and logo from selection",
+      "clear": "Clear selection",
+      "all": "Select all (up to 20)",
+      "orderHint": "The number on a preview is the slide order. A layer whose name contains “logo” becomes the brand logo.",
+      "imported": "Imported into the brand library: {n}",
+      "failed": "Not imported: {names}",
+      "draft": "Create a post from these images",
+      "proposal": "Suggested brand theme",
+      "logoAlt": "Logo from Figma",
+      "noLogo": "No “logo” layer",
+      "fonts": "Headings: {headings} · Text: {body}",
+      "fontNotGoogle": "Sova can’t download a font that isn’t a Google font: upload it in Visual identity (Upload your font).",
+      "apply": "Apply to the brand theme",
+      "applied": "Applied"
     }
   }
 }
