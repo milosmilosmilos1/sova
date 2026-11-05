@@ -1389,3 +1389,12 @@ Odluka:
 - Sopstveni font je prvi u izboru („Ime (vaš font)”) i važi u svim stilovima kao izabran Google font. „Ukloni font” briše fajl i ime, a izgled koji ga je koristio vraća fontove sa sajta. Vraćanje dizajna na podrazumevano ne briše otpremljene fontove.
 
 Razlog: testerka je napisala da u Vizuelnom identitetu ne može da doda svoj font, samo iz kratkog spiska.
+
+## D-160 · 5.11.2026 · usvojeno · Sopstvena tema u bilo kom od 28 stilova
+
+Odluka:
+
+- Sopstvena tema („Po vašem izboru”) ima izbor stila sa svih 28 stilova; do sada je bila uvek u stilu Okvir (`CUSTOM_LOOK_STYLE`), a sedam tema sa sajta koristi pet stilova. Pregled objave, karusela, priče i videa se menja odmah, a izbor se čuva kao i ostatak teme (`look: custom` i `styleId`).
+- Slobodno pomeranje elemenata na slajdu (naslov, tekst, logo) nije urađeno: svaki stil ima svoj raspored, pa to traži nov način crtanja i uređivač. Predlog čeka odluku vlasnika.
+
+Razlog: testerka je napisala da stilova ima malo; u izboru teme videla je samo sedam.

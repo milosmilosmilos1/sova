@@ -291,7 +291,7 @@
         },
         "custom": {
           "name": "Vaša tema",
-          "hint": "Tri boje i font po vašem ukusu."
+          "hint": "Bilo koji od 28 stilova, tri boje i font po vašem ukusu."
         }
       },
       "kinds": {
@@ -319,7 +319,8 @@
       "fontGoogleMissing": "Google Fonts nema font „{font}”. Proverite ime na fonts.google.com.",
       "fontUpload": "Otpremi svoj font",
       "fontUploadHint": "TTF, OTF ili WOFF do 2 MB; važi u svim stilovima.",
-      "fontRemove": "Ukloni font"
+      "fontRemove": "Ukloni font",
+      "style": "Stil"
     },
     "harmonize": {
       "offTheme": "{count, plural, one {# nacrt koji čeka nije} few {# nacrta koja čekaju nisu} other {# nacrta koji čekaju nisu}} u temi brenda. Sova ih može nacrtati u temi, sa istim tekstom i fotografijama, bez tokena.",

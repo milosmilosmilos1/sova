@@ -9,7 +9,7 @@ import { api } from '@/components/shared/api-client'
 import { ErrorBox } from '@/components/shared/error-box'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import type { StyleId } from '@/lib/visuals/design/catalog'
+import { STYLE_IDS, type StyleId } from '@/lib/visuals/design/catalog'
 import { customColors, type LookId, type LookOption } from '@/lib/visuals/design/looks'
 import type { DesignColors } from '@/lib/visuals/design/types'
 import { cn } from '@/lib/utils'
@@ -302,9 +302,12 @@ function LookOptions({
   onChoice: (choice: LookChoice | null) => void
 }) {
   const t = useTranslations('design.looks')
+  const td = useTranslations('design')
   const options = view.site?.options ?? []
   const [selected, setSelected] = useState<LookId | null>(view.current)
   const [custom, setCustom] = useState({
+    // sopstvena tema u bilo kom od 28 stilova (D-160)
+    styleId: view.custom.styleId,
     primary: view.custom.primary,
     secondary: view.custom.secondary,
     tertiary: view.custom.tertiary,
@@ -317,7 +320,7 @@ function LookOptions({
   const deferred = useSettled(custom, 450)
   const valid = [deferred.primary, deferred.secondary, deferred.tertiary].every((c) => HEX.test(c))
   const customOption: Omit<LookOption, 'id'> = {
-    styleId: view.custom.styleId,
+    styleId: deferred.styleId,
     colors: customColors(deferred.primary, deferred.secondary, deferred.tertiary),
     fonts: { headings: deferred.font, body: deferred.font },
   }
@@ -331,7 +334,7 @@ function LookOptions({
         ok
           ? {
               look: 'custom',
-              styleId: view.custom.styleId,
+              styleId: next.styleId,
               colors: customColors(next.primary, next.secondary, next.tertiary),
               fonts: { headings: next.font, body: next.font },
             }
@@ -434,6 +437,24 @@ function LookOptions({
                 ) : null}
               </button>
               <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <label htmlFor={`look-style-${brandId}`} className="w-24 shrink-0 text-sm sm:w-36">
+                    {t('style')}
+                  </label>
+                  <select
+                    id={`look-style-${brandId}`}
+                    value={custom.styleId}
+                    disabled={disabled}
+                    onChange={(e) => edit({ styleId: e.target.value as StyleId })}
+                    className="h-9 min-w-0 flex-1 rounded-md border border-input bg-background px-2 text-sm"
+                  >
+                    {STYLE_IDS.map((id) => (
+                      <option key={id} value={id}>
+                        {td(`styles.${id}.name`)}
+                      </option>
+                    ))}
+                  </select>
+                </div>
                 <ColorField
                   id={`look-primary-${brandId}`}
                   label={t('primary')}
