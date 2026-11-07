@@ -76,18 +76,30 @@ export async function getMembership(viewer: Viewer, workspaceId: string): Promis
   return all.find((m) => m.workspaceId === workspaceId) ?? null
 }
 
+/**
+ * Članstvo iz već pročitane liste (npr. pročitane u istom krugu kao objava); iste greške kao
+ * requireMembership: 404 ako korisnik nije član, 403 ako uloga nije dovoljna.
+ */
+export function membershipIn(
+  memberships: Membership[],
+  workspaceId: string,
+  allowed?: WorkspaceRole[],
+): Membership {
+  const membership = memberships.find((m) => m.workspaceId === workspaceId)
+  if (!membership) throw new ApiError('NOT_FOUND', 'Radni prostor ne postoji ili nemate pristup.')
+  if (allowed && !allowed.includes(membership.role)) throw new ApiError('FORBIDDEN')
+  // read-only impersonacija se ne proverava ovde (funkcija služi i čitanju): izmene blokiraju
+  // handler, serverske akcije i RLS (D-070)
+  return membership
+}
+
 /** Baca 404 ako korisnik nije član (ne otkrivamo postojanje), 403 ako uloga nije dovoljna. */
 export async function requireMembership(
   viewer: Viewer,
   workspaceId: string,
   allowed?: WorkspaceRole[],
 ): Promise<Membership> {
-  const membership = await getMembership(viewer, workspaceId)
-  if (!membership) throw new ApiError('NOT_FOUND', 'Radni prostor ne postoji ili nemate pristup.')
-  if (allowed && !allowed.includes(membership.role)) throw new ApiError('FORBIDDEN')
-  // read-only impersonacija se ne proverava ovde (funkcija služi i čitanju): izmene blokiraju
-  // handler, serverske akcije i RLS (D-070)
-  return membership
+  return membershipIn(await listMemberships(viewer), workspaceId, allowed)
 }
 
 /** Trenutni workspace iz cookie-ja, inače prvi; null kad korisnik nema nijedan. */

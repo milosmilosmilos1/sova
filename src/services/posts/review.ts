@@ -2,6 +2,7 @@ import 'server-only'
 
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { ApiError } from '@/lib/api/errors'
+import { enableRequestMemo } from '@/lib/auth/request-memo'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import {
@@ -25,7 +26,7 @@ import { parsePostDesign, themeOf, type PostDesignContext } from '@/services/des
 import { renderDesignSlides } from '@/services/design/render-post'
 import { buildThemeVideoInSteps, VIDEO_COPY_SLIDES, videoPostDesign } from '@/services/design/video-post'
 import { downloadAsset, signedUrl } from '@/services/media'
-import { nextFreeSlot } from '@/services/posts/calendar'
+import { listQueueSlots, nextFreeSlotFor } from '@/services/posts/calendar'
 import { getPostView, loadPost, updatePost, type PostView } from '@/services/posts/posts'
 import {
   cancel,
@@ -206,19 +207,50 @@ export interface ReviewDetail {
 }
 
 export async function getReviewDetail(viewer: Viewer, postId: string): Promise<ReviewDetail> {
-  const post = await getPostView(viewer, postId)
   const admin = createSupabaseAdminClient()
-  const { data: row } = await admin
-    .from('posts')
-    .select('flow_id, design, content_flows(name)')
-    .eq('id', postId)
-    .maybeSingle()
-  const brand = await getBrand(viewer, post.brandId)
-  let suggested: string | null = null
-  for (const t of post.targets) {
-    const slot = await nextFreeSlot(viewer, brand.id, t.socialAccountId).catch(() => null)
-    if (slot && (!suggested || slot < suggested)) suggested = slot
-  }
+  // Dizajn objave (admin klijent) ide u istom krugu kao pregled, a koristi se tek kad getPostView potvrdi
+  // pristup. Čim stigne id brenda, kreću i brend i termini reda (kroz RLS), dok pregled još radi (D-164).
+  const rowP = Promise.resolve(
+    admin
+      .from('posts')
+      .select('flow_id, brand_id, design, content_flows(name)')
+      .eq('id', postId)
+      .maybeSingle(),
+  )
+  const earlyP = rowP
+    .then(async ({ data }) =>
+      data
+        ? await Promise.all([getBrand(viewer, data.brand_id), listQueueSlots(viewer, data.brand_id)])
+        : null,
+    )
+    .catch(() => null)
+  // slika videa u temi dok pregledač ne napravi MP4 (D-128); vraća se tek posle provere pristupa
+  const posterP = rowP
+    .then(async ({ data }) => {
+      const d = parsePostDesign(data?.design)
+      const posterId =
+        d?.format === 'video' && d.video && !d.video.renderedAssetId ? d.video.posterAssetId : null
+      if (!data || !posterId) return null
+      const { data: poster } = await admin
+        .from('media_assets')
+        .select('bucket, storage_path')
+        .eq('id', posterId)
+        .eq('brand_id', data.brand_id)
+        .maybeSingle()
+      return poster ? await signedUrl(poster).catch(() => null) : null
+    })
+    .catch(() => null)
+  const [post, { data: row }, early] = await Promise.all([getPostView(viewer, postId), rowP, earlyP])
+  const [brand, slots] =
+    early && early[0].id === post.brandId
+      ? early
+      : await Promise.all([getBrand(viewer, post.brandId), listQueueSlots(viewer, post.brandId)])
+  let suggested = await nextFreeSlotFor(
+    viewer,
+    brand,
+    post.targets.map((t) => t.socialAccountId),
+    { slots },
+  ).catch(() => null)
   if (!suggested) {
     const tomorrow = new Date(Date.now() + 86_400_000)
     const date = new Intl.DateTimeFormat('en-CA', {
@@ -234,16 +266,7 @@ export async function getReviewDetail(viewer: Viewer, postId: string): Promise<R
   let video: ReviewDetail['video'] = null
   if (design?.format === 'video' && design.video) {
     const pending = !design.video.renderedAssetId
-    const { data: poster } =
-      pending && design.video.posterAssetId
-        ? await admin
-            .from('media_assets')
-            .select('bucket, storage_path')
-            .eq('id', design.video.posterAssetId)
-            .eq('brand_id', post.brandId)
-            .maybeSingle()
-        : { data: null }
-    video = { pending, posterUrl: poster ? await signedUrl(poster).catch(() => null) : null }
+    video = { pending, posterUrl: await posterP }
   }
   return {
     post,
@@ -310,9 +333,13 @@ export async function saveAndSchedule(
   postId: string,
   input: DeskEdits & { scheduledFor: string },
 ): Promise<PostView> {
-  let view = await applyEdits(viewer, postId, input)
-  if (view.status === 'in_review') view = await decidePost(viewer, postId, view.version, 'approved', null)
-  return schedulePost(viewer, postId, { version: view.version, scheduledFor: input.scheduledFor })
+  // radnja ne menja ni članstvo ni brend, pa se oni čitaju jednom za celu radnju (D-164)
+  enableRequestMemo(viewer)
+  const view = await applyEdits(viewer, postId, input)
+  // odobrenje vraća novu verziju; pun prikaz objave čita samo poslednji korak
+  const version =
+    view.status === 'in_review' ? await decide(viewer, postId, view.version, 'approved', null) : view.version
+  return schedulePost(viewer, postId, { version, scheduledFor: input.scheduledFor })
 }
 
 function problemsMessage(problems: ContentProblem[]): string {

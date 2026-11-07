@@ -3,7 +3,14 @@ import 'server-only'
 import { translateServerText } from '@/i18n/server-text'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
-import { EDIT_ROLES, getMembership, requireMembership, type Membership } from '@/lib/auth/workspace'
+import {
+  EDIT_ROLES,
+  getMembership,
+  listMemberships,
+  membershipIn,
+  requireMembership,
+  type Membership,
+} from '@/lib/auth/workspace'
 import {
   availableActions,
   checkAction,
@@ -141,9 +148,11 @@ async function accountMap(viewer: Viewer, brandId: string) {
 }
 
 export async function getPostView(viewer: Viewer, postId: string): Promise<PostView> {
-  const post = await loadPost(viewer, postId)
-  const membership = await requireMembership(viewer, post.workspace_id)
-  const [targetsRes, mediaRes, accounts] = await Promise.all([
+  // objava, članstva, stavke i slike u jednom krugu (D-164): upiti idu kroz RLS, a bez pristupa
+  // poziv pada sa 404 iz loadPost ili članstva, pre nego što se išta vrati
+  const [post, memberships, targetsRes, mediaRes] = await Promise.all([
+    loadPost(viewer, postId),
+    listMemberships(viewer),
     viewer.supabase
       .from('post_targets')
       .select('*')
@@ -156,10 +165,36 @@ export async function getPostView(viewer: Viewer, postId: string): Promise<PostV
       )
       .eq('post_id', postId)
       .order('sort_order', { ascending: true }),
-    accountMap(viewer, post.brand_id),
   ])
+  const membership = membershipIn(memberships, post.workspace_id)
   if (targetsRes.error) throw mapDbError(targetsRes.error)
   if (mediaRes.error) throw mapDbError(mediaRes.error)
+  const targetByAccount = new Map((targetsRes.data ?? []).map((t) => [t.id, t.social_account_id]))
+  // nalozi brenda i potpisi slika u drugom krugu, zajedno
+  const [accounts, media] = await Promise.all([
+    accountMap(viewer, post.brand_id),
+    Promise.all(
+      (mediaRes.data ?? []).map(async (m): Promise<PostMediaView> => {
+        const a = m.media_assets
+        const attr = (a?.attribution as { text?: string } | null) ?? null
+        return {
+          id: m.id,
+          mediaAssetId: m.media_asset_id,
+          sortOrder: m.sort_order,
+          socialAccountId: m.target_id ? (targetByAccount.get(m.target_id) ?? null) : null,
+          url: a ? await signedUrl(a) : null,
+          width: a?.width ?? null,
+          height: a?.height ?? null,
+          mimeType: a?.mime_type ?? null,
+          durationMs: a?.duration_ms ?? null,
+          sizeBytes: a?.size_bytes ?? null,
+          altText: a?.alt_text ?? null,
+          source: a?.source ?? null,
+          attributionText: attr?.text ?? null,
+        }
+      }),
+    ),
+  ])
   const targets: PostTargetView[] = (targetsRes.data ?? []).map((t) => {
     const acc = accounts.get(t.social_account_id)
     return {
@@ -183,28 +218,6 @@ export async function getPostView(viewer: Viewer, postId: string): Promise<PostV
       publishedAt: t.published_at,
     }
   })
-  const targetByAccount = new Map(targets.map((t) => [t.id, t.socialAccountId]))
-  const media: PostMediaView[] = await Promise.all(
-    (mediaRes.data ?? []).map(async (m) => {
-      const a = m.media_assets
-      const attr = (a?.attribution as { text?: string } | null) ?? null
-      return {
-        id: m.id,
-        mediaAssetId: m.media_asset_id,
-        sortOrder: m.sort_order,
-        socialAccountId: m.target_id ? (targetByAccount.get(m.target_id) ?? null) : null,
-        url: a ? await signedUrl(a) : null,
-        width: a?.width ?? null,
-        height: a?.height ?? null,
-        mimeType: a?.mime_type ?? null,
-        durationMs: a?.duration_ms ?? null,
-        sizeBytes: a?.size_bytes ?? null,
-        altText: a?.alt_text ?? null,
-        source: a?.source ?? null,
-        attributionText: attr?.text ?? null,
-      }
-    }),
-  )
   return toView(post, targets, media, membership.role)
 }
 

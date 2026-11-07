@@ -26,6 +26,7 @@ import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 
 import { ImpersonationBanner } from '@/components/admin/impersonation-banner'
+import { ApprovalsBadge } from '@/components/app/approvals-badge'
 import { BrandMark } from '@/components/brand/brand-mark'
 import { SovaLogo } from '@/components/brand/sova-logo'
 import { AuthSync } from '@/components/app/auth-sync'
@@ -154,7 +155,7 @@ export function AppShell({
               <NavLink href="/app/approvals">
                 <CheckCircle2 aria-hidden />
                 {t('nav.approvals')}
-                {waitingApprovals ? <Badge className="ml-auto">{waitingApprovals}</Badge> : null}
+                <ApprovalsBadge brandId={currentBrand?.id ?? null} initial={waitingApprovals} />
               </NavLink>
               <NavLink href="/app/inbox">
                 <Inbox aria-hidden />

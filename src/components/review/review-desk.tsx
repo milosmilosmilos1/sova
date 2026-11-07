@@ -19,9 +19,8 @@ import {
   Type,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useRouter } from 'next/navigation'
 import { useLocale, useTranslations } from 'next-intl'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 import { ThemeNotice } from '@/components/design/theme-notice'
 import { BulkScheduleDialog } from '@/components/review/bulk-schedule-dialog'
@@ -136,29 +135,40 @@ export function ReviewDesk({
   const t = useTranslations('review')
   const tg = useTranslations('shell')
   const qc = useQueryClient()
-  const router = useRouter()
   const [tab, setTab] = useState<Tab>('waiting')
   const [q, setQ] = useState('')
   const [format, setFormat] = useState<Format | ''>('')
   const [sort, setSort] = useState<'new' | 'old'>('new')
   const [selected, setSelected] = useState<string | null>(null)
+  // otvorena objava u trenutku kad se lista čita: njen pregled stiže uz listu (D-164)
+  const currentRef = useRef<string | null>(null)
   const listKey = ['review', brandId, tab, q, format, sort]
   const list = useQuery({
     queryKey: listKey,
-    queryFn: () => {
-      const p = new URLSearchParams({ brandId, tab, sort })
+    queryFn: async () => {
+      const p = new URLSearchParams({ brandId, tab, sort, detail: currentRef.current ?? 'first' })
       if (q.trim()) p.set('q', q.trim())
       if (format) p.set('format', format)
-      return api<{ items: Item[]; counts: Record<Tab, number> }>(`/api/approvals?${p.toString()}`)
+      const res = await api<{ items: Item[]; counts: Record<Tab, number>; detail?: Detail | null }>(
+        `/api/approvals?${p.toString()}`,
+      )
+      // pregled ide u svoj keš, pa panel ne šalje poseban zahtev; broj u meniju prati listu
+      if (res.detail) qc.setQueryData(['review-detail', res.detail.post.id], res.detail)
+      // pregled nije stigao (greška na serveru): otvoren panel ga traži sam
+      else if (currentRef.current)
+        void qc.invalidateQueries({ queryKey: ['review-detail', currentRef.current] })
+      qc.setQueryData(['review-count', brandId], res.counts.waiting)
+      return res
     },
   })
   const items = list.data?.items ?? []
   const current = selected && items.some((i) => i.id === selected) ? selected : (items[0]?.id ?? null)
-  // broj nacrta koji čekaju u meniju dolazi sa servera, pa se i on čita ponovo
-  const refresh = () => {
-    router.refresh()
-    return qc.invalidateQueries({ queryKey: ['review', brandId] })
-  }
+  useEffect(() => {
+    currentRef.current = current
+  }, [current])
+  // posle odluke se čita samo lista: uz nju stižu pregled otvorene objave i broj u meniju (D-164),
+  // pa se cela strana više ne crta ponovo na serveru
+  const refresh = () => qc.invalidateQueries({ queryKey: ['review', brandId] })
   // nacrti usklađeni sa temom (D-125) imaju nove slajdove: lista i otvoren nacrt se čitaju ponovo
   const refreshAfterTheme = useCallback(() => {
     void qc.invalidateQueries({ queryKey: ['review'] })
@@ -441,10 +451,8 @@ export function DetailPanes({
       textPrice={textPrice}
       kept={kept?.version === query.data.post.version ? kept : null}
       onKeep={setKept}
-      onChanged={() => {
-        void query.refetch()
-        onChanged()
-      }}
+      // nova verzija pregleda stiže uz listu koju onChanged čita ponovo (D-164)
+      onChanged={onChanged}
       t={t}
     />
   )

@@ -144,14 +144,13 @@ export async function validatePostContent(
   postId: string,
   transform?: (view: PostView) => PostView,
 ): Promise<{ ok: boolean; problems: ContentProblem[] }> {
-  const loaded = await getPostView(viewer, postId)
+  // dizajn (admin klijent) u istom krugu kao pregled; koristi se tek kad getPostView potvrdi pristup (D-164)
+  const [loaded, { data: row }] = await Promise.all([
+    getPostView(viewer, postId),
+    createSupabaseAdminClient().from('posts').select('design').eq('id', postId).maybeSingle(),
+  ])
   const view = transform ? transform(loaded) : loaded
   // video u temi (D-128) pravi pregledač; bez gotovog MP4 Facebook bi objavio samo tekst
-  const { data: row } = await createSupabaseAdminClient()
-    .from('posts')
-    .select('design')
-    .eq('id', postId)
-    .maybeSingle()
   const design = parsePostDesign(row?.design)
   if (design?.format === 'video' && !design.video?.renderedAssetId)
     return {
@@ -165,7 +164,24 @@ export async function validatePostContent(
       problems: [{ socialAccountId: '', platform: '', problems: ['Izaberite bar jednu mrežu.'] }],
     }
   }
-  for (const t of view.targets) {
+  // provere iz baze po mreži (isti tekst na nalogu, nalog) idu za sve mreže u isto vreme, ne jedna za
+  // drugom (D-164); greška čitanja naloga se beleži kao i ranije, pa se proverava bez pravila mreže
+  const lookups = await Promise.all(
+    view.targets.map(async (t) => {
+      const story = t.options?.format === 'story'
+      const [duplicate, account] = await Promise.all([
+        !story && DUPLICATE_REJECTING.has(t.platform)
+          ? findDuplicateOnAccount(t.socialAccountId, t.text, postId)
+          : Promise.resolve(null),
+        loadAccountRow(t.socialAccountId).then(
+          (row) => ({ row, error: null as unknown }),
+          (error: unknown) => ({ row: null, error }),
+        ),
+      ])
+      return { duplicate, account }
+    }),
+  )
+  for (const [index, t] of view.targets.entries()) {
     const list: string[] = []
     const media = view.media.filter((m) => !m.socialAccountId || m.socialAccountId === t.socialAccountId)
     if (!t.text.trim() && !media.length) list.push('Objava nema ni tekst ni medij.')
@@ -188,10 +204,7 @@ export async function validatePostContent(
     list.push(...text.problems)
     if (t.accountStatus && t.accountStatus !== 'active')
       list.push(`Nalog nije aktivan (${t.accountStatus}); povežite ga ponovo pre objave.`)
-    const duplicate =
-      !story && DUPLICATE_REJECTING.has(t.platform)
-        ? await findDuplicateOnAccount(t.socialAccountId, t.text, postId)
-        : null
+    const { duplicate, account } = lookups[index]!
     if (duplicate) {
       const label = PLATFORMS[t.platform as SocialPlatform]?.label ?? t.platform
       const when = duplicate.at ? new Date(duplicate.at).toLocaleDateString('sr-Latn-RS') : ''
@@ -200,7 +213,8 @@ export async function validatePostContent(
       )
     }
     try {
-      const row = await loadAccountRow(t.socialAccountId)
+      if (account.error) throw account.error
+      const row = account.row
       if (row && connectKeyFor(row.platform)) {
         const normalized: NormalizedPost = {
           text: t.text,
@@ -486,25 +500,40 @@ export async function schedule(
   const admin = createSupabaseAdminClient()
   const { data: targets } = await admin
     .from('post_targets')
-    .select('id, status, social_account_id')
+    .select('id, status, scheduled_at, social_account_id')
     .eq('post_id', postId)
   if (!targets?.length) throw new ApiError('VALIDATION', 'Izaberite bar jednu mrežu.')
-  const planned: Array<{ id: string; at: string; accountId: string }> = []
-  for (const t of targets) {
-    if (t.status === 'published' || t.status === 'publishing') continue
-    const at = input.targetTimes?.[t.social_account_id] ?? when.toISOString()
-    const { error } = await admin
-      .from('post_targets')
-      .update({ scheduled_at: at, status: 'scheduled', last_error_code: null, last_error_message: null })
-      .eq('id', t.id)
-    if (error) {
-      const conflict = conflictFromSameMinute(error)
-      // vrati već zakazane targete u pending da objava ostane konzistentna
-      for (const p of planned)
-        await admin.from('post_targets').update({ status: 'pending', scheduled_at: null }).eq('id', p.id)
-      throw conflict ?? mapDbError(error)
-    }
-    planned.push({ id: t.id, at, accountId: t.social_account_id })
+  const open = targets.filter((t) => t.status !== 'published' && t.status !== 'publishing')
+  const planned = open.map((t) => ({
+    id: t.id,
+    at: input.targetTimes?.[t.social_account_id] ?? when.toISOString(),
+    accountId: t.social_account_id,
+  }))
+  // stavke su na različitim nalozima, pa se upisuju u isto vreme (D-164); kad jedna ne prođe (npr. isti
+  // minut na nalogu, K8), uspele se vraćaju u stanje od pre zakazivanja, da objava ostane konzistentna
+  const results = await Promise.all(
+    planned.map((p) =>
+      admin
+        .from('post_targets')
+        .update({ scheduled_at: p.at, status: 'scheduled', last_error_code: null, last_error_message: null })
+        .eq('id', p.id),
+    ),
+  )
+  const failed = results.find((r) => r.error)?.error
+  if (failed) {
+    await Promise.all(
+      open.flatMap((t, i) =>
+        results[i]!.error
+          ? []
+          : [
+              admin
+                .from('post_targets')
+                .update({ status: t.status, scheduled_at: t.scheduled_at })
+                .eq('id', t.id),
+            ],
+      ),
+    )
+    throw conflictFromSameMinute(failed) ?? mapDbError(failed)
   }
   const newVersion = await transition(
     postId,
@@ -513,15 +542,16 @@ export async function schedule(
     viewer.user.id,
     `zakazano za ${when.toISOString()}`,
   )
-  await admin.from('posts').update({ scheduled_for: when.toISOString() }).eq('id', postId)
-  for (const p of planned) {
-    try {
-      await enqueueTargetScheduled(p.id, p.at, newVersion, p.accountId)
-    } catch (error) {
-      logger.error('schedule_enqueue_failed', { postId, targetId: p.id, error })
-      throw error
-    }
-  }
+  // termin objave i poslovi publishera u isto vreme (D-164)
+  await Promise.all([
+    admin.from('posts').update({ scheduled_for: when.toISOString() }).eq('id', postId),
+    ...planned.map((p) =>
+      enqueueTargetScheduled(p.id, p.at, newVersion, p.accountId).catch((error: unknown) => {
+        logger.error('schedule_enqueue_failed', { postId, targetId: p.id, error })
+        throw error
+      }),
+    ),
+  ])
   logger.info('post_scheduled', {
     postId,
     targets: planned.length,

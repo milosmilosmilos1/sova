@@ -7,6 +7,8 @@ export const reviewListQuerySchema = z.object({
   q: z.string().trim().max(100).optional(),
   format: z.enum(['carousel', 'single', 'story', 'video', 'text']).optional(),
   sort: z.enum(['new', 'old']).default('new'),
+  /** pregled objave stiže uz listu (D-164): ova objava ako je na listi, inače prva */
+  detail: z.union([z.literal('first'), z.uuid()]).optional(),
 })
 
 export const deskEditsSchema = z.object({

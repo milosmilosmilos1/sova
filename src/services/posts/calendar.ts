@@ -220,22 +220,61 @@ export async function nextFreeSlot(
   after = new Date(),
 ): Promise<string | null> {
   const brand = await getBrand(viewer, brandId)
-  const slots = (await listQueueSlots(viewer, brandId)).filter(
-    (s) => s.socialAccountId === socialAccountId && s.isActive,
+  return nextFreeSlotFor(viewer, brand, [socialAccountId], { after })
+}
+
+/**
+ * Najraniji slobodan termin reda za bilo koji od naloga (D-164): jedan upit za termine i jedan za
+ * zauzeta mesta, umesto po nalogu (pregled za odobrenje je to radio za svaku mrežu, jedno za drugim).
+ * Za svaki nalog važi isto pravilo kao ranije; termini mogu stići već pročitani.
+ */
+export async function nextFreeSlotFor(
+  viewer: Viewer,
+  brand: { id: string; timezone: string },
+  accountIds: string[],
+  options: { after?: Date; slots?: QueueSlotView[] } = {},
+): Promise<string | null> {
+  const after = options.after ?? new Date()
+  const wanted = new Set(accountIds)
+  if (!wanted.size) return null
+  const slots = (options.slots ?? (await listQueueSlots(viewer, brand.id))).filter(
+    (s) => s.isActive && wanted.has(s.socialAccountId),
   )
   if (!slots.length) return null
+  const accounts = [...new Set(slots.map((s) => s.socialAccountId))]
   const { data: taken } = await viewer.supabase
     .from('post_targets')
-    .select('scheduled_at')
-    .eq('social_account_id', socialAccountId)
+    .select('social_account_id, scheduled_at')
+    .in('social_account_id', accounts)
     .in('status', ['scheduled', 'paused', 'publishing'])
-  const takenSet = new Set(
-    (taken ?? []).map((t) => (t.scheduled_at ? new Date(t.scheduled_at).toISOString().slice(0, 16) : '')),
-  )
+  let best: string | null = null
+  for (const accountId of accounts) {
+    const takenSet = new Set(
+      (taken ?? [])
+        .filter((t) => t.social_account_id === accountId)
+        .map((t) => (t.scheduled_at ? new Date(t.scheduled_at).toISOString().slice(0, 16) : '')),
+    )
+    const slot = firstFreeSlot(
+      slots.filter((s) => s.socialAccountId === accountId),
+      takenSet,
+      brand.timezone,
+      after,
+    )
+    if (slot && (!best || slot < best)) best = slot
+  }
+  return best
+}
+
+function firstFreeSlot(
+  slots: QueueSlotView[],
+  takenSet: Set<string>,
+  timeZone: string,
+  after: Date,
+): string | null {
   for (let d = 0; d < 56; d++) {
     const day = new Date(after.getTime() + d * 86_400_000)
     const dateStr = new Intl.DateTimeFormat('en-CA', {
-      timeZone: brand.timezone,
+      timeZone,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
@@ -244,7 +283,7 @@ export async function nextFreeSlot(
     for (const s of slots
       .filter((x) => x.weekday === weekday)
       .sort((a, b) => a.timeLocal.localeCompare(b.timeLocal))) {
-      const iso = zonedToUtc(dateStr, s.timeLocal, brand.timezone)
+      const iso = zonedToUtc(dateStr, s.timeLocal, timeZone)
       if (new Date(iso).getTime() <= after.getTime() + 60_000) continue
       if (!takenSet.has(iso.slice(0, 16))) return iso
     }
