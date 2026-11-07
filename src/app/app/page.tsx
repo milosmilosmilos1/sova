@@ -128,29 +128,34 @@ export default async function AppHomePage({ searchParams }: PageProps<'/app'>) {
   const todayKey = zonedDay(now, tz)
   const today = new Date(`${todayKey}T00:00:00Z`)
   const weekStart = new Date(today.getTime() - ((today.getUTCDay() + 6) % 7) * DAY)
-  // pregled ne sme da padne zbog jednog dela: svaki izvor ima svoju rezervu
-  const [brand, guide, desk, overview, week, flows, accounts, inbox, swatches] = await Promise.all([
-    getBrand(viewer, summary.id),
+  // pregled ne sme da padne zbog jednog dela: svaki izvor ima svoju rezervu. Sve ide u isto vreme,
+  // i dizajn brenda (ranije je čekao na kraju), a kartice čitaju samo ono što prikazuju (D-164).
+  const brandRow = getBrand(viewer, summary.id)
+  const [brand, design, guide, desk, overview, week, flows, accounts, inbox, swatches] = await Promise.all([
+    brandRow,
+    brandRow.then((b) => resolveDesign(b)).catch(() => null),
     getGuide(viewer, summary.id).catch(() => null),
-    listReviewDesk(viewer, { brandId: summary.id, tab: 'waiting' }).catch(() => null),
+    // početna prikazuje tri nacrta i broj: sličice samo za ta tri
+    listReviewDesk(viewer, { brandId: summary.id, tab: 'waiting', limit: 3 }).catch(() => null),
     getOverview(
       viewer,
       summary.id,
       new Date(now.getTime() - 30 * DAY).toISOString(),
       now.toISOString(),
     ).catch(() => null),
+    // nedelja prikazuje broj objava po danu, bez sličica
     listCalendar(
       viewer,
       summary.id,
       new Date(weekStart.getTime() - DAY).toISOString(),
       new Date(weekStart.getTime() + 8 * DAY).toISOString(),
+      { thumbs: false },
     ).catch(() => null),
     listFlows(viewer, summary.id).catch(() => []),
     listSocialAccounts(viewer, summary.id).catch(() => null),
     countNewSuggestions(viewer, summary.id).catch(() => 0),
     listBrandSwatches(viewer, current.workspaceId),
   ])
-  const design = await resolveDesign(brand).catch(() => null)
   const playbook = parsePlaybook(brand.playbook)
 
   const waiting = desk?.counts.waiting ?? 0

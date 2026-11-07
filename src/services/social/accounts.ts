@@ -73,19 +73,19 @@ export interface ConnectAvailability {
 }
 
 export async function connectAvailability(): Promise<ConnectAvailability[]> {
-  const out: ConnectAvailability[] = []
-  for (const key of Object.keys(CONNECT_PROVIDERS) as ConnectProviderKey[]) {
-    const def = CONNECT_PROVIDERS[key]
-    const enabled: SocialPlatform[] = []
-    for (const p of def.platforms) if (await isFeatureEnabled(`platform.${p}`)) enabled.push(p)
-    out.push({
-      provider: key,
-      label: def.label,
-      configured: isProviderConfigured(key),
-      enabledPlatforms: enabled,
-    })
-  }
-  return out
+  // svi prekidači stižu jednim upitom (lib/flags), pa ovde nema čekanja po mreži
+  return Promise.all(
+    (Object.keys(CONNECT_PROVIDERS) as ConnectProviderKey[]).map(async (key) => {
+      const def = CONNECT_PROVIDERS[key]
+      const on = await Promise.all(def.platforms.map((p) => isFeatureEnabled(`platform.${p}`)))
+      return {
+        provider: key,
+        label: def.label,
+        configured: isProviderConfigured(key),
+        enabledPlatforms: def.platforms.filter((_, i) => on[i]),
+      }
+    }),
+  )
 }
 
 /** Početak OAuth toka: state + redirect; vraća URL mreže. */
@@ -324,23 +324,21 @@ export async function listSocialAccounts(
   pending: SocialAccountView[]
   availability: ConnectAvailability[]
 }> {
-  await getBrand(viewer, brandId)
-  const { data, error } = await viewer.supabase
-    .from('social_accounts_public')
-    .select('*')
-    .eq('brand_id', brandId)
-    .order('created_at', { ascending: true })
+  // brend, nalozi, istorija i dostupne mreže u jednom krugu (D-164); upiti idu kroz RLS
+  const [, { data, error }, { data: hist }, availability] = await Promise.all([
+    getBrand(viewer, brandId),
+    viewer.supabase
+      .from('social_accounts_public')
+      .select('*')
+      .eq('brand_id', brandId)
+      .order('created_at', { ascending: true }),
+    viewer.supabase.from('historical_posts').select('social_account_id').eq('brand_id', brandId),
+    connectAvailability(),
+  ])
   if (error) throw mapDbError(error)
   const rows = data ?? []
-  const ids = rows.map((r) => r.id!).filter(Boolean)
   const counts = new Map<string, number>()
-  if (ids.length) {
-    const { data: hist } = await viewer.supabase
-      .from('historical_posts')
-      .select('social_account_id')
-      .in('social_account_id', ids)
-    for (const h of hist ?? []) counts.set(h.social_account_id, (counts.get(h.social_account_id) ?? 0) + 1)
-  }
+  for (const h of hist ?? []) counts.set(h.social_account_id, (counts.get(h.social_account_id) ?? 0) + 1)
   const views = rows.map((r) => toView(r, counts.get(r.id!) ?? 0))
   const cutoff = Date.now() - PENDING_TTL_MS
   const pending = views.filter(
@@ -349,7 +347,7 @@ export async function listSocialAccounts(
       (!pendingState || v.pendingState === pendingState) &&
       new Date(v.createdAt).getTime() > cutoff - 86_400_000,
   )
-  return { accounts: views.filter((v) => !v.pending), pending, availability: await connectAvailability() }
+  return { accounts: views.filter((v) => !v.pending), pending, availability }
 }
 
 /** Korisnik bira koje naloge zadržava; ostali „na čekanju” iz istog toka se brišu. */

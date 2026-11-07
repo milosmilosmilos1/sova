@@ -14,6 +14,7 @@ import { parseMp4, stripVideoMetadata, type VideoInfo } from '@/lib/media/mp4'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
 import { getBrand } from '@/services/brands'
+import { signedUrl } from '@/services/media-urls'
 import type { Database, Json } from '@/types/database'
 
 export type MediaAssetRow = Database['public']['Tables']['media_assets']['Row']
@@ -416,18 +417,8 @@ export async function getAsset(viewer: Viewer, assetId: string): Promise<MediaAs
   )
 }
 
-/** Potpisan URL za pregled (podrazumevano 1 h). Mreže dobijaju 24 h u fazi 9. */
-export async function signedUrl(
-  asset: Pick<MediaAssetRow, 'bucket' | 'storage_path'>,
-  expiresSec = 3600,
-): Promise<string> {
-  const admin = createSupabaseAdminClient()
-  const { data, error } = await admin.storage
-    .from(asset.bucket)
-    .createSignedUrl(asset.storage_path, expiresSec)
-  if (error || !data) throw new ApiError('INTERNAL', 'Potpisan link nije napravljen.', { cause: error })
-  return data.signedUrl
-}
+/** Potpisan URL (pregled 2 h, mreže 24 h): skupljeni pozivi i ponovljen link, vidi media-urls (D-164). */
+export { signedUrl }
 
 export async function downloadAsset(asset: Pick<MediaAssetRow, 'bucket' | 'storage_path'>): Promise<Buffer> {
   const admin = createSupabaseAdminClient()

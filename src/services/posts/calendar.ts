@@ -5,10 +5,10 @@ import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import { statusLabel, type PostStatus } from '@/lib/posts/state-machine'
 import type { QueueSlotInput } from '@/lib/schemas/posts'
-import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
 import { zonedToUtc } from '@/lib/zoned-time'
 import { getBrand } from '@/services/brands'
+import { signedUrl } from '@/services/media-urls'
 
 /**
  * Kalendar (brif 9): objave i targeti u opsegu; UTC u bazi, zona brenda na klijentu (K2).
@@ -34,60 +34,84 @@ export interface CalendarItem {
   thumb: string | null
 }
 
+/** Objava u kalendaru sa slikama (redosled i vrsta), da se sličica izabere bez posebnog upita. */
+const CALENDAR_POST_SELECT =
+  'id, title, master_text, status, scheduled_for, post_media(sort_order, media_assets(kind, bucket, storage_path))'
+
+interface CalendarPostRow {
+  id: string
+  title: string | null
+  master_text: string
+  status: PostStatus
+  scheduled_for: string | null
+  post_media: Array<{
+    sort_order: number
+    media_assets: { kind: string; bucket: string; storage_path: string } | null
+  }>
+}
+
 export async function listCalendar(
   viewer: Viewer,
   brandId: string,
   from: string,
   to: string,
+  /** početna prikazuje samo broj objava po danu, bez sličica */
+  options: { thumbs?: boolean } = {},
 ): Promise<{ items: CalendarItem[]; timezone: string }> {
-  const brand = await getBrand(viewer, brandId)
   if (new Date(to).getTime() - new Date(from).getTime() > 62 * 86_400_000)
     throw new ApiError('VALIDATION', 'Opseg kalendara može biti najviše 62 dana.')
-  const { data: targets, error } = await viewer.supabase
-    .from('post_targets')
-    .select('id, post_id, platform, social_account_id, scheduled_at, status, permalink')
-    .eq('brand_id', brandId)
-    .gte('scheduled_at', from)
-    .lte('scheduled_at', to)
-  if (error) throw mapDbError(error)
-  const { data: posts, error: pErr } = await viewer.supabase
-    .from('posts')
-    .select('id, title, master_text, status, scheduled_for')
-    .eq('brand_id', brandId)
-    .is('deleted_at', null)
-    .or(
-      `and(scheduled_for.gte.${from},scheduled_for.lte.${to})${targets?.length ? `,id.in.(${[...new Set(targets.map((t) => t.post_id))].join(',')})` : ''}`,
-    )
-  if (pErr) throw mapDbError(pErr)
-  const ids = (posts ?? []).map((p) => p.id)
+  // brend, stavke i objave perioda (sa slikama) u jednom krugu (D-164); upiti idu kroz RLS
+  const [brand, targetsRes, postsRes] = await Promise.all([
+    getBrand(viewer, brandId),
+    viewer.supabase
+      .from('post_targets')
+      .select('id, post_id, platform, social_account_id, scheduled_at, status, permalink')
+      .eq('brand_id', brandId)
+      .gte('scheduled_at', from)
+      .lte('scheduled_at', to),
+    viewer.supabase
+      .from('posts')
+      .select(CALENDAR_POST_SELECT)
+      .eq('brand_id', brandId)
+      .is('deleted_at', null)
+      .gte('scheduled_for', from)
+      .lte('scheduled_for', to),
+  ])
+  if (targetsRes.error) throw mapDbError(targetsRes.error)
+  if (postsRes.error) throw mapDbError(postsRes.error)
+  const targets = targetsRes.data ?? []
+  const posts = (postsRes.data ?? []) as unknown as CalendarPostRow[]
+  // stavka u periodu čija objava ima drugi datum: te objave se dočitavaju (obično ih nema)
+  const known = new Set(posts.map((p) => p.id))
+  const missing = [...new Set(targets.map((t) => t.post_id))].filter((id) => !known.has(id))
+  if (missing.length) {
+    const { data: extra, error: eErr } = await viewer.supabase
+      .from('posts')
+      .select(CALENDAR_POST_SELECT)
+      .eq('brand_id', brandId)
+      .is('deleted_at', null)
+      .in('id', missing)
+    if (eErr) throw mapDbError(eErr)
+    posts.push(...((extra ?? []) as unknown as CalendarPostRow[]))
+  }
   const mediaCount = new Map<string, number>()
   const thumbs = new Map<string, string>()
-  if (ids.length) {
-    const { data: media } = await viewer.supabase
-      .from('post_media')
-      .select('post_id, sort_order, media_assets(kind, bucket, storage_path)')
-      .in('post_id', ids)
-      .order('sort_order')
-    const first = new Map<string, { bucket: string; path: string }>()
-    for (const m of media ?? []) {
-      mediaCount.set(m.post_id, (mediaCount.get(m.post_id) ?? 0) + 1)
-      const asset = m.media_assets as { kind: string; bucket: string; storage_path: string } | null
-      if (!first.has(m.post_id) && asset?.kind === 'image')
-        first.set(m.post_id, { bucket: asset.bucket, path: asset.storage_path })
-    }
-    // potpisani linkovi u jednom pozivu po bucket-u (kalendar ima i desetine objava)
-    const byBucket = new Map<string, string[]>()
-    for (const f of first.values()) byBucket.set(f.bucket, [...(byBucket.get(f.bucket) ?? []), f.path])
-    const urls = new Map<string, string>()
-    const admin = createSupabaseAdminClient()
-    for (const [bucket, paths] of byBucket) {
-      const { data } = await admin.storage.from(bucket).createSignedUrls(paths, 3600)
-      for (const d of data ?? []) if (d.path && d.signedUrl) urls.set(`${bucket}/${d.path}`, d.signedUrl)
-    }
-    for (const [postId, f] of first) {
-      const url = urls.get(`${f.bucket}/${f.path}`)
-      if (url) thumbs.set(postId, url)
-    }
+  const first = new Map<string, { bucket: string; storage_path: string }>()
+  for (const p of posts) {
+    const media = [...(p.post_media ?? [])].sort((a, b) => a.sort_order - b.sort_order)
+    if (media.length) mediaCount.set(p.id, media.length)
+    // sličica je prva slika po redosledu (video se preskače), kao ranije
+    const image = media.find((m) => m.media_assets?.kind === 'image')?.media_assets
+    if (image) first.set(p.id, image)
+  }
+  if (options.thumbs !== false) {
+    // svi potpisi iz istog koraka idu u jedan poziv po bucket-u (media-urls)
+    await Promise.all(
+      [...first].map(async ([postId, asset]) => {
+        const url = await signedUrl(asset).catch(() => null)
+        if (url) thumbs.set(postId, url)
+      }),
+    )
   }
   const items: CalendarItem[] = (posts ?? [])
     .map((p) => ({

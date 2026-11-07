@@ -103,13 +103,16 @@ export async function resolveDesign(
   brand: Pick<BrandRow, 'id' | 'name' | 'design' | 'logo_asset_id'> & { content_locale?: string | null },
 ): Promise<ResolvedDesign> {
   const stored = storedDesign(brand)
-  const profile = await getCurrentProfileRow(brand.id)
+  // profil brenda i nalog za potpis u isto vreme, ne jedno za drugim (D-164)
+  const [profile, handle] = await Promise.all([
+    getCurrentProfileRow(brand.id),
+    stored.handle !== undefined ? stored.handle : defaultHandle(brand.id),
+  ])
   const fromProfile = profile ? colorsFromProfile(profile.data) : null
   const profileLogo = (() => {
     const parsed = profile ? brandProfileSchema.safeParse(profile.data) : null
     return parsed?.success ? parsed.data.visual.logo.value.asset_id : null
   })()
-  const handle = stored.handle !== undefined ? stored.handle : await defaultHandle(brand.id)
   return {
     styleId: stored.styleId ?? DEFAULT_STYLE,
     size: stored.size ?? 'portrait',

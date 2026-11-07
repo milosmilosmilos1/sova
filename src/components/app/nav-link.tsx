@@ -3,9 +3,26 @@
 import type { Route } from 'next'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useRef, type ReactNode, type RefObject } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore, type ReactNode, type RefObject } from 'react'
 
 import { cn } from '@/lib/utils'
+
+const HOVER_QUERY = '(hover: hover) and (pointer: fine)'
+
+function subscribeHover(onChange: () => void) {
+  const media = window.matchMedia(HOVER_QUERY)
+  media.addEventListener('change', onChange)
+  return () => media.removeEventListener('change', onChange)
+}
+
+/** Uređaj sa mišem; na serveru se pretpostavlja miš, pa se ništa ne učitava unapred pre hidratacije. */
+function useCanHover(): boolean {
+  return useSyncExternalStore(
+    subscribeHover,
+    () => window.matchMedia(HOVER_QUERY).matches,
+    () => true,
+  )
+}
 
 /**
  * Aktivna stavka trake koja se skroluje (meni na telefonu, kartice) dolazi u vidno polje trake.
@@ -25,7 +42,12 @@ export function useKeepInView(ref: RefObject<HTMLElement | null>, active: boolea
   }, [ref, active])
 }
 
-/** Link u bočnoj navigaciji; aktivno stanje računa na klijentu (usePathname), ne na serveru. */
+/**
+ * Link u bočnoj navigaciji; aktivno stanje računa na klijentu (usePathname), ne na serveru.
+ * Na računaru se strana učitava unapred tek kad miš pređe preko linka ili link dobije fokus (D-164):
+ * ranije je svaki vidljiv link (oko 20) odmah slao po dva zahteva serveru, baš dok se strana učitava.
+ * Na telefonu nema prelaska mišem, pa ostaje učitavanje vidljivih linkova, da dodir odmah prikaže stranu.
+ */
 export function NavLink({
   href,
   exact,
@@ -43,10 +65,16 @@ export function NavLink({
   const active = exact ? pathname === href : under(href) || also.some(under)
   const ref = useRef<HTMLAnchorElement>(null)
   useKeepInView(ref, active)
+  const canHover = useCanHover()
+  const [intent, setIntent] = useState(false)
+  const showIntent = () => setIntent(true)
   return (
     <Link
       ref={ref}
       href={href}
+      prefetch={!canHover || intent ? null : false}
+      onMouseEnter={showIntent}
+      onFocus={showIntent}
       aria-current={active ? 'page' : undefined}
       className={cn(
         'relative flex items-center gap-2.5 rounded-md px-3 py-2 text-sm whitespace-nowrap text-sidebar-foreground/80 transition-colors hover:bg-sidebar-accent/70 hover:text-sidebar-foreground [&_svg]:size-4 [&_svg]:shrink-0 [&_svg]:text-muted-foreground',

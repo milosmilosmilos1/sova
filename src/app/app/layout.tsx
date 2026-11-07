@@ -48,10 +48,15 @@ export default async function AppLayout({ children }: LayoutProps<'/app'>) {
     )
   }
 
+  // članstva i brendovi su već pročitani u istom krugu kao provera prijave (app-prefetch, D-164)
   const memberships = await listMemberships(viewer)
   const current = memberships.length ? await getCurrentWorkspace(viewer) : null
-  const brands = current ? await listBrands(viewer, current.workspaceId) : []
-  const currentBrand = current ? await getCurrentBrand(viewer, current.workspaceId) : null
+  const [brands, currentBrand] = current
+    ? await Promise.all([
+        listBrands(viewer, current.workspaceId),
+        getCurrentBrand(viewer, current.workspaceId),
+      ])
+    : [[], null]
   const pending = previewPending()
   // jezik izabran na javnom sajtu važi i za mejlove i obaveštenja: profil prati kolačić (D-130)
   const cookieLocale = (await cookies()).get(LOCALE_COOKIE)?.value

@@ -88,18 +88,29 @@ function formatOf(media: Array<{ kind: string }>, story: boolean): ReviewFormat 
 
 export async function listReviewDesk(
   viewer: Viewer,
-  input: { brandId: string; tab: ReviewTab; q?: string; format?: ReviewFormat; sort?: 'new' | 'old' },
+  input: {
+    brandId: string
+    tab: ReviewTab
+    q?: string
+    format?: ReviewFormat
+    sort?: 'new' | 'old'
+    /** koliko stavki vraća (sa sličicom); početna traži samo prve tri */
+    limit?: number
+  },
 ): Promise<{ items: ReviewItem[]; counts: Record<ReviewTab, number> }> {
-  await getBrand(viewer, input.brandId)
-  const { data, error } = await viewer.supabase
-    .from('posts')
-    .select(
-      'id, title, master_text, status, scheduled_for, created_at, flow_id, content_flows(name), post_targets(platform, options), post_media(sort_order, media_assets(kind, bucket, storage_path, mime_type)), video:design->video, designFormat:design->>format',
-    )
-    .eq('brand_id', input.brandId)
-    .is('deleted_at', null)
-    .order('created_at', { ascending: input.sort === 'old' })
-    .limit(300)
+  // provera brenda u istom krugu kao lista (D-164): upit ide kroz RLS, a bez pristupa poziv pada sa 404
+  const [, { data, error }] = await Promise.all([
+    getBrand(viewer, input.brandId),
+    viewer.supabase
+      .from('posts')
+      .select(
+        'id, title, master_text, status, scheduled_for, created_at, flow_id, content_flows(name), post_targets(platform, options), post_media(sort_order, media_assets(kind, bucket, storage_path, mime_type)), video:design->video, designFormat:design->>format',
+      )
+      .eq('brand_id', input.brandId)
+      .is('deleted_at', null)
+      .order('created_at', { ascending: input.sort === 'old' })
+      .limit(300),
+  ])
   if (error) throw mapDbError(error)
   const rows = data ?? []
   const counts = Object.fromEntries(
@@ -142,7 +153,7 @@ export async function listReviewDesk(
       }
     })
     .filter((x) => !input.format || x.format === input.format)
-    .slice(0, 100)
+    .slice(0, Math.min(input.limit ?? 100, 100))
   // slika videa u temi dok pregledač ne napravi MP4 (D-128)
   const posterIds = picked.flatMap(({ video, media }) =>
     video?.posterAssetId && !media.length ? [video.posterAssetId] : [],

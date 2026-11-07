@@ -86,10 +86,52 @@ export interface OverviewView extends OverviewData {
   timezone: string
 }
 
-async function loadTargets(client: Client, brandId: string, from: string, to: string): Promise<TargetLite[]> {
-  const { data: targets, error } = await client
+/**
+ * Objavljene stavke perioda sa objavom, stubom i snimcima metrika u jednom upitu (D-164). Ranije su
+ * objave, stubovi i snimci išli posle stavki, svaki u svom krugu do baze. Ugnježdeni redovi prolaze kroz
+ * isti RLS kao posebni upiti, pa obrisana objava i dalje daje stavku bez naslova.
+ */
+const TARGET_SELECT =
+  'id, post_id, platform, social_account_id, published_at, permalink, ' +
+  'posts!post_targets_post_id_fkey(title, master_text, pillar_id, content_pillars!posts_pillar_id_fkey(name)), ' +
+  'post_metrics_snapshots!post_metrics_snapshots_target_id_fkey(horizon, captured_at, impressions, reach, reactions, comments, shares, saves, link_clicks, engagement_rate)'
+
+interface TargetRow {
+  id: string
+  post_id: string
+  platform: SocialPlatform
+  social_account_id: string
+  published_at: string | null
+  permalink: string | null
+  posts: {
+    title: string | null
+    master_text: string | null
+    pillar_id: string | null
+    content_pillars: { name: string } | null
+  } | null
+  post_metrics_snapshots: Array<{
+    horizon: string
+    captured_at: string
+    impressions: number | null
+    reach: number | null
+    reactions: number | null
+    comments: number | null
+    shares: number | null
+    saves: number | null
+    link_clicks: number | null
+    engagement_rate: number | string | null
+  }>
+}
+
+async function loadTargets(
+  client: Client,
+  brandId: string,
+  from: string,
+  to: string,
+): Promise<{ targets: TargetLite[]; snapshots: SnapshotLite[] }> {
+  const { data, error } = await client
     .from('post_targets')
-    .select('id, post_id, platform, social_account_id, published_at, permalink')
+    .select(TARGET_SELECT)
     .eq('brand_id', brandId)
     .in('status', [...ANALYTICS_TARGET_STATUSES])
     .gte('published_at', from)
@@ -97,63 +139,38 @@ async function loadTargets(client: Client, brandId: string, from: string, to: st
     .order('published_at', { ascending: false })
     .limit(2000)
   if (error) throw mapDbError(error)
-  const postIds = [...new Set((targets ?? []).map((t) => t.post_id))]
-  const posts = postIds.length
-    ? ((await client.from('posts').select('id, title, master_text, pillar_id').in('id', postIds)).data ?? [])
-    : []
-  const postById = new Map(posts.map((p) => [p.id, p]))
-  const pillarIds = [...new Set(posts.map((p) => p.pillar_id).filter((x): x is string => Boolean(x)))]
-  const pillars = pillarIds.length
-    ? ((await client.from('content_pillars').select('id, name').in('id', pillarIds)).data ?? [])
-    : []
-  const pillarName = new Map(pillars.map((p) => [p.id, p.name]))
-  return (targets ?? [])
-    .filter((t) => t.published_at)
-    .map((t) => {
-      const p = postById.get(t.post_id)
-      return {
-        targetId: t.id,
-        postId: t.post_id,
-        platform: t.platform,
-        socialAccountId: t.social_account_id,
-        publishedAt: t.published_at!,
-        permalink: t.permalink,
-        pillarId: p?.pillar_id ?? null,
-        pillarName: p?.pillar_id ? (pillarName.get(p.pillar_id) ?? null) : null,
-        title: p?.title ?? null,
-        excerpt: (p?.master_text ?? '').replace(/\s+/g, ' ').slice(0, 140),
-      }
-    })
-}
-
-async function loadSnapshots(client: Client, targetIds: string[]): Promise<SnapshotLite[]> {
-  if (!targetIds.length) return []
-  const out: SnapshotLite[] = []
-  for (let i = 0; i < targetIds.length; i += 200) {
-    const { data, error } = await client
-      .from('post_metrics_snapshots')
-      .select(
-        'target_id, horizon, captured_at, impressions, reach, reactions, comments, shares, saves, link_clicks, engagement_rate',
-      )
-      .in('target_id', targetIds.slice(i, i + 200))
-    if (error) throw mapDbError(error)
-    for (const s of data ?? []) {
-      out.push({
-        targetId: s.target_id,
-        horizon: s.horizon as Horizon,
-        capturedAt: s.captured_at,
-        impressions: s.impressions,
-        reach: s.reach,
-        reactions: s.reactions,
-        comments: s.comments,
-        shares: s.shares,
-        saves: s.saves,
-        linkClicks: s.link_clicks,
-        engagementRate: s.engagement_rate === null ? null : Number(s.engagement_rate),
-      })
+  const rows = ((data ?? []) as unknown as TargetRow[]).filter((t) => t.published_at)
+  const targets = rows.map((t): TargetLite => {
+    const p = t.posts
+    return {
+      targetId: t.id,
+      postId: t.post_id,
+      platform: t.platform,
+      socialAccountId: t.social_account_id,
+      publishedAt: t.published_at!,
+      permalink: t.permalink,
+      pillarId: p?.pillar_id ?? null,
+      pillarName: p?.pillar_id ? (p.content_pillars?.name ?? null) : null,
+      title: p?.title ?? null,
+      excerpt: (p?.master_text ?? '').replace(/\s+/g, ' ').slice(0, 140),
     }
-  }
-  return out
+  })
+  const snapshots = rows.flatMap((t) =>
+    (t.post_metrics_snapshots ?? []).map((s): SnapshotLite => ({
+      targetId: t.id,
+      horizon: s.horizon as Horizon,
+      capturedAt: s.captured_at,
+      impressions: s.impressions,
+      reach: s.reach,
+      reactions: s.reactions,
+      comments: s.comments,
+      shares: s.shares,
+      saves: s.saves,
+      linkClicks: s.link_clicks,
+      engagementRate: s.engagement_rate === null ? null : Number(s.engagement_rate),
+    })),
+  )
+  return { targets, snapshots }
 }
 
 export async function computeOverview(
@@ -161,43 +178,38 @@ export async function computeOverview(
   brandId: string,
   from: string,
   to: string,
-  timeZone = 'UTC',
+  /** zona brenda za dnevni niz; može i obećanje (getOverview čita brend u istom krugu kao podatke) */
+  timeZone: string | Promise<string> = 'UTC',
   /** period za poređenje; podrazumevano isto trajanje neposredno pre (izveštaj daje prethodni mesec) */
   prevRange: { from: string; to: string } = periodBefore(from, to),
 ): Promise<OverviewData> {
-  const [targets, prevTargets, accountsRes] = await Promise.all([
+  // sve u jednom krugu do baze (D-164): stavke sa metrikama za oba perioda, nalozi i pratioci
+  const [current, prior, accountsRes, followerRes] = await Promise.all([
     loadTargets(client, brandId, from, to),
     loadTargets(client, brandId, prevRange.from, prevRange.to),
     client.from('social_accounts').select('id, platform, name').eq('brand_id', brandId),
+    client
+      .from('account_metrics_daily')
+      .select('social_account_id, date, followers')
+      .eq('brand_id', brandId)
+      .gte('date', from.slice(0, 10))
+      .lte('date', to.slice(0, 10))
+      .order('date', { ascending: true }),
   ])
+  const targets = current.targets
+  const prevTargets = prior.targets
   const accounts: AccountLite[] = (accountsRes.data ?? []).map((a) => ({
     id: a.id,
     platform: a.platform,
     name: a.name,
   }))
   const accountById = new Map(accounts.map((a) => [a.id, a]))
-  const [snaps, prevSnaps] = await Promise.all([
-    loadSnapshots(
-      client,
-      targets.map((t) => t.targetId),
-    ),
-    loadSnapshots(
-      client,
-      prevTargets.map((t) => t.targetId),
-    ),
-  ])
-  const latest = latestSnapshots(snaps)
-  const prevLatest = latestSnapshots(prevSnaps)
+  const latest = latestSnapshots(current.snapshots)
+  const prevLatest = latestSnapshots(prior.snapshots)
   const totals = totalsOf(targets, latest)
   const previous = totalsOf(prevTargets, prevLatest)
 
-  const { data: followerRows } = await client
-    .from('account_metrics_daily')
-    .select('social_account_id, date, followers')
-    .eq('brand_id', brandId)
-    .gte('date', from.slice(0, 10))
-    .lte('date', to.slice(0, 10))
-    .order('date', { ascending: true })
+  const followerRows = followerRes.data
   const followers = followersSeries(
     (followerRows ?? []).map((r) => ({
       accountId: r.social_account_id,
@@ -264,7 +276,7 @@ export async function computeOverview(
     perPillar: groupTotals(targets, latest, (t) =>
       t.pillarId ? { key: t.pillarId, label: t.pillarName ?? 'Stub' } : null,
     ),
-    daily: dailySeries(targets, latest, from, to, timeZone),
+    daily: dailySeries(targets, latest, from, to, await timeZone),
     topPosts: ranked.slice(0, 5),
     weakPosts: ranked.length > 5 ? ranked.slice(-3).reverse() : [],
     followers,
@@ -294,10 +306,13 @@ export async function getOverview(
   from?: string | null,
   to?: string | null,
 ): Promise<OverviewView> {
-  const brand = await getBrand(viewer, brandId)
   const range = normalizeRange(from, to)
-  const data = await computeOverview(viewer.supabase, brandId, range.from, range.to, brand.timezone)
-  return { ...data, timezone: brand.timezone }
+  // provera brenda u istom krugu kao podaci: upiti idu kroz RLS, a bez pristupa poziv i dalje pada sa 404
+  const brand = getBrand(viewer, brandId)
+  const timeZone = brand.then((b) => b.timezone)
+  timeZone.catch(() => undefined)
+  const data = await computeOverview(viewer.supabase, brandId, range.from, range.to, timeZone)
+  return { ...data, timezone: (await brand).timezone }
 }
 
 export interface PostMetricsRow extends TopPost {
@@ -314,22 +329,21 @@ export async function listPostMetrics(
   brandId: string,
   opts: { from?: string | null; to?: string | null; platform?: SocialPlatform | null; limit?: number },
 ): Promise<{ items: PostMetricsRow[]; from: string; to: string }> {
-  await getBrand(viewer, brandId)
   const range = normalizeRange(opts.from, opts.to)
-  let targets = await loadTargets(viewer.supabase, brandId, range.from, range.to)
+  // provera brenda, stavke sa metrikama i nalozi u jednom krugu (D-164); upiti idu kroz RLS
+  const [, loaded, { data: accounts }] = await Promise.all([
+    getBrand(viewer, brandId),
+    loadTargets(viewer.supabase, brandId, range.from, range.to),
+    viewer.supabase.from('social_accounts').select('id, name').eq('brand_id', brandId),
+  ])
+  let targets = loaded.targets
   if (opts.platform) targets = targets.filter((t) => t.platform === opts.platform)
   targets = targets.slice(0, Math.min(Math.max(opts.limit ?? 100, 1), 500))
-  const snaps = await loadSnapshots(
-    viewer.supabase,
-    targets.map((t) => t.targetId),
-  )
+  const picked = new Set(targets.map((t) => t.targetId))
+  const snaps = loaded.snapshots.filter((s) => picked.has(s.targetId))
   const latest = latestSnapshots(snaps)
   const horizons = new Map<string, Horizon[]>()
   for (const s of snaps) horizons.set(s.targetId, [...(horizons.get(s.targetId) ?? []), s.horizon])
-  const { data: accounts } = await viewer.supabase
-    .from('social_accounts')
-    .select('id, name')
-    .eq('brand_id', brandId)
   const nameById = new Map((accounts ?? []).map((a) => [a.id, a.name]))
   const items: PostMetricsRow[] = targets.map((t) => {
     const s = latest.get(t.targetId)

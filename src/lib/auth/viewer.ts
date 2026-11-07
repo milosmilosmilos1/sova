@@ -6,6 +6,8 @@ import type { NextRequest } from 'next/server'
 import { cache } from 'react'
 
 import { isAppLocale, type AppLocale } from '@/i18n/config'
+import { prefetchAppContext, seedAppPrefetch } from '@/lib/auth/app-prefetch'
+import { BRAND_COOKIE } from '@/lib/auth/brand'
 import { IMP_COOKIE, mintImpersonationJwt, verifySessionCookie } from '@/lib/auth/impersonation-core'
 import { enableRequestMemo } from '@/lib/auth/request-memo'
 import { env } from '@/lib/env'
@@ -224,12 +226,16 @@ async function resolveImpersonation(
   }
 }
 
+/** Klijent i pristupni token iz kolačića, bez mreže (proxy je sesiju već osvežio). Jednom po zahtevu. */
+const cookieSession = cache(async () => {
+  const supabase = await createSupabaseServerClient()
+  const { data } = await supabase.auth.getSession()
+  return { supabase, token: data.session?.access_token ?? null }
+})
+
 /** Stvarni korisnik iz cookie sesije, bez impersonacije (admin panel, provera admina). */
 export const getRealViewer = cache(async (): Promise<Viewer | null> => {
-  const supabase = await createSupabaseServerClient()
-  // pristupni token iz kolačića, bez mreže (proxy ga je već osvežio); proverava ga buildViewer
-  const { data } = await supabase.auth.getSession()
-  const token = data.session?.access_token
+  const { supabase, token } = await cookieSession()
   if (!token) return null
   return buildViewer(supabase, token)
 })
@@ -237,28 +243,47 @@ export const getRealViewer = cache(async (): Promise<Viewer | null> => {
 /**
  * Efektivni korisnik (Server Components, Server Actions): ciljni korisnik tokom važeće impersonacije,
  * inače stvarni korisnik iz cookie sesije. Memoizovano po zahtevu. Kad je zahtev čitanje strane (ne
- * serverska akcija), ponovljena čitanja brenda i članstva se pamte (request-memo, D-164).
+ * serverska akcija), ponovljena čitanja brenda i članstva se pamte (request-memo), a na stranama
+ * aplikacije se članstva i brendovi čitaju u istom krugu kao provera prijave (app-prefetch, D-164).
  */
 export const getViewer = cache(async (): Promise<Viewer | null> => {
+  let store: Awaited<ReturnType<typeof cookies>>
+  let h: Awaited<ReturnType<typeof headers>>
+  try {
+    ;[store, h] = await Promise.all([cookies(), headers()])
+  } catch {
+    return getRealViewer()
+  }
+  const impersonating = store.get(IMP_COOKIE)?.value
+  const read = !h.has('next-action') && (h.get('x-method') ?? 'GET') === 'GET'
+  const appPage = (h.get('x-pathname') ?? '').startsWith('/app')
+  const prefetch =
+    read && appPage && !impersonating
+      ? cookieSession()
+          .then(({ supabase, token }) => {
+            const sub = token ? tokenClaims(token)?.sub : null
+            return typeof sub === 'string'
+              ? prefetchAppContext(supabase, sub, store.get(BRAND_COOKIE)?.value)
+              : null
+          })
+          .catch(() => null)
+      : null
   const real = await getRealViewer()
   if (!real) return null
   let viewer = real
-  try {
-    const [store, h] = await Promise.all([cookies(), headers()])
-    const value = store.get(IMP_COOKIE)?.value
-    if (value) {
-      const meta: RequestMeta = {
-        method: h.get('x-method') ?? 'GET',
-        path: h.get('x-pathname') ?? '',
-        ip: firstIp(h.get('x-forwarded-for')),
-        userAgent: h.get('user-agent'),
-        requestId: h.get('x-request-id'),
-      }
-      viewer = (await resolveImpersonation(real, value, meta)) ?? real
+  if (impersonating) {
+    const meta: RequestMeta = {
+      method: h.get('x-method') ?? 'GET',
+      path: h.get('x-pathname') ?? '',
+      ip: firstIp(h.get('x-forwarded-for')),
+      userAgent: h.get('user-agent'),
+      requestId: h.get('x-request-id'),
     }
-    if (!h.has('next-action') && (h.get('x-method') ?? 'GET') === 'GET') enableRequestMemo(viewer)
-  } catch {
-    return real
+    viewer = (await resolveImpersonation(real, impersonating, meta)) ?? real
+  }
+  if (read) {
+    enableRequestMemo(viewer)
+    if (prefetch) seedAppPrefetch(viewer, await prefetch)
   }
   return viewer
 })

@@ -1436,3 +1436,19 @@ Odluka:
 - Raspored videa je sada 4 (`VIDEO_LAYOUT`): video nacrtan ranije nudi se u „Uskladi sa temom”, a MP4 posle toga pravi pregledač kao i do sada.
 
 Razlog: vlasnik je na Adaptiko videu video da natpisi Facebook-a pokrivaju tekst i tražio da se tekst podigne i da opis bude krupniji.
+
+## D-164 · 7.11.2026 · usvojeno · Brzina: manje uzastopnih krugova do baze
+
+Odluka:
+
+- Serverske funkcije na Netlify-ju rade u Ohaju (SAD), a baza je u Frankfurtu, pa svaki upit bazi košta oko 100–150 ms. Baza sama radi brzo (1–15 ms po upitu, pg_stat_statements). Besplatni Netlify ne dozvoljava drugi region; Pro paket (20 $ mesečno) dozvoljava Frankfurt i to je vlasnikova odluka. Cilj u kodu je zato što manje upita jedan za drugim.
+- Prijava (`lib/auth/viewer.ts`): Auth proverava token u isto vreme dok se čita profil, a ranije je profil čekao Auth. Provera da sesija nije opozvana ostaje (blokiran nalog, odjava sa svih uređaja). AAL se čita iz istog, potvrđenog tokena, bez još jednog poziva Auth-u. Kolačić: dva kruga postaju jedan; Bearer: tri postaju jedan.
+- Prvo čitanje strane aplikacije (`lib/auth/app-prefetch.ts`): u istom krugu kao provera prijave čitaju se članstva, svi dostupni brendovi sa bojama za birač i pun red trenutnog brenda iz kolačića. Upiti idu kroz RLS sa korisnikovim tokenom, a rezultat se koristi tek kad Auth potvrdi istog korisnika. Tokom impersonacije i u serverskim akcijama ide stari put. Glavni layout je sa sedam uzastopnih krugova pao na dva.
+- Pamćenje u okviru zahteva (`lib/auth/request-memo.ts`): brend, članstva, lista brendova i boje se čitaju jednom po zahtevu. Radi u renderu strane i u API čitanjima (GET), jer React cache() u Route Handlerima ne radi. Ključ je objekat korisnika (WeakMap), pa ništa ne prelazi u drugi zahtev. U izmenama (POST, PATCH, DELETE, serverske akcije) se ne pamti, pa čitanje posle upisa uvek ide u bazu.
+- Keš u pozadini (`lib/cache/swr.ts`): feature flagovi (svi jednim upitom; ranije po ključu, a lista naloga je čekala i osam zaredom), održavanje i cene drže se 60 s, a posle toga se vraća poslednja vrednost dok se nova čita u pozadini. Traka za održavanje je u Suspense i ne zadržava stranu.
+- Upiti koji su čekali jedan drugog sada idu zajedno: pregled rezultata (šest krugova u jedan; objava, stub i metrike ugnježdeni u upit stavki), kalendar, lista za odobrenje, nalozi, dizajn brenda (profil i nalog za potpis) i plan radnog prostora. Početna čita dizajn zajedno sa ostalim, potpisuje samo tri sličice za karticu odobrenja i nijednu za nedelju. Strana tokova čita broj slajdova iz sačuvanog dizajna.
+- Potpisani linkovi (`services/media-urls.ts`): pozivi iz istog koraka idu u jedan poziv Storage-u po bucket-u, umesto poziva po slici. Link za pregled važi 2 h (ranije 1 h), a isti link se daje ponovo prvih sat vremena, pa ga pregledač kešira i lista posle osvežavanja ne skida slike iznova. Linkovi za mreže (24 h) i za odobrenje se ne ponavljaju.
+- Limit po IP adresi ide u isto vreme sa proverom prijave. Sentry se učitava samo kad je podešen; bez DSN-a je na svakom hladnom startu učitavao oko 1,5 MB koda.
+- Bočni meni na računaru unapred učitava stranu tek kad miš pređe preko linka ili link dobije fokus; ranije je oko 20 linkova odmah slalo po dva zahteva. Na telefonu ostaje kao ranije. Povratak na stranu otvorenu u poslednjih 30 s ne ide ponovo na server (`experimental.staleTimes.dynamic`).
+
+Razlog: vlasnik je rekao da je sve očajno sporo. Merenje je pokazalo da vreme odlazi na krugove preko Atlantika i na hladne startove, a ne na bazu.

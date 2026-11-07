@@ -28,12 +28,16 @@ export interface WorkspacePlan {
  */
 export async function getWorkspacePlan(workspaceId: string): Promise<WorkspacePlan> {
   const admin = createSupabaseAdminClient()
-  const { data: sub } = await admin
-    .from('subscriptions')
-    .select('status, plans!inner(code, name, limits)')
-    .eq('workspace_id', workspaceId)
-    .in('status', ['trialing', 'active', 'past_due'])
-    .maybeSingle()
+  // besplatni plan se čita u isto vreme kad i pretplata, ne posle nje (D-164)
+  const [{ data: sub }, { data: free }] = await Promise.all([
+    admin
+      .from('subscriptions')
+      .select('status, plans!inner(code, name, limits)')
+      .eq('workspace_id', workspaceId)
+      .in('status', ['trialing', 'active', 'past_due'])
+      .maybeSingle(),
+    admin.from('plans').select('code, name, limits').eq('code', 'free').maybeSingle(),
+  ])
 
   if (sub?.plans) {
     return {
@@ -44,11 +48,6 @@ export async function getWorkspacePlan(workspaceId: string): Promise<WorkspacePl
     }
   }
 
-  const { data: free } = await admin
-    .from('plans')
-    .select('code, name, limits')
-    .eq('code', 'free')
-    .maybeSingle()
   return {
     code: 'free',
     name: free?.name ?? 'Besplatno',

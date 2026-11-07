@@ -23,6 +23,11 @@ const securityHeaders = [
 const nextConfig: NextConfig = {
   // Aplikacija je gotovo cela dinamička (sesija na svakoj strani); vidi D-011.
   cacheComponents: false,
+  experimental: {
+    // povratak na stranu otvorenu u poslednjih 30 s ne ide ponovo na server (D-164); serverske akcije,
+    // izmena kolačića i router.refresh() i dalje brišu ovaj keš, a liste osvežava React Query
+    staleTimes: { dynamic: 30 },
+  },
   poweredByHeader: false,
   reactStrictMode: true,
   // bez Next oznake „N” u uglu tokom razvoja; greške pri kompilaciji i u radu se i dalje prikazuju

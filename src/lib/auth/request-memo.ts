@@ -13,6 +13,13 @@ export function enableRequestMemo(owner: object): void {
   if (!stores.has(owner)) stores.set(owner, new Map())
 }
 
+/** Vrednost već pročitana drugim upitom u istom zahtevu (app-prefetch); postojeći unos se ne menja. */
+export function seedRequestMemo<T>(owner: object, key: string, value: T): void {
+  const store = stores.get(owner)
+  if (!store || store.has(key)) return
+  store.set(key, Promise.resolve(value))
+}
+
 export function requestMemo<T>(owner: object, key: string, load: () => Promise<T>): Promise<T> {
   const store = stores.get(owner)
   if (!store) return load()

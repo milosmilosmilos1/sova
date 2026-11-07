@@ -3,13 +3,15 @@ import 'server-only'
 import { contentLocaleForUi } from '@/config/locales'
 import { randomUUID } from 'node:crypto'
 
+import { z } from 'zod'
+
 import { ApiError } from '@/lib/api/errors'
-import { requestMemo } from '@/lib/auth/request-memo'
+import { requestMemo, seedRequestMemo } from '@/lib/auth/request-memo'
 import type { Viewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import { brandLogoUrl, brandSwatch, ICON_MAX_ASPECT, type BrandSwatch } from '@/lib/brands/swatch'
 import { logger } from '@/lib/logger'
-import { storedDesignSchema } from '@/lib/schemas/design'
+import { hexColorSchema } from '@/lib/schemas/design'
 import type { CreateBrandInput } from '@/lib/schemas/workspace'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
@@ -67,29 +69,12 @@ export async function listBrandSwatches(
   viewer: Viewer,
   workspaceId: string,
 ): Promise<Record<string, BrandSwatch>> {
-  const { data, error } = await viewer.supabase
-    .from('brands')
-    .select(
-      'id, design, logo_asset_id, brand_profiles(colors:data->visual->colors->value, logo:data->visual->logo->value->>asset_id)',
-    )
-    .eq('workspace_id', workspaceId)
-    .is('deleted_at', null)
-    .eq('brand_profiles.is_current', true)
-  if (error) {
-    logger.warn('brand_swatches_failed', { error: error.message })
-    return {}
-  }
-  const rows = (data ?? []) as unknown as Array<{
-    id: string
-    design: unknown
-    logo_asset_id: string | null
-    brand_profiles: Array<{ colors: { primary?: unknown } | null; logo: string | null }>
-  }>
+  const rows = await swatchRows(viewer, workspaceId)
+  if (!rows) return {}
   const logoOf = new Map(
     rows.map((row) => {
-      const stored = storedDesignSchema.safeParse(row.design ?? {})
-      const custom = stored.success ? stored.data.logoAssetId : undefined
-      return [row.id, custom ?? row.brand_profiles[0]?.logo ?? row.logo_asset_id ?? null]
+      const custom = z.uuid().safeParse(row.custom_logo).success ? row.custom_logo : null
+      return [row.id, custom ?? row.brand_profiles[0]?.site_logo ?? row.logo_asset_id ?? null]
     }),
   )
   const ids = [...new Set([...logoOf.values()].filter((id): id is string => Boolean(id)))]
@@ -107,20 +92,108 @@ export async function listBrandSwatches(
   }
   return Object.fromEntries(
     rows.map((row) => {
-      const stored = storedDesignSchema.safeParse(row.design ?? {})
-      const site = row.brand_profiles[0]?.colors?.primary
-      const chosen = stored.success ? stored.data.colors?.primary : undefined
+      const chosen = hexColorSchema.safeParse(row.custom_primary)
+      const site = row.brand_profiles[0]?.site_primary
       const logo = logoOf.get(row.id)
       return [
         row.id,
         brandSwatch(
           row.id,
-          chosen ?? (typeof site === 'string' ? site : null),
+          chosen.success ? chosen.data : (site ?? null),
           logo && square.has(logo) ? brandLogoUrl(row.id, logo) : null,
         ),
       ]
     }),
   )
+}
+
+/**
+ * Polja za boju i ikonicu brenda (D-137, D-155): izbor iz Vizuelnog identiteta, pa trenutni profil sa
+ * sajta. Čitaju se samo ta polja iz dizajna, ne ceo dizajn (šabloni iz Figme ga čine velikim).
+ */
+const SWATCH_FIELDS =
+  'custom_primary:design->colors->>primary, custom_logo:design->>logoAssetId, brand_profiles(site_primary:data->visual->colors->value->>primary, site_logo:data->visual->logo->value->>asset_id)'
+
+export interface SwatchRow {
+  id: string
+  logo_asset_id: string | null
+  custom_primary: string | null
+  custom_logo: string | null
+  brand_profiles: Array<{ site_primary: string | null; site_logo: string | null }>
+}
+
+/** Redovi za boje brendova; u čitanjima se pamte po zahtevu, a prvo čitanje strane ih već donese. */
+function swatchRows(viewer: Viewer, workspaceId: string): Promise<SwatchRow[] | null> {
+  return requestMemo(viewer, `swatchRows:${workspaceId}`, async () => {
+    const { data, error } = await viewer.supabase
+      .from('brands')
+      .select(`id, logo_asset_id, ${SWATCH_FIELDS}`)
+      .eq('workspace_id', workspaceId)
+      .is('deleted_at', null)
+      .eq('brand_profiles.is_current', true)
+    if (error) {
+      // boja nije vredna pada strane: brandSwatch i bez podataka daje rezervnu boju
+      logger.warn('brand_swatches_failed', { error: error.message })
+      return null
+    }
+    return (data ?? []) as unknown as SwatchRow[]
+  })
+}
+
+/**
+ * Svi dostupni brendovi korisnika sa poljima boje, jednim upitom (app-prefetch, D-164). Bez filtera po
+ * radnom prostoru: RLS (has_brand_access) vraća samo brendove kojima korisnik ima pristup, a prostor se
+ * bira u memoriji, kao što listBrands radi upitom.
+ */
+export function brandContextQuery(supabase: Viewer['supabase']) {
+  return supabase
+    .from('brands')
+    .select(`${BRAND_COLUMNS}, ${SWATCH_FIELDS}`)
+    .is('deleted_at', null)
+    .eq('brand_profiles.is_current', true)
+    .order('created_at', { ascending: true })
+}
+
+export type BrandContextRow = BrandSummary & Omit<SwatchRow, 'id' | 'logo_asset_id'>
+
+/** Brendovi jednog prostora iz redova prvog čitanja: lista brendova i boje, kao listBrands i swatchRows. */
+export function seedWorkspaceBrands(viewer: Viewer, workspaceId: string, rows: BrandContextRow[]): void {
+  const mine = rows.filter((row) => row.workspace_id === workspaceId)
+  seedRequestMemo(
+    viewer,
+    `brands:${workspaceId}`,
+    mine.map((row): BrandSummary => ({
+      id: row.id,
+      workspace_id: row.workspace_id,
+      name: row.name,
+      website_url: row.website_url,
+      timezone: row.timezone,
+      content_locale: row.content_locale,
+      autopilot_level: row.autopilot_level,
+      status: row.status,
+      logo_asset_id: row.logo_asset_id,
+      report_emails: row.report_emails,
+      created_at: row.created_at,
+      updated_at: row.updated_at,
+      setup_completed_at: row.setup_completed_at,
+    })),
+  )
+  seedRequestMemo(
+    viewer,
+    `swatchRows:${workspaceId}`,
+    mine.map((row): SwatchRow => ({
+      id: row.id,
+      logo_asset_id: row.logo_asset_id,
+      custom_primary: row.custom_primary,
+      custom_logo: row.custom_logo,
+      brand_profiles: row.brand_profiles,
+    })),
+  )
+}
+
+/** Pun red trenutnog brenda iz prvog čitanja (kolačić brenda), da ga strana ne čita ponovo. */
+export function seedBrandRow(viewer: Viewer, row: BrandRow): void {
+  seedRequestMemo(viewer, `brand:${row.id}`, row)
 }
 
 /** Brend po id-ju (RLS: samo dostupni); u čitanjima se pamti po zahtevu (request-memo, D-164). */

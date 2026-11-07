@@ -32,14 +32,19 @@ export const EDIT_ROLES: WorkspaceRole[] = ['owner', 'admin', 'editor']
 export const ADMIN_ROLES: WorkspaceRole[] = ['owner', 'admin']
 export const APPROVE_ROLES: WorkspaceRole[] = ['owner', 'admin', 'approver']
 
-async function loadMemberships(viewer: Viewer): Promise<Membership[]> {
-  const { data, error } = await viewer.supabase
+/** Upit članstava; isti koristi i prvo čitanje strane (app-prefetch). */
+export function membershipsQuery(supabase: Viewer['supabase'], userId: string) {
+  return supabase
     .from('workspace_members')
     .select('workspace_id, role, all_brands, workspaces!inner(id, name, type, owner_id, deleted_at)')
-    .eq('user_id', viewer.user.id)
+    .eq('user_id', userId)
     .order('created_at', { ascending: true })
-  if (error) throw new ApiError('INTERNAL', undefined, { cause: error })
-  return (data ?? [])
+}
+
+type MembershipRow = NonNullable<Awaited<ReturnType<typeof membershipsQuery>>['data']>[number]
+
+export function toMemberships(rows: MembershipRow[]): Membership[] {
+  return rows
     .filter((m) => m.workspaces && !m.workspaces.deleted_at)
     .map((m) => ({
       workspaceId: m.workspace_id,
@@ -49,6 +54,12 @@ async function loadMemberships(viewer: Viewer): Promise<Membership[]> {
       allBrands: m.all_brands,
       ownerId: m.workspaces.owner_id,
     }))
+}
+
+async function loadMemberships(viewer: Viewer): Promise<Membership[]> {
+  const { data, error } = await membershipsQuery(viewer.supabase, viewer.user.id)
+  if (error) throw new ApiError('INTERNAL', undefined, { cause: error })
+  return toMemberships(data ?? [])
 }
 
 /**
