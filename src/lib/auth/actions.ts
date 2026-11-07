@@ -23,7 +23,6 @@ import { LOCALE_COOKIE, type AppLocale } from '@/i18n/config'
 import { translateFields, translateServerText } from '@/i18n/server-text'
 import { actionBlock, type ActionKind } from '@/lib/auth/impersonation-core'
 import { logger } from '@/lib/logger'
-import { cancelScheduledPostsForBrand } from '@/services/posts/publisher'
 import { rateLimit } from '@/lib/ratelimit'
 import {
   forgotPasswordSchema,
@@ -491,6 +490,9 @@ export async function deleteBrandAction(formData: FormData): Promise<void> {
   const brandId = formData.get('brandId')?.toString() ?? ''
   try {
     await deleteBrand(viewer, brandId)
+    // publisher (mreže, poslovi, mejl, obrada slika) se učitava tek ovde, ne na svakoj strani
+    // aplikacije koja prikazuje meni sa ovim akcijama (D-164)
+    const { cancelScheduledPostsForBrand } = await import('@/services/posts/publisher')
     const canceled = await cancelScheduledPostsForBrand(brandId, viewer.user.id)
     if (canceled) logger.info('brand_deleted_posts_canceled', { brandId, canceled })
   } catch (error) {

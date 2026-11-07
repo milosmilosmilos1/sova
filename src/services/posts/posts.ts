@@ -22,7 +22,7 @@ import type { CreatePostInput, ListPostsQuery, UpdatePostInput } from '@/lib/sch
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
 import { getBrand, type BrandRow } from '@/services/brands'
-import { signedUrl } from '@/services/media'
+import { signedUrl } from '@/services/media-urls'
 import type { Database, Json } from '@/types/database'
 import type { ContentLocale } from '@/config/locales'
 

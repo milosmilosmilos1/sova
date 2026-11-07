@@ -1,6 +1,6 @@
 import { assertViewer, createHandler } from '@/lib/api/handler'
 import { reviewListQuerySchema } from '@/lib/schemas/review'
-import { getReviewDetail, listReviewDesk } from '@/services/posts/review'
+import { getReviewDetail, listReviewDesk } from '@/services/posts/review-read'
 
 /**
  * Odobravanje (D-108): nacrti po karticama (čekaju, odobreni, objavljeni, preskočeni, svi). Sa `detail`

@@ -19,10 +19,8 @@ import { contrast, mix, readable } from '@/lib/visuals/design/kit'
 import type { LookId } from '@/lib/visuals/design/looks'
 import type { FigmaTemplate } from '@/lib/figma/template'
 import type { BrandLogo, DesignColors } from '@/lib/visuals/design/types'
-import { brandIconPng, prepareBrandLogo } from '@/lib/visuals/design/logo'
 import { getCurrentProfileRow } from '@/services/brand-brain/profile'
 import { getBrand, type BrandRow } from '@/services/brands'
-import { downloadAsset, getAsset } from '@/services/media'
 import type { Json } from '@/types/database'
 
 /**
@@ -135,7 +133,9 @@ export async function resolveDesign(
 export async function brandIcon(viewer: Viewer, brandId: string): Promise<Buffer | null> {
   const design = await getDesignView(viewer, brandId)
   const logo = await brandLogo(design.logoAssetId)
-  return logo ? brandIconPng(logo) : null
+  if (!logo) return null
+  const { brandIconPng } = await import('@/lib/visuals/design/logo')
+  return brandIconPng(logo)
 }
 
 export async function getDesignView(viewer: Viewer, brandId: string): Promise<ResolvedDesign> {
@@ -169,6 +169,7 @@ export async function updateDesign(
     if (input.logoAssetId === null) delete next.logoAssetId
     else {
       // logo mora biti slika iz biblioteke ovog brenda (ili radnog prostora)
+      const { getAsset } = await import('@/services/media')
       const asset = await getAsset(viewer, input.logoAssetId)
       if (
         asset.kind !== 'image' ||
@@ -214,6 +215,11 @@ export async function brandLogo(logoAssetId: string | null): Promise<BrandLogo |
     .maybeSingle()
   if (!logo) return null
   try {
+    // obrada slike (sharp) i crtanje se učitavaju tek kad treba logo, ne uz svako čitanje dizajna (D-164)
+    const [{ prepareBrandLogo }, { downloadAsset }] = await Promise.all([
+      import('@/lib/visuals/design/logo'),
+      import('@/services/media'),
+    ])
     return await prepareBrandLogo(await downloadAsset(logo), logo.mime_type)
   } catch (error) {
     logger.warn('design_logo_failed', { logoAssetId, error })
