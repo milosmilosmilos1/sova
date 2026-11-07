@@ -3,6 +3,7 @@ import { Geist_Mono, Inter } from 'next/font/google'
 import { headers } from 'next/headers'
 import { NextIntlClientProvider } from 'next-intl'
 import { getLocale, getTranslations } from 'next-intl/server'
+import { Suspense } from 'react'
 
 import { MaintenanceBanner } from '@/components/maintenance-banner'
 import { Providers } from '@/components/providers'
@@ -66,7 +67,10 @@ export default async function RootLayout({ children }: LayoutProps<'/'>) {
       <body className="flex min-h-full flex-col">
         <NextIntlClientProvider>
           <Providers nonce={nonce}>
-            <MaintenanceBanner />
+            {/* traka ne zadržava stranu dok se stanje održavanja čita iz baze (D-164) */}
+            <Suspense fallback={null}>
+              <MaintenanceBanner />
+            </Suspense>
             {children}
           </Providers>
         </NextIntlClientProvider>

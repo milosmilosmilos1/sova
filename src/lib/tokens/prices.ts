@@ -2,6 +2,8 @@ import 'server-only'
 
 import { z } from 'zod'
 
+import { swrCache, type SwrCache } from '@/lib/cache/swr'
+import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
 /** Akcije koje troše Sova tokene (brif 15.2, X sa linkom 6 po D-013). */
@@ -108,25 +110,41 @@ export const DEFAULT_MODEL_PRICES: Record<string, ModelPrice> = {
   'gemini-embedding-2': { input_per_m: 0.2, output_per_m: 0 },
 }
 
-const TTL_MS = 60_000
-const cache = new Map<string, { value: unknown; at: number }>()
+/**
+ * Podešavanja platforme (cene, kursevi, modeli): 60 s iz keša, a posle toga poslednja vrednost dok se
+ * nova čita u pozadini, najviše 10 min staro (D-164). Admin posle izmene briše keš svoje instance.
+ */
+const settings = new Map<string, SwrCache<unknown>>()
 
-async function readSetting<T>(key: string, schema: z.ZodType<T>, fallback: T): Promise<T> {
-  const hit = cache.get(key)
-  if (hit && Date.now() - hit.at < TTL_MS) return hit.value as T
-  const { data } = await createSupabaseAdminClient()
-    .from('platform_settings')
-    .select('value')
-    .eq('key', key)
-    .maybeSingle()
-  const parsed = schema.safeParse(data?.value)
-  const value = parsed.success ? parsed.data : fallback
-  cache.set(key, { value, at: Date.now() })
-  return value
+function readSetting<T>(key: string, schema: z.ZodType<T>, fallback: T): Promise<T> {
+  let cached = settings.get(key) as SwrCache<T> | undefined
+  if (!cached) {
+    cached = swrCache<T>(
+      async () => {
+        const { data, error } = await createSupabaseAdminClient()
+          .from('platform_settings')
+          .select('value')
+          .eq('key', key)
+          .maybeSingle()
+        if (error) throw error
+        const parsed = schema.safeParse(data?.value)
+        return parsed.success ? parsed.data : fallback
+      },
+      {
+        freshMs: 60_000,
+        maxStaleMs: 10 * 60_000,
+        fallback: () => fallback,
+        errorTtlMs: 10_000,
+        onError: (error) => logger.warn('platform_setting_load_failed', { key, error }),
+      },
+    )
+    settings.set(key, cached as SwrCache<unknown>)
+  }
+  return cached.get()
 }
 
 export function clearSettingsCache(): void {
-  cache.clear()
+  for (const cached of settings.values()) cached.clear()
 }
 
 export async function getTokenPrices(): Promise<Record<TokenAction, number>> {

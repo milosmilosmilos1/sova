@@ -1,6 +1,5 @@
 import 'server-only'
 
-import * as Sentry from '@sentry/nextjs'
 import { type NextRequest } from 'next/server'
 import { z } from 'zod'
 
@@ -11,7 +10,8 @@ import { impersonationBlock } from '@/lib/auth/impersonation-core'
 import { getViewerFromRequest, type Viewer } from '@/lib/auth/viewer'
 import { env } from '@/lib/env'
 import { createLogger, type Logger } from '@/lib/logger'
-import { rateLimit } from '@/lib/ratelimit'
+import { rateLimit, type RateLimitResult } from '@/lib/ratelimit'
+import { reportError } from '@/lib/report-error'
 
 import { ApiError, isApiError } from './errors'
 import { jsonFail, jsonOk } from './response'
@@ -219,6 +219,17 @@ export function createHandler<TBody = undefined, TQuery = undefined, TParams = u
         if (!sameOrigin(req)) throw new ApiError('FORBIDDEN', 'Zahtev ne dolazi sa dozvoljenog porekla.')
       }
 
+      // limit po IP adresi ne zavisi od korisnika, pa ide u isto vreme sa proverom prijave (D-164);
+      // limit po korisniku čeka proverenog korisnika
+      const spec = options.rateLimit
+      const limitOpts = spec ? { limit: spec.limit, windowSec: spec.windowSec } : null
+      let ipLimit: Promise<RateLimitResult> | null = null
+      if (spec && limitOpts && spec.by !== 'user') {
+        ipLimit = rateLimit(`${spec.name}:ip:${ip}`, limitOpts)
+        // odbijen zahtev (401, 400) ne ostavlja neuhvaćenu grešku; ishod se čeka niže
+        ipLimit.catch(() => undefined)
+      }
+
       const viewer = await authenticate(options.auth, req)
 
       let finalParams = undefined as TParams
@@ -235,13 +246,9 @@ export function createHandler<TBody = undefined, TQuery = undefined, TParams = u
           ? await parseBody(req, options.body, options.maxBodyBytes ?? 1024 * 1024)
           : (undefined as TBody)
 
-      if (options.rateLimit) {
-        const spec = options.rateLimit
+      if (spec && limitOpts) {
         const subject = spec.by === 'user' && viewer ? `u:${viewer.user.id}` : `ip:${ip}`
-        const result = await rateLimit(`${spec.name}:${subject}`, {
-          limit: spec.limit,
-          windowSec: spec.windowSec,
-        })
+        const result = await (ipLimit ?? rateLimit(`${spec.name}:${subject}`, limitOpts))
         if (!result.success) {
           const retryAfterSec = Math.max(1, Math.ceil((result.resetAt - Date.now()) / 1000))
           throw new ApiError('RATE_LIMITED', undefined, { retryAfterSec })
@@ -268,7 +275,7 @@ export function createHandler<TBody = undefined, TQuery = undefined, TParams = u
         )
       }
       log.error('unhandled_error', { error })
-      Sentry.captureException(error, { tags: { requestId } })
+      await reportError(error, { requestId })
       return jsonFail(new ApiError('INTERNAL', undefined, { cause: error }), requestId, locale)
     }
   }

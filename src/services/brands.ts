@@ -4,6 +4,7 @@ import { contentLocaleForUi } from '@/config/locales'
 import { randomUUID } from 'node:crypto'
 
 import { ApiError } from '@/lib/api/errors'
+import { requestMemo } from '@/lib/auth/request-memo'
 import type { Viewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import { brandLogoUrl, brandSwatch, ICON_MAX_ASPECT, type BrandSwatch } from '@/lib/brands/swatch'
@@ -37,16 +38,23 @@ export type BrandSummary = Pick<
   | 'setup_completed_at'
 >
 
-export async function listBrands(viewer: Viewer, workspaceId: string): Promise<BrandSummary[]> {
-  await requireMembership(viewer, workspaceId)
-  return unwrap(
-    await viewer.supabase
-      .from('brands')
-      .select(BRAND_COLUMNS)
-      .eq('workspace_id', workspaceId)
-      .is('deleted_at', null)
-      .order('created_at', { ascending: true }),
-  )
+/**
+ * Brendovi radnog prostora. Provera članstva i upit idu u isto vreme (D-164): RLS ionako vraća samo
+ * brendove kojima korisnik ima pristup, a bez članstva poziv i dalje pada sa 404.
+ */
+export function listBrands(viewer: Viewer, workspaceId: string): Promise<BrandSummary[]> {
+  return requestMemo(viewer, `brands:${workspaceId}`, async () => {
+    const [, res] = await Promise.all([
+      requireMembership(viewer, workspaceId),
+      viewer.supabase
+        .from('brands')
+        .select(BRAND_COLUMNS)
+        .eq('workspace_id', workspaceId)
+        .is('deleted_at', null)
+        .order('created_at', { ascending: true }),
+    ])
+    return unwrap(res)
+  })
 }
 
 /**
@@ -115,12 +123,14 @@ export async function listBrandSwatches(
   )
 }
 
-export async function getBrand(viewer: Viewer, brandId: string): Promise<BrandRow> {
-  const row = unwrap(
-    await viewer.supabase.from('brands').select('*').eq('id', brandId).is('deleted_at', null).maybeSingle(),
-    'Brend ne postoji ili nemate pristup.',
+/** Brend po id-ju (RLS: samo dostupni); u čitanjima se pamti po zahtevu (request-memo, D-164). */
+export function getBrand(viewer: Viewer, brandId: string): Promise<BrandRow> {
+  return requestMemo(viewer, `brand:${brandId}`, async () =>
+    unwrap(
+      await viewer.supabase.from('brands').select('*').eq('id', brandId).is('deleted_at', null).maybeSingle(),
+      'Brend ne postoji ili nemate pristup.',
+    ),
   )
-  return row
 }
 
 export async function createBrand(viewer: Viewer, input: CreateBrandInput): Promise<BrandSummary> {

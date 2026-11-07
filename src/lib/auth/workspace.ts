@@ -4,6 +4,7 @@ import { cookies } from 'next/headers'
 import { cache } from 'react'
 
 import { ApiError } from '@/lib/api/errors'
+import { requestMemo } from '@/lib/auth/request-memo'
 import type { Viewer } from '@/lib/auth/viewer'
 import type { Database } from '@/types/database'
 
@@ -31,8 +32,7 @@ export const EDIT_ROLES: WorkspaceRole[] = ['owner', 'admin', 'editor']
 export const ADMIN_ROLES: WorkspaceRole[] = ['owner', 'admin']
 export const APPROVE_ROLES: WorkspaceRole[] = ['owner', 'admin', 'approver']
 
-/** Sva članstva korisnika (RLS vraća samo njegova). Memoizovano po zahtevu. */
-export const listMemberships = cache(async (viewer: Viewer): Promise<Membership[]> => {
+async function loadMemberships(viewer: Viewer): Promise<Membership[]> {
   const { data, error } = await viewer.supabase
     .from('workspace_members')
     .select('workspace_id, role, all_brands, workspaces!inner(id, name, type, owner_id, deleted_at)')
@@ -49,7 +49,15 @@ export const listMemberships = cache(async (viewer: Viewer): Promise<Membership[
       allBrands: m.all_brands,
       ownerId: m.workspaces.owner_id,
     }))
-})
+}
+
+/**
+ * Sva članstva korisnika (RLS vraća samo njegova). Memoizovano po zahtevu: React cache u renderu, a u
+ * API čitanjima uz Viewer (request-memo, D-164), jer cache() u Route Handlerima ne radi.
+ */
+export const listMemberships = cache((viewer: Viewer): Promise<Membership[]> =>
+  requestMemo(viewer, 'memberships', () => loadMemberships(viewer)),
+)
 
 /** Članstvo u konkretnom workspace-u ili null. */
 export async function getMembership(viewer: Viewer, workspaceId: string): Promise<Membership | null> {

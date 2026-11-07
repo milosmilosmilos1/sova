@@ -1,4 +1,4 @@
-import * as Sentry from '@sentry/nextjs'
+import { type Instrumentation } from 'next'
 
 /**
  * Pokreće se jednom pri startu servera. Validira env (aplikacija ne startuje
@@ -14,4 +14,12 @@ export async function register() {
   }
 }
 
-export const onRequestError = Sentry.captureRequestError
+/**
+ * Greške zahteva idu u Sentry samo kad je podešen, a paket (~1,5 MB) se učitava tek tada (D-164).
+ * Ranije se učitavao na svakom hladnom startu i bez DSN-a.
+ */
+export const onRequestError: Instrumentation.onRequestError = async (...args) => {
+  if (!process.env.SENTRY_DSN) return
+  const Sentry = await import('@sentry/nextjs')
+  Sentry.captureRequestError(...args)
+}

@@ -87,6 +87,7 @@ const generate = () =>
     token: owner.token,
     params: { id: brandId },
     headers: { 'idempotency-key': crypto.randomUUID() },
+    method: 'POST',
   })
 
 const frame = (title: string, body: string) => ({ title, body })
@@ -130,6 +131,7 @@ const generateHighlights = () =>
       token: owner.token,
       params: { id: brandId },
       headers: { 'idempotency-key': crypto.randomUUID() },
+      method: 'POST',
     },
   )
 
@@ -477,6 +479,7 @@ describe('profili na mrežama: dodaci po mreži (D-146)', () => {
         token: owner.token,
         params: { id: brandId },
         headers: { 'idempotency-key': crypto.randomUUID() },
+        method: 'POST',
       },
     )
   const pinned = (index: number) =>

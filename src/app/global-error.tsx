@@ -1,10 +1,10 @@
 'use client'
 
-import * as Sentry from '@sentry/nextjs'
 import { unstable_isUnrecognizedActionError } from 'next/navigation'
 import { useEffect, useSyncExternalStore } from 'react'
 
 import { defaultLocale, isAppLocale, LOCALE_COOKIE, type AppLocale } from '@/i18n/config'
+import { reportError } from '@/lib/report-error'
 import { reloadForNewVersion } from '@/lib/stale-deploy'
 
 /**
@@ -64,7 +64,7 @@ export default function GlobalError({
   useEffect(() => {
     // stara strana posle nove objave (D-141): osveži se sama, to nije greška za prijavu
     if (reloadForNewVersion(error) || stale) return
-    Sentry.captureException(error)
+    void reportError(error)
   }, [error, stale])
 
   return (

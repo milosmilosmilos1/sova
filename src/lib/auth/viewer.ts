@@ -1,12 +1,13 @@
 import 'server-only'
 
-import { createClient, type SupabaseClient, type User } from '@supabase/supabase-js'
+import { createClient, type SupabaseClient } from '@supabase/supabase-js'
 import { cookies, headers } from 'next/headers'
 import type { NextRequest } from 'next/server'
 import { cache } from 'react'
 
 import { isAppLocale, type AppLocale } from '@/i18n/config'
 import { IMP_COOKIE, mintImpersonationJwt, verifySessionCookie } from '@/lib/auth/impersonation-core'
+import { enableRequestMemo } from '@/lib/auth/request-memo'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
@@ -64,32 +65,53 @@ function toProfile(row: ProfileRow): ViewerProfile {
   }
 }
 
-async function buildViewer(
-  supabase: SupabaseClient<Database>,
-  user: User,
-  accessToken?: string,
-): Promise<Viewer | null> {
-  const { data: row, error } = await supabase.from('profiles').select('*').eq('id', user.id).maybeSingle()
-  if (error) {
-    logger.error('viewer_profile_load_failed', { userId: user.id, error })
+/** Polja pristupnog tokena koja koristimo; veruje im se tek kad Auth potvrdi isti token. */
+interface TokenClaims {
+  sub?: unknown
+  aal?: unknown
+}
+
+function tokenClaims(token: string): TokenClaims | null {
+  const payload = token.split('.')[1]
+  if (!payload) return null
+  try {
+    const value: unknown = JSON.parse(Buffer.from(payload, 'base64url').toString('utf8'))
+    return value && typeof value === 'object' ? (value as TokenClaims) : null
+  } catch {
     return null
   }
+}
+
+/**
+ * Korisnik iz pristupnog tokena u jednom krugu do baze (D-164). Auth proverava token, i to da sesija
+ * nije opozvana (blokiran nalog, odjava sa svih uređaja), u isto vreme dok se čita profil; ranije je
+ * profil čekao Auth. Profil se čita po `sub` iz tokena kroz RLS i prihvata se samo kad Auth potvrdi
+ * istog korisnika. Nivo zaštite (AAL2) je iz istog, potvrđenog tokena, kao što ga čita i
+ * getAuthenticatorAssuranceLevel.
+ */
+async function buildViewer(supabase: SupabaseClient<Database>, token: string): Promise<Viewer | null> {
+  const claims = tokenClaims(token)
+  const sub = typeof claims?.sub === 'string' ? claims.sub : null
+  if (!sub) return null
+  const [auth, profile] = await Promise.all([
+    supabase.auth.getUser(token),
+    supabase.from('profiles').select('*').eq('id', sub).maybeSingle(),
+  ])
+  const user = auth.data.user
+  if (auth.error || !user || user.id !== sub) return null
+  if (profile.error) {
+    logger.error('viewer_profile_load_failed', { userId: user.id, error: profile.error })
+    return null
+  }
+  const row = profile.data
   if (!row) {
     logger.warn('viewer_profile_missing', { userId: user.id })
     return null
   }
-  let mfaVerified = false
-  try {
-    // sa Bearer tokenom nema sačuvane sesije, pa se nivo čita iz samog tokena
-    const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel(accessToken)
-    mfaVerified = aal?.currentLevel === 'aal2'
-  } catch {
-    mfaVerified = false
-  }
   return {
     user: { id: user.id, email: user.email ?? row.email },
     profile: toProfile(row),
-    mfaVerified,
+    mfaVerified: claims?.aal === 'aal2',
     impersonation: null,
     supabase,
   }
@@ -205,37 +227,40 @@ async function resolveImpersonation(
 /** Stvarni korisnik iz cookie sesije, bez impersonacije (admin panel, provera admina). */
 export const getRealViewer = cache(async (): Promise<Viewer | null> => {
   const supabase = await createSupabaseServerClient()
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
-  if (!user) return null
-  return buildViewer(supabase, user)
+  // pristupni token iz kolačića, bez mreže (proxy ga je već osvežio); proverava ga buildViewer
+  const { data } = await supabase.auth.getSession()
+  const token = data.session?.access_token
+  if (!token) return null
+  return buildViewer(supabase, token)
 })
 
 /**
  * Efektivni korisnik (Server Components, Server Actions): ciljni korisnik tokom važeće impersonacije,
- * inače stvarni korisnik iz cookie sesije. Memoizovano po zahtevu.
+ * inače stvarni korisnik iz cookie sesije. Memoizovano po zahtevu. Kad je zahtev čitanje strane (ne
+ * serverska akcija), ponovljena čitanja brenda i članstva se pamte (request-memo, D-164).
  */
 export const getViewer = cache(async (): Promise<Viewer | null> => {
   const real = await getRealViewer()
   if (!real) return null
-  let value: string | undefined
-  let meta: RequestMeta
+  let viewer = real
   try {
-    value = (await cookies()).get(IMP_COOKIE)?.value
-    if (!value) return real
-    const h = await headers()
-    meta = {
-      method: h.get('x-method') ?? 'GET',
-      path: h.get('x-pathname') ?? '',
-      ip: firstIp(h.get('x-forwarded-for')),
-      userAgent: h.get('user-agent'),
-      requestId: h.get('x-request-id'),
+    const [store, h] = await Promise.all([cookies(), headers()])
+    const value = store.get(IMP_COOKIE)?.value
+    if (value) {
+      const meta: RequestMeta = {
+        method: h.get('x-method') ?? 'GET',
+        path: h.get('x-pathname') ?? '',
+        ip: firstIp(h.get('x-forwarded-for')),
+        userAgent: h.get('user-agent'),
+        requestId: h.get('x-request-id'),
+      }
+      viewer = (await resolveImpersonation(real, value, meta)) ?? real
     }
+    if (!h.has('next-action') && (h.get('x-method') ?? 'GET') === 'GET') enableRequestMemo(viewer)
   } catch {
     return real
   }
-  return (await resolveImpersonation(real, value, meta)) ?? real
+  return viewer
 })
 
 function bearerToken(req: NextRequest): string | null {
@@ -271,24 +296,24 @@ export async function getViewerFromRequest(
         auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false },
       },
     )
-    const {
-      data: { user },
-      error,
-    } = await supabase.auth.getUser(token)
-    if (error || !user) return null
-    real = await buildViewer(supabase, user, token)
+    real = await buildViewer(supabase, token)
   }
-  if (!real || options.real) return real
-  const value = req.cookies.get(IMP_COOKIE)?.value
-  if (!value) return real
-  const meta: RequestMeta = {
-    method: req.method,
-    path: req.nextUrl.pathname,
-    ip: firstIp(req.headers.get('x-forwarded-for')),
-    userAgent: req.headers.get('user-agent'),
-    requestId: req.headers.get('x-request-id'),
+  if (!real) return null
+  let viewer = real
+  const value = options.real ? undefined : req.cookies.get(IMP_COOKIE)?.value
+  if (value) {
+    const meta: RequestMeta = {
+      method: req.method,
+      path: req.nextUrl.pathname,
+      ip: firstIp(req.headers.get('x-forwarded-for')),
+      userAgent: req.headers.get('user-agent'),
+      requestId: req.headers.get('x-request-id'),
+    }
+    viewer = (await resolveImpersonation(real, value, meta)) ?? real
   }
-  return (await resolveImpersonation(real, value, meta)) ?? real
+  // API čitanje: ponovljena čitanja brenda i članstva u istom zahtevu se pamte (D-164)
+  if (req.method === 'GET' || req.method === 'HEAD') enableRequestMemo(viewer)
+  return viewer
 }
 
 export class UnauthenticatedError extends Error {

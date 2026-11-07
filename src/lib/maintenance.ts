@@ -1,35 +1,44 @@
 import 'server-only'
 
+import { swrCache } from '@/lib/cache/swr'
 import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
-/** Banner za održavanje (brif 16 „Platforma”): javno podešavanje `maintenance`, keš 60 s. */
+/**
+ * Banner za održavanje (brif 16 „Platforma”): javno podešavanje `maintenance`. Drži se 60 s, a posle
+ * toga se vraća poslednje stanje dok se novo čita u pozadini (D-164), jer ga čita svaka strana.
+ */
 export interface MaintenanceState {
   enabled: boolean
   message: string
 }
 
-const TTL = 60_000
-let cache: { value: MaintenanceState; at: number } | null = null
+const OFF: MaintenanceState = { enabled: false, message: '' }
 
-export async function getMaintenance(): Promise<MaintenanceState> {
-  if (cache && Date.now() - cache.at < TTL) return cache.value
-  let value: MaintenanceState = { enabled: false, message: '' }
-  try {
-    const { data } = await createSupabaseAdminClient()
+const maintenance = swrCache<MaintenanceState>(
+  async () => {
+    const { data, error } = await createSupabaseAdminClient()
       .from('platform_settings')
       .select('value')
       .eq('key', 'maintenance')
       .maybeSingle()
+    if (error) throw error
     const v = (data?.value ?? {}) as { enabled?: unknown; message?: unknown }
-    value = { enabled: v.enabled === true, message: typeof v.message === 'string' ? v.message : '' }
-  } catch (error) {
-    logger.warn('maintenance_load_failed', { error })
-  }
-  cache = { value, at: Date.now() }
-  return value
+    return { enabled: v.enabled === true, message: typeof v.message === 'string' ? v.message : '' }
+  },
+  {
+    freshMs: 60_000,
+    maxStaleMs: 15 * 60_000,
+    fallback: () => OFF,
+    errorTtlMs: 60_000,
+    onError: (error) => logger.warn('maintenance_load_failed', { error }),
+  },
+)
+
+export function getMaintenance(): Promise<MaintenanceState> {
+  return maintenance.get()
 }
 
 export function clearMaintenanceCache(): void {
-  cache = null
+  maintenance.clear()
 }
