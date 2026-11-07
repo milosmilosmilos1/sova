@@ -99,8 +99,9 @@ export async function listReviewDesk(
     limit?: number
   },
 ): Promise<{ items: ReviewItem[]; counts: Record<ReviewTab, number> }> {
-  // provera brenda u istom krugu kao lista (D-164): upit ide kroz RLS, a bez pristupa poziv pada sa 404
-  const [, { data, error }] = await Promise.all([
+  // provera brenda u istom krugu kao lista (D-164): upit ide kroz RLS, a bez pristupa poziv pada sa 404.
+  // Broj nacrta koji čekaju je tačan (ne iz 300 redova liste), jer ga prikazuje i meni.
+  const [, { data, error }, waiting] = await Promise.all([
     getBrand(viewer, input.brandId),
     viewer.supabase
       .from('posts')
@@ -111,6 +112,12 @@ export async function listReviewDesk(
       .is('deleted_at', null)
       .order('created_at', { ascending: input.sort === 'old' })
       .limit(300),
+    viewer.supabase
+      .from('posts')
+      .select('id', { count: 'exact', head: true })
+      .eq('brand_id', input.brandId)
+      .in('status', TAB_STATUSES.waiting!)
+      .is('deleted_at', null),
   ])
   if (error) throw mapDbError(error)
   const rows = data ?? []
@@ -120,6 +127,7 @@ export async function listReviewDesk(
       rows.filter((r) => !TAB_STATUSES[t] || TAB_STATUSES[t]!.includes(r.status)).length,
     ]),
   ) as Record<ReviewTab, number>
+  if (!waiting.error && waiting.count !== null) counts.waiting = waiting.count
   const q = input.q?.trim().toLowerCase()
   const statuses = TAB_STATUSES[input.tab]
   const picked = rows
@@ -241,10 +249,14 @@ export async function getReviewDetail(viewer: Viewer, postId: string): Promise<R
     })
     .catch(() => null)
   const [post, { data: row }, early] = await Promise.all([getPostView(viewer, postId), rowP, earlyP])
+  // bez termina reda (i kad čitanje ne uspe) predlog je sutra u 10:00, kao ranije
   const [brand, slots] =
     early && early[0].id === post.brandId
       ? early
-      : await Promise.all([getBrand(viewer, post.brandId), listQueueSlots(viewer, post.brandId)])
+      : await Promise.all([
+          getBrand(viewer, post.brandId),
+          listQueueSlots(viewer, post.brandId).catch(() => []),
+        ])
   let suggested = await nextFreeSlotFor(
     viewer,
     brand,

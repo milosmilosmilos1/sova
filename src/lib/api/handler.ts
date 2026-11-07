@@ -219,12 +219,13 @@ export function createHandler<TBody = undefined, TQuery = undefined, TParams = u
         if (!sameOrigin(req)) throw new ApiError('FORBIDDEN', 'Zahtev ne dolazi sa dozvoljenog porekla.')
       }
 
-      // limit po IP adresi ne zavisi od korisnika, pa ide u isto vreme sa proverom prijave (D-164);
-      // limit po korisniku čeka proverenog korisnika
+      // javna ruta: limit po IP adresi ide u isto vreme sa ostatkom pripreme (D-164). Ruta sa prijavom
+      // troši limit tek posle provere, da zahtevi bez prijave ne potroše limit pravom korisniku sa iste
+      // adrese; limit po korisniku čeka proverenog korisnika.
       const spec = options.rateLimit
       const limitOpts = spec ? { limit: spec.limit, windowSec: spec.windowSec } : null
       let ipLimit: Promise<RateLimitResult> | null = null
-      if (spec && limitOpts && spec.by !== 'user') {
+      if (spec && limitOpts && spec.by !== 'user' && (options.auth === 'none' || options.auth === 'cron')) {
         ipLimit = rateLimit(`${spec.name}:ip:${ip}`, limitOpts)
         // odbijen zahtev (401, 400) ne ostavlja neuhvaćenu grešku; ishod se čeka niže
         ipLimit.catch(() => undefined)

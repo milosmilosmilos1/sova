@@ -22,8 +22,9 @@ function rolloutOf(rollout: unknown): string[] {
 
 /**
  * Feature flagovi iz tabele `feature_flags` (admin ih menja bez deploya). Svi se čitaju jednim upitom
- * i drže 60 s, a posle toga se vraća poslednje stanje dok se novo čita u pozadini (D-164). Ranije je
- * svaki ključ išao posebno, pa je lista naloga čekala i do osam upita zaredom.
+ * i drže najviše 60 s, kao i ranije (D-164): među njima su i sigurnosni prekidači (npr. autopilot bez
+ * odobrenja), pa se staro stanje ne služi duže. Ranije je svaki ključ išao posebno, pa je lista naloga
+ * čekala i do osam upita zaredom.
  */
 const flags = swrCache<Map<string, FlagState>>(
   async () => {
@@ -40,7 +41,7 @@ const flags = swrCache<Map<string, FlagState>>(
   },
   {
     freshMs: 60_000,
-    maxStaleMs: 15 * 60_000,
+    maxStaleMs: 60_000,
     // kao ranije: bez baze je svaki prekidač isključen
     fallback: () => new Map(),
     errorTtlMs: 10_000,

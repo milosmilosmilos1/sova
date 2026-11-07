@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 
@@ -98,6 +98,7 @@ export default async function AppLayout({ children }: LayoutProps<'/app'>) {
       currentBrand={currentBrand}
       swatches={swatches}
       waitingApprovals={waitingApprovals ?? 0}
+      renderId={(await headers()).get('x-request-id') ?? ''}
     >
       {pending.length ? (
         <p role="status" className="mb-4 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">

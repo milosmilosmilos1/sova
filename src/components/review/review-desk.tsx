@@ -142,21 +142,31 @@ export function ReviewDesk({
   const [selected, setSelected] = useState<string | null>(null)
   // otvorena objava u trenutku kad se lista čita: njen pregled stiže uz listu (D-164)
   const currentRef = useRef<string | null>(null)
+  // posle odluke pregled otvorene objave mora da stigne uz listu, i kad je u kešu (nova verzija)
+  const forceDetailRef = useRef(false)
   const listKey = ['review', brandId, tab, q, format, sort]
   const list = useQuery({
     queryKey: listKey,
-    queryFn: async () => {
-      const p = new URLSearchParams({ brandId, tab, sort, detail: currentRef.current ?? 'first' })
+    queryFn: async ({ signal }) => {
+      const p = new URLSearchParams({ brandId, tab, sort })
       if (q.trim()) p.set('q', q.trim())
       if (format) p.set('format', format)
+      // pregled se traži uz listu samo kad treba (prvo otvaranje, posle odluke, nema ga u kešu), a ne
+      // za svako slovo pretrage ili promenu kartice
+      const open = currentRef.current
+      const cached = open ? qc.getQueryState(['review-detail', open]) : undefined
+      if (forceDetailRef.current || !cached?.data || cached.isInvalidated) p.set('detail', open ?? 'first')
+      forceDetailRef.current = false
       const res = await api<{ items: Item[]; counts: Record<Tab, number>; detail?: Detail | null }>(
         `/api/approvals?${p.toString()}`,
+        { signal },
       )
+      // prekinut ili zamenjen zahtev ne upisuje stare podatke u druge keševe
+      if (signal.aborted) return res
       // pregled ide u svoj keš, pa panel ne šalje poseban zahtev; broj u meniju prati listu
       if (res.detail) qc.setQueryData(['review-detail', res.detail.post.id], res.detail)
-      // pregled nije stigao (greška na serveru): otvoren panel ga traži sam
-      else if (currentRef.current)
-        void qc.invalidateQueries({ queryKey: ['review-detail', currentRef.current] })
+      // pregled je tražen, a nije stigao (greška na serveru): otvoren panel ga traži sam
+      else if (p.has('detail') && open) void qc.invalidateQueries({ queryKey: ['review-detail', open] })
       qc.setQueryData(['review-count', brandId], res.counts.waiting)
       return res
     },
@@ -168,7 +178,10 @@ export function ReviewDesk({
   }, [current])
   // posle odluke se čita samo lista: uz nju stižu pregled otvorene objave i broj u meniju (D-164),
   // pa se cela strana više ne crta ponovo na serveru
-  const refresh = () => qc.invalidateQueries({ queryKey: ['review', brandId] })
+  const refresh = () => {
+    forceDetailRef.current = true
+    return qc.invalidateQueries({ queryKey: ['review', brandId] })
+  }
   // nacrti usklađeni sa temom (D-125) imaju nove slajdove: lista i otvoren nacrt se čitaju ponovo
   const refreshAfterTheme = useCallback(() => {
     void qc.invalidateQueries({ queryKey: ['review'] })
@@ -359,6 +372,7 @@ export function ReviewDesk({
             postId={current}
             timeZone={timeZone}
             textPrice={textPrice}
+            detailViaList
             onChanged={() => void refresh()}
           />
         ) : (
@@ -420,11 +434,14 @@ export function DetailPanes({
   timeZone,
   textPrice,
   onChanged,
+  detailViaList = false,
 }: {
   postId: string
   timeZone: string
   textPrice: number
   onChanged: () => void
+  /** strana za odobrenje: nova verzija pregleda stiže uz listu (D-164); Studio ga čita sam */
+  detailViaList?: boolean
 }) {
   const t = useTranslations('review')
   const query = useQuery({
@@ -451,8 +468,11 @@ export function DetailPanes({
       textPrice={textPrice}
       kept={kept?.version === query.data.post.version ? kept : null}
       onKeep={setKept}
-      // nova verzija pregleda stiže uz listu koju onChanged čita ponovo (D-164)
-      onChanged={onChanged}
+      onChanged={() => {
+        // na strani za odobrenje nova verzija stiže uz listu koju onChanged čita ponovo (D-164)
+        if (!detailViaList) void query.refetch()
+        onChanged()
+      }}
       t={t}
     />
   )

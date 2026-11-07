@@ -27,12 +27,16 @@ const INFLIGHT_MAX_MS = 15_000
 export function swrCache<T>(load: () => Promise<T>, options: SwrOptions<T>): SwrCache<T> {
   let entry: { value: T; at: number } | null = null
   let inflight: { promise: Promise<T>; at: number } | null = null
+  // clear() povećava generaciju: čitanje započeto pre brisanja (npr. pre izmene u admin panelu) ne
+  // vraća staru vrednost u keš; isto važi za čitanje koje završi posle novijeg
+  let generation = 0
 
   function refresh(): Promise<T> {
     const now = Date.now()
     if (inflight && now - inflight.at < INFLIGHT_MAX_MS) return inflight.promise
+    const startedIn = generation
     const promise = load().then((value) => {
-      entry = { value, at: Date.now() }
+      if (startedIn === generation && (!entry || entry.at <= now)) entry = { value, at: now }
       return value
     })
     const current = { promise, at: now }
@@ -64,6 +68,7 @@ export function swrCache<T>(load: () => Promise<T>, options: SwrOptions<T>): Swr
       }
     },
     clear() {
+      generation += 1
       entry = null
       inflight = null
     },

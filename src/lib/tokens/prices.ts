@@ -112,7 +112,8 @@ export const DEFAULT_MODEL_PRICES: Record<string, ModelPrice> = {
 
 /**
  * Podešavanja platforme (cene, kursevi, modeli): 60 s iz keša, a posle toga poslednja vrednost dok se
- * nova čita u pozadini, najviše 10 min staro (D-164). Admin posle izmene briše keš svoje instance.
+ * nova čita u pozadini, najviše 2 min staro (D-164), jer od cena zavisi naplata tokena. Admin posle
+ * izmene briše keš svoje instance.
  */
 const settings = new Map<string, SwrCache<unknown>>()
 
@@ -132,7 +133,7 @@ function readSetting<T>(key: string, schema: z.ZodType<T>, fallback: T): Promise
       },
       {
         freshMs: 60_000,
-        maxStaleMs: 10 * 60_000,
+        maxStaleMs: 2 * 60_000,
         fallback: () => fallback,
         errorTtlMs: 10_000,
         onError: (error) => logger.warn('platform_setting_load_failed', { key, error }),

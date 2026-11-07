@@ -6,7 +6,8 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
 /**
  * Banner za održavanje (brif 16 „Platforma”): javno podešavanje `maintenance`. Drži se 60 s, a posle
- * toga se vraća poslednje stanje dok se novo čita u pozadini (D-164), jer ga čita svaka strana.
+ * toga se vraća poslednje stanje (najviše 5 min staro) dok se novo čita u pozadini (D-164), jer ga
+ * čita svaka strana.
  */
 export interface MaintenanceState {
   enabled: boolean
@@ -28,7 +29,7 @@ const maintenance = swrCache<MaintenanceState>(
   },
   {
     freshMs: 60_000,
-    maxStaleMs: 15 * 60_000,
+    maxStaleMs: 5 * 60_000,
     fallback: () => OFF,
     errorTtlMs: 60_000,
     onError: (error) => logger.warn('maintenance_load_failed', { error }),

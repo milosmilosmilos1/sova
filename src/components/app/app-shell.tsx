@@ -60,6 +60,7 @@ export function AppShell({
   currentBrand,
   swatches = {},
   waitingApprovals = 0,
+  renderId = '',
   children,
 }: {
   viewer: ShellViewer
@@ -71,6 +72,8 @@ export function AppShell({
   swatches?: Record<string, BrandSwatch>
   /** broj nacrta koji čekaju odluku (D-108), značka uz „Odobravanje” */
   waitingApprovals?: number
+  /** oznaka ovog crtanja layouta: nov crtež vraća broj sa servera i kad je isti kao pre (D-164) */
+  renderId?: string
   children: ReactNode
 }) {
   const t = useTranslations('shell')
@@ -155,7 +158,11 @@ export function AppShell({
               <NavLink href="/app/approvals">
                 <CheckCircle2 aria-hidden />
                 {t('nav.approvals')}
-                <ApprovalsBadge brandId={currentBrand?.id ?? null} initial={waitingApprovals} />
+                <ApprovalsBadge
+                  brandId={currentBrand?.id ?? null}
+                  initial={waitingApprovals}
+                  renderId={renderId}
+                />
               </NavLink>
               <NavLink href="/app/inbox">
                 <Inbox aria-hidden />
