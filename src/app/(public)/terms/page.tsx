@@ -105,8 +105,9 @@ export default async function TermsPage() {
                 'The service is provided “as is”. Our total liability is limited to the amount you paid us in the 12 months before the event giving rise to the claim, to the extent permitted by law.',
                 'You may delete your account at any time. We may suspend accounts that breach these terms, network rules or the law.',
                 <>
-                  Governing law is the law of the jurisdiction where {company.legalName} is registered,
-                  without prejudice to mandatory consumer and data protection rules in your country.
+                  Governing law is the law of the State of Wyoming, USA, where {company.legalName} is
+                  registered, without prejudice to mandatory consumer and data protection rules in your
+                  country.
                 </>,
               ]}
             />

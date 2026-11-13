@@ -6,7 +6,7 @@ import type { ReactNode } from 'react'
 import { LegalList, LegalPage, LegalSection } from '@/components/legal/legal-page'
 import { company } from '@/config/company'
 import { localePath } from '@/i18n/paths'
-import { publicMetadata } from '@/lib/seo'
+import { publicMetadata, siteUrl } from '@/lib/seo'
 
 export async function generateMetadata(): Promise<Metadata> {
   const [locale, t] = await Promise.all([getLocale(), getTranslations('legal.privacy')])
@@ -55,7 +55,8 @@ export default async function PrivacyPage() {
             mail,
             company: company.legalName,
             product: company.productName,
-            domain: company.domain,
+            // adresa na kojoj Sova stvarno radi (pravi domen kad proradi), ne planirani domen
+            domain: new URL(siteUrl()).host,
             email: company.privacyEmail,
           })}
           {company.address ? ` ${tl('address', { address: company.address })}` : ''}
@@ -127,8 +128,9 @@ export default async function PrivacyPage() {
 
           <LegalSection title="Privacy Policy (English summary)">
             <p>
-              <strong>{company.legalName}</strong> operates {company.productName} ({company.domain}). Contact
-              for privacy matters: <a href={`mailto:${company.privacyEmail}`}>{company.privacyEmail}</a>.
+              <strong>{company.legalName}</strong> operates {company.productName} ({new URL(siteUrl()).host}).
+              Contact for privacy matters:{' '}
+              <a href={`mailto:${company.privacyEmail}`}>{company.privacyEmail}</a>.
             </p>
             <LegalList
               items={[

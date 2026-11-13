@@ -2,6 +2,7 @@ import { Body, Container, Head, Hr, Html, Preview, Section, Text } from '@react-
 import type { ReactNode } from 'react'
 
 import { company } from '@/config/company'
+import { siteUrl } from '@/lib/seo'
 
 export function EmailLayout({
   preview,
@@ -30,7 +31,7 @@ export function EmailLayout({
           <Section>{children}</Section>
           <Hr style={{ borderColor: '#e5e7eb', margin: '24px 0 12px' }} />
           <Text style={{ fontSize: 12, color: '#6b7280', margin: 0 }}>
-            {company.legalName} · {company.appUrl}
+            {company.legalName} · {siteUrl()}
           </Text>
         </Container>
       </Body>

@@ -11,7 +11,7 @@ Stanje 13.11.2026. Pravila su čitana sa zvaničnih stranica platformi istog dan
 ## 1. Šta blokira sve platforme
 
 1. **Domen.** Pravne strane i `src/config/company.ts` kažu da je Sova na sovaai.rs, a taj domen se ne otvara. Aplikacija radi na sovaai.netlify.app. Google ne prihvata netlify.app za početnu stranu i politiku, jer domen mora biti „tvoj”, a netlify.app je javni sufiks. Rešenje: sovaai.rs usmeriti na Netlify kao glavni domen, pa promeniti adrese u Supabase-u, u env-u (`NEXT_PUBLIC_APP_URL`) i redirect adrese kod svih mreža. Promena domena posle odobrenja traži novi pregled, zato ide prva.
-2. **Firma.** Adresa TangerineSEO LLC je prazna (`company.ts`), a kontakt je lični Gmail. Meta, Google, LinkedIn (stranice firmi) i Canva traže adresu firme i poslovni email. Potrebno: registrovana adresa i savezna država LLC-a, i sandučići privacy@, support@ i security@ na domenu.
+2. **Firma.** Rešeno 13.11.2026 u `company.ts`: registrovana adresa TangerineSEO LLC (75 E 3rd St, Ste 7, Sheridan, WY 82801, USA), kontakt office@tangerineseo.com umesto ličnog Gmail-a, a u uslovima je merodavno pravo savezne države Vajoming. Poslovni email je na domenu firme (tangerineseo.com), što Meta i LinkedIn traže. Poreski broj, telefon i podaci banke se ne objavljuju na sajtu (za proveru firme kod Mete idu u dokumentima). Pravne strane i mejlovi sada pokazuju adresu na kojoj Sova stvarno radi, a ne sovaai.rs.
 3. **Pravni tekstovi nisu tačni ni potpuni** (`src/i18n/messages/parts/d/{sr-Latn,en,uk}.json`, ključevi privacy, terms, dataDeletion; `src/app/(public)/privacy/page.tsx`):
    - kao hosting piše Vercel, a mi smo na Netlify-ju;
    - nema Pexels-a, Figme ni LinkedIn-a;
@@ -141,10 +141,8 @@ Stanje 13.11.2026. Pravila su čitana sa zvaničnih stranica platformi istog dan
 
 ## 3. Predlog redosleda
 
-1. **Vlasnik, odmah:**
+1. **Vlasnik, odmah** (adresa firme i poslovni email su upisani 13.11.):
    - domen sovaai.rs na Netlify;
-   - sandučići na domenu;
-   - adresa firme i savezna država;
    - formular za Business Profile API;
    - pokretanje Business Verification-a kod Mete;
    - potvrda naplate za Gemini ključ.
