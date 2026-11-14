@@ -1464,7 +1464,7 @@ create table month_plans (
   month date not null,                              -- prvi dan prvog meseca plana (plan traje do tri meseca)
   period_start date not null, period_end date not null,   -- tekući mesec počinje od sutra
   status text not null default 'planning',          -- planning | ready | generating | done | failed
-  settings jsonb not null default '{}',             -- kind, months (1–3, D-120), look (vivid | brand, D-121), perWeek, platforms, formats, locale, notes, mode, slots[]
+  settings jsonb not null default '{}',             -- kind, months (1–3, D-120), look (vivid | brand, D-121), perWeek, platforms, formats, locale, notes, mode, slots[] (slots[i].kind i slots[i].ref: vrsta sadržaja i stavka iz brands.settings.content, D-165)
   error text,                                       -- i mesec za koji teme nisu izabrane (plan ostaje spreman)
   tokens_charged integer not null default 0,        -- plan (3 po mesecu) i nacrti (po 2)
   created_by uuid references profiles(id) on delete set null,

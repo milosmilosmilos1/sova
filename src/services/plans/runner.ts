@@ -17,11 +17,24 @@ import {
 } from '@/lib/ai/prompts/month-plan'
 import type { PostGoal } from '@/lib/ai/prompts/post-text'
 import { parseVoice } from '@/lib/brand/voice'
+import {
+  applyAutoKinds,
+  assignKinds,
+  resolveKind,
+  slotKindOf,
+  type KindTarget,
+  type SlotKind,
+} from '@/lib/content-kinds'
+import { applyReviewCopy, kindCopyLines, reviewQuoteBlock, reviewShortQuote } from '@/lib/content-kinds/copy'
+import { planKindData } from '@/lib/content-kinds/plan'
 import { logger } from '@/lib/logger'
 import { monthEnd, slotMonths, type PlanSlot } from '@/lib/plans/slots'
+import { storedContent } from '@/lib/schemas/brand-content'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getTokenPrice } from '@/lib/tokens/prices'
 import { confirmReservation } from '@/lib/tokens/reservation'
+import { getStyle, type StyleId } from '@/lib/visuals/design'
+import type { PhotoSource } from '@/lib/visuals/design/catalog'
 import type { Slide } from '@/lib/visuals/design/types'
 import { videoScenes } from '@/lib/visuals/design/video'
 import { variantAt } from '@/lib/visuals/design/variants'
@@ -30,8 +43,9 @@ import { failGeneration, startGeneration } from '@/services/ai/generations'
 import { buildBrandContext } from '@/services/ai/text'
 import { generateDraftText } from '@/services/autopilot/content'
 import { notifyRoles, type StepRunner } from '@/services/autopilot/runner'
+import { markContentUsed } from '@/services/brand-content'
 import type { BrandRow } from '@/services/brands'
-import { resolveDesign } from '@/services/design/brand-design'
+import { resolveDesign, type ResolvedDesign } from '@/services/design/brand-design'
 import { captionFor, generateDesignedCopy } from '@/services/design/copy'
 import { themeOf, type PostDesignContext } from '@/services/design/post-design'
 import { renderDesignInSteps, type DesignRenderInput } from '@/services/design/render-post'
@@ -147,6 +161,68 @@ async function noteMonthFailure(planId: string, message: string): Promise<'faile
   return 'failed'
 }
 
+const KIND_OFF = 'Ova vrsta objave je isključena u Vrstama objava. Uključite je ili obrišite stavku.'
+const KIND_MISSING =
+  'Utisak, osoba ili rad za ovu objavu je obrisan u Vrstama objava, pa Sova ne pravi ovu objavu. Obrišite stavku.'
+
+/** Vrste termina upisane u plan (D-165); stavka plana ih čita po svojoj poziciji. */
+async function saveSlotKinds(
+  planId: string,
+  kinds: Array<{ position: number; kind: SlotKind | null }>,
+): Promise<void> {
+  const admin = createSupabaseAdminClient()
+  const { data, error } = await admin.from('month_plans').select('settings').eq('id', planId).single()
+  if (error || !data) throw new Error(error?.message ?? 'month plan missing')
+  const settings = planSettings(data)
+  const slots = [...(settings.slots ?? [])]
+  for (const { position, kind } of kinds) {
+    const slot = slots[position]
+    if (!slot) continue
+    const next: PlanSlot = { ...slot }
+    delete next.kind
+    delete next.ref
+    slots[position] = kind ? { ...next, kind: kind.kind, ref: kind.ref } : next
+  }
+  const { error: updateError } = await admin
+    .from('month_plans')
+    .update({ settings: { ...settings, slots } as unknown as Json, updated_at: new Date().toISOString() })
+    .eq('id', planId)
+  if (updateError) throw new Error(updateError.message)
+}
+
+/**
+ * Fotografije po vrsti sadržaja (D-165): utisak bez fotografija sa strane, osoba samo sa svojom
+ * fotografijom, pre i posle sa svoje dve, nikad sa Unsplash-a ili Pexels-a. Kad stil brenda ne
+ * prikazuje fotografije koje vrsta traži, objava ide u foto stilu `framed`, u bojama i fontu brenda.
+ */
+function kindPhotos(
+  target: KindTarget | null,
+  look: ResolvedDesign,
+): { photoSource: PhotoSource; styleId: StyleId; photoAssetIds?: string[] } {
+  if (!target) return { photoSource: look.photoSource, styleId: look.styleId }
+  const mode = getStyle(look.styleId).photo
+  switch (target.kind) {
+    case 'review':
+      return { photoSource: 'none', styleId: look.styleId }
+    case 'team':
+      return target.item.photoAssetId
+        ? {
+            photoSource: 'none',
+            styleId: mode === 'none' && !look.template ? 'framed' : look.styleId,
+            photoAssetIds: [target.item.photoAssetId],
+          }
+        : { photoSource: 'none', styleId: look.styleId }
+    case 'before_after':
+      return {
+        photoSource: 'none',
+        styleId: mode === 'all' || look.template ? look.styleId : 'framed',
+        photoAssetIds: [target.item.beforeAssetId, target.item.afterAssetId],
+      }
+    default:
+      return { photoSource: look.photoSource, styleId: look.styleId }
+  }
+}
+
 /** Teme za jedan kalendarski mesec plana: jedan poziv Gemini-ja (3 tokena), stavke u bazu. */
 export async function runPlanningMonth(
   planId: string,
@@ -176,6 +252,18 @@ export async function runPlanningMonth(
   const end = plan.period_end < monthEnd(first) ? plan.period_end : monthEnd(first)
   const label = monthLabel(first, start, end)
   const multi = slotMonths(all).length > 1
+  // vrste sadržaja (D-165): stavka uzeta u drugom mesecu istog plana se ne ponavlja
+  const content = storedContent(brand.settings)
+  const positions = new Set(chunk.map((c) => c.position))
+  const used = new Set(
+    all.flatMap((s, i) => {
+      const ref = positions.has(i) ? null : slotKindOf(s)?.ref
+      return ref ? [ref] : []
+    }),
+  )
+  const formats = chunk.map((c) => c.slot.format)
+  const assigned = assignKinds({ formats, content, used })
+  const { data: kindData, labels } = planKindData(content, assigned)
 
   const [context, { data: pillars }, { data: recent }, { data: holidays }, { data: planned }] =
     await Promise.all([
@@ -218,12 +306,15 @@ export async function runPlanningMonth(
       brand: context,
       locale,
       monthLabel: label,
-      slots: chunk.map(({ slot }) => ({
+      slots: chunk.map(({ slot }, i) => ({
         date: slot.date,
         weekday: WEEKDAYS[new Date(`${slot.date}T12:00:00Z`).getUTCDay()]!,
         format: slot.format,
         platforms: slot.platforms,
+        kind: assigned[i]?.kind ?? null,
+        refLabel: assigned[i]?.ref ? (labels.get(assigned[i]!.ref!) ?? null) : null,
       })),
+      kinds: kindData,
       holidays: holidays ?? [],
       topics: parseVoice(brand.voice)?.topics ?? [],
       pillars: [...new Set((pillars ?? []).map((p) => p.name))],
@@ -255,6 +346,13 @@ export async function runPlanningMonth(
     const topics = normalizeMonthPlan(parsed.data, chunk.length)
     if (!topics.size)
       throw new AiError('INVALID_RESPONSE', 'Model nije predložio nijednu temu.', { model: outcome.model })
+    const proposed = new Map([...topics].map(([i, t]) => [i, t.kind] as const))
+    const kinds = applyAutoKinds(assigned, proposed, formats, kindData.auto)
+    // vrsta važi samo za termin sa temom; upisuje se pre stavki, da stavka ne postoji bez svoje vrste
+    await saveSlotKinds(
+      plan.id,
+      chunk.map(({ position }, i) => ({ position, kind: topics.has(i) ? (kinds[i] ?? null) : null })),
+    )
     const rows = chunk.flatMap(({ slot, position }, i) => {
       const t = topics.get(i)
       if (!t) return []
@@ -276,6 +374,10 @@ export async function runPlanningMonth(
     })
     const { error } = await admin.from('month_plan_items').insert(rows)
     if (error) throw error
+    const refs = kinds.flatMap((k, i) => (k?.ref && topics.has(i) ? [k.ref] : []))
+    await markContentUsed(brand.id, refs).catch((err) =>
+      logger.warn('month_plan_content_used_failed', { planId, error: err }),
+    )
     const cost = await costFor(outcome.model, {
       inputTokens: outcome.result.usage.inputTokens,
       outputTokens: outcome.result.usage.outputTokens,
@@ -451,6 +553,12 @@ async function startPlanItem(itemId: string): Promise<StartedItem> {
     const locale = toContentLocale(settings.locale ?? brand.content_locale)
     const topic = item.brief ? `${item.topic}\n\n${item.brief}` : item.topic
     const publishDate = wallClock(item.scheduled_for, brand.timezone).date
+    // vrsta sadržaja termina (D-165): obrisan utisak ili isključena vrsta ne prave objavu
+    const resolved = resolveKind(storedContent(brand.settings), slotKindOf(settings.slots?.[item.position]))
+    if (resolved && 'problem' in resolved)
+      throw new Error(resolved.problem === 'off' ? KIND_OFF : KIND_MISSING)
+    const target = resolved?.target ?? null
+    const review = target?.kind === 'review' ? target.item : null
     const context = await buildBrandContext(brand, topic.slice(0, 500), locale)
 
     if (format === 'video') {
@@ -502,12 +610,14 @@ async function startPlanItem(itemId: string): Promise<StartedItem> {
 
     const designed = DESIGNED[format]
     if (designed) {
-      // jedna tema za sve objave (D-125): stil, boje i font brenda, isti u celom planu
+      // jedna tema za sve objave (D-125): stil, boje i font brenda, isti u celom planu; vrsta
+      // sadržaja (D-165) bira prave fotografije, a pre i posle ima tri slajda (pre, posle, poziv)
       const look = await resolveDesign(brand)
-      const styleId = look.styleId
-      const photoSource = look.photoSource
+      const photos = kindPhotos(target, look)
+      const styleId = photos.styleId
+      const photoSource = photos.photoSource
       const story = format === 'story'
-      const copy = await generateDesignedCopy({
+      const raw = await generateDesignedCopy({
         workspaceId: brand.workspace_id,
         brandId: brand.id,
         userId: null,
@@ -515,12 +625,15 @@ async function startPlanItem(itemId: string): Promise<StartedItem> {
         topic,
         cta: item.cta,
         format: designed,
-        slides: designed === 'carousel' ? look.slides : 1,
+        slides: target?.kind === 'before_after' ? 3 : designed === 'carousel' ? look.slides : 1,
         platforms,
         includeHashtags: true,
         publishDate,
-        origin: { plan: plan.id, item: item.id },
+        origin: { plan: plan.id, item: item.id, ...(target ? { kind: target.kind } : {}) },
+        kindLines: target ? kindCopyLines(target, 'designed') : undefined,
       })
+      // utisak klijenta: citat na slajdu i u opisu je tačno ono što je klijent napisao
+      const copy = review ? applyReviewCopy(raw, review, locale) : raw
       return {
         status: 'render',
         work: {
@@ -533,6 +646,7 @@ async function startPlanItem(itemId: string): Promise<StartedItem> {
             format: story ? 'story' : look.size,
             slides: copy.slides as Slide[],
             photoSource,
+            ...(photos.photoAssetIds ? { photoAssetIds: photos.photoAssetIds } : {}),
             query: (copy.visualQuery || item.topic).slice(0, 100),
             uploadedBy: null,
             topic: [item.topic, ...copy.slides.map((s) => s.title)].join(' '),
@@ -583,13 +697,18 @@ async function startPlanItem(itemId: string): Promise<StartedItem> {
       runId: plan.id,
       publishDate,
       format,
+      kindLines: target ? kindCopyLines(target, 'text') : undefined,
     })
+    // utisak klijenta ide na početak tačno kako je napisan; X dobija početak utiska i ime autora
+    const body = review ? `${reviewQuoteBlock(review, locale)}\n\n${text.text}` : text.text
     const draft: PlanDraft = {
       title: item.topic.slice(0, 200),
-      master: text.text,
+      master: body,
       firstComment: text.firstComment,
       link: format === 'link' ? brand.website_url : null,
-      texts: Object.fromEntries(platforms.map((p) => [p, fitText(p, text.text)])),
+      texts: Object.fromEntries(
+        platforms.map((p) => [p, review && p === 'x' ? reviewShortQuote(review, locale) : fitText(p, body)]),
+      ),
       accounts,
       story: false,
       locale,

@@ -1,5 +1,6 @@
 import type { SocialPlatform } from '@/config/platforms'
 import { PLATFORM_FORMATS, POST_FORMATS, type PostFormat } from '@/config/post-formats'
+import type { ContentKind } from '@/lib/schemas/brand-content'
 import { addDays, DEFAULT_BEST_TIMES, weekdayOf, type BestTimes } from '@/lib/strategy/plan'
 
 /**
@@ -35,6 +36,10 @@ export interface PlanSlot {
   time: string
   format: PostFormat
   platforms: SocialPlatform[]
+  /** vrsta sadržaja (D-165): upisuje je biranje tema; čita se kroz `slotKindOf` */
+  kind?: ContentKind
+  /** utisak, osoba ili par iz Vrsta objava; null za pitanje i humor */
+  ref?: string | null
 }
 
 export interface PlanPeriod {

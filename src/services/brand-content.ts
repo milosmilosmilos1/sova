@@ -193,6 +193,24 @@ export async function updateContentItem(
   return getBrandContent(viewer, brandId)
 }
 
+/**
+ * Stavke koje je plan uzeo dobijaju `usedAt`, da sledeći plan prvo uzme druge (D-165). Bez provere
+ * prava: zove je pozadinski posao plana, koji je proverio prava kad je plan zatražen.
+ */
+export async function markContentUsed(brandId: string, ids: string[], at = new Date().toISOString()) {
+  if (!ids.length) return
+  const used = new Set(ids)
+  const { settings, content } = await readFresh(brandId)
+  const touch = <T extends { id: string; usedAt: string | null }>(items: T[]) =>
+    items.map((i) => (used.has(i.id) ? { ...i, usedAt: at } : i))
+  await writeContent(brandId, settings, {
+    ...content,
+    testimonials: touch(content.testimonials),
+    team: touch(content.team),
+    pairs: touch(content.pairs),
+  })
+}
+
 export async function removeContentItem(
   viewer: Viewer,
   brandId: string,

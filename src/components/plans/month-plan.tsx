@@ -34,6 +34,7 @@ import { CONTENT_LOCALES } from '@/config/locales'
 import { type SocialPlatform } from '@/config/platforms'
 import { PLATFORM_FORMATS, POST_FORMATS, type PostFormat } from '@/config/post-formats'
 import { buildSlots, MONTH_OPTIONS, monthEnd, PER_WEEK_OPTIONS, slotMonths } from '@/lib/plans/slots'
+import type { ContentKind } from '@/lib/schemas/brand-content'
 import type { StyleId } from '@/lib/visuals/design/catalog'
 import type { LookId } from '@/lib/visuals/design/looks'
 import type { DesignColors } from '@/lib/visuals/design/types'
@@ -62,6 +63,7 @@ interface Item {
   status: ItemStatus
   postId: string | null
   error: string | null
+  kind: ContentKind | null
 }
 
 interface Plan {
@@ -499,6 +501,7 @@ function PlanBoard({
   onChange: (plan: Plan | null) => void
 }) {
   const t = useTranslations('plan')
+  const tk = useTranslations('brandContent.kinds')
   const locale = useLocale()
   const intl = INTL[locale] ?? 'sr-Latn-RS'
   const day = new Intl.DateTimeFormat(intl, {
@@ -766,6 +769,11 @@ function PlanBoard({
                             <Icon className="size-3.5" aria-hidden />
                             {t(`formats.${i.format}`)}
                           </span>
+                          {i.kind ? (
+                            <span className="rounded-full border px-2 py-0.5 text-foreground">
+                              {tk(`${i.kind}.name`)}
+                            </span>
+                          ) : null}
                           <NetworkNames platforms={i.platforms} size={12} />
                           {[
                             ...new Set(

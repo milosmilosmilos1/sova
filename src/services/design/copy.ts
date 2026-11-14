@@ -57,6 +57,8 @@ export async function generateDesignedCopy(input: {
   idempotencyKey?: string | null
   /** oznaka u ai_generations.input (tok, Autopilot, Studio) */
   origin: Record<string, Json>
+  /** uputstvo i podaci za vrstu sadržaja (D-165) */
+  kindLines?: string[]
 }): Promise<DesignedCopy> {
   const price = await getTokenPrice('text')
   const { generationId, reservationId } = await startGeneration({
@@ -94,6 +96,7 @@ export async function generateDesignedCopy(input: {
             includeHashtags: input.includeHashtags ?? true,
             publishDate: input.publishDate ?? null,
             dmCta: input.dmCta,
+            extra: input.kindLines,
           }),
           jsonSchema: carouselJsonSchema(),
           maxOutputTokens: 4096,

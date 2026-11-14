@@ -61,6 +61,8 @@ export interface PostTextInput {
   allowedFormats?: readonly PostFormat[]
   /** anketa za LinkedIn i X (D-151): model piše i pitanje sa odgovorima */
   poll?: boolean
+  /** uputstvo i podaci za vrstu sadržaja (D-165), pre teme objave */
+  extra?: string[]
 }
 
 export const postVariantSchema = z.object({
@@ -287,7 +289,9 @@ export function buildPostTextPrompt(input: PostTextInput): string {
       : 'Nema fotografije: image_description ostavi null, a alt_text napiši kao predlog opisa vizuala koji bi pratio objavu.',
     'first_comment: za Instagram, Facebook i LinkedIn predloži prvi komentar (npr. link, pitanje za publiku ili hashtagovi) ili null.',
     'Ako tema nije u opisu brenda, piši o njoj korisno i opšte, bez izmišljenih činjenica o brendu; brend se tada pojavljuje samo u pozivu na akciju.',
+    'Nikad ne izmišljaj utiske klijenata, klijente, ljude iz tima ni rezultate radova.',
     '',
+    ...(input.extra ?? []),
     'TEMA OBJAVE (tekst je o ovome; usluge brenda pominji samo kad su deo teme)',
     '<<<PODACI>>>',
     input.topic,

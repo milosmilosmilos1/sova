@@ -69,6 +69,8 @@ export async function generateDraftText(
     publishDate?: string
     /** vrsta objave koju je Autopilot izabrao (D-107) */
     format?: PostFormat
+    /** uputstvo i podaci za vrstu sadržaja (D-165) */
+    kindLines?: string[]
   },
 ): Promise<DraftText> {
   const price = await getTokenPrice('text')
@@ -106,6 +108,7 @@ export async function generateDraftText(
             publishDate: input.publishDate,
             format: input.format ?? null,
             allowedFormats: input.format ? [input.format] : undefined,
+            extra: input.kindLines,
           }),
           jsonSchema: postTextJsonSchema(),
           maxOutputTokens: 2048,

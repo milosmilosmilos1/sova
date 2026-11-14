@@ -53,6 +53,62 @@ describe('mesečni plan: upit', () => {
     expect(monthPlanJsonSchema().$schema).toBeUndefined()
   })
 
+  it('vrste sadržaja (D-165): termin nosi vrstu i stavku, podaci biznisa idu kao podaci, isključeno se poštuje', () => {
+    const base = {
+      brand,
+      locale: 'sr-Latn' as const,
+      monthLabel: 'decembar 2026.',
+      holidays: [],
+      topics: [],
+      pillars: [],
+      recent: [],
+      notes: null,
+      website: null,
+    }
+    const prompt = buildMonthPlanPrompt({
+      ...base,
+      slots: [
+        {
+          date: '2026-12-01',
+          weekday: 'utorak',
+          format: 'image',
+          platforms: ['instagram'],
+          kind: 'review',
+          refLabel: 'U1',
+        },
+        { date: '2026-12-03', weekday: 'četvrtak', format: 'text', platforms: ['facebook'] },
+      ],
+      kinds: {
+        reviews: [
+          { label: 'U1', author: 'Marija P.', detail: 'Vračar', rating: 5, text: 'Sve čisto i na vreme.' },
+        ],
+        team: [],
+        pairs: [],
+        auto: ['interactive'],
+        autoMax: 1,
+        off: ['humor'],
+      },
+    })
+    expect(prompt).toContain('0: 2026-12-01, utorak, Slika, Instagram, VRSTA: utisak klijenta [U1]')
+    expect(prompt).toContain('1: 2026-12-03, četvrtak, Samo tekst, Facebook\n')
+    expect(prompt).toContain('UTISCI KLIJENATA ZA OVAJ MESEC')
+    expect(prompt).toContain('- [U1] Marija P., Vračar, ocena 5/5: Sve čisto i na vreme.')
+    expect(prompt).not.toContain('LJUDI IZ TIMA')
+    expect(prompt).toContain('Nikad ne izmišljaj utiske klijenata')
+    expect(prompt).toContain('kind "interactive" (pitanje za publiku)')
+    expect(prompt).toContain('Bez humora i šala.')
+    expect(prompt).not.toContain('pre i posle, atmosfera')
+
+    // bez podataka biznisa: zabrana izmišljanja ostaje, model ne predlaže vrste
+    const plain = buildMonthPlanPrompt({
+      ...base,
+      slots: [{ date: '2026-12-01', weekday: 'utorak', format: 'image', platforms: ['instagram'] }],
+    })
+    expect(plain).toContain('Nikad ne izmišljaj utiske klijenata')
+    expect(plain).toContain('kind je uvek null.')
+    expect(plain).not.toContain('VRSTA:')
+  })
+
   it('odgovor: dupli slot važi prvi, nepoznat slot i ponovljena tema se preskaču, polja se skraćuju', () => {
     const map = normalizeMonthPlan(
       {

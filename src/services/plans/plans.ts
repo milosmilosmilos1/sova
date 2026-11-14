@@ -6,6 +6,8 @@ import { PLATFORM_FORMATS, POST_FORMATS, type PostFormat } from '@/config/post-f
 import type { AppLocale } from '@/i18n/config'
 import { translateServerText } from '@/i18n/server-text'
 import { ApiError } from '@/lib/api/errors'
+import { slotKindOf } from '@/lib/content-kinds'
+import type { ContentKind } from '@/lib/schemas/brand-content'
 import type { Viewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import { enqueueMonthPlan, enqueueMonthPlanGenerate } from '@/lib/jobs/enqueue'
@@ -47,6 +49,8 @@ export interface PlanItemView {
   status: 'planned' | 'generating' | 'done' | 'failed'
   postId: string | null
   error: string | null
+  /** vrsta sadržaja termina (D-165): utisak klijenta, tim, pre i posle, pitanje ili humor */
+  kind: ContentKind | null
 }
 
 export interface PlanView {
@@ -84,7 +88,7 @@ export interface PlanPageView {
 }
 
 function toView(plan: PlanRow, items: ItemRow[], timeZone: string, locale: AppLocale): PlanView {
-  const { slots: _slots, ...settings } = planSettings(plan)
+  const { slots, ...settings } = planSettings(plan)
   const views = items
     .sort((a, b) => a.scheduled_for.localeCompare(b.scheduled_for) || a.position - b.position)
     .map((i) => {
@@ -105,6 +109,7 @@ function toView(plan: PlanRow, items: ItemRow[], timeZone: string, locale: AppLo
         postId: i.post_id,
         // greška stavke je poruka servera na srpskom; korisnik je čita na svom jeziku (D-130)
         error: i.error && translateServerText(i.error, locale),
+        kind: slotKindOf(slots?.[i.position])?.kind ?? null,
       }
     })
   const counts = { planned: 0, generating: 0, done: 0, failed: 0 }

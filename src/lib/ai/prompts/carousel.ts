@@ -26,6 +26,8 @@ export interface CarouselPromptInput {
   publishDate?: string | null
   /** kad je true, poslednji slajd poziva da se piše u poruke (DM automatizacija) */
   dmCta?: boolean
+  /** uputstvo i podaci za vrstu sadržaja (D-165), pre teme objave */
+  extra?: string[]
 }
 
 export const carouselSlideSchema = z.object({
@@ -126,7 +128,9 @@ export function buildCarouselPrompt(input: CarouselPromptInput): string {
     'visual_query: 2 do 5 reči na engleskom za pretragu fotografija koje prate temu (npr. „coffee shop interior”), bez imena brenda.',
     'alt_text: kratak opis vizuala za čitače ekrana.',
     'Ako tema nije u opisu brenda, piši o njoj korisno i opšte, bez izmišljenih činjenica o brendu; brend se tada pojavljuje samo u pozivu na akciju.',
+    'Nikad ne izmišljaj utiske klijenata, klijente, ljude iz tima ni rezultate radova.',
     '',
+    ...(input.extra ?? []),
     'TEMA OBJAVE (slajdovi i opis su o ovome; usluge brenda pominji samo kad su deo teme)',
     '<<<PODACI>>>',
     input.topic,
