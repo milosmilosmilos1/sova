@@ -1456,3 +1456,17 @@ Odluka:
 - Bočni meni na računaru unapred učitava stranu tek kad miš pređe preko linka ili link dobije fokus; ranije je oko 20 linkova odmah slalo po dva zahteva. Na telefonu ostaje kao ranije. Keš povratka na stranu (`staleTimes`) nije uključen: početna bi posle odluka iz API-ja do 30 s pokazivala stare nacrte.
 
 Razlog: vlasnik je rekao da je sve očajno sporo. Merenje je pokazalo da vreme odlazi na krugove preko Atlantika i na hladne startove, a ne na bazu. Nezavisan pregled izmena (bezbednost, ispravnost, ponašanje na serveru) našao je grešku u Studiju i sedam manjih stvari; sve su ispravljene pre objave.
+
+## D-165 · 14.11.2026 · usvojeno (faza 1 od 4) · Vrste objava sa stvarnim podacima biznisa
+
+Odluka:
+
+- Pet vrsta objava koje je vlasnik tražio: utisci klijenata, pre i posle (radovi, npr. renoviranje stana), ljudi iza brenda (predstavljanje tima), ankete i pitanja (anketa, kviz, pitanje publici) i humor (kancelarijski život, fore iz struke, situacije koje svi prepoznaju).
+- Sova nikad ne izmišlja utiske, ljude ni rezultate radova. Utisci, tim i pre i posle prave se samo od podataka koje je biznis uneo, a utisak se citira tačno kako je napisan. Ankete i humor ne traže podatke.
+- Podaci se unose na novoj kartici „Vrste objava” u Brendu i nalogu (`/app/brand/content`). Fotografije za tim i pre i posle biraju se iz Galerije brenda; server prihvata samo sliku iz istog radnog prostora koja pripada ovom brendu ili nijednom.
+- Prekidač po vrsti: Automatski, Uključeno, Isključeno. Na Automatski vrste sa podacima ulaze u plan tek kad podataka ima, a ankete i humor Sova procenjuje po delatnosti i tonu brenda (nema humora za pogrebno preduzeće ni anketa za firmu kojoj zajednica nije važna). Isključena vrsta se nikad ne predlaže.
+- Čuvanje: `brands.settings.content` = `{kinds, testimonials[], team[], pairs[]}`, bez migracije. Najviše 100 utisaka, 30 ljudi i 50 parova. Svaka stavka ima `id` (10 znakova), `createdAt` i `usedAt` (kad je poslednji put iskorišćena, da se ne ponavlja). Upis čita sveža podešavanja i menja samo ključ `content`; menjaju vlasnik, administrator i urednik, ostali samo gledaju.
+- Čitanje proverava stavku po stavku: neispravna stavka (stara šema, ručna izmena u bazi) ispada sama. Da se cela lista odbacuje, sledeći upis bi obrisao i sve ispravne stavke.
+- Sledeće faze: (2) mesečni plan, Autopilot i Studio biraju vrstu i konkretnu stavku i pišu tekst po vrsti; (3) izgled: kartica utiska sa zvezdicama, pre i posle jedno do drugog, kartica člana tima sa pravom fotografijom, karusel ankete i kviza, mem bez tuđih šablona; (4) mreže: prave ankete na LinkedIn-u i X-u, na Instagramu i Facebook-u „glasajte u komentarima” jer njihov API nema ankete. Tokovi za ove vrste traže migraciju i pitaće se pre nje.
+
+Razlog: vlasnik je tražio ovih pet vrsta, a ljude iza profila posebno, da se vidi da iza profila nije mreža računara. Izmišljen utisak, osoba ili rad je obmana kupaca; mreže i propisi o zaštiti potrošača zabranjuju lažne recenzije, pa Sova radi samo sa onim što biznis stvarno ima.

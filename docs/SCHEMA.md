@@ -156,12 +156,13 @@ create table brands (
   last_site_check_at timestamptz,
   sitemap_hash text,
   feed_hash text,
-  settings jsonb not null default '{}',        -- UTM podrazumevano, zabranjene reči, hashtag setovi; autopilot; profileKit (opisi profila po mreži D-143, Instagram highlights D-144, sadržaj za profile po mreži D-146, boja slika profila D-148)
+  settings jsonb not null default '{}',        -- UTM podrazumevano, zabranjene reči, hashtag setovi; autopilot; profileKit (opisi profila po mreži D-143, Instagram highlights D-144, sadržaj za profile po mreži D-146, boja slika profila D-148); content (vrste objava D-165)
   report_emails citext[] not null default '{}' check (cardinality(report_emails) <= 5),  -- klijent dobija mesečni PDF (migracija 024)
   design jsonb not null default '{}',            -- dizajn objava: stil, format, fotografije, slajdovi, boje, nalog (migracija 030, D-109); izgled (D-123, D-124): look (light-1..3 | dark-1..3 | custom; stare site-1..3 se prevode), fonts {headings, body}, siteVisual {url, at, source, primary, secondary, accent, light, dark, headings, body}
 -- brands.design.customFonts: [{family: 'Custom <id>', name, format: ttf|otf|woff}], fajl u brand-assets/fonts/<id> (D-159)
 -- brands.design.templates: Figma šabloni (D-162) {id, name, fileKey, format, frames: {cover, point, cta}: {nodeId, fill, background: {assetId, x, y, w, h}, layers[]}}; templateId: šablon po kom se crtaju objave; posts.design.templateId: šablon kojim je objava nacrtana
 -- brands.design.people: ukinuto (D-154); stara vrednost se zanemaruje, jer pravilo za ljude na fotografijama i snimcima važi za svaki brend
+-- brands.settings.content (D-165): {kinds: {review|before_after|team|interactive|humor: bool; nema ključa = automatski}, testimonials[≤100]: {author, detail, text, rating 1–5, source, date}, team[≤30]: {name, role, bio, funFact, photoAssetId}, pairs[≤50]: {title, note, beforeAssetId, afterAssetId}}; svaka stavka i {id (10 znakova), createdAt, usedAt}; fotografije su slike iz media_assets ovog brenda (ili bez brenda) u istom radnom prostoru
   created_by uuid references profiles(id) on delete set null,
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now(),

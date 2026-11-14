@@ -727,5 +727,108 @@
       "templateSave": "Sačuvaj kao šablon ({n} okv.)",
       "templateSaved": "Šablon „{name}” je sačuvan. <link>Uključite ga u Vizuelnom identitetu.</link>"
     }
+  },
+  "brandContent": {
+    "title": "Vrste objava",
+    "intro": "Ovde birate koje vrste objava Sova pravi za ovaj brend i unosite podatke za njih. Utiske klijenata, tim i radove pre i posle Sova pravi samo od onoga što ovde unesete. Ništa ne izmišlja.",
+    "readOnly": "Imate pristup samo za čitanje. Izmene pravi neko sa pravom uređivanja.",
+    "choosePhoto": "Izaberite fotografiju",
+    "kinds": {
+      "title": "Šta Sova sme da predloži",
+      "description": "Automatski znači da Sova sama procenjuje. Vrste koje traže vaše podatke ulaze u plan tek kad ih unesete.",
+      "states": {
+        "auto": "Automatski",
+        "on": "Uključeno",
+        "off": "Isključeno"
+      },
+      "review": {
+        "name": "Utisci klijenata",
+        "hint": "Pravi utisci i recenzije vaših klijenata, citirani tačno kako su napisani."
+      },
+      "before_after": {
+        "name": "Pre i posle",
+        "hint": "Vaši radovi: kako je bilo pre i kako je posle. Za majstore, renoviranje, salone, čišćenje."
+      },
+      "team": {
+        "name": "Ljudi iza brenda",
+        "hint": "Predstavljanje tima, da se vidi da iza profila stoje stvarni ljudi."
+      },
+      "interactive": {
+        "name": "Ankete i pitanja",
+        "hint": "Ankete, kvizovi i pitanja publici. Dobro za brendove kojima je zajednica važna, na primer glasanje za novi ukus kafe."
+      },
+      "humor": {
+        "name": "Humor",
+        "hint": "Opušteniji sadržaj iz vaše struke: kancelarijski život, fore iz posla, situacije koje svi prepoznaju."
+      },
+      "needsData": "Još ništa nije uneto, pa Sova ovu vrstu ne predlaže.",
+      "count": "Uneto: {count}"
+    },
+    "testimonials": {
+      "title": "Utisci klijenata",
+      "description": "Prepišite utisak tačno kako ga je klijent napisao. Objavljujte samo one za koje imate dozvolu.",
+      "empty": "Još nema utisaka.",
+      "add": "Dodaj utisak",
+      "author": "Ko je napisao",
+      "authorHint": "Ime ili ime i prvo slovo prezimena, kako se klijent složio.",
+      "detail": "Kratak opis klijenta",
+      "detailHint": "Na primer: vlasnica stana na Vračaru. Može i prazno.",
+      "text": "Utisak",
+      "textHint": "Tačno kako je napisano. Sova ga neće menjati.",
+      "rating": "Ocena",
+      "ratingNone": "Bez ocene",
+      "source": "Odakle je",
+      "sources": {
+        "google": "Google",
+        "facebook": "Facebook",
+        "instagram": "Instagram",
+        "website": "Sajt",
+        "direct": "Lično ili porukom",
+        "other": "Drugo"
+      },
+      "date": "Datum"
+    },
+    "team": {
+      "title": "Ljudi iza brenda",
+      "description": "Ko radi u firmi i čime se bavi. Fotografiju birate iz Galerije brenda.",
+      "empty": "Još nema unetih ljudi.",
+      "add": "Dodaj osobu",
+      "photo": "Fotografija",
+      "name": "Ime",
+      "role": "Uloga",
+      "roleHint": "Na primer: keramičar, vlasnica, šef kuhinje.",
+      "bio": "Par rečenica o osobi",
+      "bioHint": "Šta radi, koliko dugo, šta voli u poslu.",
+      "funFact": "Zanimljivost",
+      "funFactHint": "Nešto ljudsko za opušteniju objavu. Može i prazno.",
+      "noPhoto": "bez fotografije"
+    },
+    "pairs": {
+      "title": "Pre i posle",
+      "description": "Dve fotografije istog mesta ili predmeta: pre rada i posle. Obe birate iz Galerije brenda.",
+      "empty": "Još nema unetih radova.",
+      "add": "Dodaj rad",
+      "before": "Pre",
+      "after": "Posle",
+      "needBoth": "Izaberite obe fotografije.",
+      "titleLabel": "Naziv rada",
+      "titleHint": "Na primer: kupatilo na Vračaru.",
+      "note": "Šta je urađeno",
+      "noteHint": "Kratko: šta ste radili i koliko je trajalo."
+    },
+    "picker": {
+      "title": "Izaberite fotografiju",
+      "description": "Fotografije iz Galerije ovog brenda.",
+      "empty": "Galerija je prazna. Prvo dodajte fotografije u Galeriju.",
+      "openGallery": "Otvori Galeriju",
+      "photo": "Fotografija {n}"
+    },
+    "actions": {
+      "save": "Sačuvaj",
+      "cancel": "Otkaži",
+      "edit": "Izmeni",
+      "delete": "Obriši",
+      "confirmDelete": "Obrisati ovu stavku?"
+    }
   }
 }
