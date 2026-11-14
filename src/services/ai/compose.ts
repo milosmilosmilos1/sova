@@ -5,6 +5,9 @@ import { isPollPlatform, normalizePoll, type PollOptions } from '@/config/poll'
 import { formatFor, formatsForPlatforms, mediaNeed, type PostFormat } from '@/config/post-formats'
 import { variantToText } from '@/lib/ai/prompts/post-text'
 import { ApiError } from '@/lib/api/errors'
+import { findTarget, isDataKind, KIND_FORMATS, type KindTarget } from '@/lib/content-kinds'
+import { kindCopyLines, reviewQuoteBlock, reviewShortQuote } from '@/lib/content-kinds/copy'
+import { storedContent } from '@/lib/schemas/brand-content'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import { logger } from '@/lib/logger'
@@ -49,6 +52,33 @@ function attributionText(asset: MediaAssetRow): string | null {
   return typeof a?.text === 'string' ? a.text : null
 }
 
+const KIND_GONE = 'Izabrani utisak, osoba ili rad više ne postoji u Sadržaju brenda.'
+const KIND_FORMAT = 'Ova vrsta sadržaja ne ide uz izabranu vrstu objave.'
+
+/**
+ * Sadržaj brenda u Novoj objavi (D-165): utisak, osoba i rad samo iz unetih podataka, u formatu koji
+ * ih nosi. Pre i posle na „AI bira” postaje karusel; ostale vrste sa podacima na „AI bira” postaju
+ * dizajnirana objava ili tekst, nikad video ili link sa tuđim snimcima.
+ */
+function composeKind(
+  brand: Awaited<ReturnType<typeof getBrand>>,
+  input: ComposeInput,
+  allowed: PostFormat[],
+): { target: KindTarget | null; format: ComposeInput['format'] } {
+  if (!input.content) return { target: null, format: input.format }
+  const target = findTarget(storedContent(brand.settings), input.content.kind, input.content.ref ?? null)
+  if (!target) throw new ApiError('VALIDATION', KIND_GONE)
+  if (!isDataKind(target.kind)) return { target, format: input.format }
+  const fits = KIND_FORMATS[target.kind].filter((f) => allowed.includes(f))
+  if (input.format === 'auto') {
+    if (target.kind === 'before_after' && fits.includes('carousel')) return { target, format: 'carousel' }
+    if (fits.length) return { target, format: input.format }
+    throw new ApiError('VALIDATION', KIND_FORMAT)
+  }
+  if (input.format === 'poll' || !fits.includes(input.format)) throw new ApiError('VALIDATION', KIND_FORMAT)
+  return { target, format: input.format }
+}
+
 export async function composePost(
   viewer: Viewer,
   input: ComposeInput,
@@ -56,25 +86,38 @@ export async function composePost(
 ): Promise<ComposeResult> {
   const brand = await getBrand(viewer, input.brandId)
   await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
-  // anketa (D-151) ide svojim putem: tekst i pitanje sa odgovorima, bez slike
-  if (input.format === 'poll') return composePoll(viewer, brand, { ...input, format: 'poll' }, meta)
   const platforms = input.platforms as SocialPlatform[]
   const allowed = formatsForPlatforms(platforms)
+  // sadržaj brenda (D-165): stavka mora postojati i ići uz izabrani format
+  const kind = composeKind(brand, input, allowed)
+  const target = kind.target
+  const dataKind = Boolean(target && isDataKind(target.kind))
+  // anketa (D-151) ide svojim putem: tekst i pitanje sa odgovorima, bez slike
+  if (kind.format === 'poll') return composePoll(viewer, brand, { ...input, format: 'poll' }, meta)
   if (!allowed.length)
     throw new ApiError(
       'VALIDATION',
       'Izabrane mreže nemaju zajedničku vrstu objave. Napravite posebne objave.',
     )
-  if (input.format !== 'auto' && !allowed.includes(input.format))
+  if (kind.format !== 'auto' && !allowed.includes(kind.format))
     throw new ApiError(
       'VALIDATION',
       'Ova vrsta objave ne ide na sve izabrane mreže. Promenite vrstu ili mreže.',
     )
+  const request: ComposeInput = { ...input, format: kind.format }
 
-  // karusel, objava i priča dobijaju slajdove u stilu brenda (D-108), osim kad korisnik da svoj medij
+  // karusel, objava i priča dobijaju slajdove u stilu brenda (D-108), osim kad korisnik da svoj medij;
+  // utisak, osoba i rad (D-165) uvek, jer gola fotografija bi došla sa Unsplash-a ili Pexels-a
   const dFormat =
-    input.design && !input.mediaAssetIds?.length ? designedFormatFor(input.format, allowed) : null
-  if (dFormat) return composeDesigned(viewer, brand, input, dFormat, meta)
+    (input.design || dataKind) && !input.mediaAssetIds?.length
+      ? designedFormatFor(request.format, allowed)
+      : null
+  if (dFormat) return composeDesigned(viewer, brand, request, dFormat, meta, target)
+  // bez slajdova vrsta sa podacima ide kao tekst ili sa medijem koji je korisnik sam dao
+  if (dataKind && !input.mediaAssetIds?.length && request.format !== 'text') {
+    if (request.format !== 'auto' || !allowed.includes('text')) throw new ApiError('VALIDATION', KIND_FORMAT)
+    request.format = 'text'
+  }
 
   const notes: string[] = []
   const text = await generatePostText(
@@ -88,16 +131,29 @@ export async function composePost(
       includeHashtags: input.includeHashtags,
       variantsPerPlatform: 1,
       locale: input.locale,
-      format: input.format,
+      format: request.format === 'poll' ? 'text' : request.format,
+      kindLines: target ? kindCopyLines(target, 'text') : undefined,
     },
     meta,
   )
   let tokens = text.tokensCharged
   const chosen = text.output.format && allowed.includes(text.output.format) ? text.output.format : null
   const format: PostFormat =
-    input.format === 'auto' ? (chosen ?? (allowed.includes('image') ? 'image' : allowed[0]!)) : input.format
+    request.format === 'auto' || request.format === 'poll'
+      ? (chosen ?? (allowed.includes('image') ? 'image' : allowed[0]!))
+      : request.format
   const query = (text.output.visual_query?.trim() || input.topic).slice(0, 100)
   const first = text.output.variants[0]!
+  // utisak klijenta (D-165) ide na početak tačno kako je napisan; X dobija početak utiska i ime
+  const review = target?.kind === 'review' ? target.item : null
+  const contentLocale = input.locale ?? toContentLocale(brand.content_locale)
+  const textOf = (v: typeof first): string => {
+    const body = variantToText(v).text
+    if (!review) return body
+    return v.platform === 'x'
+      ? reviewShortQuote(review, contentLocale)
+      : `${reviewQuoteBlock(review, contentLocale)}\n\n${body}`
+  }
 
   // vizual po vrsti i izvoru; kad izvor nema rezultat, prelazi se na sledeći uz napomenu
   const need = mediaNeed(format)
@@ -184,7 +240,7 @@ export async function composePost(
     const targetFormat = formatFor(format, a.platform as SocialPlatform)
     return {
       socialAccountId: a.id,
-      text: variantToText(v).text,
+      text: textOf(v),
       ...(targetFormat === 'story' ? { options: { format: 'story' } } : {}),
     }
   })
@@ -194,7 +250,7 @@ export async function composePost(
   const post = await createPost(viewer, {
     brandId: brand.id,
     title: first.hook.trim().slice(0, 200) || undefined,
-    masterText: variantToText(first).text,
+    masterText: textOf(first),
     firstComment: first.first_comment?.trim() ? first.first_comment.trim().slice(0, 2200) : undefined,
     linkUrl: link,
     language: input.locale ?? toContentLocale(brand.content_locale),
@@ -209,7 +265,7 @@ export async function composePost(
     locale: input.locale ?? brand.content_locale,
     variants: text.output.variants.map((v) => ({
       platform: v.platform,
-      text: variantToText(v).text,
+      text: textOf(v),
       firstComment: v.first_comment,
     })),
     media: await Promise.all(

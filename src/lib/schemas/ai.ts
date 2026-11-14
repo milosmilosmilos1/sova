@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { POST_FORMATS } from '@/config/post-formats'
 import { contentLocaleSchema, postGoalSchema } from '@/lib/ai/prompts/post-text'
+import { CONTENT_KINDS, contentItemIdSchema } from '@/lib/schemas/brand-content'
 import { PHOTO_SOURCES, POST_SIZES, SLIDES_MAX, STYLE_IDS } from '@/lib/visuals/design/catalog'
 
 const platformEnum = z.enum(Object.keys(PLATFORMS) as [SocialPlatform, ...SocialPlatform[]])
@@ -57,6 +58,10 @@ export const composeSchema = z.object({
   slides: z.number().int().min(1).max(SLIDES_MAX).optional(),
   photoSource: z.enum(PHOTO_SOURCES).optional(),
   size: z.enum(POST_SIZES).optional(),
+  /** sadržaj brenda (D-165): utisak, osoba ili rad (`ref`), pitanje za publiku ili humor */
+  content: z
+    .object({ kind: z.enum(CONTENT_KINDS), ref: contentItemIdSchema.nullable().optional() })
+    .optional(),
 })
 export type ComposeInput = z.infer<typeof composeSchema>
 

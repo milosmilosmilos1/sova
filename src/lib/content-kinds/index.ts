@@ -174,11 +174,21 @@ export function resolveKind(
 ): ResolvedKind {
   if (!slot) return null
   if (kindState(content, slot.kind) === 'off') return { problem: 'off' }
-  if (!isDataKind(slot.kind)) return { target: { kind: slot.kind as FreeKind } }
-  const item = kindItems(content, slot.kind).find((i) => i.id === slot.ref)
-  if (!item) return { problem: 'missing' }
-  if (format && !KIND_FORMATS[slot.kind].includes(format)) return { problem: 'format' }
-  return { target: { kind: slot.kind, item } as KindTarget }
+  const target = findTarget(content, slot.kind, slot.ref)
+  if (!target) return { problem: 'missing' }
+  if (format && isDataKind(slot.kind) && !KIND_FORMATS[slot.kind].includes(format))
+    return { problem: 'format' }
+  return { target }
+}
+
+/**
+ * Vrsta sa svojom stavkom; null kad utisak, osoba ili rad ne postoje. Prekidač vrste se ovde ne
+ * gleda: u Studiju vrstu bira korisnik, a prekidač kaže samo šta Sova sme sama da predloži.
+ */
+export function findTarget(content: StoredContent, kind: ContentKind, ref: string | null): KindTarget | null {
+  if (!isDataKind(kind)) return { kind: kind as FreeKind }
+  const item = kindItems(content, kind).find((i) => i.id === ref)
+  return item ? ({ kind, item } as KindTarget) : null
 }
 
 /** Vrsta iz sačuvanog termina plana (stari planovi i neispravne vrednosti daju null). */

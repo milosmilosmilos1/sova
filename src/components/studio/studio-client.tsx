@@ -7,6 +7,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { previewUrl, StylePicker } from '@/components/design/style-picker'
 import { NetworkName } from '@/components/shared/network-badge'
+import { ComposeKind, type ComposeKindValue } from '@/components/studio/compose-kind'
 import { FigmaImportPanel } from '@/components/studio/figma-import'
 
 import { Button } from '@/components/ui/button'
@@ -19,6 +20,8 @@ import { PLATFORM_KEYS, PLATFORMS, type SocialPlatform } from '@/config/platform
 import { isPollPlatform } from '@/config/poll'
 import { formatsForPlatforms, mediaNeed, type PostFormat, type PostFormatChoice } from '@/config/post-formats'
 import type { ApiResponse } from '@/lib/api/response'
+import { KIND_FORMATS } from '@/lib/content-kinds'
+import { DATA_KINDS } from '@/lib/schemas/brand-content'
 import {
   PHOTO_SOURCES,
   SLIDES_MAX,
@@ -1543,6 +1546,10 @@ function ComposePanel({
   const [cta, setCta] = useState('')
   const [hashtags, setHashtags] = useState(true)
   const [linkUrl, setLinkUrl] = useState('')
+  // sadržaj brenda (D-165): utisak, osoba i rad idu samo sa svojim fotografijama i u formatu koji ih nosi
+  const [content, setContent] = useState<ComposeKindValue | null>(null)
+  const [suggested, setSuggested] = useState<string | null>(null)
+  const ownPhotos = Boolean(content && DATA_KINDS.has(content.kind))
   // dizajn u stilu brenda (D-108): stil, broj slajdova i izvor fotografija; podrazumevano iz dizajna brenda
   const td = useTranslations('design')
   const design = useQuery({
@@ -1559,9 +1566,11 @@ function ComposePanel({
   const photoSource = photoChoice ?? design.data?.photoSource ?? 'stock'
   const size = design.data?.size ?? 'portrait'
 
-  const allowed = formatsForPlatforms(platforms)
+  const allowed = formatsForPlatforms(platforms).filter(
+    (f) => !ownPhotos || KIND_FORMATS[content!.kind].includes(f),
+  )
   // anketa (D-151) samo kad su izabrani LinkedIn ili X, bez ostalih mreža
-  const pollAllowed = platforms.length > 0 && platforms.every(isPollPlatform)
+  const pollAllowed = !ownPhotos && platforms.length > 0 && platforms.every(isPollPlatform)
   // vrsta koja ne ide na novo izabrane mreže vraća se na „AI bira”
   const chosen: PostFormatChoice | 'poll' =
     format === 'poll'
@@ -1573,7 +1582,10 @@ function ComposePanel({
         : format
   const needsVisual = chosen === 'auto' || (chosen !== 'poll' && mediaNeed(chosen).kind !== 'none')
   const designable = chosen === 'auto' || chosen === 'image' || chosen === 'carousel' || chosen === 'story'
-  const designed = look === 'design' && designable && (chosen !== 'auto' || allowed.includes('image'))
+  const designed =
+    (look === 'design' || ownPhotos) &&
+    designable &&
+    (chosen !== 'auto' || allowed.includes('image') || allowed.includes('carousel'))
   const textPrice = prices?.text ?? 2
   const cost =
     textPrice + (!designed && needsVisual && source === 'template' ? (prices?.visual_template ?? 2) : 0)
@@ -1596,6 +1608,7 @@ function ComposePanel({
           source,
           linkUrl: chosen === 'link' && linkUrl.trim() ? linkUrl.trim() : undefined,
           design: designed,
+          content: content ?? undefined,
           ...(designed
             ? {
                 styleId,
@@ -1666,7 +1679,7 @@ function ComposePanel({
               {pollAllowed ? <option value="poll">{t('formats.poll.label')}</option> : null}
             </select>
           </div>
-          {needsVisual && !designed ? (
+          {needsVisual && !designed && !ownPhotos ? (
             <div className="space-y-1.5">
               <Label htmlFor="compose-source">{t('compose.source')}</Label>
               <select
@@ -1702,25 +1715,29 @@ function ComposePanel({
 
         {designable ? (
           <section className="space-y-3 rounded-lg border p-3">
-            <div
-              className="flex flex-wrap items-center gap-2"
-              role="radiogroup"
-              aria-label={t('compose.look')}
-            >
-              <span className="text-sm font-medium">{t('compose.look')}</span>
-              {(['design', 'photo'] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  role="radio"
-                  aria-checked={look === v}
-                  onClick={() => setLook(v)}
-                  className={`rounded-md border px-3 py-1.5 text-sm ${look === v ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted/50'}`}
-                >
-                  {v === 'design' ? t('compose.lookDesign') : t('compose.lookPhoto')}
-                </button>
-              ))}
-            </div>
+            {ownPhotos ? (
+              <p className="text-sm text-muted-foreground">{t('compose.kindPhotos')}</p>
+            ) : (
+              <div
+                className="flex flex-wrap items-center gap-2"
+                role="radiogroup"
+                aria-label={t('compose.look')}
+              >
+                <span className="text-sm font-medium">{t('compose.look')}</span>
+                {(['design', 'photo'] as const).map((v) => (
+                  <button
+                    key={v}
+                    type="button"
+                    role="radio"
+                    aria-checked={look === v}
+                    onClick={() => setLook(v)}
+                    className={`rounded-md border px-3 py-1.5 text-sm ${look === v ? 'border-primary bg-primary/5 ring-1 ring-primary' : 'hover:bg-muted/50'}`}
+                  >
+                    {v === 'design' ? t('compose.lookDesign') : t('compose.lookPhoto')}
+                  </button>
+                ))}
+              </div>
+            )}
             {designed ? (
               <>
                 <div className="flex flex-wrap items-center gap-3">
@@ -1781,21 +1798,23 @@ function ComposePanel({
                       />
                     </div>
                   ) : null}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="compose-photo-source">{td('photoSource.label')}</Label>
-                    <select
-                      id="compose-photo-source"
-                      value={photoSource}
-                      onChange={(e) => setPhotoChoice(e.target.value as PhotoSource)}
-                      className={selectClass}
-                    >
-                      {PHOTO_SOURCES.map((p) => (
-                        <option key={p} value={p}>
-                          {td(`photoSource.${p}`)}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                  {ownPhotos ? null : (
+                    <div className="space-y-1.5">
+                      <Label htmlFor="compose-photo-source">{td('photoSource.label')}</Label>
+                      <select
+                        id="compose-photo-source"
+                        value={photoSource}
+                        onChange={(e) => setPhotoChoice(e.target.value as PhotoSource)}
+                        className={selectClass}
+                      >
+                        {PHOTO_SOURCES.map((p) => (
+                          <option key={p} value={p}>
+                            {td(`photoSource.${p}`)}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
                 </div>
                 <p className="text-xs text-muted-foreground">{t('compose.slidesHint')}</p>
               </>
@@ -1816,6 +1835,21 @@ function ComposePanel({
             : ''}
           {needsVisual && source === 'unsplash' && !sources.unsplash ? ` ${t('compose.noUnsplash')}` : ''}
         </p>
+
+        <ComposeKind
+          brandId={brandId}
+          value={content}
+          selectClass={selectClass}
+          onChange={(value, topicHint) => {
+            setContent(value)
+            // predlog teme upisuje se samo u praznu temu ili preko ranijeg predloga
+            if (topicHint && (!topic.trim() || topic === suggested)) {
+              setTopic(topicHint)
+              setSuggested(topicHint)
+            }
+            if (value?.kind === 'before_after') setFormat('carousel')
+          }}
+        />
 
         <div className="space-y-1.5">
           <Label htmlFor="compose-topic">{t('topic')}</Label>

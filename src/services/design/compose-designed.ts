@@ -24,6 +24,10 @@ import { listSocialAccounts } from '@/services/social/accounts'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import type { Json } from '@/types/database'
 
+import type { KindTarget } from '@/lib/content-kinds'
+import { applyReviewCopy, kindCopyLines } from '@/lib/content-kinds/copy'
+import { kindPhotoPlan } from '@/lib/content-kinds/photos'
+
 import { resolveDesign } from './brand-design'
 import { themeOf, type PostDesignContext } from './post-design'
 import { captionFor, generateDesignedCopy } from './copy'
@@ -65,6 +69,8 @@ export async function composeDesigned(
   input: ComposeInput,
   dFormat: DesignedFormat,
   meta: { requestId: string; idempotencyKey?: string | null },
+  /** sadržaj brenda (D-165): uputstvo, citat utiska i prave fotografije osobe i rada */
+  target: KindTarget | null = null,
 ): Promise<DesignedComposeResult> {
   if (!viewer.profile.emailVerifiedAt) throw new ApiError('EMAIL_NOT_VERIFIED')
   await assertDailyQuota(brand.workspace_id)
@@ -79,13 +85,16 @@ export async function composeDesigned(
   }
   const design = await resolveDesign(brand)
   const slides =
-    dFormat === 'single'
-      ? 1
-      : dFormat === 'story'
-        ? Math.min(input.slides ?? 1, 5)
-        : (input.slides ?? design.slides)
+    target?.kind === 'before_after'
+      ? 3
+      : dFormat === 'single'
+        ? 1
+        : dFormat === 'story'
+          ? Math.min(input.slides ?? 1, 5)
+          : (input.slides ?? design.slides)
+  const locale = input.locale ?? toContentLocale(brand.content_locale)
   const context = await buildBrandContext(brand, input.topic, input.locale)
-  const copy = await generateDesignedCopy({
+  const raw = await generateDesignedCopy({
     workspaceId: brand.workspace_id,
     brandId: brand.id,
     userId: viewer.user.id,
@@ -99,8 +108,11 @@ export async function composeDesigned(
     publishDate: wallClock(new Date().toISOString(), brand.timezone).date,
     requestId: meta.requestId,
     idempotencyKey: meta.idempotencyKey ?? null,
-    origin: { studio: true },
+    origin: { studio: true, ...(target ? { kind: target.kind } : {}) },
+    kindLines: target ? kindCopyLines(target, 'designed') : undefined,
   })
+  // utisak klijenta: citat na slajdu i u opisu je tačno ono što je klijent napisao
+  const copy = target?.kind === 'review' ? applyReviewCopy(raw, target.item, locale) : raw
   const format: PostFormat =
     dFormat === 'story'
       ? 'story'
@@ -112,8 +124,14 @@ export async function composeDesigned(
   const baseStyle = input.styleId ?? design.styleId
   // ritam teme (D-132); stil koji je korisnik izričito izabrao za ovu objavu ostaje u osnovnom rasporedu
   const variant = input.styleId ? 0 : variantFor(randomUUID())
-  // priložena fotografija traži stil koji je crta: tipografski stil bez fotografije prelazi na „Poster”
-  const styleId: StyleId = styleForPhotos(baseStyle, photoIds.length > 0)
+  // priložena fotografija traži stil koji je crta: tipografski stil bez fotografije prelazi na „Poster”;
+  // osoba iz tima i pre i posle (D-165) idu samo sa svojim fotografijama, utisak bez tuđih
+  const kindPhotos = target
+    ? kindPhotoPlan(target, baseStyle, { template: Boolean(design.template), ownPhotos: photoIds })
+    : null
+  const styleId: StyleId = kindPhotos?.styleId ?? styleForPhotos(baseStyle, photoIds.length > 0)
+  const photos = kindPhotos?.photoAssetIds ?? photoIds
+  const photoSource = kindPhotos?.photoSource ?? input.photoSource ?? design.photoSource
   const rendered = await renderDesignSlides({
     workspaceId: brand.workspace_id,
     brandId: brand.id,
@@ -121,11 +139,11 @@ export async function composeDesigned(
     styleId,
     format: format === 'story' ? 'story' : (input.size ?? design.size),
     slides: copy.slides,
-    photoSource: input.photoSource ?? design.photoSource,
+    photoSource,
     query: (copy.visualQuery || input.topic).slice(0, 100),
     uploadedBy: viewer.user.id,
-    photoAssetIds: photoIds.length ? photoIds : undefined,
-    cyclePhotos: photoIds.length > 0,
+    photoAssetIds: photos.length ? photos : undefined,
+    cyclePhotos: !kindPhotos && photoIds.length > 0,
     variant,
   })
   const notes = [...rendered.notes]
@@ -145,7 +163,6 @@ export async function composeDesigned(
       ...(formatFor(format, platform) === 'story' ? { options: { format: 'story' } } : {}),
     }
   })
-  const locale = input.locale ?? toContentLocale(brand.content_locale)
   const post = await createPost(viewer, {
     brandId: brand.id,
     title: copy.slides[0]?.title.slice(0, 200) || undefined,
@@ -163,13 +180,13 @@ export async function composeDesigned(
     format: format === 'story' ? 'story' : format === 'carousel' ? 'carousel' : 'single',
     styleId,
     slides: copy.slides.length,
-    photoSource: input.photoSource ?? design.photoSource,
+    photoSource,
     size: input.size ?? design.size,
     ...themeOf(design),
     variant,
     locale,
     platforms,
-    ...(photoIds.length ? { ownPhotos: true } : {}),
+    ...(photos.length ? { ownPhotos: true } : {}),
     copy: { slides: copy.slides, photoAssetIds: rendered.photoIds },
   }
   await createSupabaseAdminClient()

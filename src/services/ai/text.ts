@@ -103,7 +103,8 @@ export async function buildBrandContext(
  */
 export async function generatePostText(
   viewer: Viewer,
-  input: TextRequestInput & { poll?: boolean },
+  /** `kindLines`: uputstvo i podaci za vrstu sadržaja (D-165) */
+  input: TextRequestInput & { poll?: boolean; kindLines?: string[] },
   meta: { requestId: string; idempotencyKey?: string | null },
 ): Promise<PostTextResult> {
   const brand = await getBrand(viewer, input.brandId)
@@ -155,6 +156,7 @@ export async function generatePostText(
     format: input.format ?? null,
     allowedFormats: formatsForPlatforms(input.platforms),
     poll: input.poll ?? false,
+    extra: input.kindLines,
   })
 
   try {

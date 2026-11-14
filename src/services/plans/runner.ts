@@ -33,7 +33,8 @@ import { storedContent } from '@/lib/schemas/brand-content'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getTokenPrice } from '@/lib/tokens/prices'
 import { confirmReservation } from '@/lib/tokens/reservation'
-import { getStyle, type StyleId } from '@/lib/visuals/design'
+import { kindPhotoPlan } from '@/lib/content-kinds/photos'
+import type { StyleId } from '@/lib/visuals/design'
 import type { PhotoSource } from '@/lib/visuals/design/catalog'
 import type { Slide } from '@/lib/visuals/design/types'
 import { videoScenes } from '@/lib/visuals/design/video'
@@ -194,36 +195,17 @@ async function saveSlotKinds(
   if (updateError) throw new Error(updateError.message)
 }
 
-/**
- * Fotografije po vrsti sadržaja (D-165): utisak bez fotografija sa strane, osoba samo sa svojom
- * fotografijom, pre i posle sa svoje dve, nikad sa Unsplash-a ili Pexels-a. Kad stil brenda ne
- * prikazuje fotografije koje vrsta traži, objava ide u foto stilu `framed`, u bojama i fontu brenda.
- */
+/** Fotografije i stil objave po vrsti sadržaja (D-165); bez vrste kao ranije. */
 function kindPhotos(
   target: KindTarget | null,
   look: ResolvedDesign,
 ): { photoSource: PhotoSource; styleId: StyleId; photoAssetIds?: string[] } {
-  if (!target) return { photoSource: look.photoSource, styleId: look.styleId }
-  const mode = getStyle(look.styleId).photo
-  switch (target.kind) {
-    case 'review':
-      return { photoSource: 'none', styleId: look.styleId }
-    case 'team':
-      return target.item.photoAssetId
-        ? {
-            photoSource: 'none',
-            styleId: mode === 'none' && !look.template ? 'framed' : look.styleId,
-            photoAssetIds: [target.item.photoAssetId],
-          }
-        : { photoSource: 'none', styleId: look.styleId }
-    case 'before_after':
-      return {
-        photoSource: 'none',
-        styleId: mode === 'all' || look.template ? look.styleId : 'framed',
-        photoAssetIds: [target.item.beforeAssetId, target.item.afterAssetId],
-      }
-    default:
-      return { photoSource: look.photoSource, styleId: look.styleId }
+  const plan = target ? kindPhotoPlan(target, look.styleId, { template: Boolean(look.template) }) : null
+  if (!plan) return { photoSource: look.photoSource, styleId: look.styleId }
+  return {
+    photoSource: plan.photoSource,
+    styleId: plan.styleId,
+    ...(plan.photoAssetIds.length ? { photoAssetIds: plan.photoAssetIds } : {}),
   }
 }
 

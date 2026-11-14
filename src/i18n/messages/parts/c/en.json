@@ -691,7 +691,30 @@
       "accounts": "accounts: {count}",
       "open": "Open the draft and schedule",
       "videoLabel": "Video for the post",
-      "visualAlt": "Visual for the post"
+      "visualAlt": "Visual for the post",
+      "kind": "Content",
+      "kindNone": "Regular post",
+      "kindEmpty": "nothing added",
+      "kindIntro": "Client reviews, team members and before-and-after come from Brand content, exactly as you entered them.",
+      "kindManage": "Open Brand content",
+      "kindPhotos": "Photos for this post come from Brand content, not from Unsplash or Pexels.",
+      "kindItem": {
+        "review": "Review",
+        "team": "Person",
+        "before_after": "Project"
+      },
+      "kindHint": {
+        "review": "Sova quotes the review exactly as entered, with the author’s name, and adds no stock photos.",
+        "team": "Sova uses only what you entered about the person, and their photo.",
+        "before_after": "A carousel with your two photos: before, after and a call to action.",
+        "interactive": "A question with answer options; the audience replies in the comments.",
+        "humor": "A light joke from your line of work, without other people’s memes."
+      },
+      "kindTopic": {
+        "review": "Client review: {author}",
+        "team": "Meet {name}, {role}",
+        "before_after": "Before and after: {title}"
+      }
     },
     "figmaImport": {
       "title": "Import from Figma",

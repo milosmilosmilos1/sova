@@ -691,7 +691,30 @@
       "accounts": "nalozi: {count}",
       "open": "Otvori nacrt i zakaži",
       "videoLabel": "Video uz objavu",
-      "visualAlt": "Vizual uz objavu"
+      "visualAlt": "Vizual uz objavu",
+      "kind": "Sadržaj",
+      "kindNone": "Obična objava",
+      "kindEmpty": "ništa nije uneto",
+      "kindIntro": "Utisak klijenta, osoba iz tima i pre i posle idu iz Sadržaja brenda, tačno kako ste ih uneli.",
+      "kindManage": "Otvori Sadržaj brenda",
+      "kindPhotos": "Fotografije za ovu objavu dolaze iz Sadržaja brenda, ne sa Unsplash-a ni Pexels-a.",
+      "kindItem": {
+        "review": "Utisak",
+        "team": "Osoba",
+        "before_after": "Rad"
+      },
+      "kindHint": {
+        "review": "Sova citira utisak tačno kako je unet, sa imenom autora, i ne dodaje tuđe fotografije.",
+        "team": "Sova koristi samo ono što ste uneli o osobi i njenu fotografiju.",
+        "before_after": "Karusel sa vaše dve fotografije: pre, posle i poziv na akciju.",
+        "interactive": "Pitanje sa ponuđenim odgovorima; publika odgovara u komentarima.",
+        "humor": "Lagana šala iz vaše struke, bez tuđih memova."
+      },
+      "kindTopic": {
+        "review": "Utisak klijenta: {author}",
+        "team": "Upoznajte {name}, {role}",
+        "before_after": "Pre i posle: {title}"
+      }
     },
     "figmaImport": {
       "title": "Uvoz iz Figme",
