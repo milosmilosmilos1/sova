@@ -771,7 +771,7 @@ function PlanBoard({
                           </span>
                           {i.kind ? (
                             <span className="rounded-full border px-2 py-0.5 text-foreground">
-                              {tk(`${i.kind}.name`)}
+                              {tk(`${i.kind}.one`)}
                             </span>
                           ) : null}
                           <NetworkNames platforms={i.platforms} size={12} />

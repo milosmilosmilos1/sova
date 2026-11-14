@@ -11,7 +11,7 @@ import {
 } from '@/lib/schemas/brand-content'
 
 /**
- * Vrste objava u planu (D-165, faza 2): koji termin dobija utisak klijenta, osobu iz tima, rad pre i
+ * Vrste sadržaja u planu (D-165, faza 2): koji termin dobija utisak klijenta, osobu iz tima, rad pre i
  * posle, pitanje za publiku ili humor, i koju stavku. Vrste sa podacima i uključene vrste raspoređuje
  * kod, ravnomerno kroz mesec; pitanja i humor na „Automatski” predlaže model, samo kad pristaju brendu.
  */
@@ -160,18 +160,24 @@ export function applyAutoKinds(
   return out
 }
 
-export type ResolvedKind = { target: KindTarget } | { problem: 'off' | 'missing' } | null
+export type ResolvedKind = { target: KindTarget } | { problem: 'off' | 'missing' | 'format' } | null
 
 /**
  * Šta stavka plana pravi u trenutku pravljenja: vrstu sa njenom stavkom, problem kad je vrsta u
- * međuvremenu isključena ili stavka obrisana, ili null za običnu objavu.
+ * međuvremenu isključena, stavka obrisana ili je korisnik stavci dao format koji vrsta sa podacima
+ * ne nosi (osoba iz tima kao video bi dobila tuđe snimke), ili null za običnu objavu.
  */
-export function resolveKind(content: StoredContent, slot: SlotKind | null | undefined): ResolvedKind {
+export function resolveKind(
+  content: StoredContent,
+  slot: SlotKind | null | undefined,
+  format?: PostFormat,
+): ResolvedKind {
   if (!slot) return null
   if (kindState(content, slot.kind) === 'off') return { problem: 'off' }
   if (!isDataKind(slot.kind)) return { target: { kind: slot.kind as FreeKind } }
   const item = kindItems(content, slot.kind).find((i) => i.id === slot.ref)
   if (!item) return { problem: 'missing' }
+  if (format && !KIND_FORMATS[slot.kind].includes(format)) return { problem: 'format' }
   return { target: { kind: slot.kind, item } as KindTarget }
 }
 

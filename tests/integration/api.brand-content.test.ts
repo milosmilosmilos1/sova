@@ -11,7 +11,7 @@ import type { BrandContentView } from '@/services/brand-content'
 import { admin, call, createTestUser, deleteTestUser, type TestUser } from './helpers'
 
 /**
- * Vrste objava brenda (D-165): utisci klijenata, tim i parovi pre i posle u `brands.settings.content`.
+ * Sadržaj brenda (D-165): utisci klijenata, tim i parovi pre i posle u `brands.settings.content`.
  * Proverava prava (pregled vs uređivanje, tuđ brend), fotografije samo iz biblioteke brenda, punu listu
  * i da upis ne briše ostala podešavanja brenda.
  */
@@ -94,7 +94,7 @@ beforeAll(async () => {
   other = await createTestUser('content-other')
   const ws = await call<{ workspaceId: string; brandId: string }>(workspacesPost, '/api/workspaces', {
     token: owner.token,
-    body: { name: 'Vrste objava test', type: 'business' },
+    body: { name: 'Sadržaj brenda test', type: 'business' },
   })
   wsId = ws.json.data!.workspaceId
   brandId = ws.json.data!.brandId

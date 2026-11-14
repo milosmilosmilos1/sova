@@ -5,7 +5,7 @@ import { seriousViolations } from './axe'
 import { admin, cleanup, login, seedWorkspace, type Seeded } from './fixtures'
 
 /**
- * Vrste objava (D-165): prekidač po vrsti, utisak klijenta unet ručno i član tima sa fotografijom iz
+ * Sadržaj brenda (D-165): prekidač po vrsti, utisak klijenta unet ručno i član tima sa fotografijom iz
  * Galerije brenda. Sova od ovih podataka pravi objave i ništa ne izmišlja.
  */
 let seeded: Seeded | undefined
@@ -40,10 +40,10 @@ test.afterAll(async () => {
   await cleanup(seeded)
 })
 
-test('vrste objava: prekidač, utisak klijenta i član tima sa fotografijom (D-165)', async ({ page }) => {
+test('sadržaj brenda: prekidač, utisak klijenta i član tima sa fotografijom (D-165)', async ({ page }) => {
   await login(page, seeded!)
   await page.goto('/app/brand/content')
-  await expect(page.getByRole('link', { name: 'Vrste objava' })).toHaveAttribute('aria-current', 'page')
+  await expect(page.getByRole('link', { name: 'Sadržaj brenda' })).toHaveAttribute('aria-current', 'page')
   await expect(page.getByText('Još ništa nije uneto, pa Sova ovu vrstu ne predlaže.')).toHaveCount(3)
 
   // humor isključen

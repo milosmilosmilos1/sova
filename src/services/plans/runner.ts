@@ -161,9 +161,13 @@ async function noteMonthFailure(planId: string, message: string): Promise<'faile
   return 'failed'
 }
 
-const KIND_OFF = 'Ova vrsta objave je isključena u Vrstama objava. Uključite je ili obrišite stavku.'
-const KIND_MISSING =
-  'Utisak, osoba ili rad za ovu objavu je obrisan u Vrstama objava, pa Sova ne pravi ovu objavu. Obrišite stavku.'
+const KIND_PROBLEM = {
+  off: 'Ova vrsta sadržaja je isključena u Sadržaju brenda. Uključite je ili obrišite stavku.',
+  missing:
+    'Utisak, osoba ili rad za ovu objavu je obrisan u Sadržaju brenda, pa Sova ne pravi ovu objavu. Obrišite stavku.',
+  format:
+    'Ova vrsta sadržaja ne ide uz izabranu vrstu objave. Vratite raniju vrstu objave ili obrišite stavku.',
+} as const
 
 /** Vrste termina upisane u plan (D-165); stavka plana ih čita po svojoj poziciji. */
 async function saveSlotKinds(
@@ -553,10 +557,14 @@ async function startPlanItem(itemId: string): Promise<StartedItem> {
     const locale = toContentLocale(settings.locale ?? brand.content_locale)
     const topic = item.brief ? `${item.topic}\n\n${item.brief}` : item.topic
     const publishDate = wallClock(item.scheduled_for, brand.timezone).date
-    // vrsta sadržaja termina (D-165): obrisan utisak ili isključena vrsta ne prave objavu
-    const resolved = resolveKind(storedContent(brand.settings), slotKindOf(settings.slots?.[item.position]))
-    if (resolved && 'problem' in resolved)
-      throw new Error(resolved.problem === 'off' ? KIND_OFF : KIND_MISSING)
+    // vrsta sadržaja termina (D-165): obrisan utisak, isključena vrsta ili format koji je ne nosi
+    // (npr. osoba iz tima kao video sa tuđim snimcima) ne prave objavu
+    const resolved = resolveKind(
+      storedContent(brand.settings),
+      slotKindOf(settings.slots?.[item.position]),
+      format,
+    )
+    if (resolved && 'problem' in resolved) throw new Error(KIND_PROBLEM[resolved.problem])
     const target = resolved?.target ?? null
     const review = target?.kind === 'review' ? target.item : null
     const context = await buildBrandContext(brand, topic.slice(0, 500), locale)

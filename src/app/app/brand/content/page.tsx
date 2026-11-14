@@ -14,7 +14,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * Brend i nalog, kartica Vrste objava (D-165): utisci klijenata, tim, pre i posle, interaktivne objave i
+ * Brend i nalog, kartica Sadržaj brenda (D-165): utisci klijenata, tim, pre i posle, interaktivne objave i
  * humor. Podatke unosi biznis; Sova od njih pravi objave i ništa ne izmišlja.
  */
 export default async function BrandContentPage() {

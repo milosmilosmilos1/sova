@@ -328,7 +328,7 @@ describe('vrste sadržaja u mesečnom planu', () => {
     const done = await getPlan()
     const failed = done.items.find((i) => i.id === regular.id)!
     expect(failed.status).toBe('failed')
-    expect(failed.error).toContain('obrisan u Vrstama objava')
+    expect(failed.error).toContain('obrisan u Sadržaju brenda')
 
     const byKind = new Map(done.items.filter((i) => i.kind).map((i) => [i.kind!, i]))
     const { data: posts } = await admin

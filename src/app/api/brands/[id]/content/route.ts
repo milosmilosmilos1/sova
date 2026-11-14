@@ -3,7 +3,7 @@ import { contentKindsUpdateSchema } from '@/lib/schemas/brand-content'
 import { uuidParamSchema } from '@/lib/schemas/workspace'
 import { getBrandContent, setContentKinds } from '@/services/brand-content'
 
-/** Vrste objava brenda (D-165): utisci klijenata, tim, pre i posle i prekidači po vrsti. */
+/** Sadržaj brenda (D-165): utisci klijenata, tim, pre i posle i prekidači po vrsti. */
 export const GET = createHandler({ auth: 'user', params: uuidParamSchema }, async ({ viewer, params }) =>
   getBrandContent(assertViewer(viewer), params.id),
 )

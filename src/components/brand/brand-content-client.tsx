@@ -71,7 +71,7 @@ interface ListProps {
 const STATES: KindState[] = ['auto', 'on', 'off']
 
 /**
- * Vrste objava brenda (D-165): prekidač po vrsti i podaci od kojih Sova pravi utiske klijenata,
+ * Sadržaj brenda (D-165): prekidač po vrsti i podaci od kojih Sova pravi utiske klijenata,
  * predstavljanje tima i pre i posle. Sova te tri vrste pravi samo iz ovih podataka.
  */
 export function BrandContentClient({ brandId }: { brandId: string }) {

@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 /**
- * Vrste objava koje traže stvarne podatke biznisa ili poseban ton (D-165): utisci klijenata, pre i posle,
+ * Vrste sadržaja koje traže stvarne podatke biznisa ili poseban ton (D-165): utisci klijenata, pre i posle,
  * predstavljanje tima, interaktivne objave (anketa, kviz, pitanje) i humor. Podaci se čuvaju u
  * `brands.settings.content`, bez migracije. Sova nikad ne izmišlja utiske, ljude ni rezultate: te tri
  * vrste koriste samo ono što je biznis uneo.

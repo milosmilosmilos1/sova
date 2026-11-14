@@ -194,6 +194,14 @@ describe('raspored vrsta u mesecu (D-165)', () => {
       target: { kind: 'review', item: { id: 'aaaaaaaaa1' } },
     })
     expect(resolveKind(content, { kind: 'humor', ref: null })).toEqual({ target: { kind: 'humor' } })
+    // format koji vrsta sa podacima ne nosi (utisak kao video), a pitanje i humor idu uz svaki
+    expect(resolveKind(content, { kind: 'review', ref: 'aaaaaaaaa1' }, 'video')).toEqual({
+      problem: 'format',
+    })
+    expect(resolveKind(content, { kind: 'review', ref: 'aaaaaaaaa1' }, 'image')).toMatchObject({
+      target: { kind: 'review' },
+    })
+    expect(resolveKind(content, { kind: 'humor', ref: null }, 'video')).toEqual({ target: { kind: 'humor' } })
   })
 
   it('vrsta iz sačuvanog termina: stari termin i neispravna vrednost daju null', () => {

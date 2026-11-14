@@ -729,13 +729,13 @@
     }
   },
   "brandContent": {
-    "title": "Post types",
-    "intro": "Choose which kinds of posts Sova makes for this brand and add the details they need. Sova builds client reviews, team posts and before-and-after posts only from what you enter here. It never makes anything up.",
+    "title": "Brand content",
+    "intro": "Add client reviews, team members and before-and-after projects here, and choose what Sova may suggest. Sova builds reviews, team posts and project posts only from what you enter here. It never makes anything up.",
     "readOnly": "You have read-only access. Someone with editing rights can make changes.",
     "choosePhoto": "Choose a photo",
     "kinds": {
       "title": "What Sova may suggest",
-      "description": "Automatic means Sova decides on its own. Kinds that need your details enter the plan only once you add them.",
+      "description": "Automatic means Sova decides on its own. Reviews, team and before-and-after enter the plan only once you add them below.",
       "states": {
         "auto": "Automatic",
         "on": "On",
@@ -743,23 +743,28 @@
       },
       "review": {
         "name": "Client reviews",
-        "hint": "Real reviews and feedback from your clients, quoted exactly as written."
+        "hint": "Real reviews and feedback from your clients, quoted exactly as written.",
+        "one": "Client review"
       },
       "before_after": {
         "name": "Before and after",
-        "hint": "Your work: how it looked before and how it looks after. Great for trades, renovation, salons, cleaning."
+        "hint": "Your work: how it looked before and how it looks after. Great for trades, renovation, salons, cleaning.",
+        "one": "Before and after"
       },
       "team": {
         "name": "People behind the brand",
-        "hint": "Introduce your team so people see real humans behind the profile."
+        "hint": "Introduce your team so people see real humans behind the profile.",
+        "one": "Team member"
       },
       "interactive": {
         "name": "Polls and questions",
-        "hint": "Polls, quizzes and questions for your audience. Good for brands with a community, for example a vote on a new coffee flavour."
+        "hint": "Polls, quizzes and questions for your audience. Good for brands with a community, for example a vote on a new coffee flavour.",
+        "one": "Audience question"
       },
       "humor": {
         "name": "Humour",
-        "hint": "Lighter posts from your line of work: office life, jokes from the job, situations everyone recognises."
+        "hint": "Lighter posts from your line of work: office life, jokes from the job, situations everyone recognises.",
+        "one": "Humour"
       },
       "needsData": "Nothing added yet, so Sova doesn’t suggest this kind.",
       "count": "Added: {count}"

@@ -729,13 +729,13 @@
     }
   },
   "brandContent": {
-    "title": "Vrste objava",
-    "intro": "Ovde birate koje vrste objava Sova pravi za ovaj brend i unosite podatke za njih. Utiske klijenata, tim i radove pre i posle Sova pravi samo od onoga što ovde unesete. Ništa ne izmišlja.",
+    "title": "Sadržaj brenda",
+    "intro": "Ovde unosite utiske klijenata, ljude iz tima i radove pre i posle, i birate šta Sova sme da predloži. Utiske, tim i radove Sova pravi samo od onoga što ovde unesete. Ništa ne izmišlja.",
     "readOnly": "Imate pristup samo za čitanje. Izmene pravi neko sa pravom uređivanja.",
     "choosePhoto": "Izaberite fotografiju",
     "kinds": {
       "title": "Šta Sova sme da predloži",
-      "description": "Automatski znači da Sova sama procenjuje. Vrste koje traže vaše podatke ulaze u plan tek kad ih unesete.",
+      "description": "Automatski znači da Sova sama procenjuje. Utisci, tim i pre i posle ulaze u plan tek kad ih unesete ispod.",
       "states": {
         "auto": "Automatski",
         "on": "Uključeno",
@@ -743,23 +743,28 @@
       },
       "review": {
         "name": "Utisci klijenata",
-        "hint": "Pravi utisci i recenzije vaših klijenata, citirani tačno kako su napisani."
+        "hint": "Pravi utisci i recenzije vaših klijenata, citirani tačno kako su napisani.",
+        "one": "Utisak klijenta"
       },
       "before_after": {
         "name": "Pre i posle",
-        "hint": "Vaši radovi: kako je bilo pre i kako je posle. Za majstore, renoviranje, salone, čišćenje."
+        "hint": "Vaši radovi: kako je bilo pre i kako je posle. Za majstore, renoviranje, salone, čišćenje.",
+        "one": "Pre i posle"
       },
       "team": {
         "name": "Ljudi iza brenda",
-        "hint": "Predstavljanje tima, da se vidi da iza profila stoje stvarni ljudi."
+        "hint": "Predstavljanje tima, da se vidi da iza profila stoje stvarni ljudi.",
+        "one": "Osoba iz tima"
       },
       "interactive": {
         "name": "Ankete i pitanja",
-        "hint": "Ankete, kvizovi i pitanja publici. Dobro za brendove kojima je zajednica važna, na primer glasanje za novi ukus kafe."
+        "hint": "Ankete, kvizovi i pitanja publici. Dobro za brendove kojima je zajednica važna, na primer glasanje za novi ukus kafe.",
+        "one": "Pitanje za publiku"
       },
       "humor": {
         "name": "Humor",
-        "hint": "Opušteniji sadržaj iz vaše struke: kancelarijski život, fore iz posla, situacije koje svi prepoznaju."
+        "hint": "Opušteniji sadržaj iz vaše struke: kancelarijski život, fore iz posla, situacije koje svi prepoznaju.",
+        "one": "Humor"
       },
       "needsData": "Još ništa nije uneto, pa Sova ovu vrstu ne predlaže.",
       "count": "Uneto: {count}"
