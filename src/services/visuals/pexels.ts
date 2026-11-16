@@ -169,7 +169,10 @@ export async function storePexelsMedia(input: {
   video?: PexelsVideo
   /** najveća kraća strana snimka koja se prvo traži (video u temi: 720, D-128) */
   preferShortSide?: number
-  /** granice preuzimanja snimka (video u temi mora da stane u korak od 30 s na Netlify-u) */
+  /**
+   * granica preuzimanja: video u temi i fotografija izabrana sa rokom koraka (D-171) moraju da stanu
+   * u korak od 30 s na Netlify-u
+   */
   downloadTimeoutMs?: number
   maxBytes?: number
   /** glavni predmet fotografije iz provere (D-167): isečak ide oko njega */
@@ -219,7 +222,7 @@ export async function storePexelsMedia(input: {
   )
   const crop = input.crop ?? 'original'
   const res = await safeFetch(photoUrl(photo, crop), {
-    timeoutMs: 20_000,
+    timeoutMs: input.downloadTimeoutMs ?? 20_000,
     maxBytes: 15 * 1024 * 1024,
     headers: { accept: 'image/*' },
   })
@@ -282,6 +285,12 @@ const FRAME_CHECK_SPARE = 9
 const PHOTO_CHECKS_MS = 12_000
 /** Najviše provera po izboru; posle toga izbor vraća ono što je našao. */
 const MAX_PHOTO_CHECKS = 3
+/**
+ * Sa rokom koraka (D-171): ispod ovoliko preostalog vremena ne kreće nova pretraga ni provera, a
+ * izabrana fotografija se preuzima najduže ovoliko, da korak stane u 30 s koliko Netlify daje.
+ */
+const MIN_LEFT_MS = 1_500
+const STORE_TIMEOUT_MS = 6_000
 
 /** Snimak za proveru: ime iz adrese, naslovna slika i dva kadra iz snimka. */
 function videoCandidate(video: PexelsVideo): PhotoCandidate<PexelsVideo> {
@@ -412,18 +421,23 @@ export async function pickPexelsPhotos(input: {
   topic?: string | null
   /** okvir slajda za fotografiju (širina / visina, D-169) */
   frame?: { aspect: number } | null
+  /** rok koraka (ms od epohe, D-171): posle njega nema nove pretrage ni provere */
+  deadline?: number | null
 }): Promise<StoredPexels[]> {
   if (!isPexelsConfigured() || input.count <= 0) return []
+  const late = () => Boolean(input.deadline) && input.deadline! - Date.now() < MIN_LEFT_MS
+  if (late()) return []
   const used = await usedStockIds(input.brandId, 'pexels-photo')
   const chosen: Array<CheckedPhoto<PexelsPhoto>> = []
   // ljudi samo evropskog izgleda (D-154) i tema prema prvobitnom upitu (D-167): provere imaju
   // zajednički rok, da izbor stane u korak od 30 s
   const variants = queryVariants(input.query).map(localPeopleQuery)
   const subject = { topic: input.topic, query: input.query }
-  const until = Date.now() + PHOTO_CHECKS_MS
+  const until = Math.min(Date.now() + PHOTO_CHECKS_MS, input.deadline ?? Number.POSITIVE_INFINITY)
   let checks = 0
   search: for (let v = 0; v < variants.length && chosen.length < input.count; v++) {
     for (let page = 1; page <= (v === 0 ? 3 : 1) && chosen.length < input.count; page++) {
+      if (late()) break search
       const photos = await searchPhotos({
         query: variants[v]!,
         orientation: searchOrientation(input),
@@ -432,7 +446,7 @@ export async function pickPexelsPhotos(input: {
       })
       const fresh = photos.filter((p) => !used.has(String(p.id)))
       for (let i = 0; i < fresh.length && chosen.length < input.count;) {
-        if (checks++ >= MAX_PHOTO_CHECKS) break search
+        if (late() || checks++ >= MAX_PHOTO_CHECKS) break search
         const spare = input.frame ? FRAME_CHECK_SPARE : PHOTO_CHECK_SPARE
         const size = Math.min(PHOTO_CHECK_BATCH, input.count - chosen.length + spare)
         const batch = fresh.slice(i, i + size)
@@ -462,6 +476,7 @@ export async function pickPexelsPhotos(input: {
         photo,
         focus,
         box: box ?? null,
+        downloadTimeoutMs: input.deadline ? STORE_TIMEOUT_MS : undefined,
       })
     } catch (error) {
       logger.warn('pexels_pick_store_failed', { pexelsId: photo.id, error })

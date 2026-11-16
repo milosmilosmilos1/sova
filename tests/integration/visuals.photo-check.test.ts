@@ -204,6 +204,52 @@ describe('oblik fotografije prati okvir slajda (D-169)', () => {
   })
 })
 
+describe('rok za izbor fotografija u koraku od 30 s (D-171)', () => {
+  /** naslovni slajd „aurora”: jedna fotografija u traci 2,3:1 */
+  async function auroraCover(query: string) {
+    const { data: brand } = await admin.from('brands').select('*').eq('id', brandId).single()
+    return {
+      workspaceId: wsId,
+      brandId,
+      design: await resolveDesign(brand!),
+      photoSource: 'stock' as const,
+      uploadedBy: null,
+      topic,
+      styleId: 'aurora' as const,
+      format: 'portrait' as const,
+      query,
+      slides: [{ kind: 'cover' as const, title: 'Koliko poznaješ ishranu pasa?', body: 'Kviz' }],
+    }
+  }
+
+  it('posle roka nema nove pretrage ni provere, a objava ide sa onim što je nađeno', async () => {
+    const past = Date.now() - 1
+    const base = { workspaceId: wsId, brandId, count: 1, crop: 'square' as const, uploadedBy: null, topic }
+    expect(await pickUnsplashPhotos({ ...base, query: `dog ${tag()}`, deadline: past })).toEqual([])
+    expect(await pickPexelsPhotos({ ...base, query: `dog ${tag()}`, deadline: past })).toEqual([])
+    const late = await pickDesignPhotos(await auroraCover(`dog eating kibble ${tag()}`), { deadline: past })
+    expect(late.photoIds).toEqual([])
+    expect(late.notes).toEqual([
+      'Fotografija koja odgovara temi nije nađena, pa su slajdovi u bojama brenda.',
+    ])
+    expect(visualsState.unsplashSearches).toBe(0)
+    expect(visualsState.pexelsSearches).toEqual([])
+    expect(photoCalls).toHaveLength(0)
+  })
+
+  it('kad Unsplash ne da dovoljno, Pexels se pita samo ako do roka ima vremena za proveru', async () => {
+    // lažni Unsplash za upit „nista” nema ništa, a Pexels uvek ima
+    const short = await pickDesignPhotos(await auroraCover('nista'), { deadline: Date.now() + 2_000 })
+    expect(short.photoIds).toEqual([])
+    expect(visualsState.pexelsSearches).toEqual([])
+
+    resetVisualsState()
+    const enough = await pickDesignPhotos(await auroraCover('nista'), { deadline: Date.now() + 15_000 })
+    expect(enough.photoIds).toHaveLength(1)
+    expect(visualsState.pexelsSearches.length).toBeGreaterThan(0)
+  })
+})
+
 describe('galerija brenda (D-167)', () => {
   async function upload(name: string, createdAt: string): Promise<string> {
     const id = crypto.randomUUID()

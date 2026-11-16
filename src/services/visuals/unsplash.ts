@@ -183,6 +183,12 @@ const FRAME_CHECK_SPARE = 9
 /** Zajednički rok svih provera u jednom izboru i najviše provera po izboru. */
 const PHOTO_CHECKS_MS = 12_000
 const MAX_PHOTO_CHECKS = 3
+/**
+ * Sa rokom koraka (D-171): ispod ovoliko preostalog vremena ne kreće nova pretraga ni provera, a
+ * izabrana fotografija se preuzima najduže ovoliko, da korak stane u 30 s koliko Netlify daje.
+ */
+const MIN_LEFT_MS = 1_500
+const STORE_TIMEOUT_MS = 6_000
 
 /** Fotografija za proveru: alt, opis, ime iz adrese, manja sličica (ceo kadar) i veličina originala. */
 function photoCandidate(photo: UnsplashPhoto): PhotoCandidate<UnsplashPhoto> {
@@ -221,6 +227,8 @@ export async function pickUnsplashPhotos(input: {
   topic?: string | null
   /** okvir slajda za fotografiju (širina / visina, D-169) */
   frame?: { aspect: number } | null
+  /** rok koraka (ms od epohe, D-171): posle njega nema nove pretrage ni provere */
+  deadline?: number | null
 }): Promise<SelectedPhoto[]> {
   if (!isUnsplashConfigured() || input.count <= 0) return []
   // pretraga i bar jedno praćenje preuzimanja; sa potrošenim limitom se odmah prelazi na Pexels
@@ -228,7 +236,8 @@ export async function pickUnsplashPhotos(input: {
     const left = unsplashRemaining()
     return left !== null && left < 2
   }
-  if (spent()) return []
+  const late = () => Boolean(input.deadline) && input.deadline! - Date.now() < MIN_LEFT_MS
+  if (spent() || late()) return []
   const used = await usedStockIds(input.brandId, 'unsplash')
   const chosen: Array<CheckedPhoto<UnsplashPhoto>> = []
   // ljudi samo evropskog izgleda (D-136, D-154): upit koji pominje ljude traži evropske ljude, a
@@ -236,11 +245,11 @@ export async function pickUnsplashPhotos(input: {
   // proverava prema prvobitnom upitu, i kad pretraga ide kraćim oblikom (D-167)
   const variants = queryVariants(input.query).map(localPeopleQuery)
   const subject = { topic: input.topic, query: input.query }
-  const until = Date.now() + PHOTO_CHECKS_MS
+  const until = Math.min(Date.now() + PHOTO_CHECKS_MS, input.deadline ?? Number.POSITIVE_INFINITY)
   let checks = 0
   search: for (let v = 0; v < variants.length && chosen.length < input.count; v++) {
     for (let page = 1; page <= (v === 0 ? 3 : 1) && chosen.length < input.count; page++) {
-      if (spent()) break search
+      if (spent() || late()) break search
       const r = await searchPhotos({
         query: variants[v]!,
         perPage: 30,
@@ -250,7 +259,7 @@ export async function pickUnsplashPhotos(input: {
       })
       const fresh = r.results.filter((p) => !used.has(p.id))
       for (let i = 0; i < fresh.length && chosen.length < input.count;) {
-        if (checks++ >= MAX_PHOTO_CHECKS) break search
+        if (late() || checks++ >= MAX_PHOTO_CHECKS) break search
         const spare = input.frame ? FRAME_CHECK_SPARE : PHOTO_CHECK_SPARE
         const size = Math.min(PHOTO_CHECK_BATCH, input.count - chosen.length + spare)
         const batch = fresh.slice(i, i + size)
@@ -291,6 +300,7 @@ async function storePickedPhoto(
     crop: 'square' | 'portrait'
     uploadedBy: string | null
     frame?: { aspect: number } | null
+    deadline?: number | null
   },
 ): Promise<SelectedPhoto> {
   const attribution = attributionFor(photo)
@@ -303,7 +313,7 @@ async function storePickedPhoto(
   const [, res] = await Promise.all([
     trackDownload(photo.downloadLocation),
     safeFetch(resizedUrl(photo.urls.raw, { ...size, q: 90 }), {
-      timeoutMs: 20_000,
+      timeoutMs: input.deadline ? STORE_TIMEOUT_MS : 20_000,
       maxBytes: 15 * 1024 * 1024,
       headers: { accept: 'image/*' },
     }),

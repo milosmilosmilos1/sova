@@ -42,6 +42,14 @@ export interface RenderedDesign {
 const GALLERY_CHECK_SPARE = 4
 const GALLERY_CHECK_MAX = 10
 const GALLERY_CHECK_MS = 12_000
+/**
+ * Rok za sve pretrage i provere fotografija jedne objave (D-171). Korak na Netlify-u traje najviše
+ * 30 s, a posle provera idu još preuzimanje i čuvanje izabranih; bez roka je karusel sa fotografijom
+ * na svakom slajdu (Unsplash pa Pexels, više oblika okvira) prelazio 30 s i obarao ceo posao.
+ */
+const PHOTO_PICK_MS = 14_000
+/** Kad Unsplash ne da dovoljno, Pexels se pita samo ako je do roka ostalo bar ovoliko. */
+const PEXELS_MIN_LEFT_MS = 3_000
 
 /** Fokus i okvir predmeta u `source_data` medija, uz ono što već ima. */
 function withFocus(sourceData: Json | null, focus: Focus, box: SubjectBox | null): Json {
@@ -64,7 +72,13 @@ export async function pickGalleryPhotos(
   brandId: string,
   query: string,
   count: number,
-  opts: { categoryId?: string | null; topic?: string | null; frame?: { aspect: number } | null } = {},
+  opts: {
+    categoryId?: string | null
+    topic?: string | null
+    frame?: { aspect: number } | null
+    /** rok koraka (ms od epohe, D-171) */
+    deadline?: number | null
+  } = {},
 ): Promise<MediaAssetRow[]> {
   if (count <= 0) return []
   const admin = createSupabaseAdminClient()
@@ -112,7 +126,7 @@ export async function pickGalleryPhotos(
     {
       label: 'gallery',
       mode: 'gallery',
-      until: Date.now() + GALLERY_CHECK_MS,
+      until: Math.min(Date.now() + GALLERY_CHECK_MS, opts.deadline ?? Number.POSITIVE_INFINITY),
       subject: { topic: opts.topic, query },
       frame: opts.frame,
     },
@@ -145,6 +159,8 @@ async function pickPhotos(input: {
   topic?: string | null
   /** okvir slajda za fotografiju (D-169): oblik pretrage i predmet koji staje ceo */
   frame?: { aspect: number } | null
+  /** rok za pretrage i provere (ms od epohe, D-171) */
+  deadline?: number | null
 }): Promise<MediaAssetRow[]> {
   if (input.source === 'none' || input.count <= 0) return []
   if (input.source === 'gallery')
@@ -152,6 +168,7 @@ async function pickPhotos(input: {
       categoryId: input.galleryCategoryId,
       topic: input.topic,
       frame: input.frame,
+      deadline: input.deadline,
     })
   const ctx = {
     workspaceId: input.workspaceId,
@@ -161,6 +178,7 @@ async function pickPhotos(input: {
     uploadedBy: input.uploadedBy,
     topic: input.topic,
     frame: input.frame,
+    deadline: input.deadline,
   }
   // Unsplash koji ne odgovori (limit, mreža) ne ostavlja objavu bez slike: ostatak daje Pexels
   let fromUnsplash: MediaAssetRow[] = []
@@ -170,6 +188,8 @@ async function pickPhotos(input: {
     logger.warn('design_unsplash_failed', { brandId: input.brandId, error })
   }
   if (fromUnsplash.length >= input.count) return fromUnsplash
+  // bez vremena za još jednu pretragu i proveru objava ide sa onim što ima (D-171)
+  if (input.deadline && input.deadline - Date.now() < PEXELS_MIN_LEFT_MS) return fromUnsplash
   try {
     const rest = await pickPexelsPhotos({ ...ctx, count: input.count - fromUnsplash.length })
     return [...fromUnsplash, ...rest.map((p) => p.asset)]
@@ -298,9 +318,14 @@ export function designPhotoCount(input: DesignRenderInput): number {
  * Fotografije za slajdove: date iz biblioteke ili izabrane po izvoru. Svaki slajd sa fotografijom
  * dobija drugu (D-121); naslovni stil traži samo jednu. Fotografija se bira u obliku svog okvira
  * na slajdu (D-169): vodoravna za široku traku, uspravna za visok okvir, kvadratna za kvadrat, i
- * samo kad glavni predmet staje ceo. Greška izvora ne obara objavu.
+ * samo kad glavni predmet staje ceo. Greška izvora ne obara objavu. Sve pretrage i provere imaju
+ * zajednički rok (D-171), podeljen na oblike okvira; posle roka objava ide sa onim što je nađeno.
  */
-export async function pickDesignPhotos(input: DesignRenderInput): Promise<PickedDesignPhotos> {
+export async function pickDesignPhotos(
+  input: DesignRenderInput,
+  opts: { deadline?: number } = {},
+): Promise<PickedDesignPhotos> {
+  const deadline = opts.deadline ?? Date.now() + PHOTO_PICK_MS
   const { template, needs, count } = photoPlan(input)
   const frames = count > 0 ? photoFrames(input, needs, template, count) : []
   const notes: string[] = []
@@ -314,13 +339,16 @@ export async function pickDesignPhotos(input: DesignRenderInput): Promise<Picked
       groups.set(key, [...(groups.get(key) ?? []), pos])
     })
     const out: Array<MediaAssetRow | null> = indices.map(() => null)
-    for (const positions of groups.values()) {
+    const all = [...groups.values()]
+    for (const [g, positions] of all.entries()) {
       const aspects = positions
         .map((pos) => frames[indices[pos]!] ?? null)
         .filter((a): a is number => a !== null)
       const aspect = aspects.length
         ? aspects.reduce((a, b) => (Math.abs(Math.log(b)) > Math.abs(Math.log(a)) ? b : a))
         : null
+      // preostalo vreme se deli na oblike koji su ostali, da i poslednji dobije svoj deo
+      const share = Date.now() + Math.max(0, deadline - Date.now()) / (all.length - g)
       const picked = await pickPhotos({
         source: input.photoSource,
         workspaceId: input.workspaceId,
@@ -332,6 +360,7 @@ export async function pickDesignPhotos(input: DesignRenderInput): Promise<Picked
         galleryCategoryId: input.galleryCategoryId,
         topic: input.topic,
         frame: aspect ? { aspect } : null,
+        deadline: share,
       })
       picked.forEach((row, j) => {
         const pos = positions[j]

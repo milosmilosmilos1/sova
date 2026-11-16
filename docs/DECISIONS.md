@@ -1539,3 +1539,15 @@ Nacrti napravljeni pre provere predmeta (D-167) i oblika fotografije (D-169) ima
 - Posao se pokreće skriptom `scripts/refresh-draft-photos.ts` sa ključem događaja iz env fajla. Radi na serveru jer je ključ produkcijske baze samo u Netlify-ju. Nema dugmeta u aplikaciji: masovna zamena bi trošila zajednički limit izvora za sve korisnike. Stare fotografije i slajdovi zamenjenih nacrta postaju stare verzije koje briše čišćenje (D-168).
 
 Razlog: posle D-169 vlasnikov nacrt sa psom bez glave ostao je isti, jer nova pravila važe samo za nove objave. Ponuda da nacrti koji čekaju dobiju nove fotografije prihvaćena je 16.11.2026.
+
+## D-171 · 16.11.2026 · usvojeno · Rok za izbor fotografija u koraku
+
+Izbor fotografija za objavu (pretraga, provera, preuzimanje i čuvanje) ide u jednom koraku pozadinskog posla, a Netlify prekida zahtev posle 30 s. Posle D-169 svaki izvor ima svoj rok provere od 12 s (Unsplash pa Pexels), uz više kandidata i posebnu pretragu za svaki oblik okvira, pa je karusel sa fotografijom na svakom slajdu prešao 30 s. Netlify takav korak prekine pre nego što kod prijavi grešku, pa Inngest posle ponovljenog pokušaja obori ceo posao: 16.11. u 20:28 zamena fotografija (D-170) stala je posle četiri nacrta.
+
+- Sve pretrage i provere fotografija jedne objave imaju zajednički rok od 14 s, podeljen na oblike okvira koji su ostali. Posle roka nema nove pretrage ni provere, a provera u toku dobija samo vreme do roka. Važi i za galeriju.
+- Kad Unsplash ne da dovoljno, Pexels se pita samo ako je do roka ostalo bar 3 s.
+- Izabrana fotografija se sa rokom preuzima najduže 6 s (bez roka 20 s). Najgori korak je tako oko 25 s i sa hladnim startom funkcije.
+- Objava koja do roka ne dobije sve fotografije ide sa onim što je nađeno, kao kad izvor ne odgovori: slajd bez fotografije ostaje u bojama brenda, uz napomenu. Zamena fotografija (D-170) tada ostavlja nacrt kakav je.
+- Posao za zamenu fotografija, kad ipak padne, šalje ostale brendove iz `onFailure`; nacrti palog brenda ostaju za sledeće slanje.
+
+Razlog: korak mora da završi pre nego što ga Netlify prekine. Manje fotografija na jednoj objavi je bolje od posla koji pada ceo, a isti korak koristi i pravljenje mesečnog plana.
