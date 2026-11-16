@@ -12,13 +12,13 @@ import {
   verbatimExcerpt,
 } from './copy'
 import {
-  applyAutoKinds,
   assignKinds,
-  autoKinds,
+  confirmKinds,
   KIND_FORMATS,
   pickRefs,
   resolveKind,
   slotKindOf,
+  type SlotKind,
 } from './index'
 
 const empty = (): StoredContent => storedContentSchema.parse({})
@@ -41,12 +41,24 @@ function review(id: string, day: number, usedAt: string | null = null, text?: st
 // raspored iz plana: karusel i slika najčešće (lib/plans/slots.ts)
 const ROTATION: PostFormat[] = ['carousel', 'image', 'video', 'carousel', 'story', 'image', 'text', 'link']
 const month = (n: number) => Array.from({ length: n }, (_, i) => ROTATION[i % ROTATION.length]!)
+// zadate vrste, bez predloga pitanja i humora na „Automatski”
+const fixed = (kinds: Array<SlotKind | null>) =>
+  kinds.filter((k): k is SlotKind => Boolean(k && !k.tentative))
 
 describe('raspored vrsta u mesecu (D-165)', () => {
-  it('bez podataka i bez uključenih vrsta nema rasporeda', () => {
-    expect(
-      assignKinds({ formats: month(13), content: empty(), used: new Set() }).every((k) => k === null),
-    ).toBe(true)
+  it('bez podataka i sa svim vrstama na „Automatski”: samo predlozi pitanja i humora, oko jedan na deset', () => {
+    const formats = month(31)
+    const kinds = assignKinds({ formats, content: empty(), used: new Set() })
+    const given = kinds.filter((k): k is SlotKind => Boolean(k))
+    expect(given.every((k) => k.tentative && k.ref === null)).toBe(true)
+    expect(given.filter((k) => k.kind === 'interactive')).toHaveLength(3)
+    expect(given.filter((k) => k.kind === 'humor')).toHaveLength(3)
+    kinds.forEach((k, i) => {
+      if (k) expect(KIND_FORMATS[k.kind]).toContain(formats[i])
+    })
+    // sve isključeno: nema ničega
+    const off = { ...empty(), kinds: { interactive: false, humor: false } }
+    expect(assignKinds({ formats, content: off, used: new Set() }).every((k) => k === null)).toBe(true)
   })
 
   it('utisak i osoba idu na format koji ih nosi, po jedan na deset termina, najnovija stavka prva', () => {
@@ -68,7 +80,7 @@ describe('raspored vrsta u mesecu (D-165)', () => {
     }
     const formats = month(13)
     const kinds = assignKinds({ formats, content, used: new Set() })
-    const assigned = kinds.flatMap((k, i) => (k ? [{ ...k, format: formats[i]! }] : []))
+    const assigned = kinds.flatMap((k, i) => (k && !k.tentative ? [{ ...k, format: formats[i]! }] : []))
     expect(assigned.map((a) => a.kind).sort()).toEqual(['review', 'team'])
     for (const a of assigned) expect(KIND_FORMATS[a.kind]).toContain(a.format)
     expect(assigned.find((a) => a.kind === 'review')?.ref).toBe('aaaaaaaaa2')
@@ -123,62 +135,48 @@ describe('raspored vrsta u mesecu (D-165)', () => {
       ref: 'ccccccccc1',
     })
     expect(
-      assignKinds({ formats: ['image', 'text', 'story'], content, used: new Set() }).every((k) => k === null),
-    ).toBe(true)
+      assignKinds({ formats: ['image', 'text', 'story'], content, used: new Set() }).some(
+        (k) => k?.kind === 'before_after',
+      ),
+    ).toBe(false)
   })
 
-  it('uključeno pitanje ide bez stavke; na „Automatski” odlučuje model, isključeno nikad', () => {
+  it('uključeno pitanje ide bez stavke i nije predlog; isključen humor nikad', () => {
     const on = { ...empty(), kinds: { interactive: true, humor: false } }
     const kinds = assignKinds({ formats: month(16), content: on, used: new Set() })
     expect(kinds.filter((k) => k?.kind === 'interactive')).toEqual([
       { kind: 'interactive', ref: null },
       { kind: 'interactive', ref: null },
     ])
-    expect(autoKinds(on)).toEqual([])
-    expect(autoKinds(empty())).toEqual(['interactive', 'humor'])
+    expect(kinds.some((k) => k?.kind === 'humor')).toBe(false)
+    expect(fixed(kinds)).toHaveLength(2)
   })
 
-  it('predlozi modela: samo dozvoljene vrste, na svom formatu, do kvote i ne preko zadate vrste', () => {
-    const formats: PostFormat[] = [
-      'image',
-      'link',
-      'text',
-      'video',
-      'story',
-      'carousel',
-      'image',
-      'text',
-      'image',
-      'image',
-    ]
-    const assigned = [
-      { kind: 'review' as const, ref: 'aaaaaaaaa1' },
-      ...Array.from({ length: 9 }, () => null),
+  it('potvrda: zadata vrsta ostaje, predlog samo kad ga model potvrdi istom vrstom', () => {
+    const assigned: Array<SlotKind | null> = [
+      { kind: 'review', ref: 'aaaaaaaaa1' },
+      { kind: 'humor', ref: null, tentative: true },
+      { kind: 'interactive', ref: null, tentative: true },
+      { kind: 'interactive', ref: null, tentative: true },
+      { kind: 'interactive', ref: null },
+      null,
     ]
     const proposed = new Map<number, string | null>([
-      [0, 'humor'], // zauzet utiskom
-      [1, 'humor'], // link ne nosi humor
-      [2, 'humor'],
-      [3, 'interactive'], // video ne nosi pitanje
-      [4, 'interactive'],
-      [6, 'humor'], // preko kvote (1 na 10 termina)
-      [7, 'review'], // model ne bira vrste sa podacima
-      [8, 'nešto'],
+      [0, null], // zadat utisak ostaje i bez potvrde
+      [1, 'humor'], // potvrđen
+      [2, null], // odbijen: obična objava
+      [3, 'humor'], // pogrešna vrsta: obična objava
+      [4, null], // uključeno: ostaje
+      [5, 'humor'], // termin bez predloga: model ne dodaje vrstu
     ])
-    const out = applyAutoKinds(assigned, proposed, formats, ['interactive', 'humor'])
-    expect(out).toEqual([
+    expect(confirmKinds(assigned, proposed)).toEqual([
       { kind: 'review', ref: 'aaaaaaaaa1' },
-      null,
       { kind: 'humor', ref: null },
+      null,
       null,
       { kind: 'interactive', ref: null },
       null,
-      null,
-      null,
-      null,
-      null,
     ])
-    expect(applyAutoKinds(assigned, proposed, formats, ['interactive'])[2]).toBeNull()
   })
 
   it('stavka u trenutku pravljenja: isključena vrsta, obrisana stavka ili stavka sa podacima', () => {

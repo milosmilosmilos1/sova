@@ -76,7 +76,15 @@ describe('mesečni plan: upit', () => {
           kind: 'review',
           refLabel: 'U1',
         },
-        { date: '2026-12-03', weekday: 'četvrtak', format: 'text', platforms: ['facebook'] },
+        {
+          date: '2026-12-03',
+          weekday: 'četvrtak',
+          format: 'text',
+          platforms: ['facebook'],
+          kind: 'interactive',
+          tentative: true,
+        },
+        { date: '2026-12-05', weekday: 'subota', format: 'image', platforms: ['facebook'] },
       ],
       kinds: {
         reviews: [
@@ -84,20 +92,29 @@ describe('mesečni plan: upit', () => {
         ],
         team: [],
         pairs: [],
-        auto: ['interactive'],
-        autoMax: 1,
         off: ['humor'],
       },
     })
-    expect(prompt).toContain('0: 2026-12-01, utorak, Slika, Instagram, VRSTA: utisak klijenta [U1]')
-    expect(prompt).toContain('1: 2026-12-03, četvrtak, Samo tekst, Facebook\n')
+    expect(prompt).toContain('0: 2026-12-01, utorak, Slika, Instagram, VRSTA: utisak klijenta [U1]\n')
+    expect(prompt).toContain(
+      '1: 2026-12-03, četvrtak, Samo tekst, Facebook, VRSTA: pitanje za publiku (predlog)\n',
+    )
+    expect(prompt).toContain('2: 2026-12-05, subota, Slika, Facebook\n')
     expect(prompt).toContain('UTISCI KLIJENATA ZA OVAJ MESEC')
     expect(prompt).toContain('- [U1] Marija P., Vračar, ocena 5/5: Sve čisto i na vreme.')
     expect(prompt).not.toContain('LJUDI IZ TIMA')
     expect(prompt).toContain('Nikad ne izmišljaj utiske klijenata')
-    expect(prompt).toContain('kind "interactive" (pitanje za publiku)')
+    // predlog: model ga potvrđuje vrstom ili odbija samo za ozbiljne delatnosti
+    expect(prompt).toContain('Termin sa VRSTOM i oznakom (predlog)')
+    expect(prompt).toContain('Odbij predlog samo kad vrsta stvarno ne priliči brendu')
+    expect(prompt).toContain('Za termine bez oznake (predlog) kind je null.')
     expect(prompt).toContain('Bez humora i šala.')
     expect(prompt).not.toContain('pre i posle, atmosfera')
+    // Gemini mora da vrati kind za svaki termin (null kad nema predloga)
+    const schema = monthPlanJsonSchema() as {
+      properties: { items: { items: { required: string[] } } }
+    }
+    expect(schema.properties.items.items.required).toContain('kind')
 
     // bez podataka biznisa: zabrana izmišljanja ostaje, model ne predlaže vrste
     const plain = buildMonthPlanPrompt({

@@ -12,8 +12,10 @@ import {
 
 /**
  * Vrste sadržaja u planu (D-165, faza 2): koji termin dobija utisak klijenta, osobu iz tima, rad pre i
- * posle, pitanje za publiku ili humor, i koju stavku. Vrste sa podacima i uključene vrste raspoređuje
- * kod, ravnomerno kroz mesec; pitanja i humor na „Automatski” predlaže model, samo kad pristaju brendu.
+ * posle, pitanje za publiku ili humor, i koju stavku. Sve vrste raspoređuje kod, ravnomerno kroz mesec.
+ * Pitanje i humor na „Automatski” su predlog: model ga potvrđuje, a odbija samo kad vrsta ne priliči
+ * brendu (ozbiljne i osetljive delatnosti). Ranije je model na „Automatski” sam birao termine i u
+ * planu Šapa & Šargarepe (45 objava, 16.11.2026) nije izabrao nijedan.
  */
 export type DataKind = 'review' | 'team' | 'before_after'
 export type FreeKind = 'interactive' | 'humor'
@@ -30,6 +32,8 @@ export interface SlotKind {
   kind: ContentKind
   /** id utiska, osobe ili para; null za pitanja i humor */
   ref: string | null
+  /** predlog (pitanje ili humor na „Automatski”): važi tek kad ga model potvrdi; ne čuva se */
+  tentative?: boolean
 }
 
 /**
@@ -101,9 +105,15 @@ function nearestSlot(
   return null
 }
 
+/** Koliko predloga pitanja ili humora na „Automatski” po vrsti: oko svaki deseti termin. */
+export function autoQuota(slots: number): number {
+  return slots > 0 ? Math.max(1, Math.floor(slots / 10)) : 0
+}
+
 /**
  * Vrste za termine jednog meseca (redom kao `formats`). Vrsta ide samo na format koji je nosi,
- * ravnomerno kroz mesec; utisak, osoba i par se ne ponavljaju u istom planu (`used`).
+ * ravnomerno kroz mesec; utisak, osoba i par se ne ponavljaju u istom planu (`used`). Pitanje i humor
+ * na „Automatski” dobijaju termine kao predlog (`tentative`), koji model potvrđuje u odgovoru.
  */
 export function assignKinds(input: {
   formats: readonly PostFormat[]
@@ -113,51 +123,36 @@ export function assignKinds(input: {
   const n = input.formats.length
   const kinds: Array<SlotKind | null> = Array.from({ length: n }, () => null)
   ORDER.forEach((kind, offset) => {
-    if (kindAvailability(input.content, kind) !== 'yes') return
+    const availability = kindAvailability(input.content, kind)
+    if (availability === 'no') return
+    const tentative = availability === 'auto'
     const refs = isDataKind(kind) ? pickRefs(input.content, kind, input.used) : null
-    const count = refs ? Math.min(kindQuota(kind, n), refs.length) : kindQuota(kind, n)
+    const quota = tentative ? autoQuota(n) : kindQuota(kind, n)
+    const count = refs ? Math.min(quota, refs.length) : quota
     for (let j = 0; j < count; j++) {
       const target = (Math.floor(((j + 0.5) * n) / count) + offset) % n
       const pos = nearestSlot(kinds, input.formats, target, kind)
       if (pos === null) break
-      kinds[pos] = { kind, ref: refs ? refs[j]!.id : null }
+      kinds[pos] = { kind, ref: refs ? refs[j]!.id : null, ...(tentative ? { tentative: true } : {}) }
     }
   })
   return kinds
 }
 
-/** Pitanja i humor koje model sme sam da predloži (vrsta na „Automatski”). */
-export function autoKinds(content: StoredContent): FreeKind[] {
-  return FREE_KINDS.filter((k) => kindAvailability(content, k) === 'auto')
-}
-
-/** Najviše predloga modela po vrsti u mesecu sa `slots` termina. */
-export function autoQuota(slots: number): number {
-  return Math.max(1, Math.floor(slots / 10))
-}
-
 /**
- * Predlozi modela za termine bez vrste: samo dozvoljene vrste, na formatu koji ih nosi i do kvote.
- * `proposed` je vrsta po indeksu termina u mesecu.
+ * Konačne vrste posle odgovora modela: zadata vrsta ostaje, a predlog (pitanje ili humor na
+ * „Automatski”) ostaje samo kad ga je model potvrdio istom vrstom; inače je termin obična objava.
+ * `proposed` je vrsta iz odgovora po indeksu termina u mesecu.
  */
-export function applyAutoKinds(
+export function confirmKinds(
   assigned: ReadonlyArray<SlotKind | null>,
   proposed: ReadonlyMap<number, string | null | undefined>,
-  formats: readonly PostFormat[],
-  allowed: readonly FreeKind[],
 ): Array<SlotKind | null> {
-  const out = [...assigned]
-  const counts = new Map<FreeKind, number>()
-  const max = autoQuota(formats.length)
-  for (let i = 0; i < out.length; i++) {
-    const kind = allowed.find((k) => k === proposed.get(i))
-    if (out[i] || !kind || !KIND_FORMATS[kind].includes(formats[i]!)) continue
-    const used = counts.get(kind) ?? 0
-    if (used >= max) continue
-    counts.set(kind, used + 1)
-    out[i] = { kind, ref: null }
-  }
-  return out
+  return assigned.map((k, i) => {
+    if (!k) return null
+    if (!k.tentative) return k
+    return proposed.get(i) === k.kind ? { kind: k.kind, ref: null } : null
+  })
 }
 
 export type ResolvedKind = { target: KindTarget } | { problem: 'off' | 'missing' | 'format' } | null

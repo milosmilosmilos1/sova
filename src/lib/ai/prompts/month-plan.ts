@@ -3,7 +3,6 @@ import { z } from 'zod'
 import { WRITE_IN, type ContentLocale } from '@/config/locales'
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { FORMAT_LABEL, type PostFormat } from '@/config/post-formats'
-import type { FreeKind } from '@/lib/content-kinds'
 import type { ContentKind } from '@/lib/schemas/brand-content'
 
 import { brandPromptLines, postGoalSchema, type BrandContext, type PostGoal } from './post-text'
@@ -13,7 +12,8 @@ import { brandPromptLines, postGoalSchema, type BrandContext, type PostGoal } fr
  * raznovrsne objave u svim vrstama (karusel, slika, priča, video, tekst, link). Termine i vrste
  * određuje Sova unapred (raspored), a model piše samo o čemu je svaka objava. Termin može da nosi i
  * vrstu sadržaja (D-165): utisak klijenta, osobu iz tima ili rad pre i posle iz podataka biznisa,
- * a pitanje za publiku i humor model sme sam da predloži kad su na „Automatski”.
+ * pitanje za publiku ili humor. Pitanje i humor na „Automatski” su predlog: model ga potvrđuje
+ * (`kind` te vrste) ili odbija (`kind` null) kad vrsta ne priliči brendu.
  */
 export const monthPlanOutputSchema = z.object({
   items: z.array(
@@ -24,16 +24,24 @@ export const monthPlanOutputSchema = z.object({
       goal: postGoalSchema,
       pillar: z.string(),
       cta: z.string().nullable(),
-      /** predlog modela za termin bez zadate vrste (D-165) */
+      /** potvrda predloga pitanja ili humora (D-165); za ostale termine null */
       kind: z.enum(['interactive', 'humor']).nullable().optional(),
     }),
   ),
 })
 export type MonthPlanOutput = z.infer<typeof monthPlanOutputSchema>
 
+/**
+ * JSON šema za Gemini. `kind` je u njoj obavezan (null kad termin nema predlog), da ga model ne
+ * preskoči kao neobavezno polje; parser ga i dalje prima i bez njega.
+ */
 export function monthPlanJsonSchema(): Record<string, unknown> {
-  const schema = z.toJSONSchema(monthPlanOutputSchema) as Record<string, unknown>
+  const schema = z.toJSONSchema(monthPlanOutputSchema) as Record<string, unknown> & {
+    properties?: { items?: { items?: { required?: string[] } } }
+  }
   delete schema.$schema
+  const item = schema.properties?.items?.items
+  if (item) item.required = [...new Set([...(item.required ?? []), 'kind'])]
   return schema
 }
 
@@ -46,6 +54,8 @@ export interface MonthPlanSlotInput {
   kind?: ContentKind | null
   /** oznaka stavke iz podataka biznisa (U1, T1, P1) */
   refLabel?: string | null
+  /** pitanje ili humor na „Automatski”: predlog koji model potvrđuje ili odbija */
+  tentative?: boolean
 }
 
 /** Podaci biznisa za vrste sadržaja u ovom mesecu (D-165). */
@@ -59,9 +69,6 @@ export interface MonthPlanKindData {
   }>
   team: Array<{ label: string; name: string; role: string; bio: string | null; funFact: string | null }>
   pairs: Array<{ label: string; title: string; note: string | null }>
-  /** vrste koje model sme sam da predloži i koliko najviše po vrsti u mesecu */
-  auto: FreeKind[]
-  autoMax: number
   /** vrste koje je vlasnik isključio */
   off: ContentKind[]
 }
@@ -109,6 +116,7 @@ const KIND_LABEL: Record<ContentKind, string> = {
 function kindLines(input: MonthPlanPromptInput): string[] {
   const k = input.kinds
   const assigned = input.slots.some((s) => s.kind)
+  const tentative = input.slots.some((s) => s.kind && s.tentative)
   const lines: string[] = [
     'Nikad ne izmišljaj utiske klijenata, klijente, ljude iz tima ni rezultate radova; termin bez VRSTE ne pravi utisak klijenta, predstavljanje osobe ni pre i posle.',
   ]
@@ -119,13 +127,13 @@ function kindLines(input: MonthPlanPromptInput): string[] {
       '- osoba iz tima: samo podaci iz liste, bez izmišljenih godina iskustva, diploma i hobija.',
       '- pre i posle: samo ono što piše u opisu rada.',
       '- pitanje za publiku: brief sadrži pitanje i 2 do 4 ponuđena odgovora, ili kviz sa tačnim odgovorom.',
-      '- humor: prepoznatljiva situacija iz struke brenda, bez ismevanja klijenata i bez tuđih memova.',
+      '- humor: prepoznatljiva situacija iz struke brenda ili iz života njenih kupaca, bez ismevanja klijenata i bez tuđih memova.',
     )
-  if (k?.auto.length)
+  if (tentative)
     lines.push(
-      `Za termine bez VRSTE smeš da vratiš kind ${k.auto.map((a) => `"${a}" (${KIND_LABEL[a]})`).join(' ili ')} samo ako pristaje delatnosti i tonu brenda, najviše ${k.autoMax} po vrsti u mesecu i nikad na objavi sa linkom ili videu; za ostale termine kind je null.`,
+      'Termin sa VRSTOM i oznakom (predlog): pitanje za publiku i humor pristaju skoro svakom brendu koji se obraća ljudima (prodavnice, kućni ljubimci, hrana i piće, lepota, ugostiteljstvo, zanati, usluge za dom, agencije i firme). Tada napiši temu te vrste i vrati kind te vrste ("interactive" za pitanje za publiku, "humor" za humor). Odbij predlog samo kad vrsta stvarno ne priliči brendu (pogrebne usluge, bolnice i lekari, advokati, finansijski saveti, teške životne teme): tada napiši običnu temu i vrati kind null.',
     )
-  else lines.push('kind je uvek null.')
+  lines.push(tentative ? 'Za termine bez oznake (predlog) kind je null.' : 'kind je uvek null.')
   if (k?.off.includes('interactive')) lines.push('Ne pravi ankete, kvizove ni pitanja za publiku.')
   if (k?.off.includes('humor')) lines.push('Bez humora i šala.')
   return lines
@@ -157,7 +165,9 @@ function kindDataLines(input: MonthPlanPromptInput): string[] {
 }
 
 function slotLine(s: MonthPlanSlotInput, i: number): string {
-  const kind = s.kind ? `, VRSTA: ${KIND_LABEL[s.kind]}${s.refLabel ? ` [${s.refLabel}]` : ''}` : ''
+  const kind = s.kind
+    ? `, VRSTA: ${KIND_LABEL[s.kind]}${s.refLabel ? ` [${s.refLabel}]` : ''}${s.tentative ? ' (predlog)' : ''}`
+    : ''
   return `${i}: ${s.date}, ${s.weekday}, ${FORMAT_LABEL[s.format]}, ${s.platforms.map((p) => PLATFORMS[p].label).join(' + ')}${kind}`
 }
 
@@ -233,7 +243,7 @@ export interface PlannedTopic {
   goal: PostGoal
   pillar: string | null
   cta: string | null
-  /** predlog modela (pitanje ili humor); važi tek posle provere u `applyAutoKinds` */
+  /** potvrda predloga (pitanje ili humor); važi tek posle provere u `confirmKinds` */
   kind: string | null
 }
 

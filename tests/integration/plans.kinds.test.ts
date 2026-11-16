@@ -375,4 +375,53 @@ describe('vrste sadržaja u mesečnom planu', () => {
     expect(prompts.some((p) => p.includes('VRSTA OBJAVE: pitanje za publiku'))).toBe(true)
     expect(prompts.some((p) => p.includes('VRSTA OBJAVE: predstavljanje osobe iz tima'))).toBe(true)
   })
+
+  it('sve na „Automatski” i bez podataka (kao Šapa & Šargarepa): predlozi pitanja i humora, ostaju potvrđeni', async () => {
+    const { data } = await admin.from('brands').select('settings').eq('id', brandId).single()
+    await admin
+      .from('brands')
+      .update({ settings: { ...(data!.settings as object), content: { kinds: {} } } })
+      .eq('id', brandId)
+    const r = await call<Plan>(plansPost, '/api/plans', {
+      token: user.token,
+      body: { brandId, kind: 'next', perWeek: 7, formats: ['carousel', 'image', 'text', 'story'] },
+    })
+    expect(r.status).toBe(202)
+    const id = r.json.data!.id
+    const { data: created } = await admin.from('month_plans').select('settings').eq('id', id).single()
+    const slots = (created!.settings as { slots: unknown[] }).slots
+    // model potvrđuje svaki predlog pitanja, a humor odbija (vraća drugu vrstu)
+    enqueueReply({
+      kind: 'text',
+      json: {
+        items: slots.map((_, i) => ({
+          slot: i,
+          topic: `Tema ${i + 1} za kućne ljubimce`,
+          brief: 'Šta objava kaže i za koga.',
+          goal: 'engagement',
+          pillar: 'Zajednica',
+          cta: null,
+          kind: 'interactive',
+        })),
+      },
+    })
+    expect(await runPlanning(id)).toBe('ready')
+
+    const prompt = calls.map((c) => JSON.stringify(c.body)).find((p) => p.includes('TERMINI'))!
+    expect(prompt).toContain('VRSTA: pitanje za publiku (predlog)')
+    expect(prompt).toContain('VRSTA: humor (predlog)')
+    expect(prompt).toContain('Odbij predlog samo kad vrsta stvarno ne priliči brendu')
+
+    const { data: stored } = await admin.from('month_plans').select('settings').eq('id', id).single()
+    const kinds = (stored!.settings as { slots: Array<{ kind?: string; tentative?: boolean }> }).slots
+      .filter((s) => s.kind)
+      .map((s) => s.kind)
+    // oko jedno pitanje na deset termina; odbijen humor ne ostaje, a predlog se ne čuva kao takav
+    expect(kinds.length).toBe(Math.max(1, Math.floor(slots.length / 10)))
+    expect(new Set(kinds)).toEqual(new Set(['interactive']))
+    const view = (await call<Plan>(planGet, `/api/plans/${id}`, { token: user.token, params: { id } })).json
+      .data!
+    expect(view.items.filter((i) => i.kind === 'interactive')).toHaveLength(kinds.length)
+    expect(view.items.some((i) => i.kind === 'humor')).toBe(false)
+  })
 })

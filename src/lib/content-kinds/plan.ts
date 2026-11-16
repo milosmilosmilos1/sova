@@ -1,7 +1,7 @@
 import type { MonthPlanKindData } from '@/lib/ai/prompts/month-plan'
 import { CONTENT_KINDS, kindState, type StoredContent } from '@/lib/schemas/brand-content'
 
-import { autoKinds, autoQuota, isDataKind, type DataKind, type SlotKind } from './index'
+import { isDataKind, type DataKind, type SlotKind } from './index'
 
 const LABEL_PREFIX: Record<DataKind, string> = { review: 'U', team: 'T', before_after: 'P' }
 
@@ -20,8 +20,8 @@ export function refLabels(kinds: ReadonlyArray<SlotKind | null>): Map<string, st
 }
 
 /**
- * Podaci biznisa za upit jednog meseca plana (D-165): samo stavke dodeljene terminima tog meseca,
- * vrste koje model sme sam da predloži i vrste koje je vlasnik isključio.
+ * Podaci biznisa za upit jednog meseca plana (D-165): samo stavke dodeljene terminima tog meseca i
+ * vrste koje je vlasnik isključio.
  */
 export function planKindData(
   content: StoredContent,
@@ -49,8 +49,6 @@ export function planKindData(
         funFact: m.funFact,
       })),
       pairs: pick(content.pairs).map((p) => ({ label: labels.get(p.id)!, title: p.title, note: p.note })),
-      auto: autoKinds(content),
-      autoMax: autoQuota(assigned.length),
       off: CONTENT_KINDS.filter((k) => kindState(content, k) === 'off'),
     },
   }

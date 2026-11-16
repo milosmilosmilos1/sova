@@ -18,8 +18,8 @@ import {
 import type { PostGoal } from '@/lib/ai/prompts/post-text'
 import { parseVoice } from '@/lib/brand/voice'
 import {
-  applyAutoKinds,
   assignKinds,
+  confirmKinds,
   resolveKind,
   slotKindOf,
   type KindTarget,
@@ -299,6 +299,7 @@ export async function runPlanningMonth(
         platforms: slot.platforms,
         kind: assigned[i]?.kind ?? null,
         refLabel: assigned[i]?.ref ? (labels.get(assigned[i]!.ref!) ?? null) : null,
+        tentative: Boolean(assigned[i]?.tentative),
       })),
       kinds: kindData,
       holidays: holidays ?? [],
@@ -333,7 +334,8 @@ export async function runPlanningMonth(
     if (!topics.size)
       throw new AiError('INVALID_RESPONSE', 'Model nije predložio nijednu temu.', { model: outcome.model })
     const proposed = new Map([...topics].map(([i, t]) => [i, t.kind] as const))
-    const kinds = applyAutoKinds(assigned, proposed, formats, kindData.auto)
+    // pitanje i humor na „Automatski” ostaju samo kad ih je model potvrdio (D-165)
+    const kinds = confirmKinds(assigned, proposed)
     // vrsta važi samo za termin sa temom; upisuje se pre stavki, da stavka ne postoji bez svoje vrste
     await saveSlotKinds(
       plan.id,
