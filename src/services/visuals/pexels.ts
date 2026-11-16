@@ -7,7 +7,7 @@ import type { PexelsSearchInput, PexelsSelectInput } from '@/lib/schemas/visuals
 import { logger } from '@/lib/logger'
 import { mapLimit } from '@/lib/map-limit'
 import { safeFetch, SsrfError } from '@/lib/ssrf'
-import type { Focus } from '@/lib/visuals/focus'
+import { orientationOf, type Focus, type SubjectBox } from '@/lib/visuals/focus'
 import { localPeopleQuery, slugText } from '@/lib/visuals/people'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import {
@@ -25,7 +25,7 @@ import {
 } from '@/integrations/pexels/client'
 import { getBrand } from '@/services/brands'
 import { maxVideoBytes, storeServerVideo, type MediaAssetRow } from '@/services/media'
-import { cropAroundFocus, stockFetchSize } from '@/services/visuals/focus-crop'
+import { cropAroundFocus, fullFrame, fullFrameFetchSize, stockFetchSize } from '@/services/visuals/focus-crop'
 import { checkPhotos, type CheckedPhoto, type PhotoCandidate } from '@/services/visuals/photo-check'
 import { storeServerImage } from '@/services/visuals/store'
 import { queryVariants, STOCK_PARALLEL, usedStockIds } from '@/services/visuals/used'
@@ -137,17 +137,21 @@ async function downloadVideo(
 }
 
 /**
- * Adresa fotografije: original do 2000 px, ili ceo kadar u veličini za isečak vrste objave (kvadrat
- * za objavu, 9:16 za priču), koji Sova seče sama oko glavnog predmeta (D-167).
+ * Adresa fotografije: original do 2000 px u širinu, ceo kadar do 2000 px po dužoj strani (za slajd,
+ * D-169), ili ceo kadar u veličini za isečak vrste objave (kvadrat za objavu, 9:16 za priču), koji
+ * Sova seče sama oko glavnog predmeta (D-167).
  */
-function photoUrl(photo: PexelsPhoto, crop: 'square' | 'portrait' | 'original'): string {
+function photoUrl(photo: PexelsPhoto, crop: 'square' | 'portrait' | 'original' | 'full'): string {
   const u = new URL(photo.src.original)
   u.searchParams.set('auto', 'compress')
   u.searchParams.set('cs', 'tinysrgb')
-  if (crop === 'original') u.searchParams.set('w', '2000')
-  else
-    for (const [k, v] of Object.entries(stockFetchSize(photo.width, photo.height, crop)))
-      u.searchParams.set(k, String(v))
+  const size =
+    crop === 'original'
+      ? { w: 2000 }
+      : crop === 'full'
+        ? fullFrameFetchSize(photo.width, photo.height)
+        : stockFetchSize(photo.width, photo.height, crop)
+  for (const [k, v] of Object.entries(size)) u.searchParams.set(k, String(v))
   return u.toString()
 }
 
@@ -157,7 +161,8 @@ export async function storePexelsMedia(input: {
   brandId: string
   kind: 'video' | 'photo'
   id: number
-  crop?: 'square' | 'portrait' | 'original'
+  /** `full`: ceo kadar za slajd, isečak za okvir pravi stil (D-169) */
+  crop?: 'square' | 'portrait' | 'original' | 'full'
   uploadedBy: string | null
   /** već dobijeno pretragom (automatski izbor): bez još jednog poziva Pexels-u (D-122) */
   photo?: PexelsPhoto
@@ -169,6 +174,8 @@ export async function storePexelsMedia(input: {
   maxBytes?: number
   /** glavni predmet fotografije iz provere (D-167): isečak ide oko njega */
   focus?: Focus | null
+  /** okvir glavnog predmeta (D-169), čuva se uz ceo kadar */
+  box?: SubjectBox | null
 }): Promise<StoredPexels> {
   const found = await existing(input.brandId, input.kind, input.id, input.crop)
   // već sačuvan: atribucija je u redu medija, bez novog poziva Pexels-u (200 zahteva na sat)
@@ -217,7 +224,12 @@ export async function storePexelsMedia(input: {
     headers: { accept: 'image/*' },
   })
   if (!res.ok) throw new ApiError('PROVIDER_ERROR', 'Fotografija nije mogla da se preuzme sa Pexels-a.')
-  const cropped = crop === 'original' ? null : await cropAroundFocus(res.body, crop, input.focus ?? null)
+  const cropped =
+    crop === 'original'
+      ? null
+      : crop === 'full'
+        ? { bytes: await fullFrame(res.body), focus: input.focus ?? null, box: input.box ?? null }
+        : { ...(await cropAroundFocus(res.body, crop, input.focus ?? null)), box: null }
   const asset = await storeServerImage({
     workspaceId: input.workspaceId,
     brandId: input.brandId,
@@ -234,6 +246,7 @@ export async function storePexelsMedia(input: {
       pageUrl: photo.pageUrl,
       crop,
       ...(cropped?.focus ? { focus: cropped.focus } : {}),
+      ...(cropped?.box ? { subject: cropped.box } : {}),
     } as unknown as Json,
     uploadedBy: input.uploadedBy,
   })
@@ -263,6 +276,8 @@ const VIDEO_CHECK_MS = 8_000
  */
 const PHOTO_CHECK_BATCH = 12
 const PHOTO_CHECK_SPARE = 5
+/** Za okvir slajda (D-169) odbija se i predmet koji ne staje ceo, pa se gleda više kandidata. */
+const FRAME_CHECK_SPARE = 9
 /** Zajednički rok svih provera fotografija u jednom izboru. */
 const PHOTO_CHECKS_MS = 12_000
 /** Najviše provera po izboru; posle toga izbor vraća ono što je našao. */
@@ -279,9 +294,24 @@ function videoCandidate(video: PexelsVideo): PhotoCandidate<PexelsVideo> {
   }
 }
 
-/** Fotografija za proveru: alt, ime iz adrese i srednja sličica (ceo kadar). */
+/** Fotografija za proveru: alt, ime iz adrese, srednja sličica (ceo kadar) i veličina originala. */
 function photoCandidate(photo: PexelsPhoto): PhotoCandidate<PexelsPhoto> {
-  return { item: photo, text: `${photo.alt ?? ''} ${slugText(photo.pageUrl)}`, frames: [photo.src.medium] }
+  return {
+    item: photo,
+    text: `${photo.alt ?? ''} ${slugText(photo.pageUrl)}`,
+    frames: [photo.src.medium],
+    size: photo.width && photo.height ? { width: photo.width, height: photo.height } : null,
+  }
+}
+
+/** Oblik za pretragu: po okviru slajda (D-169), inače po isečku vrste objave. */
+function searchOrientation(input: {
+  crop: 'square' | 'portrait'
+  frame?: { aspect: number } | null
+}): PexelsOrientation {
+  if (!input.frame) return input.crop === 'portrait' ? 'portrait' : 'square'
+  const o = orientationOf(input.frame.aspect)
+  return o === 'squarish' ? 'square' : o
 }
 
 /**
@@ -366,9 +396,10 @@ export async function pickPexelsVideo(input: {
 
 /**
  * Automatski izbor fotografija za upit, bez onih koje je brend već dobio; najviše `count`. Uzimaju
- * se samo fotografije koje prikazuju ono o čemu je objava i lepo stoje u objavi, isečene oko
- * glavnog predmeta (D-167). Izabrane se preuzimaju i čuvaju paralelno (D-122); fotografija koja ne
- * stigne se preskače.
+ * se samo fotografije koje prikazuju ono o čemu je objava i lepo stoje u objavi (D-167). Fotografija
+ * za slajd (`frame`, D-169) se traži u obliku okvira slajda, uzima se samo kad glavni predmet može
+ * ceo da stane u okvir i čuva se cela; ostale se seku za vrstu objave oko glavnog predmeta.
+ * Izabrane se preuzimaju i čuvaju paralelno (D-122); fotografija koja ne stigne se preskače.
  */
 export async function pickPexelsPhotos(input: {
   workspaceId: string
@@ -379,6 +410,8 @@ export async function pickPexelsPhotos(input: {
   uploadedBy: string | null
   /** tema objave, po kojoj provera zna šta fotografija mora da prikazuje (D-167) */
   topic?: string | null
+  /** okvir slajda za fotografiju (širina / visina, D-169) */
+  frame?: { aspect: number } | null
 }): Promise<StoredPexels[]> {
   if (!isPexelsConfigured() || input.count <= 0) return []
   const used = await usedStockIds(input.brandId, 'pexels-photo')
@@ -393,14 +426,15 @@ export async function pickPexelsPhotos(input: {
     for (let page = 1; page <= (v === 0 ? 3 : 1) && chosen.length < input.count; page++) {
       const photos = await searchPhotos({
         query: variants[v]!,
-        orientation: input.crop === 'portrait' ? 'portrait' : 'square',
+        orientation: searchOrientation(input),
         perPage: 40,
         page,
       })
       const fresh = photos.filter((p) => !used.has(String(p.id)))
       for (let i = 0; i < fresh.length && chosen.length < input.count;) {
         if (checks++ >= MAX_PHOTO_CHECKS) break search
-        const size = Math.min(PHOTO_CHECK_BATCH, input.count - chosen.length + PHOTO_CHECK_SPARE)
+        const spare = input.frame ? FRAME_CHECK_SPARE : PHOTO_CHECK_SPARE
+        const size = Math.min(PHOTO_CHECK_BATCH, input.count - chosen.length + spare)
         const batch = fresh.slice(i, i + size)
         i += size
         for (const photo of batch) used.add(String(photo.id))
@@ -408,23 +442,26 @@ export async function pickPexelsPhotos(input: {
           label: 'pexels-photo',
           until,
           subject,
+          frame: input.frame,
         })
         chosen.push(...allowed.slice(0, input.count - chosen.length))
       }
       if (photos.length < 40) break
     }
   }
-  const stored = await mapLimit(chosen, STOCK_PARALLEL, async ({ item: photo, focus }) => {
+  const stored = await mapLimit(chosen, STOCK_PARALLEL, async ({ item: photo, focus, box }) => {
     try {
       return await storePexelsMedia({
         workspaceId: input.workspaceId,
         brandId: input.brandId,
         kind: 'photo',
         id: photo.id,
-        crop: input.crop,
+        // za slajd ceo kadar, isečak za okvir pravi stil (D-169)
+        crop: input.frame ? 'full' : input.crop,
         uploadedBy: input.uploadedBy,
         photo,
         focus,
+        box: box ?? null,
       })
     } catch (error) {
       logger.warn('pexels_pick_store_failed', { pexelsId: photo.id, error })

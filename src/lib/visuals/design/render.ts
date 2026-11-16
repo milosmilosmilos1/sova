@@ -3,7 +3,7 @@ import satori from 'satori'
 import sharp from 'sharp'
 
 import { BUNDLED_FAMILY, loadFonts } from '../fonts'
-import { objectPosition, type Focus } from '../focus'
+import { centeredPosition, objectPosition, type Focus, type SubjectBox } from '../focus'
 import { toDataUri } from '../render'
 import { fontWidth } from './font-choices'
 import { cleanSlideText, getStyle } from './index'
@@ -41,6 +41,10 @@ export interface SlideRenderInput {
   photo: string | null
   /** sredina glavnog predmeta na fotografiji (D-167); bez nje fotografija se seče po sredini */
   photoFocus?: Focus | null
+  /** širina / visina fotografije (D-169): sa njom se predmet centrira u okviru, a ne samo drži u kadru */
+  photoAspect?: number | null
+  /** okvir glavnog predmeta (D-169): predmet viši od okvira zadržava vrh (glavu) */
+  photoBox?: SubjectBox | null
   index: number
   total: number
   /** ritam teme (D-132); bez nje osnovni raspored */
@@ -66,10 +70,27 @@ function family(choice: FontChoice, brand: string): string {
 /**
  * Fotografija ide ka glavnom predmetu (D-167): svaki `img` sa fotografijom koji stil seče
  * (`objectFit: cover`) dobija `objectPosition` po fokusu, pa predmet ostaje u okviru bilo kog
- * oblika (traka, krug, ceo kadar). Stil koji je sam zadao položaj ostaje kakav jeste.
+ * oblika (traka, krug, ceo kadar). Kad je poznat odnos stranica fotografije, a okvir je u pikselima,
+ * predmet se centrira u okviru (D-169). Stil koji je sam zadao položaj ostaje kakav jeste.
  */
-export function focusPhotoNodes(tree: unknown, photo: string, focus: Focus): void {
-  const position = objectPosition(focus)
+export function focusPhotoNodes(
+  tree: unknown,
+  photo: string,
+  focus: Focus,
+  photoAspect?: number | null,
+  box?: SubjectBox | null,
+): void {
+  const px = (v: unknown) =>
+    typeof v === 'number'
+      ? v
+      : typeof v === 'string' && /^\s*\d+(\.\d+)?px\s*$/.test(v)
+        ? parseFloat(v)
+        : null
+  const positionFor = (style: Record<string, unknown>) => {
+    const w = px(style.width)
+    const h = px(style.height)
+    return photoAspect && w && h ? centeredPosition(focus, photoAspect, w / h, box) : objectPosition(focus)
+  }
   const visit = (node: unknown): void => {
     if (!node || typeof node !== 'object') return
     if (Array.isArray(node)) {
@@ -83,7 +104,7 @@ export function focusPhotoNodes(tree: unknown, photo: string, focus: Focus): voi
     if (!n.props) return
     const style = n.props.style
     if (n.type === 'img' && n.props.src === photo && style?.objectFit === 'cover' && !style.objectPosition)
-      n.props.style = { ...style, objectPosition: position }
+      n.props.style = { ...style, objectPosition: positionFor(style) }
     visit(n.props.children)
   }
   visit(tree)
@@ -124,7 +145,8 @@ export async function renderSlide(input: SlideRenderInput): Promise<SlideRenderR
       ? Math.min(1.6, Math.max(0.8, fontWidth(fonts.headings) / fontWidth(designed)))
       : 1
   const tree = withWidthScale(scale, () => style.render(cleanSlideText(input.slide), ctx))
-  if (input.photo && input.photoFocus) focusPhotoNodes(tree, input.photo, input.photoFocus)
+  if (input.photo && input.photoFocus)
+    focusPhotoNodes(tree, input.photo, input.photoFocus, input.photoAspect, input.photoBox)
   const drawn = await satori(tree as unknown as Parameters<typeof satori>[0], {
     width: size.width,
     height: size.height,

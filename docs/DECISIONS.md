@@ -1516,3 +1516,15 @@ Odluka:
 - Jedno pokretanje briše najviše 2.000 fajlova, po 300 u koraku; ostatak ide sledeći put. Spisak se računa u aplikaciji (bez migracije); kad objava bude desetine hiljada, prelazi u SQL funkciju.
 
 Razlog: skladište je 16.11.2026 bilo 1,27 GB na besplatnom Supabase planu od 1 GB, a Sova ništa nije brisala: oko 800 MB su bili fajlovi koje nijedna objava više ne koristi (Pexels snimci 329 MB, stare verzije gotovog videa 265 MB, slike sa stoka 118 MB, stari slajdovi 95 MB). Vlasnik planira 90 klijenata; bez čišćenja to je oko 75 GB godišnje samo od generisanih fajlova.
+
+## D-169 · 16.11.2026 · usvojeno · Oblik fotografije prati okvir slajda
+
+Odluka:
+
+- Pre izbora fotografije Sova izračuna okvir fotografije na slajdu, onako kako ga stil crta (`lib/visuals/design/slots.ts`, a za Figma šablon sloj `#foto`). Okviri su od uspravnih 0,56 (priča preko celog kadra) do širokih traka 2,3:1 i 3,6:1 („aurora”, „social”, „cards”, „pamphlet”).
+- Fotografija se traži u obliku okvira: vodoravna za okvir širi od 1,2:1, uspravna za uži od 0,83:1, kvadratna između. Slajdovi istog oblika dele jednu pretragu, a najstroži okvir u grupi važi za sve.
+- Provera fotografija (D-167) vraća i okvir celog glavnog predmeta i da li predmet mora ostati ceo (životinja, osoba, proizvod) ili je prizor koji sme da se iseče. Sa stoka se ne uzima fotografija u kojoj predmet koji mora ostati ceo ne može da stane u okvir slajda (dozvoljeno je 6% preko, za vrh uha ili repa); iz galerije takva ide posle onih koje staju. Gemini okvir ponekad daje na skali do 1000 umesto u procentima, pa Sova prepoznaje skalu.
+- Fotografija za slajd se čuva cela, do 2000 px po dužoj strani (`source_data.crop = 'full'`, `subject` okvir predmeta), a isečak za okvir pravi stil pri crtanju: predmet se centrira u okviru, a kad je malo viši od okvira, okvir počinje od vrha predmeta, pa glava ostaje, a seče se dole. Fotografija koja je sama objava (Autopilot, „Nova objava” bez dizajna) i dalje se seče na kvadrat ili 9:16 oko predmeta.
+- Starije fotografije (kvadrat iz D-167) crtaju se kao i do sada, uz centriranje po sačuvanoj tački.
+
+Razlog: vlasnik je na Šapinoj objavi video psa bez glave u širokoj traci stila „aurora”: fotografija je birana kao kvadratna i isečena po sredini, a traka 936×405 vidi samo trećinu kvadrata. Živa proba (16.11.): za traku 2,3:1 od osam vodoravnih fotografija psa sedam je odbijeno jer pas ne staje ceo, a izabrana pokazuje psa sa celom glavom.

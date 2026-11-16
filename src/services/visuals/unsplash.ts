@@ -32,10 +32,10 @@ import {
   type UnsplashOrientation,
   type UnsplashPhoto,
 } from '@/integrations/unsplash/client'
-import type { Focus } from '@/lib/visuals/focus'
+import { orientationOf, type Focus, type SubjectBox } from '@/lib/visuals/focus'
 import { getBrand } from '@/services/brands'
 import type { MediaAssetRow } from '@/services/media'
-import { cropAroundFocus, stockFetchSize } from '@/services/visuals/focus-crop'
+import { cropAroundFocus, fullFrame, fullFrameFetchSize, stockFetchSize } from '@/services/visuals/focus-crop'
 import { checkPhotos, type CheckedPhoto, type PhotoCandidate } from '@/services/visuals/photo-check'
 import { storeServerImage } from '@/services/visuals/store'
 import { queryVariants, STOCK_PARALLEL, usedStockIds } from '@/services/visuals/used'
@@ -178,26 +178,37 @@ export async function selectUnsplashPhoto(
  */
 const PHOTO_CHECK_BATCH = 12
 const PHOTO_CHECK_SPARE = 5
+/** Za okvir slajda (D-169) odbija se i predmet koji ne staje ceo, pa se gleda više kandidata. */
+const FRAME_CHECK_SPARE = 9
 /** Zajednički rok svih provera u jednom izboru i najviše provera po izboru. */
 const PHOTO_CHECKS_MS = 12_000
 const MAX_PHOTO_CHECKS = 3
 
-/** Fotografija za proveru: alt, opis, ime iz adrese i manja sličica (ceo kadar, bez isecanja). */
+/** Fotografija za proveru: alt, opis, ime iz adrese, manja sličica (ceo kadar) i veličina originala. */
 function photoCandidate(photo: UnsplashPhoto): PhotoCandidate<UnsplashPhoto> {
   return {
     item: photo,
     text: [photo.alt, photo.description, slugText(photo.htmlLink)].filter(Boolean).join(' '),
     frames: [resizedUrl(photo.urls.raw, { w: 384, q: 60 })],
+    size: photo.width && photo.height ? { width: photo.width, height: photo.height } : null,
   }
+}
+
+/** Oblik za pretragu: po okviru slajda (D-169), inače po isečku vrste objave. */
+function searchOrientation(input: { crop: 'square' | 'portrait'; frame?: { aspect: number } | null }) {
+  if (!input.frame) return input.crop === 'portrait' ? 'portrait' : 'squarish'
+  return orientationOf(input.frame.aspect)
 }
 
 /**
  * Automatski izbor za „Novu objavu”, plan i Autopilot (D-107): rezultati pretrage redom, ali samo
- * oni koji prikazuju ono o čemu je objava i lepo stoje u objavi (D-167), isečeni za vrstu objave
- * oko glavnog predmeta (kvadrat staje na svaku mrežu, 9:16 je za priču). Fotografija koju je brend
- * već dobio se preskače (D-121): traže se sledeće strane i kraći oblici upita, a bez odgovarajuće
- * nove fotografije slajd ostaje u bojama. Izabrane se čuvaju paralelno, i samo onoliko koliko satni
- * limit još prima (D-122); ostatak traži pozivalac sa Pexels-a.
+ * oni koji prikazuju ono o čemu je objava i lepo stoje u objavi (D-167). Fotografija za slajd
+ * (`frame`, D-169) se traži u obliku okvira slajda, uzima se samo kad glavni predmet može ceo da
+ * stane u okvir i čuva se cela, a isečak pravi stil pri crtanju; fotografija koja je sama objava se
+ * seče za vrstu objave oko glavnog predmeta (kvadrat staje na svaku mrežu, 9:16 je za priču).
+ * Fotografija koju je brend već dobio se preskače (D-121): traže se sledeće strane i kraći oblici
+ * upita, a bez odgovarajuće nove fotografije slajd ostaje u bojama. Izabrane se čuvaju paralelno, i
+ * samo onoliko koliko satni limit još prima (D-122); ostatak traži pozivalac sa Pexels-a.
  */
 export async function pickUnsplashPhotos(input: {
   workspaceId: string
@@ -208,6 +219,8 @@ export async function pickUnsplashPhotos(input: {
   uploadedBy: string | null
   /** tema objave, po kojoj provera zna šta fotografija mora da prikazuje (D-167) */
   topic?: string | null
+  /** okvir slajda za fotografiju (širina / visina, D-169) */
+  frame?: { aspect: number } | null
 }): Promise<SelectedPhoto[]> {
   if (!isUnsplashConfigured() || input.count <= 0) return []
   // pretraga i bar jedno praćenje preuzimanja; sa potrošenim limitom se odmah prelazi na Pexels
@@ -232,17 +245,23 @@ export async function pickUnsplashPhotos(input: {
         query: variants[v]!,
         perPage: 30,
         page,
-        orientation: input.crop === 'portrait' ? 'portrait' : 'squarish',
+        orientation: searchOrientation(input),
         contentFilter: 'high',
       })
       const fresh = r.results.filter((p) => !used.has(p.id))
       for (let i = 0; i < fresh.length && chosen.length < input.count;) {
         if (checks++ >= MAX_PHOTO_CHECKS) break search
-        const size = Math.min(PHOTO_CHECK_BATCH, input.count - chosen.length + PHOTO_CHECK_SPARE)
+        const spare = input.frame ? FRAME_CHECK_SPARE : PHOTO_CHECK_SPARE
+        const size = Math.min(PHOTO_CHECK_BATCH, input.count - chosen.length + spare)
         const batch = fresh.slice(i, i + size)
         i += size
         for (const photo of batch) used.add(photo.id)
-        const allowed = await checkPhotos(batch.map(photoCandidate), { label: 'unsplash', until, subject })
+        const allowed = await checkPhotos(batch.map(photoCandidate), {
+          label: 'unsplash',
+          until,
+          subject,
+          frame: input.frame,
+        })
         chosen.push(...allowed.slice(0, input.count - chosen.length))
       }
       if (page >= r.totalPages) break
@@ -251,9 +270,9 @@ export async function pickUnsplashPhotos(input: {
   // svaka upotrebljena fotografija troši jedan zahtev (praćenje preuzimanja)
   const room = unsplashRemaining()
   const take = room === null ? chosen : chosen.slice(0, Math.max(0, room))
-  const stored = await mapLimit(take, STOCK_PARALLEL, async ({ item: photo, focus }) => {
+  const stored = await mapLimit(take, STOCK_PARALLEL, async ({ item: photo, focus, box }) => {
     try {
-      return await storePickedPhoto(photo, focus, input)
+      return await storePickedPhoto(photo, focus, box ?? null, input)
     } catch (error) {
       logger.warn('unsplash_pick_store_failed', { photoId: photo.id, error })
       return null
@@ -265,11 +284,21 @@ export async function pickUnsplashPhotos(input: {
 async function storePickedPhoto(
   photo: UnsplashPhoto,
   focus: Focus | null,
-  input: { workspaceId: string; brandId: string; crop: 'square' | 'portrait'; uploadedBy: string | null },
+  box: SubjectBox | null,
+  input: {
+    workspaceId: string
+    brandId: string
+    crop: 'square' | 'portrait'
+    uploadedBy: string | null
+    frame?: { aspect: number } | null
+  },
 ): Promise<SelectedPhoto> {
   const attribution = attributionFor(photo)
-  // ceo kadar u veličini za isečak; seče se ovde, oko glavnog predmeta (D-167)
-  const size = stockFetchSize(photo.width, photo.height, input.crop)
+  // za slajd ceo kadar (isečak za okvir pravi stil, D-169); za objavu isečak oko predmeta (D-167)
+  const full = Boolean(input.frame)
+  const size = full
+    ? fullFrameFetchSize(photo.width, photo.height)
+    : stockFetchSize(photo.width, photo.height, input.crop)
   // praćenje preuzimanja ide uporedo sa preuzimanjem (greška praćenja se samo beleži)
   const [, res] = await Promise.all([
     trackDownload(photo.downloadLocation),
@@ -280,7 +309,9 @@ async function storePickedPhoto(
     }),
   ])
   if (!res.ok) throw new ApiError('PROVIDER_ERROR', 'Fotografija nije mogla da se preuzme sa Unsplash-a.')
-  const cropped = await cropAroundFocus(res.body, input.crop, focus)
+  const cropped = full
+    ? { bytes: await fullFrame(res.body), focus, box }
+    : { ...(await cropAroundFocus(res.body, input.crop, focus)), box: null }
   const asset = await storeServerImage({
     workspaceId: input.workspaceId,
     brandId: input.brandId,
@@ -293,11 +324,12 @@ async function storePickedPhoto(
     attribution: { provider: 'unsplash', ...attribution } as unknown as Record<string, string>,
     sourceData: {
       photoId: photo.id,
-      crop: input.crop,
+      crop: full ? 'full' : input.crop,
       urls: photo.urls,
       downloadLocation: photo.downloadLocation,
       photographer: photo.user,
       ...(cropped.focus ? { focus: cropped.focus } : {}),
+      ...(cropped.box ? { subject: cropped.box } : {}),
     } as unknown as Record<string, string>,
     uploadedBy: input.uploadedBy,
   })

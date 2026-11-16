@@ -5,6 +5,8 @@
  * ne ispisuje; troši nekoliko poziva Gemini-ja.
  * Pokretanje: npx tsx --env-file=.env.local --conditions=react-server scripts/photo-check-smoke.ts
  */
+import sharp from 'sharp'
+
 import { resolvePhotoQuery } from '@/services/design/photo-query'
 import { checkPhotos } from '@/services/visuals/photo-check'
 
@@ -48,20 +50,28 @@ const thumb = (raw: string) => {
   return u.toString()
 }
 
+/** Okvir slajda za proveru (D-169): `--okvir 2.31` je traka u „aurora” stilu, bez njega okvir se ne gleda. */
+const frameArg = process.argv.indexOf('--okvir')
+const FRAME = frameArg > 0 ? { aspect: Number(process.argv[frameArg + 1]) } : null
+
 async function main() {
-  console.log(`tema: ${TOPIC.split('\n')[0]}\nupit: ${QUERY}\n`)
+  console.log(
+    `tema: ${TOPIC.split('\n')[0]}\nupit: ${QUERY}${FRAME ? `\nokvir slajda: ${FRAME.aspect}:1` : ''}\n`,
+  )
   for (const [label, raw] of PHOTOS) {
     const started = Date.now()
+    const bytes = Buffer.from(await (await fetch(thumb(raw))).arrayBuffer())
+    const meta = await sharp(bytes).metadata()
     // isti rok kao automatski izbor (12 s za sve provere jednog izbora)
-    const taken = await checkPhotos([{ item: label, text: '', frames: [thumb(raw)] }], {
-      label: 'smoke',
-      until: Date.now() + 12_000,
-      subject: { topic: TOPIC, query: QUERY },
-    })
+    const taken = await checkPhotos(
+      [{ item: label, text: '', frames: [bytes], size: { width: meta.width!, height: meta.height! } }],
+      { label: 'smoke', until: Date.now() + 12_000, subject: { topic: TOPIC, query: QUERY }, frame: FRAME },
+    )
     const ms = Date.now() - started
-    const focus = taken[0]?.focus
+    const box = taken[0]?.box
+    const pct = (n: number) => Math.round(n * 100)
     console.log(
-      `${taken.length ? 'UZIMA ' : 'odbija'}  ${label}${focus ? `  (predmet ${Math.round(focus.x * 100)}%, ${Math.round(focus.y * 100)}%)` : ''}  ${ms} ms`,
+      `${taken.length ? 'UZIMA ' : 'odbija'}  ${label} (${meta.width}×${meta.height})${box ? `  predmet ${pct(box.left)}–${pct(box.right)}% širine, ${pct(box.top)}–${pct(box.bottom)}% visine` : ''}  ${ms} ms`,
     )
   }
   const query = await resolvePhotoQuery({

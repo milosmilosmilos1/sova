@@ -12,7 +12,8 @@ import { photoOrder, slideRanges } from '@/lib/visuals/design/batches'
 import type { PhotoSource } from '@/lib/visuals/design/catalog'
 import { preparePhoto, renderSlide } from '@/lib/visuals/design/render'
 import type { DesignColors, DesignFormat, Slide, ThemeVariant } from '@/lib/visuals/design/types'
-import { parseFocus, type Focus } from '@/lib/visuals/focus'
+import { orientationOf, parseBox, parseFocus, type Focus, type SubjectBox } from '@/lib/visuals/focus'
+import { photoSlot, type PhotoSlot } from '@/lib/visuals/design/slots'
 import type { StepRunner } from '@/services/autopilot/runner'
 import { downloadAsset, type MediaAssetRow } from '@/services/media'
 import { pickPexelsPhotos } from '@/services/visuals/pexels'
@@ -42,10 +43,14 @@ const GALLERY_CHECK_SPARE = 4
 const GALLERY_CHECK_MAX = 10
 const GALLERY_CHECK_MS = 12_000
 
-/** Fokus u `source_data` medija, uz ono što već ima. */
-function withFocus(sourceData: Json | null, focus: Focus): Json {
+/** Fokus i okvir predmeta u `source_data` medija, uz ono što već ima. */
+function withFocus(sourceData: Json | null, focus: Focus, box: SubjectBox | null): Json {
   const base = sourceData && typeof sourceData === 'object' && !Array.isArray(sourceData) ? sourceData : {}
-  return { ...base, focus: { x: focus.x, y: focus.y } }
+  return {
+    ...base,
+    focus: { x: focus.x, y: focus.y },
+    ...(box ? { subject: { left: box.left, top: box.top, right: box.right, bottom: box.bottom } } : {}),
+  }
 }
 
 /**
@@ -59,7 +64,7 @@ export async function pickGalleryPhotos(
   brandId: string,
   query: string,
   count: number,
-  opts: { categoryId?: string | null; topic?: string | null } = {},
+  opts: { categoryId?: string | null; topic?: string | null; frame?: { aspect: number } | null } = {},
 ): Promise<MediaAssetRow[]> {
   if (count <= 0) return []
   const admin = createSupabaseAdminClient()
@@ -102,21 +107,26 @@ export async function pickGalleryPhotos(
       text: [row.description, row.alt_text, ...row.tags].filter(Boolean).join(' '),
       // original se preuzima tek kad provera zaista gleda slike
       frames: [() => downloadAsset(row)],
+      size: row.width && row.height ? { width: row.width, height: row.height } : null,
     })),
     {
       label: 'gallery',
       mode: 'gallery',
       until: Date.now() + GALLERY_CHECK_MS,
       subject: { topic: opts.topic, query },
+      frame: opts.frame,
     },
   )
   const picked = checked.slice(0, count)
   const now = new Date().toISOString()
   await Promise.all(
-    picked.map(({ item, focus }) =>
+    picked.map(({ item, focus, box }) =>
       admin
         .from('media_assets')
-        .update({ last_used_at: now, ...(focus ? { source_data: withFocus(item.source_data, focus) } : {}) })
+        .update({
+          last_used_at: now,
+          ...(focus ? { source_data: withFocus(item.source_data, focus, box ?? null) } : {}),
+        })
         .eq('id', item.id),
     ),
   )
@@ -133,12 +143,15 @@ async function pickPhotos(input: {
   uploadedBy: string | null
   galleryCategoryId?: string | null
   topic?: string | null
+  /** okvir slajda za fotografiju (D-169): oblik pretrage i predmet koji staje ceo */
+  frame?: { aspect: number } | null
 }): Promise<MediaAssetRow[]> {
   if (input.source === 'none' || input.count <= 0) return []
   if (input.source === 'gallery')
     return pickGalleryPhotos(input.brandId, input.query, input.count, {
       categoryId: input.galleryCategoryId,
       topic: input.topic,
+      frame: input.frame,
     })
   const ctx = {
     workspaceId: input.workspaceId,
@@ -147,6 +160,7 @@ async function pickPhotos(input: {
     crop: input.crop,
     uploadedBy: input.uploadedBy,
     topic: input.topic,
+    frame: input.frame,
   }
   // Unsplash koji ne odgovori (limit, mreža) ne ostavlja objavu bez slike: ostatak daje Pexels
   let fromUnsplash: MediaAssetRow[] = []
@@ -228,35 +242,101 @@ export interface PickedDesignPhotos {
   notes: string[]
 }
 
+/** Okvir sloja `#foto` u okviru Figma šablona za vrstu slajda. */
+function templatePhotoSlot(template: FigmaTemplate, kind: Slide['kind']): PhotoSlot | null {
+  const layer = templateFrameFor(template, kind).layers.find((l) => l.role === 'photo')
+  return layer && layer.w > 0 && layer.h > 0 ? { width: layer.w, height: layer.h } : null
+}
+
+/**
+ * Razmera okvira (širina / visina) za svaku fotografiju objave (D-169), po prvom slajdu na kom se
+ * crta; `null` kad okvir nije poznat.
+ */
+function photoFrames(
+  input: DesignRenderInput,
+  needs: boolean[],
+  template: FigmaTemplate | null,
+  count: number,
+): Array<number | null> {
+  const order = photoOrder(needs, count, false)
+  const frames: Array<number | null> = Array.from({ length: count }, () => null)
+  input.slides.forEach((slide, i) => {
+    const k = order[i]
+    if (k === null || k === undefined || frames[k] !== null) return
+    const slot = template
+      ? templatePhotoSlot(template, slide.kind)
+      : photoSlot({
+          styleId: input.styleId,
+          slide,
+          format: input.format,
+          colors: input.colors ?? input.design.colors,
+          index: i,
+          total: input.slides.length,
+          variant: input.variant,
+        })
+    frames[k] = slot ? slot.width / slot.height : null
+  })
+  return frames
+}
+
 /**
  * Fotografije za slajdove: date iz biblioteke ili izabrane po izvoru. Svaki slajd sa fotografijom
- * dobija drugu (D-121); naslovni stil traži samo jednu. Greška izvora ne obara objavu.
+ * dobija drugu (D-121); naslovni stil traži samo jednu. Fotografija se bira u obliku svog okvira
+ * na slajdu (D-169): vodoravna za široku traku, uspravna za visok okvir, kvadratna za kvadrat, i
+ * samo kad glavni predmet staje ceo. Greška izvora ne obara objavu.
  */
 export async function pickDesignPhotos(input: DesignRenderInput): Promise<PickedDesignPhotos> {
   const style = getStyle(input.styleId)
   const template = activeTemplate(input)
-  const needed = photoNeeds(input, style, template).filter(Boolean).length
+  const needs = photoNeeds(input, style, template)
+  const needed = needs.filter(Boolean).length
   const count = needed === 0 ? 0 : !template && style.photo === 'cover' ? 1 : Math.min(needed, 10)
+  const frames = count > 0 ? photoFrames(input, needs, template, count) : []
   const notes: string[] = []
   let photos: MediaAssetRow[] = []
-  const pick = (n: number) =>
-    pickPhotos({
-      source: input.photoSource,
-      workspaceId: input.workspaceId,
-      brandId: input.brandId,
-      query: input.query,
-      count: n,
-      crop: input.format === 'story' ? 'portrait' : 'square',
-      uploadedBy: input.uploadedBy,
-      galleryCategoryId: input.galleryCategoryId,
-      topic: input.topic,
+  // fotografije za mesta `indices`, u grupama istog oblika; najstroži okvir u grupi važi za celu grupu
+  const pick = async (indices: number[]): Promise<MediaAssetRow[]> => {
+    const groups = new Map<string, number[]>()
+    indices.forEach((k, pos) => {
+      const aspect = frames[k] ?? null
+      const key = aspect ? orientationOf(aspect) : 'none'
+      groups.set(key, [...(groups.get(key) ?? []), pos])
     })
+    const out: Array<MediaAssetRow | null> = indices.map(() => null)
+    for (const positions of groups.values()) {
+      const aspects = positions
+        .map((pos) => frames[indices[pos]!] ?? null)
+        .filter((a): a is number => a !== null)
+      const aspect = aspects.length
+        ? aspects.reduce((a, b) => (Math.abs(Math.log(b)) > Math.abs(Math.log(a)) ? b : a))
+        : null
+      const picked = await pickPhotos({
+        source: input.photoSource,
+        workspaceId: input.workspaceId,
+        brandId: input.brandId,
+        query: input.query,
+        count: positions.length,
+        crop: input.format === 'story' ? 'portrait' : 'square',
+        uploadedBy: input.uploadedBy,
+        galleryCategoryId: input.galleryCategoryId,
+        topic: input.topic,
+        frame: aspect ? { aspect } : null,
+      })
+      picked.forEach((row, j) => {
+        const pos = positions[j]
+        if (pos !== undefined) out[pos] = row
+      })
+    }
+    return out.filter((r): r is MediaAssetRow => r !== null)
+  }
+  const range = (from: number, to: number) =>
+    Array.from({ length: Math.max(0, to - from) }, (_, i) => from + i)
   try {
     if (count > 0 && input.photoAssetIds?.length) {
       photos = (await loadPhotos(input.brandId, input.photoAssetIds)).slice(0, count)
       if (input.topUpPhotos && photos.length < count)
-        photos = [...photos, ...(await pick(count - photos.length))]
-    } else photos = await pick(count)
+        photos = [...photos, ...(await pick(range(photos.length, count)))]
+    } else photos = await pick(range(0, count))
   } catch (error) {
     logger.warn('design_photos_failed', { brandId: input.brandId, error })
   }
@@ -292,16 +372,22 @@ export async function renderDesignRange(
     input.brandId,
     wanted.map((k) => photoIds[k]!),
   )
-  // fotografija i sredina glavnog predmeta na njoj (D-167): stil je pomera tako da predmet ostane u kadru
-  const prepared = new Map<number, { src: string; focus: Focus | null }>()
+  // fotografija, sredina glavnog predmeta i odnos stranica (D-167, D-169): stil predmet centrira u okviru
+  const prepared = new Map<
+    number,
+    { src: string; focus: Focus | null; aspect: number | null; box: SubjectBox | null }
+  >()
   await Promise.all(
     wanted.map(async (k) => {
       const row = rows.get(photoIds[k]!)
       if (!row) return
+      const data = row.source_data as { focus?: unknown; subject?: unknown } | null
       try {
         prepared.set(k, {
           src: await preparePhoto(await downloadAsset(row), photoStyle, colors),
-          focus: parseFocus((row.source_data as { focus?: unknown } | null)?.focus),
+          focus: parseFocus(data?.focus),
+          aspect: row.width && row.height ? row.width / row.height : null,
+          box: parseBox(data?.subject),
         })
       } catch (error) {
         logger.warn('design_photo_prepare_failed', { assetId: row.id, error })
@@ -332,6 +418,8 @@ export async function renderDesignRange(
               logo,
               photo: photo?.src ?? null,
               photoFocus: photo?.focus ?? null,
+              photoAspect: photo?.aspect ?? null,
+              photoBox: photo?.box ?? null,
             })
           : await renderSlide({
               styleId: input.styleId,
@@ -345,6 +433,8 @@ export async function renderDesignRange(
               logo,
               photo: photo?.src ?? null,
               photoFocus: photo?.focus ?? null,
+              photoAspect: photo?.aspect ?? null,
+              photoBox: photo?.box ?? null,
               index: i,
               total: input.slides.length,
               variant: input.variant,

@@ -25,6 +25,23 @@ export function stockFetchSize(width: number, height: number, crop: StockCrop): 
   return width / height > t.w / t.h ? { h: t.h } : { w: t.w }
 }
 
+/** Ceo kadar za fotografiju u slajdu (D-169): najviše 2000 px po dužoj strani, JPEG, bez isecanja. */
+export const FULL_FRAME_MAX = 2000
+
+/** Veličina za preuzimanje celog kadra: duža strana `FULL_FRAME_MAX`. */
+export function fullFrameFetchSize(width: number, height: number): { w?: number; h?: number } {
+  return width >= height ? { w: FULL_FRAME_MAX } : { h: FULL_FRAME_MAX }
+}
+
+/** Ceo kadar kao JPEG, okrenut po EXIF-u; isečak za okvir slajda pravi stil pri crtanju. */
+export async function fullFrame(bytes: Buffer): Promise<Buffer> {
+  return sharp(bytes, { limitInputPixels: 80_000_000 })
+    .rotate()
+    .resize({ width: FULL_FRAME_MAX, height: FULL_FRAME_MAX, fit: 'inside', withoutEnlargement: true })
+    .jpeg({ quality: 85, mozjpeg: true })
+    .toBuffer()
+}
+
 /** Isečak oko fokusa u veličini vrste objave (bez fokusa po sredini); vraća JPEG i fokus u isečku. */
 export async function cropAroundFocus(
   bytes: Buffer,

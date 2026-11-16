@@ -9,7 +9,7 @@ import {
   type TemplateLayer,
 } from '@/lib/figma/template'
 
-import { objectPosition, type Focus } from '../focus'
+import { centeredPosition, objectPosition, type Focus, type SubjectBox } from '../focus'
 import { BUNDLED_FAMILY, loadFonts } from '../fonts'
 import { fontWidth } from './font-choices'
 import { cleanSlideText } from './index'
@@ -35,6 +35,10 @@ export interface TemplateSlideInput {
   photo: string | null
   /** sredina glavnog predmeta na fotografiji (D-167); bez nje fotografija se seče po sredini */
   photoFocus?: Focus | null
+  /** širina / visina fotografije (D-169): predmet se centrira u sloju `#foto` */
+  photoAspect?: number | null
+  /** okvir glavnog predmeta (D-169): predmet viši od sloja zadržava vrh (glavu) */
+  photoBox?: SubjectBox | null
   outputWidth?: number
   format_out?: 'jpeg' | 'png'
 }
@@ -113,7 +117,19 @@ export async function renderTemplateSlide(input: TemplateSlideInput): Promise<{
             {
               ...place,
               objectFit: 'cover',
-              ...(input.photoFocus ? { objectPosition: objectPosition(input.photoFocus) } : {}),
+              ...(input.photoFocus
+                ? {
+                    objectPosition:
+                      input.photoAspect && layer.w > 0 && layer.h > 0
+                        ? centeredPosition(
+                            input.photoFocus,
+                            input.photoAspect,
+                            layer.w / layer.h,
+                            input.photoBox,
+                          )
+                        : objectPosition(input.photoFocus),
+                  }
+                : {}),
               borderRadius: layer.radius ?? 0,
             },
             undefined,

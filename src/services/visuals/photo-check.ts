@@ -13,6 +13,7 @@ import {
   peopleAllowed,
   photoCheckItemSchema,
   photoCheckJsonSchema,
+  subjectBoxOf as toBox,
   type MatchLevel,
   type PhotoCheckItem,
 } from '@/lib/ai/prompts/photo-check'
@@ -20,17 +21,17 @@ import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import { mapLimit } from '@/lib/map-limit'
 import { safeFetch } from '@/lib/ssrf'
-import type { Focus } from '@/lib/visuals/focus'
+import { boxCenter, subjectFits, type Focus, type SubjectBox } from '@/lib/visuals/focus'
 import { foreignPeopleText, mentionsPeople } from '@/lib/visuals/people'
 import { textMatchesQuery } from '@/lib/visuals/relevance'
 
 /**
- * Provera kandidata pre automatskog izbora (D-154, D-167). Sa Unsplash-a i Pexels-a Sova uzima samo
- * fotografiju ili snimak koji prikazuje glavni predmet objave (prvo u situaciji iz objave, pa sam
- * predmet), lepo stoji u objavi brenda i na kom su ljudi samo evropskog izgleda. Iz galerije brenda
- * (njegove fotografije, ljudi se ne gledaju) uzima i fotografiju iz iste oblasti, ali ne ono što temi
- * ne pripada. Uz prihvaćen kandidat ide i sredina glavnog predmeta, da isečak ne odseče ono zbog
- * čega je slika izabrana.
+ * Provera kandidata pre automatskog izbora (D-154, D-167, D-169). Sa Unsplash-a i Pexels-a Sova uzima
+ * samo fotografiju ili snimak koji prikazuje glavni predmet objave (prvo u situaciji iz objave, pa sam
+ * predmet), lepo stoji u objavi brenda, na kom su ljudi samo evropskog izgleda i u kom predmet može
+ * ceo da stane u okvir slajda. Iz galerije brenda (njegove fotografije, ljudi se ne gledaju) uzima i
+ * fotografiju iz iste oblasti, ali ne ono što temi ne pripada. Uz prihvaćen kandidat idu okvir i
+ * sredina glavnog predmeta, da isečak ne odseče ono zbog čega je slika izabrana.
  */
 export interface PhotoCandidate<T> {
   item: T
@@ -41,6 +42,8 @@ export interface PhotoCandidate<T> {
    * kadrovi snimka se spajaju u jednu sliku
    */
   frames: Frame[]
+  /** veličina cele fotografije, za proveru da predmet staje u okvir slajda */
+  size?: { width: number; height: number } | null
 }
 
 type Frame = string | Buffer | (() => Promise<Buffer>)
@@ -56,6 +59,8 @@ export interface CheckedPhoto<T> {
   item: T
   /** sredina glavnog predmeta na slici; `null` kad slika nije gledana (rezerva po opisu) */
   focus: Focus | null
+  /** okvir glavnog predmeta, od 0 do 1; `null` kad slika nije gledana */
+  box?: SubjectBox | null
 }
 
 export interface PhotoCheckOptions {
@@ -69,6 +74,11 @@ export interface PhotoCheckOptions {
    * U oba slučaja bolje poklapanje ide napred, a upotrebljiva slika pre neupotrebljive.
    */
   mode?: 'stock' | 'gallery'
+  /**
+   * okvir slajda za fotografiju (širina / visina, D-169): sa stoka se ne uzima slika u kojoj predmet
+   * koji mora ostati ceo ne može da stane u njega; iz galerije takva ide posle onih koje staju
+   */
+  frame?: { aspect: number } | null
 }
 
 /** Provera bez roka pozivaoca. */
@@ -131,10 +141,7 @@ async function frameSheet(frames: Frame[], timeoutMs: number): Promise<ImageInpu
 
 const looseOutput = z.object({ items: z.array(z.unknown()) })
 
-const toFocus = (item: PhotoCheckItem): Focus => ({
-  x: Math.min(1, Math.max(0, item.focus_x / 100)),
-  y: Math.min(1, Math.max(0, item.focus_y / 100)),
-})
+const CENTER: Focus = { x: 0.5, y: 0.5 }
 
 /** Redosled poklapanja: niži broj ide napred. */
 const MATCH_RANK: Record<MatchLevel, number> = { exact: 0, subject: 1, area: 2, off: 3 }
@@ -166,7 +173,7 @@ export async function checkPhotos<T>(
     frameSheet(c.frames, Math.max(1_000, Math.min(6_000, until - Date.now() - 1_000))),
   )
   // kandidat čija sličica ne stigne se ne uzima: nije proveren
-  const shown = clean.flatMap((c, i) => (sheets[i] ? [{ item: c.item, image: sheets[i] }] : []))
+  const shown = clean.flatMap((c, i) => (sheets[i] ? [{ item: c.item, image: sheets[i], size: c.size }] : []))
   if (!shown.length) return byText()
   if (until - Date.now() < MIN_CHECK_MS / 2) return byText()
   try {
@@ -183,7 +190,7 @@ export async function checkPhotos<T>(
           }),
           images: shown.map((s) => s.image),
           jsonSchema: photoCheckJsonSchema(),
-          maxOutputTokens: 160 + shown.length * 70,
+          maxOutputTokens: 200 + shown.length * 100,
           temperature: 0,
           thinking: 'minimal',
           timeoutMs: Math.max(1_000, until - Date.now()),
@@ -199,7 +206,7 @@ export async function checkPhotos<T>(
       if (item.success && item.data.index < shown.length && !verdicts.has(item.data.index))
         verdicts.set(item.data.index, item.data)
     }
-    const reasons = { people: 0, off: 0, area: 0, unusable: 0, missing: 0 }
+    const reasons = { people: 0, off: 0, area: 0, unusable: 0, fit: 0, missing: 0 }
     const taken: Array<CheckedPhoto<T> & { rank: number }> = []
     shown.forEach((s, i) => {
       const v = verdicts.get(i)
@@ -209,17 +216,27 @@ export async function checkPhotos<T>(
       // sa stoka samo slika sa glavnim predmetom; iz galerije i slika iz iste oblasti
       if (stock && v.match === 'area') return void reasons.area++
       if (stock && !v.usable) return void reasons.unusable++
-      taken.push({ item: s.item, focus: toFocus(v), rank: MATCH_RANK[v.match] * 2 + (v.usable ? 0 : 1) })
+      const box = toBox(v)
+      // predmet koji mora ostati ceo staje u okvir slajda (D-169); prizor sme da se iseče
+      const fits =
+        !options.frame || !s.size || !v.whole || !box || subjectFits(s.size, box, options.frame.aspect)
+      if (stock && !fits) return void reasons.fit++
+      taken.push({
+        item: s.item,
+        focus: box ? boxCenter(box) : CENTER,
+        box,
+        rank: MATCH_RANK[v.match] * 4 + (fits ? 0 : 2) + (v.usable ? 0 : 1),
+      })
     })
     logger.info('photo_check', {
       label: options.label,
       checked: shown.length,
       taken: taken.length,
-      exact: taken.filter((t) => t.rank < 2).length,
+      exact: taken.filter((t) => t.rank < 4).length,
       rejected: { ...reasons, text: candidates.length - clean.length, frames: clean.length - shown.length },
     })
     // stabilno: pri istom poklapanju ostaje redosled pretrage
-    return [...taken].sort((a, b) => a.rank - b.rank).map(({ item, focus }) => ({ item, focus }))
+    return [...taken].sort((a, b) => a.rank - b.rank).map(({ item, focus, box }) => ({ item, focus, box }))
   } catch (error) {
     logger.warn('photo_check_failed', { label: options.label, code: classifyProviderError(error).code })
     return byText()

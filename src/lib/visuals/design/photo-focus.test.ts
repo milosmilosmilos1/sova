@@ -77,6 +77,19 @@ describe('fotografija ka glavnom predmetu (D-167)', () => {
     expect(nested[4]!.props.children[0]!.props.style.objectPosition).toBe('20% 75%')
   })
 
+  it('sa odnosom stranica fotografije predmet se centrira u okviru u pikselima (D-169)', () => {
+    const tree = box({ width: 1080 }, [
+      img(photo, { width: '936px', height: '405px', objectFit: 'cover' }),
+      img(photo, { width: '100%', height: '100%', objectFit: 'cover' }),
+    ])
+    focusPhotoNodes(tree, photo, { x: 0.5, y: 0.6 }, 1.5)
+    const positions = (tree.props.children as Array<{ props: { style: Record<string, unknown> } }>).map(
+      (c) => c.props.style.objectPosition,
+    )
+    // traka 2,31 iz vodoravne 1,5: predmet na 60% visine u sredini trake; okvir bez piksela po tački
+    expect(positions).toEqual(['50% 78.5%', '50% 60%'])
+  })
+
   it('Satori seče fotografiju oko zadate tačke', async () => {
     const loaded = await loadFonts(['Inter'])
     const draw = async (focus: Focus) => {

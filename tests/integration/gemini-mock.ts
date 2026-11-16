@@ -23,16 +23,19 @@ export function enqueueReply(...replies: MockReply[]): void {
 }
 
 /**
- * Provera fotografija (D-154, D-167) ima svoj red: ne troši odgovore ostalih poziva i ne ulazi u
- * `calls`. Bez odgovora u redu svaka slika je bez ljudi, odgovara temi, upotrebljiva, sa predmetom
- * u sredini; `fail` vraća grešku 500. Stavka može biti samo ocena ljudi („other”) ili cela ocena.
+ * Provera fotografija (D-154, D-167, D-169) ima svoj red: ne troši odgovore ostalih poziva i ne ulazi
+ * u `calls`. Bez odgovora u redu svaka slika je bez ljudi, odgovara temi, upotrebljiva, prizor (sme da
+ * se iseče) preko celog kadra; `fail` vraća grešku 500. Stavka može biti samo ocena ljudi („other”)
+ * ili cela ocena.
  */
 export interface PhotoCheckReply {
   people?: PeopleVerdict
   match?: MatchLevel
   usable?: boolean
-  /** sredina glavnog predmeta, u procentima */
-  focus?: [number, number]
+  /** predmet mora ostati ceo */
+  whole?: boolean
+  /** okvir glavnog predmeta [levo, gore, desno, dole], u procentima */
+  box?: [number, number, number, number]
 }
 const photoQueue: Array<Array<PeopleVerdict | PhotoCheckReply> | 'fail'> = []
 /** svaki poziv provere: model, broj slika i tekst zahteva (tema i upit) */
@@ -156,13 +159,17 @@ export const geminiServer = setupServer(
         const items = Array.from({ length: images }, (_, index) => {
           const r = replies?.[index]
           const reply: PhotoCheckReply = typeof r === 'string' ? { people: r } : (r ?? {})
+          const [left, top, right, bottom] = reply.box ?? [0, 0, 100, 100]
           return {
             index,
             people: reply.people ?? 'none',
             match: reply.match ?? 'exact',
             usable: reply.usable ?? true,
-            focus_x: reply.focus?.[0] ?? 50,
-            focus_y: reply.focus?.[1] ?? 50,
+            whole: reply.whole ?? false,
+            box_left: left,
+            box_top: top,
+            box_right: right,
+            box_bottom: bottom,
           }
         })
         return HttpResponse.json(buildBody({ kind: 'text', json: { items } }))

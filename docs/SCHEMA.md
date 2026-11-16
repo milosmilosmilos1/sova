@@ -1318,6 +1318,7 @@ alter table posts add column design jsonb;          -- kontekst za „Generiši 
 -- posts.design.video.layout: raspored kadra videa (D-135; 2 = snimak preko celog kadra); video bez njega „Uskladi sa temom” crta ponovo, a izmena teksta na njemu crta sve kadrove
 -- posts.design.photoQuery: engleski upit za fotografije koji je model napisao uz tekst (D-167); „Uskladi sa temom” i Studio traže nove fotografije po njemu, a starija objava bez njega dobija ga od Gemini-ja kad joj fotografije zatrebaju
 -- media_assets.source_data.focus {x, y} (0–1): sredina glavnog predmeta na fotografiji (D-167); stok fotografije su isečene oko njega, a stil ih pri crtanju pomera u okviru (object-position); upisuje ga i izbor iz galerije
+-- media_assets.source_data.subject {left, top, right, bottom} (0–1): okvir celog glavnog predmeta (D-169); crop = 'full' znači ceo kadar za slajd (isečak pravi stil pri crtanju), 'square' i 'portrait' fotografiju isečenu za objavu
 -- media_assets.source_data.purgedAt: fajl je obrisan iz skladišta čišćenjem (D-168); red ostaje obrisan (deleted_at), zbog D-121 i atribucije
 -- media_assets.source_data.themeVideo: gotov video u temi iz pregledača (D-128, D-168); stariji imaju samo original_name „video-u-temi.mp4”
 -- platform_settings.media_cleanup {runs: [{at, mode: daily | catch-up, files, bytes, byKind, failed, requestedBy}]}: poslednjih deset čišćenja skladišta (D-168)
