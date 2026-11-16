@@ -697,7 +697,8 @@ function PlanBoard({
       {total ? (
         <section aria-label={t('board.list')} className="rounded-xl border bg-card">
           <header className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-3">
-            {editable ? (
+            {/* napravljeni nacrti se ne označavaju (menjaju se u Odobravanju); kad su svi gotovi, ide naslov */}
+            {editable && selection.total ? (
               <SelectAllBox selection={selection} />
             ) : (
               <span className="text-sm font-medium">{t('board.list')}</span>

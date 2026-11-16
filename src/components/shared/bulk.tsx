@@ -14,6 +14,8 @@ import { cn } from '@/lib/utils'
 export interface Selection {
   selected: Set<string>
   count: number
+  /** koliko stavki uopšte može da se označi */
+  total: number
   all: boolean
   some: boolean
   has: (id: string) => boolean
@@ -28,6 +30,7 @@ export function useSelection(ids: readonly string[]): Selection {
   return {
     selected,
     count: selected.size,
+    total: ids.length,
     all: ids.length > 0 && selected.size === ids.length,
     some: selected.size > 0 && selected.size < ids.length,
     has: (id) => selected.has(id),
@@ -43,7 +46,11 @@ export function useSelection(ids: readonly string[]): Selection {
   }
 }
 
-/** Kvačica „označi sve”: puna kad je sve označeno, crtica kad je deo. */
+/**
+ * Kvačica „označi sve”: puna kad je sve označeno, crtica kad je deo. Kad u listi nema ničeg što može
+ * da se označi (npr. svi nacrti plana su već napravljeni ili filter ne pokazuje ništa), kvačice nema,
+ * jer bi klik na nju bio bez ikakvog dejstva.
+ */
 export function SelectAllBox({
   selection,
   disabled,
@@ -58,6 +65,7 @@ export function SelectAllBox({
   useEffect(() => {
     if (ref.current) ref.current.indeterminate = selection.some
   }, [selection.some])
+  if (!selection.total) return null
   return (
     <label className={cn('inline-flex cursor-pointer items-center gap-2 text-sm', className)}>
       <input
