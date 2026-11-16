@@ -30,6 +30,27 @@ export const EXTRAS_NETWORK_LIMITS = {
   question: 80,
 } as const
 
+/**
+ * Granice za ručnu izmenu (D-166): granica mreže gde postoji, inače šire od onoga što Sova piše, da
+ * korisnik može da doda svoje. Broj stavki ostaje kao kod pisanja.
+ */
+export const EXTRAS_EDIT_LIMITS = {
+  boardName: 50,
+  boardDescription: 500,
+  playlistTitle: 150,
+  playlistDescription: 5000,
+  trailerHook: 300,
+  trailerScript: 2000,
+  trailerCta: 300,
+  serviceName: 80,
+  serviceDescription: 300,
+  question: 80,
+  answer: 1000,
+  pinnedTitle: 120,
+  pinnedWhy: 300,
+  pinnedText: 2200,
+} as const
+
 const pair = <A extends string, B extends string>(a: A, b: B) =>
   z.object({ [a]: z.string(), [b]: z.string() } as Record<A | B, z.ZodString>)
 

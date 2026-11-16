@@ -1,8 +1,10 @@
 import { assertViewer, createHandler } from '@/lib/api/handler'
 import { idempotentJson, requireIdempotencyKey } from '@/lib/api/idempotent-route'
 import { jsonOk } from '@/lib/api/response'
+import { profileBioUpdateSchema } from '@/lib/schemas/profile-kit'
 import { uuidParamSchema } from '@/lib/schemas/workspace'
 import { generateProfileBios } from '@/services/brand-brain/profile-kit'
+import { saveProfileBio } from '@/services/brand-brain/profile-kit-edit'
 import { getBrand } from '@/services/brands'
 
 /** Sinhron poziv Gemini-ja sa rezervnim modelom. */
@@ -37,4 +39,16 @@ export const POST = createHandler(
       headers: { 'idempotent-replayed': String(result.replayed) },
     })
   },
+)
+
+/** Ručna izmena opisa jedne mreže (D-166), u granicama mreže. */
+export const PATCH = createHandler(
+  {
+    auth: 'user',
+    params: uuidParamSchema,
+    body: profileBioUpdateSchema,
+    rateLimit: { name: 'profile-kit-edit', limit: 60, windowSec: 60, by: 'user' },
+  },
+  async ({ viewer, params, body }) =>
+    saveProfileBio(assertViewer(viewer), params.id, body.platform, body.entry),
 )

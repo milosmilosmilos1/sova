@@ -1475,3 +1475,15 @@ Odluka:
 - Sledeće faze: Autopilot (pravi nacrte iz strategije drugim putem, pa ide posebno); (3) izgled: kartica utiska sa zvezdicama, pre i posle jedno do drugog na jednoj slici, kartica člana tima, karusel ankete i kviza, mem bez tuđih šablona; (4) mreže: prave ankete na LinkedIn-u i X-u, na Instagramu i Facebook-u „glasajte u komentarima” jer njihov API nema ankete. Tokovi za ove vrste traže migraciju i pitaće se pre nje.
 
 Razlog: vlasnik je tražio ovih pet vrsta, a ljude iza profila posebno, da se vidi da iza profila nije mreža računara. Izmišljen utisak, osoba ili rad je obmana kupaca; mreže i propisi o zaštiti potrošača zabranjuju lažne recenzije, pa Sova radi samo sa onim što biznis stvarno ima.
+
+## D-166 · 16.11.2026 · usvojeno · Izmena i primena tekstova za profile
+
+Odluka:
+
+- Na kartici „Profili mreža” svaki opis profila (po mreži) i svaka stavka dodataka (table, plejliste, najava kanala, usluge na Google profilu, pitanja za početak razgovora, objave za vrh) ima dugme „Izmeni”. Izmena se čuva u `brands.settings.profileKit`, u granicama mreže: brojač postaje crven i „Sačuvaj” se gasi preko granice, a server isto proverava (`services/brand-brain/profile-kit-edit.ts`). Google ne prima linkove u opisu profila ni u opisu usluge.
+- „Objavi na profilu” upisuje opis direktno na mrežu samo gde mreža to dozvoljava i gde Sova već ima dozvolu: Google poslovni profil (Business Information API, `PATCH locations/{id}?updateMask=profile.description`, uz `business.manage`). Opis ide na svaku povezanu lokaciju brenda, a kartica pamti kad je upisan; izmena opisa posle toga briše tu oznaku. Dok Google ne odobri pristup API-ju poslovnog profila, upis vraća jasnu poruku.
+- Za ostale mreže „Kopiraj i otvori profil” kopira glavni tekst i otvara stranu za izmenu profila na mreži (sa povezanim nalogom gde mreža ima adresu po nalogu; `config/profile-apply.ts`). Instagram, TikTok i Pinterest uopšte ne dozvoljavaju aplikacijama izmenu opisa profila.
+- Direktan upis je moguć kasnije, uz dozvole koje Sova još nema: Facebook stranica (`pages_manage_metadata`, App Review kod Mete), YouTube kanal (opseg `youtube`, provera kod Google-a), LinkedIn stranica firme (Community Management API) i X (`PUT /2/users/me`, kad X bude uključen). Dozvola se ne dodaje u prijavu pre odobrenja, jer bi neodobrena dozvola oborila povezivanje za sve korisnike.
+- Komplet profila se čita polje po polje: neispravno polje ispada samo, a ne ceo komplet, jer sledeći upis piše ono što je pročitano.
+
+Razlog: vlasnik je tražio da se tekstovi za profile mogu menjati i odmah primeniti. Pregled pravila mreža (novembar 2026) pokazao je da samo Google poslovni profil sada može da se menja iz Sove; za ostale je najbrži pošten put kopiranje i otvaranje prave strane za izmenu.

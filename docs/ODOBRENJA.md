@@ -139,6 +139,18 @@ Stanje 13.11.2026. Pravila su čitana sa zvaničnih stranica platformi istog dan
 - **Pinterest:** prvo Trial pristup (sandbox), pa Standard sa snimkom. Pinterest odbija zbog politike koja nije na domenu firme. Pinovi se ne smeju zakazivati na veliko: korisnik bira svaki pin. Podatke ne čuvati, nego čitati uživo.
 - **X:** nema pregleda, ali pay-per-use je po uslovima za mali broj korisnika; za mnogo kupaca treba Enterprise ugovor. Isti tekst ne sme na više X naloga, automatske objave nose oznaku „Automated”, a uvezene objave se brišu u roku od 24 h od zahteva.
 
+### Upis opisa profila iz Sove (D-166)
+
+Sova sada sama upisuje opis samo na Google poslovni profil (`business.manage`, radi kad Google odobri pristup API-ju). Za direktan upis na ostale mreže treba:
+
+- **Facebook stranica:** dozvola `pages_manage_metadata` kroz App Review kod Mete (polja `about` i `description` stranice).
+- **YouTube kanal:** opseg `https://www.googleapis.com/auth/youtube` (ili `youtube.force-ssl`) i provera aplikacije kod Google-a; sada Sova ima samo `youtube.upload` i `youtube.readonly`.
+- **LinkedIn stranica firme:** Community Management API (`rw_organization_admin`), isto odobrenje kao za objave na stranicama firmi.
+- **X:** `PUT /2/users/me` kad X bude uključen.
+- **Instagram, TikTok, Pinterest:** API ne dozvoljava izmenu opisa profila; ostaje „Kopiraj i otvori profil”.
+
+Nijedna od ovih dozvola se ne dodaje u prijavu pre odobrenja: neodobrena dozvola obara povezivanje mreže za sve korisnike.
+
 ## 3. Predlog redosleda
 
 1. **Vlasnik, odmah** (adresa firme i poslovni email su upisani 13.11.):

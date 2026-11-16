@@ -995,7 +995,7 @@
   },
   "profileKit": {
     "title": "Profile descriptions",
-    "subtitle": "Sova writes a profile description for each network from the brand profile, within that network's limits. Copy it and paste it into the profile settings on the network.",
+    "subtitle": "Sova writes a profile description for every network from the brand profile, within that network’s limits. You can edit it. Sova writes it straight to your Google Business Profile; for other networks it copies the text and opens the profile edit page.",
     "generate": "Write descriptions ({tokens, plural, one {# token} other {# tokens}})",
     "regenerate": "Write again ({tokens, plural, one {# token} other {# tokens}})",
     "generating": "Sova is writing…",
@@ -1146,7 +1146,9 @@
         "cta": "Subscribe call",
         "question": "Question",
         "answer": "Answer",
-        "postText": "Post text"
+        "postText": "Post text",
+        "pinnedTitle": "Title",
+        "pinnedWhy": "Why it goes to the top"
       },
       "draft": "Create draft",
       "drafting": "Creating draft…",
@@ -1176,6 +1178,21 @@
       "optionLabel": "Choose logo {n}",
       "noOptions": "No other logo was found on the website. Upload your own.",
       "logoHint": "The logo is also used for posts, as in Visual identity. A PNG with a transparent background works best."
+    },
+    "actions": {
+      "edit": "Edit",
+      "save": "Save",
+      "saving": "Saving…",
+      "cancel": "Cancel",
+      "apply": "Publish to profile",
+      "applying": "Publishing to profile…",
+      "appliedAt": "Published to the profile {when}.",
+      "liveHint": "Sova writes the description straight to the connected profile.",
+      "copyOpen": "Copy and open profile",
+      "manualHint": "This network doesn’t let apps change the profile description: Sova copies the text and opens the edit page, and you paste it and save.",
+      "openedHint": "The text is copied. Paste it on the page that opened and save the change on the network.",
+      "keywordsHint": "Separate with commas.",
+      "overLimit": "The text is longer than the network allows."
     }
   },
   "brandAccount": {

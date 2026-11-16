@@ -3,6 +3,8 @@ import 'server-only'
 import { z } from 'zod'
 
 import { toContentLocale, type ContentLocale } from '@/config/locales'
+import type { SocialPlatform } from '@/config/platforms'
+import { PROFILE_APPLY_LIVE, profileEditUrl } from '@/config/profile-apply'
 import { BANNER_KINDS, BANNER_TEXT_LIMITS, PROFILE_BANNERS, type BannerKind } from '@/config/profile-banners'
 import { AiError, toApiError } from '@/lib/ai/errors'
 import { generateText } from '@/lib/ai/gemini'
@@ -13,6 +15,7 @@ import {
   buildProfileBiosSystemPrompt,
   clipText,
   normalizeProfileBios,
+  PROFILE_PLATFORMS,
   profileBiosJsonSchema,
   profileBiosOutputSchema,
   type ProfileBios,
@@ -66,20 +69,25 @@ import type { Json } from '@/types/database'
  * dok se ne napravi nov; naslovne highlights-a, priče od njihovih kadrova i naslovne slike profila
  * (D-145) crtaju se bez tokena.
  */
+// svako polje se čita za sebe: neispravno polje ispada samo, a ne ceo komplet, jer sledeći upis piše
+// ono što je ovde pročitano
 const storedKitSchema = z.object({
-  bios: profileBiosOutputSchema.optional(),
-  biosAt: z.string().optional(),
-  highlights: highlightsOutputSchema.shape.highlights.optional(),
-  highlightsAt: z.string().optional(),
-  extras: extrasOutputSchema.optional(),
-  extrasAt: z.string().optional(),
+  bios: profileBiosOutputSchema.optional().catch(undefined),
+  biosAt: z.string().optional().catch(undefined),
+  highlights: highlightsOutputSchema.shape.highlights.optional().catch(undefined),
+  highlightsAt: z.string().optional().catch(undefined),
+  extras: extrasOutputSchema.optional().catch(undefined),
+  extrasAt: z.string().optional().catch(undefined),
   /** boja za naslovne highlights-a, profilnu i naslovne slike (D-148); bez nje prva boja sa sajta */
   color: z
     .string()
     .regex(/^#[0-9A-F]{6}$/)
-    .optional(),
+    .optional()
+    .catch(undefined),
+  /** kad je opis upisan na profil po mreži (D-166) */
+  applied: z.record(z.string(), z.string()).optional().catch(undefined),
 })
-type StoredKit = z.infer<typeof storedKitSchema>
+export type StoredKit = z.infer<typeof storedKitSchema>
 
 export interface ProfileKitView {
   website: string | null
@@ -100,6 +108,10 @@ export interface ProfileKitView {
   designKey: string
   /** boja i logo za naslovne highlights-a, profilnu i naslovne slike (D-148) */
   look: ProfileLook
+  /** primena opisa (D-166): kad je opis upisan na profil, strana za izmenu na mreži, gde Sova upisuje sama */
+  applied: Partial<Record<SocialPlatform, string>>
+  editLinks: Record<SocialPlatform, string>
+  live: SocialPlatform[]
   canEdit: boolean
 }
 
@@ -125,10 +137,28 @@ export interface BannerText {
   footer: string
 }
 
-function storedKit(settings: unknown): StoredKit {
+export function storedKit(settings: unknown): StoredKit {
   const raw = (settings as { profileKit?: unknown } | null)?.profileKit
-  const parsed = storedKitSchema.safeParse(raw ?? {})
+  const parsed = storedKitSchema.safeParse(raw && typeof raw === 'object' ? raw : {})
   return parsed.success ? parsed.data : {}
+}
+
+/** Upis kompleta iz svežih podešavanja: menja se samo `profileKit`, ostali ključevi ostaju. */
+export async function updateStoredKit(brandId: string, change: (kit: StoredKit) => StoredKit): Promise<void> {
+  const admin = createSupabaseAdminClient()
+  const { data: fresh, error: readError } = await admin
+    .from('brands')
+    .select('settings')
+    .eq('id', brandId)
+    .single()
+  if (readError) throw mapDbError(readError)
+  const settings = (fresh?.settings as Record<string, Json> | null) ?? {}
+  const kit = change({ ...storedKit(settings) })
+  const { error } = await admin
+    .from('brands')
+    .update({ settings: { ...settings, profileKit: kit as unknown as Json } })
+    .eq('id', brandId)
+  if (error) throw mapDbError(error)
 }
 
 export async function getProfileKit(viewer: Viewer, brandId: string): Promise<ProfileKitView> {
@@ -142,6 +172,7 @@ export async function getProfileKit(viewer: Viewer, brandId: string): Promise<Pr
     listSocialAccounts(viewer, brand.id),
   ])
   const kit = storedKit(brand.settings)
+  const active = accounts.accounts.filter((a) => a.status === 'active')
   const design = await resolveDesign(brand)
   const profile = row ? brandProfileSchema.safeParse(row.data) : null
   const banners = await bannerDefaults(brand, design, profile?.success ? profile.data : null, kit)
@@ -173,6 +204,17 @@ export async function getProfileKit(viewer: Viewer, brandId: string): Promise<Pr
       logoSource: design.logoSource,
       hasWebsite: Boolean(brand.website_url),
     },
+    applied: (kit.applied ?? {}) as Partial<Record<SocialPlatform, string>>,
+    editLinks: Object.fromEntries(
+      PROFILE_PLATFORMS.map((p) => [
+        p,
+        profileEditUrl(
+          p,
+          active.find((a) => a.platform === p),
+        ),
+      ]),
+    ) as Record<SocialPlatform, string>,
+    live: PROFILE_APPLY_LIVE.filter((p) => active.some((a) => a.platform === p)),
     canEdit: EDIT_ROLES.includes(membership.role),
   }
 }

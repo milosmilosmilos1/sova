@@ -995,7 +995,7 @@
   },
   "profileKit": {
     "title": "Opisi profila",
-    "subtitle": "Sova piše opis profila za svaku mrežu iz profila brenda, u granicama te mreže. Kopirajte ga i nalepite u podešavanja profila na mreži.",
+    "subtitle": "Sova piše opis profila za svaku mrežu iz profila brenda, u granicama te mreže. Opis možete da izmenite. Na Google poslovni profil Sova ga upisuje sama, a za ostale mreže kopira tekst i otvara stranu za izmenu profila.",
     "generate": "Napravi opise ({tokens, plural, one {# token} few {# tokena} other {# tokena}})",
     "regenerate": "Napravi ponovo ({tokens, plural, one {# token} few {# tokena} other {# tokena}})",
     "generating": "Sova piše opise…",
@@ -1146,7 +1146,9 @@
         "cta": "Poziv na pretplatu",
         "question": "Pitanje",
         "answer": "Odgovor",
-        "postText": "Tekst objave"
+        "postText": "Tekst objave",
+        "pinnedTitle": "Naslov",
+        "pinnedWhy": "Zašto ide na vrh"
       },
       "draft": "Napravi nacrt",
       "drafting": "Pravim nacrt…",
@@ -1176,6 +1178,21 @@
       "optionLabel": "Izaberi logo {n}",
       "noOptions": "Na sajtu nije nađen drugi logo. Otpremite svoj.",
       "logoHint": "Logo važi i za objave, kao u Vizuelnom identitetu. Najbolje je PNG sa providnom pozadinom."
+    },
+    "actions": {
+      "edit": "Izmeni",
+      "save": "Sačuvaj",
+      "saving": "Čuvam…",
+      "cancel": "Otkaži",
+      "apply": "Objavi na profilu",
+      "applying": "Upisujem na profil…",
+      "appliedAt": "Upisano na profil {when}.",
+      "liveHint": "Sova upisuje opis direktno na povezan profil.",
+      "copyOpen": "Kopiraj i otvori profil",
+      "manualHint": "Ova mreža ne dozvoljava aplikacijama da menjaju opis profila: Sova kopira tekst i otvara stranu za izmenu, a vi ga nalepite i sačuvate.",
+      "openedHint": "Tekst je kopiran. Nalepite ga na strani koja se otvorila i sačuvajte izmenu na mreži.",
+      "keywordsHint": "Odvojite zarezom.",
+      "overLimit": "Tekst je duži od granice mreže."
     }
   },
   "brandAccount": {

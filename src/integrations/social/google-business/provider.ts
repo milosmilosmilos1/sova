@@ -109,6 +109,18 @@ export class GoogleBusinessProvider implements SocialProvider {
     return googleAuthUrl([GBP_SCOPE], ctx)
   }
 
+  /**
+   * Opis lokacije na Google profilu (D-166): Business Information API, `profile.description`.
+   * Menja se samo to polje (`updateMask`); Google ne prima linkove u opisu.
+   */
+  async updateDescription(account: AccountRef, accessToken: string, description: string): Promise<void> {
+    await this.client(accessToken).request(
+      'PATCH',
+      `${INFO_API}/locations/${encodeURIComponent(account.externalId)}?updateMask=profile.description`,
+      { json: { profile: { description } } },
+    )
+  }
+
   exchangeCode(code: string, ctx: { redirectUri: string }) {
     return googleExchangeCode(code, ctx.redirectUri, this.fetchImpl)
   }
