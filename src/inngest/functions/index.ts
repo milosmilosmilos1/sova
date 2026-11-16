@@ -9,6 +9,7 @@ import { brandDocumentIndex } from './brand-document-index'
 import { brandSiteCheck } from './brand-site-check'
 import { canvaExportVideo } from './canva-export-video'
 import { designHarmonize } from './design-harmonize'
+import { designPhotosRefresh } from './design-photos-refresh'
 import { flowRun, flowsTick } from './flows'
 import { inboxSync } from './inbox-sync'
 import { mediaCleanupDaily, mediaCleanupNow } from './media-cleanup'
@@ -50,6 +51,7 @@ export const functions = [
   monthPlanCreate,
   monthPlanGenerate,
   designHarmonize,
+  designPhotosRefresh,
   mediaIncomingCleanup,
   mediaCleanupDaily,
   mediaCleanupNow,

@@ -97,6 +97,11 @@ export const events = {
     schema: z.object({ brandId: uuid }),
   }),
 
+  // nove fotografije za nacrte koji čekaju (D-170): brendovi redom, posao sam šalje sledeći
+  designPhotosRefresh: eventType('design/drafts.photos-refresh', {
+    schema: z.object({ brandIds: z.array(uuid).min(1).max(50) }),
+  }),
+
   // čišćenje skladišta (D-168): jednokratno, iz admin panela
   mediaCleanupRequested: eventType('media/cleanup.requested', {
     schema: z.object({ requestedBy: uuid.nullable() }),

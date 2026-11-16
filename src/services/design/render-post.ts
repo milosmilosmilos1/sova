@@ -279,6 +279,21 @@ function photoFrames(
   return frames
 }
 
+/** Koji slajdovi traže fotografiju i koliko ih objava dobija: naslovni stil jednu, ostali po slajdu (do 10). */
+function photoPlan(input: DesignRenderInput) {
+  const style = getStyle(input.styleId)
+  const template = activeTemplate(input)
+  const needs = photoNeeds(input, style, template)
+  const needed = needs.filter(Boolean).length
+  const count = needed === 0 ? 0 : !template && style.photo === 'cover' ? 1 : Math.min(needed, 10)
+  return { template, needs, count }
+}
+
+/** Koliko fotografija objava traži u svom stilu (ili Figma šablonu); 0 kad nijedan slajd nema fotografiju. */
+export function designPhotoCount(input: DesignRenderInput): number {
+  return photoPlan(input).count
+}
+
 /**
  * Fotografije za slajdove: date iz biblioteke ili izabrane po izvoru. Svaki slajd sa fotografijom
  * dobija drugu (D-121); naslovni stil traži samo jednu. Fotografija se bira u obliku svog okvira
@@ -286,11 +301,7 @@ function photoFrames(
  * samo kad glavni predmet staje ceo. Greška izvora ne obara objavu.
  */
 export async function pickDesignPhotos(input: DesignRenderInput): Promise<PickedDesignPhotos> {
-  const style = getStyle(input.styleId)
-  const template = activeTemplate(input)
-  const needs = photoNeeds(input, style, template)
-  const needed = needs.filter(Boolean).length
-  const count = needed === 0 ? 0 : !template && style.photo === 'cover' ? 1 : Math.min(needed, 10)
+  const { template, needs, count } = photoPlan(input)
   const frames = count > 0 ? photoFrames(input, needs, template, count) : []
   const notes: string[] = []
   let photos: MediaAssetRow[] = []

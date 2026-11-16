@@ -59,6 +59,7 @@ npm run test:e2e        # Playwright (13, od toga 3 axe provere pristupačnosti)
 npm run test:live       # pravi Gemini i pravi sajt nad lokalnim Supabase-om (oko 0,2 USD); samo ručno, nikad u CI-ju
 npx tsx scripts/crawl-smoke.ts https://tangerineseo.rs 25   # živi crawler bez baze i AI-ja
 npx tsx --env-file=.env.local --conditions=react-server scripts/ai-smoke.ts [--image putanja.jpg]   # pravi Gemini: tekst, embedding, slika (par centi)
+npx tsx --env-file=.env.netlify.local scripts/refresh-draft-photos.ts --brend <id>[,<id>...] [--posalji]   # nove fotografije za nacrte koji čekaju (D-170); bez --posalji samo ispis, posao radi na serveru
 npm run build           # produkcijski build
 ```
 

@@ -17,7 +17,7 @@ import type { Json } from '@/types/database'
 import { resolveDesign, type ResolvedDesign } from './brand-design'
 import { photoQueryOf, resolvePhotoQuery } from './photo-query'
 import { parsePostDesign, themeOf, type PostDesignContext } from './post-design'
-import { renderDesignInSteps, type DesignRenderInput } from './render-post'
+import { designPhotoCount, renderDesignInSteps, type DesignRenderInput } from './render-post'
 import { buildThemeVideoInSteps, type ThemeVideo } from './video-post'
 
 /**
@@ -145,9 +145,17 @@ interface HarmonizeWork {
   version: number
   design: PostDesignContext
   render: DesignRenderInput
+  /** koliko fotografija nacrt ima pre ponovnog crtanja */
+  photos: number
 }
 
-async function prepare(postId: string): Promise<HarmonizeWork | null> {
+/**
+ * `theme`: nacrt van teme se crta u temi sa istim fotografijama. `photos` (D-170): nacrt se crta
+ * ponovo i kad je u temi, a fotografije se biraju iznova; video i fotografije korisnika se ne diraju.
+ */
+type RedrawMode = 'theme' | 'photos'
+
+async function prepare(postId: string, mode: RedrawMode = 'theme'): Promise<HarmonizeWork | null> {
   const admin = createSupabaseAdminClient()
   const { data: post } = await admin.from('posts').select('*').eq('id', postId).maybeSingle()
   if (!post || post.deleted_at || !(PENDING as readonly string[]).includes(post.status)) return null
@@ -156,18 +164,24 @@ async function prepare(postId: string): Promise<HarmonizeWork | null> {
   const { data: brand } = await admin.from('brands').select('*').eq('id', post.brand_id).single()
   if (!brand) return null
   const theme = await resolveDesign(brand)
-  if (inTheme(design, theme, { createdAt: post.created_at, logoSince: await logoSince(theme.logoAssetId) }))
+  const fresh = mode === 'photos'
+  if (fresh) {
+    if (design.format === 'video' || design.ownPhotos || theme.photoSource === 'none') return null
+  } else if (
+    inTheme(design, theme, { createdAt: post.created_at, logoSince: await logoSince(theme.logoAssetId) })
+  )
     return null
   // nove fotografije se traže engleskim upitom, ne temom na srpskom (D-167); objava koja ga nema
   // dobija ga od modela jednom, samo kad joj fotografije mogu zatrebati, i čuva ga
   const mayTopUp =
     theme.photoSource !== 'none' &&
     !design.ownPhotos &&
-    design.copy.photoAssetIds.length < design.copy.slides.length
+    (fresh || design.copy.photoAssetIds.length < design.copy.slides.length)
   const query = mayTopUp ? await resolvePhotoQuery(design) : photoQueryOf(design)
   const learned = mayTopUp && !design.photoQuery && query !== design.topic.slice(0, 100)
   return {
     version: post.version,
+    photos: design.copy.photoAssetIds.length,
     design: learned ? { ...design, photoQuery: query } : design,
     render: {
       workspaceId: brand.workspace_id,
@@ -180,12 +194,12 @@ async function prepare(postId: string): Promise<HarmonizeWork | null> {
       query,
       uploadedBy: null,
       topic: [design.topic, ...design.copy.slides.map((s) => s.title)].join(' '),
-      photoAssetIds: design.copy.photoAssetIds.length ? design.copy.photoAssetIds : undefined,
+      photoAssetIds: !fresh && design.copy.photoAssetIds.length ? design.copy.photoAssetIds : undefined,
       // fotografije koje je dao korisnik idu ukrug kao do sada; izabrane automatski se dopunjuju
       cyclePhotos: Boolean(design.ownPhotos),
       topUpPhotos: !design.ownPhotos,
       variant: design.variant,
-      origin: { postId, harmonized: 'theme' },
+      origin: { postId, harmonized: mode },
     },
   }
 }
@@ -237,6 +251,7 @@ async function save(
   postId: string,
   work: HarmonizeWork,
   rendered: { assetIds: string[]; photoIds: string[] },
+  summary = 'Usklađeno sa temom brenda',
 ): Promise<'done' | 'skipped'> {
   const admin = createSupabaseAdminClient()
   const { data: post } = await admin.from('posts').select('version, status').eq('id', postId).maybeSingle()
@@ -277,7 +292,7 @@ async function save(
     })),
   )
   if (error) throw new Error(error.message)
-  await snapshotVersion(postId, work.version + 1, 'Usklađeno sa temom brenda', null)
+  await snapshotVersion(postId, work.version + 1, summary, null)
   return 'done'
 }
 
@@ -311,4 +326,134 @@ export async function harmonizePost(
   const result = await step('save', () => save(postId, work, rendered))
   if (result === 'skipped') logger.info('harmonize_post_skipped', { postId })
   return result
+}
+
+/** Oznaka verzije nacrta koji je dobio nove fotografije (D-170). */
+export const PHOTO_REFRESH_SUMMARY = 'Nove fotografije po obliku okvira'
+
+/** `fewer`: nov izbor ima manje fotografija od starog, pa nacrt ostaje kakav je bio. */
+export type PhotoRefresh = 'done' | 'skipped' | 'fewer'
+
+/**
+ * Nove fotografije za nacrt koji čeka (D-170), za nacrte napravljene pre provere predmeta i oblika:
+ * isti tekst, a fotografije se biraju iznova po obliku okvira na slajdu, u trenutnoj temi brenda.
+ * Nacrt dobija nove slajdove samo kad nov izbor ima bar onoliko fotografija koliko stari (koliko stil
+ * traži); inače ostaje kakav je, a nacrtani slajdovi pokušaja se brišu. Video i nacrti sa
+ * fotografijama koje je dao korisnik se ne diraju.
+ */
+export async function refreshPostPhotos(
+  postId: string,
+  step: StepRunner = (_name, fn) => fn(),
+): Promise<PhotoRefresh> {
+  const work = await step('prepare', () => prepare(postId, 'photos'))
+  if (!work) return 'skipped'
+  const count = designPhotoCount(work.render)
+  if (count === 0) return 'skipped'
+  const rendered = await renderDesignInSteps(step, work.render)
+  if (rendered.photoIds.length < Math.max(1, Math.min(work.photos, count))) {
+    await step('discard', async () => {
+      await createSupabaseAdminClient()
+        .from('media_assets')
+        .update({ deleted_at: new Date().toISOString() })
+        .in('id', rendered.assetIds)
+    })
+    logger.info('photo_refresh_fewer', { postId, before: work.photos, after: rendered.photoIds.length })
+    return 'fewer'
+  }
+  const result = await step('save', () => save(postId, work, rendered, PHOTO_REFRESH_SUMMARY))
+  if (result === 'skipped') logger.info('photo_refresh_skipped', { postId })
+  return result
+}
+
+/** Koraci pozadinskog posla: korak sa imenom i pauza (u testovima odmah). */
+export interface PhotoRefreshSteps {
+  run: StepRunner
+  sleep: (name: string, ms: number) => Promise<void>
+}
+
+/**
+ * Pauza između nacrta i čekanje kad izvori potroše limit sata: Unsplash demo prima 50 zahteva na
+ * sat, Pexels 200, a dele ih svi brendovi platforme.
+ */
+export const PHOTO_REFRESH_PAUSE_MS = 20_000
+export const PHOTO_REFRESH_LIMIT_WAIT_MS = 60 * 60_000
+const FEWER_IN_ROW = 3
+
+export type PhotoRefreshCounts = Record<PhotoRefresh | 'failed', number> & { total: number }
+
+/**
+ * Nove fotografije za sve nacrte brenda koji ih mogu dobiti (D-170), jedan po jedan, sa pauzom. Kad
+ * tri nacrta zaredom ne dobiju dovoljno fotografija, izvori su potrošili limit sata: posao čeka sat
+ * pa nastavlja, a preskočeni nacrti ostaju za sledeće pokretanje. Nacrt koji padne ne zaustavlja ostale.
+ */
+export async function refreshBrandPhotos(
+  brandId: string,
+  steps: PhotoRefreshSteps,
+): Promise<PhotoRefreshCounts> {
+  const ids = await steps.run('list', () => photoRefreshDraftIds(brandId))
+  const counts: PhotoRefreshCounts = { total: ids.length, done: 0, skipped: 0, fewer: 0, failed: 0 }
+  let fewerInRow = 0
+  for (const [i, id] of ids.entries()) {
+    const run = ((name, fn) => steps.run(`post-${id}-${name}`, fn)) as StepRunner
+    let result: PhotoRefresh | 'failed'
+    try {
+      result = await refreshPostPhotos(id, run)
+    } catch (error) {
+      result = 'failed'
+      logger.warn('photo_refresh_failed', { postId: id, error })
+    }
+    counts[result]++
+    fewerInRow = result === 'fewer' ? fewerInRow + 1 : 0
+    if (i === ids.length - 1) break
+    if (fewerInRow >= FEWER_IN_ROW) {
+      await steps.sleep(`limit-${id}`, PHOTO_REFRESH_LIMIT_WAIT_MS)
+      fewerInRow = 0
+    } else await steps.sleep(`pause-${id}`, PHOTO_REFRESH_PAUSE_MS)
+  }
+  logger.info('photo_refresh_brand', { brandId, ...counts })
+  return counts
+}
+
+/**
+ * Nacrti brenda koji mogu da dobiju nove fotografije (D-170): čekaju, imaju tekst slajdova, nisu
+ * video, fotografije nije dao korisnik, a bar jedna fotografija je izabrana pre provere oblika (nema
+ * zapamćen okvir predmeta) ili ih nema nijedne.
+ */
+export async function photoRefreshDraftIds(brandId: string): Promise<string[]> {
+  const admin = createSupabaseAdminClient()
+  const { data: brand } = await admin.from('brands').select('*').eq('id', brandId).maybeSingle()
+  if (!brand || (await resolveDesign(brand)).photoSource === 'none') return []
+  const { data } = await admin
+    .from('posts')
+    .select('id, design')
+    .eq('brand_id', brandId)
+    .is('deleted_at', null)
+    .in('status', [...PENDING])
+    .not('design', 'is', null)
+    .order('created_at')
+    .limit(500)
+  const drafts = (data ?? [])
+    .map((p) => ({ id: p.id, design: parsePostDesign(p.design) }))
+    .filter(
+      (p): p is { id: string; design: PostDesignContext } =>
+        Boolean(p.design?.copy?.slides.length) && p.design!.format !== 'video' && !p.design!.ownPhotos,
+    )
+  const ids = [...new Set(drafts.flatMap((p) => p.design.copy!.photoAssetIds))]
+  const shaped = new Set<string>()
+  for (let i = 0; i < ids.length; i += 100) {
+    const { data: rows } = await admin
+      .from('media_assets')
+      .select('id, source_data')
+      .in('id', ids.slice(i, i + 100))
+    for (const row of rows ?? []) {
+      const data = row.source_data as { subject?: unknown } | null
+      if (data && typeof data === 'object' && data.subject) shaped.add(row.id)
+    }
+  }
+  return drafts
+    .filter((p) => {
+      const photos = p.design.copy!.photoAssetIds
+      return !photos.length || photos.some((id) => !shaped.has(id))
+    })
+    .map((p) => p.id)
 }

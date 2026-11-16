@@ -1528,3 +1528,14 @@ Odluka:
 - Starije fotografije (kvadrat iz D-167) crtaju se kao i do sada, uz centriranje po sačuvanoj tački.
 
 Razlog: vlasnik je na Šapinoj objavi video psa bez glave u širokoj traci stila „aurora”: fotografija je birana kao kvadratna i isečena po sredini, a traka 936×405 vidi samo trećinu kvadrata. Živa proba (16.11.): za traku 2,3:1 od osam vodoravnih fotografija psa sedam je odbijeno jer pas ne staje ceo, a izabrana pokazuje psa sa celom glavom.
+
+## D-170 · 16.11.2026 · usvojeno · Nove fotografije za nacrte koji čekaju
+
+Nacrti napravljeni pre provere predmeta (D-167) i oblika fotografije (D-169) imaju fotografije birane bez tih provera. Na vlasnikovo „da” oni dobijaju nove fotografije, a tekst ostaje isti.
+
+- Pozadinski posao `design-photos-refresh` (događaj `design/drafts.photos-refresh` sa spiskom brendova) radi brend po brend, nacrt po nacrt, i na kraju sam šalje ostale brendove. Uspavan posao ne drži mesto u ograničenju istovremenih koraka, pa bi brendovi poslati odjednom radili ispreplitano i zajedno trošili limit izvora fotografija.
+- Nacrt dobija nove fotografije kad čeka (nacrt, odobravanje, odbijen), ima tekst slajdova, nije video, fotografije nije dao korisnik, a bar jedna njegova fotografija nema zapamćen okvir predmeta (ili nema nijednu). Crta se u trenutnoj temi brenda kao pri usklađivanju (D-125) i dobija novu verziju „Nove fotografije po obliku okvira”; slajdovi nose `source_data.harmonized = 'photos'`.
+- Nov izbor mora imati bar onoliko fotografija koliko ih je nacrt imao (a koliko stil traži); inače nacrt ostaje kakav je, a nacrtani slajdovi pokušaja se brišu. Između nacrta je pauza 20 s, a posle tri nacrta zaredom bez dovoljno fotografija posao čeka sat: Unsplash demo prima 50 zahteva na sat, Pexels 200, zajedno za celu platformu. Preskočeni nacrti ostaju za sledeće slanje.
+- Posao se pokreće skriptom `scripts/refresh-draft-photos.ts` sa ključem događaja iz env fajla. Radi na serveru jer je ključ produkcijske baze samo u Netlify-ju. Nema dugmeta u aplikaciji: masovna zamena bi trošila zajednički limit izvora za sve korisnike. Stare fotografije i slajdovi zamenjenih nacrta postaju stare verzije koje briše čišćenje (D-168).
+
+Razlog: posle D-169 vlasnikov nacrt sa psom bez glave ostao je isti, jer nova pravila važe samo za nove objave. Ponuda da nacrti koji čekaju dobiju nove fotografije prihvaćena je 16.11.2026.

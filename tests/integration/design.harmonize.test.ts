@@ -13,7 +13,16 @@ import { resetMemoryRateLimit } from '@/lib/ratelimit'
 import { configureFontLoader } from '@/lib/visuals/fonts'
 import type { StepRunner } from '@/services/autopilot/runner'
 import { resolveDesign } from '@/services/design/brand-design'
-import { harmonizePost, offThemeDraftIds } from '@/services/design/harmonize'
+import {
+  harmonizePost,
+  offThemeDraftIds,
+  PHOTO_REFRESH_LIMIT_WAIT_MS,
+  PHOTO_REFRESH_PAUSE_MS,
+  PHOTO_REFRESH_SUMMARY,
+  photoRefreshDraftIds,
+  refreshBrandPhotos,
+  refreshPostPhotos,
+} from '@/services/design/harmonize'
 import { renderDesignSlides } from '@/services/design/render-post'
 import { storeServerImage } from '@/services/visuals/store'
 import type { Json } from '@/types/database'
@@ -54,19 +63,21 @@ async function draft(
   status: 'in_review' | 'draft' | 'scheduled',
   look: 'vivid' | 'theme',
   withCopy = true,
+  photoSource: 'stock' | 'none' = 'stock',
+  target: { ws: string; brand: string } = { ws: wsId, brand: brandId },
 ): Promise<{ id: string; photoIds: string[] }> {
-  const { data: brand } = await admin.from('brands').select('*').eq('id', brandId).single()
+  const { data: brand } = await admin.from('brands').select('*').eq('id', target.brand).single()
   const theme = await resolveDesign(brand!)
   const styleId = look === 'vivid' ? 'pop' : theme.styleId
   const colors = look === 'vivid' ? VIVID : theme.colors
   const rendered = await renderDesignSlides({
-    workspaceId: wsId,
-    brandId,
+    workspaceId: target.ws,
+    brandId: target.brand,
     design: theme,
     styleId,
     format: 'portrait',
     slides,
-    photoSource: 'stock',
+    photoSource,
     colors,
     query: 'night club',
     uploadedBy: null,
@@ -74,8 +85,8 @@ async function draft(
   const { data: post, error } = await admin
     .from('posts')
     .insert({
-      brand_id: brandId,
-      workspace_id: wsId,
+      brand_id: target.brand,
+      workspace_id: target.ws,
       title: 'Noć u Beogradu',
       master_text: 'Vikend je blizu.',
       status,
@@ -111,18 +122,15 @@ async function draft(
   return { id: post.id, photoIds: rendered.photoIds }
 }
 
-beforeAll(async () => {
-  geminiServer.listen({ onUnhandledFrame: 'bypass' })
-  geminiServer.use(...unsplashHandlers, ...pexelsHandlers)
-  configureFontLoader({ remote: false })
-  user = await createTestUser('harmonize')
+/** Nov radni prostor sa brendom u temi: Pola-pola u tamnim bojama, font Lora. */
+const workspaces: string[] = []
+async function themedBrand(name: string): Promise<{ ws: string; brand: string }> {
   const ws = await call<{ workspaceId: string; brandId: string }>(workspacesPost, '/api/workspaces', {
     token: user.token,
-    body: { name: 'Jedna tema', type: 'business' },
+    body: { name, type: 'business' },
   })
-  wsId = ws.json.data!.workspaceId
-  brandId = ws.json.data!.brandId
-  // tema brenda: Pola-pola u tamnim bojama, font Lora
+  const target = { ws: ws.json.data!.workspaceId, brand: ws.json.data!.brandId }
+  workspaces.push(target.ws)
   await admin
     .from('brands')
     .update({
@@ -140,14 +148,25 @@ beforeAll(async () => {
         fonts: { headings: 'Lora', body: 'Lora' },
       },
     })
-    .eq('id', brandId)
+    .eq('id', target.brand)
+  return target
+}
+
+beforeAll(async () => {
+  geminiServer.listen({ onUnhandledFrame: 'bypass' })
+  geminiServer.use(...unsplashHandlers, ...pexelsHandlers)
+  configureFontLoader({ remote: false })
+  user = await createTestUser('harmonize')
+  const target = await themedBrand('Jedna tema')
+  wsId = target.ws
+  brandId = target.brand
 })
 
 afterEach(() => resetMemoryRateLimit())
 
 afterAll(async () => {
   geminiServer.close()
-  await admin.from('workspaces').delete().eq('id', wsId)
+  for (const id of workspaces) await admin.from('workspaces').delete().eq('id', id)
   await deleteTestUser(user)
 })
 
@@ -325,5 +344,166 @@ describe('jedna tema za sve objave (D-125)', () => {
     const design = after!.design as { photoQuery?: string; copy: { photoAssetIds: string[] } }
     expect(design.photoQuery).toBe(english)
     expect(design.copy.photoAssetIds).toHaveLength(slides.length)
+  })
+})
+
+/** Fotografije izabrane pre provere oblika (D-169) nemaju zapamćen okvir predmeta. */
+async function forgetSubjects(ids: string[]): Promise<void> {
+  const { data } = await admin.from('media_assets').select('id, source_data').in('id', ids)
+  for (const row of data ?? []) {
+    const { subject: _subject, ...rest } = (row.source_data ?? {}) as Record<string, unknown>
+    await admin
+      .from('media_assets')
+      .update({ source_data: rest as Json })
+      .eq('id', row.id)
+  }
+}
+
+async function patchDesign(id: string, patch: Record<string, unknown>): Promise<void> {
+  const { data } = await admin.from('posts').select('design').eq('id', id).single()
+  await admin
+    .from('posts')
+    .update({ design: { ...(data!.design as Record<string, unknown>), ...patch } as Json })
+    .eq('id', id)
+}
+
+describe('nove fotografije za nacrte koji čekaju (D-170)', () => {
+  // nacrt sa fotografijama izabranim pre provere oblika
+  let oldId = ''
+
+  it('nudi samo nacrte sa fotografijama izabranim pre provere oblika; video i korisnikove ne', async () => {
+    // lažnih fotografija ima 15, a izbor ne ponavlja one koje brend već ima (D-121)
+    await admin.from('media_assets').delete().eq('brand_id', brandId).in('source', ['unsplash', 'pexels'])
+    resetGeminiMock()
+    resetVisualsState()
+    const old = await draft('in_review', 'theme')
+    await forgetSubjects(old.photoIds)
+    oldId = old.id
+    const shaped = await draft('in_review', 'theme')
+    // ostali nacrti bez svog izbora, sa starim fotografijama prvog
+    const withOld = async (status: 'in_review' | 'draft' | 'scheduled', patch: Record<string, unknown>) => {
+      const { id } = await draft(status, 'theme', true, 'none')
+      await patchDesign(id, { copy: { slides, photoAssetIds: old.photoIds }, ...patch })
+      return id
+    }
+    const own = await withOld('in_review', { ownPhotos: true })
+    const video = await withOld('in_review', { format: 'video' })
+    const scheduled = await withOld('scheduled', {})
+    const bare = await draft('draft', 'theme', true, 'none')
+
+    const ids = await photoRefreshDraftIds(brandId)
+    expect(ids).toContain(old.id)
+    expect(ids).toContain(bare.id)
+    for (const skip of [shaped.id, own, video, scheduled]) expect(ids).not.toContain(skip)
+    expect(await refreshPostPhotos(own)).toBe('skipped')
+    expect(await refreshPostPhotos(video)).toBe('skipped')
+    expect(await refreshPostPhotos(scheduled)).toBe('skipped')
+  })
+
+  it('isti tekst, nove fotografije u obliku okvira, novi slajdovi i nova verzija', async () => {
+    const id = oldId
+    const { data: before } = await admin
+      .from('posts')
+      .select('version, status, design, post_media(media_asset_id)')
+      .eq('id', id!)
+      .single()
+    const oldDesign = before!.design as { copy: { slides: unknown[]; photoAssetIds: string[] } }
+    const oldMedia = (before!.post_media as Array<{ media_asset_id: string }>).map((m) => m.media_asset_id)
+    resetVisualsState()
+    // nacrt nema sačuvan upit: model ga piše jednom, a nacrt ga pamti (D-167)
+    const query = `cocktail bar neon sign ${crypto.randomUUID().slice(0, 8)}`
+    enqueuePhotoQueries(query)
+    expect(await refreshPostPhotos(id!)).toBe('done')
+
+    const { data: after } = await admin
+      .from('posts')
+      .select('version, status, design, post_media(sort_order, media_asset_id)')
+      .eq('id', id!)
+      .single()
+    expect(after!.version).toBe(before!.version + 1)
+    expect(after!.status).toBe(before!.status)
+    const design = after!.design as { copy: { slides: unknown[]; photoAssetIds: string[] } }
+    expect(design.copy.slides).toEqual(oldDesign.copy.slides)
+    // Pola-pola traži fotografiju na svakom slajdu: sve su nove, nijedna od ranijih
+    expect(design.copy.photoAssetIds).toHaveLength(slides.length)
+    expect(design.copy.photoAssetIds.some((p) => oldDesign.copy.photoAssetIds.includes(p))).toBe(false)
+    // pretraga u obliku okvira, a izabrane pamte okvir predmeta
+    expect((after!.design as { photoQuery?: string }).photoQuery).toBe(query)
+    expect(visualsState.unsplashQueries.every((q) => q === query)).toBe(true)
+    expect(visualsState.unsplashOrientations.length).toBeGreaterThan(0)
+    expect(visualsState.unsplashOrientations.every((o) => o !== '')).toBe(true)
+    const { data: photos } = await admin
+      .from('media_assets')
+      .select('source_data')
+      .in('id', design.copy.photoAssetIds)
+    expect(photos!.every((p) => (p.source_data as { subject?: unknown }).subject)).toBe(true)
+    const media = after!.post_media as Array<{ sort_order: number; media_asset_id: string }>
+    expect(media).toHaveLength(slides.length)
+    expect(media.some((m) => oldMedia.includes(m.media_asset_id))).toBe(false)
+    const { data: version } = await admin
+      .from('post_versions')
+      .select('change_summary')
+      .eq('post_id', id!)
+      .eq('version', after!.version)
+      .single()
+    expect(version!.change_summary).toBe(PHOTO_REFRESH_SUMMARY)
+    expect(await photoRefreshDraftIds(brandId)).not.toContain(id)
+  })
+
+  it('kad nov izbor nađe manje fotografija, nacrt ostaje kakav je bio', async () => {
+    const { id, photoIds } = await draft('in_review', 'theme')
+    await forgetSubjects(photoIds)
+    // ni Unsplash ni Pexels nemaju ništa za ovaj upit
+    await patchDesign(id, { photoQuery: 'nista' })
+    resetVisualsState()
+    visualsState.pexelsEmpty = true
+    const { data: before } = await admin.from('posts').select('version, design').eq('id', id).single()
+    expect(await refreshPostPhotos(id)).toBe('fewer')
+
+    const { data: after } = await admin.from('posts').select('version, design').eq('id', id).single()
+    expect(after!.version).toBe(before!.version)
+    expect(after!.design).toEqual(before!.design)
+    // nacrtani slajdovi pokušaja ne ostaju u biblioteci
+    const { data: leftovers } = await admin
+      .from('media_assets')
+      .select('deleted_at')
+      .eq('source_data->>postId', id)
+      .eq('source_data->>harmonized', 'photos')
+    expect(leftovers!.length).toBeGreaterThan(0)
+    expect(leftovers!.every((a) => a.deleted_at)).toBe(true)
+  })
+
+  it('brend: nacrt po nacrt sa pauzom; posle tri bez dovoljno fotografija čeka sat pa nastavlja', async () => {
+    const target = await themedBrand('Nove fotografije')
+    const made: string[] = []
+    for (let i = 0; i < 4; i++) made.push((await draft('in_review', 'theme', true, 'none', target)).id)
+    // prva tri ne nalaze ništa ni na Unsplash-u ni na Pexels-u (limit sata), četvrti nalazi
+    for (const id of made.slice(0, 3)) await patchDesign(id, { photoQuery: 'nista' })
+    await patchDesign(made[3]!, { photoQuery: `rooftop terrace sunset ${crypto.randomUUID().slice(0, 8)}` })
+    resetVisualsState()
+    visualsState.pexelsEmpty = true
+    const names: string[] = []
+    const sleeps: Array<[string, number]> = []
+    const counts = await refreshBrandPhotos(target.brand, {
+      run: (async (name: string, fn: () => Promise<unknown>) => {
+        names.push(name)
+        return fn()
+      }) as StepRunner,
+      sleep: async (name, ms) => {
+        sleeps.push([name, ms])
+      },
+    })
+
+    expect(counts).toEqual({ total: 4, done: 1, skipped: 0, fewer: 3, failed: 0 })
+    expect(sleeps).toEqual([
+      [`pause-${made[0]}`, PHOTO_REFRESH_PAUSE_MS],
+      [`pause-${made[1]}`, PHOTO_REFRESH_PAUSE_MS],
+      [`limit-${made[2]}`, PHOTO_REFRESH_LIMIT_WAIT_MS],
+    ])
+    // svaki korak nosi ID nacrta, pa se imena koraka pozadinskog posla ne ponavljaju
+    expect(names[0]).toBe('list')
+    expect(new Set(names).size).toBe(names.length)
+    expect(names).toContain(`post-${made[3]}-save`)
+    expect(names).toContain(`post-${made[0]}-discard`)
   })
 })
