@@ -511,3 +511,27 @@ export function MaintenanceForm({ enabled, message }: { enabled: boolean; messag
     </div>
   )
 }
+
+/** „Očisti otpad sada” (D-168): jednokratno čišćenje skladišta u pozadini. */
+export function MediaCleanupButton() {
+  const a = useAction()
+  return (
+    <div className="space-y-2">
+      <Button
+        disabled={a.busy}
+        onClick={() =>
+          window.confirm(
+            'Obrisati sada fajlove koje nijedna objava više ne koristi? Galerija, logo i objavljeni slajdovi i video ostaju.',
+          ) &&
+          void a.run(
+            () => call('/api/admin/media-cleanup', 'POST', {}),
+            'Čišćenje je pokrenuto u pozadini. Rezultat se pojavljuje ovde za nekoliko minuta (osvežite stranu).',
+          )
+        }
+      >
+        {a.busy ? 'Pokrećem…' : 'Očisti otpad sada'}
+      </Button>
+      <Msg m={a.message} />
+    </div>
+  )
+}

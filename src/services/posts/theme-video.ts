@@ -145,6 +145,15 @@ export async function attachThemeVideo(
     throw new ApiError('VALIDATION', 'Video pripada drugom brendu.')
 
   const admin = createSupabaseAdminClient()
+  // gotov video u temi (D-168): čišćenje skladišta ga razlikuje od videa koji je korisnik sam otpremio
+  const sourceData =
+    asset.source_data && typeof asset.source_data === 'object' && !Array.isArray(asset.source_data)
+      ? asset.source_data
+      : {}
+  await admin
+    .from('media_assets')
+    .update({ source_data: { ...sourceData, themeVideo: true } })
+    .eq('id', asset.id)
   const next: PostDesignContext = { ...design, video: { ...design.video, renderedAssetId: asset.id } }
   const { data: updated, error } = await admin
     .from('posts')

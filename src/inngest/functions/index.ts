@@ -11,6 +11,7 @@ import { canvaExportVideo } from './canva-export-video'
 import { designHarmonize } from './design-harmonize'
 import { flowRun, flowsTick } from './flows'
 import { inboxSync } from './inbox-sync'
+import { mediaCleanupDaily, mediaCleanupNow } from './media-cleanup'
 import { mediaIncomingCleanup } from './media-incoming-cleanup'
 import { monthPlanCreate, monthPlanGenerate } from './month-plan'
 import { ping } from './ping'
@@ -50,6 +51,8 @@ export const functions = [
   monthPlanGenerate,
   designHarmonize,
   mediaIncomingCleanup,
+  mediaCleanupDaily,
+  mediaCleanupNow,
   billingProcessEvent,
   billingDaily,
   reportsMonthly,

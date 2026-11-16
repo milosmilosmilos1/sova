@@ -8,6 +8,7 @@ vi.mock('@/lib/jobs/enqueue', async (importOriginal) => {
     ...mod,
     enqueueTargetScheduled: vi.fn(async () => {}),
     enqueueTargetUnscheduled: vi.fn(async () => {}),
+    enqueueMediaCleanup: vi.fn(async () => {}),
   }
 })
 
@@ -18,6 +19,7 @@ import { GET as auditExportGet } from '@/app/api/admin/audit/export/route'
 import { PATCH as flagPatch } from '@/app/api/admin/flags/[key]/route'
 import { POST as exitPost } from '@/app/api/admin/impersonation/exit/route'
 import { POST as impersonatePost } from '@/app/api/admin/impersonation/route'
+import { POST as mediaCleanupPost } from '@/app/api/admin/media-cleanup/route'
 import { POST as retryPost } from '@/app/api/admin/publishing/retry/route'
 import { PUT as settingsPut } from '@/app/api/admin/settings/[key]/route'
 import { POST as userActionPost } from '@/app/api/admin/users/[id]/[action]/route'
@@ -27,7 +29,7 @@ import { DELETE as workspaceDelete, PATCH as workspacePatch } from '@/app/api/wo
 import { GET as workspacesGet, POST as workspacesPost } from '@/app/api/workspaces/route'
 import { IMP_COOKIE, mintImpersonationJwt } from '@/lib/auth/impersonation-core'
 import { encryptSecret, toPgBytea } from '@/lib/crypto/tokens'
-import { enqueueTargetScheduled } from '@/lib/jobs/enqueue'
+import { enqueueMediaCleanup, enqueueTargetScheduled } from '@/lib/jobs/enqueue'
 import { getMaintenance } from '@/lib/maintenance'
 import { resetMemoryRateLimit } from '@/lib/ratelimit'
 import type { AdminContext } from '@/services/admin/audit'
@@ -513,6 +515,25 @@ describe('API: admin platforma', () => {
       body: { enabled: true },
     })
     expect(missing.status).toBe(404)
+  })
+
+  it('čišćenje skladišta (D-168): admin sa MFA ga pokreće, ide u red i u audit; ostali 403', async () => {
+    const r = await call<{ queued: boolean }>(mediaCleanupPost, '/api/admin/media-cleanup', {
+      token: adm.token,
+      body: {},
+    })
+    expect(r.status).toBe(200)
+    expect(r.json.data).toEqual({ queued: true })
+    expect(vi.mocked(enqueueMediaCleanup)).toHaveBeenCalledWith(adm.id)
+    expect((await auditRows({ action: 'media.cleanup' }))[0]).toMatchObject({
+      admin_id: adm.id,
+      target_id: 'media_cleanup',
+    })
+    for (const token of [admNoMfa.token, outsider.token]) {
+      const denied = await call(mediaCleanupPost, '/api/admin/media-cleanup', { token, body: {} })
+      expect(denied.status).toBe(403)
+    }
+    expect(vi.mocked(enqueueMediaCleanup)).toHaveBeenCalledTimes(1)
   })
 
   it('cene tokena: izmena, nepoznata akcija 400, vraćanje', async () => {

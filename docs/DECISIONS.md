@@ -1503,3 +1503,16 @@ Odluka:
 - „Generiši ponovo” i dalje zadržava fotografije objave (D-125: zahtev mora da stane u 30 s); nova pravila važe za svaku fotografiju koja se bira od sada.
 
 Razlog: vlasnik je u Odobravanju video kviz o ishrani pasa sa mačkom na naslovnom slajdu. Automatski izbor je uzimao rezultate pretrage redom i proveravao samo ljude; za brend sa mnogo objava pretraga se skraćivala dok nije vraćala druge životinje. Vlasnik traži da slike budu visoko relevantne sa temom i lepo uklopljene u objavu.
+
+## D-168 · 16.11.2026 · usvojeno · Čišćenje skladišta
+
+Odluka:
+
+- Sova svake noći (04:30 UTC, `media-cleanup-daily`) briše fajlove koje je sama napravila ili preuzela kad više ne trebaju nijednoj objavi: kopije sa Unsplash-a i Pexels-a, video snimke, slojeve teksta videa, slajdove i gotov video iz pregledača (`video-u-temi.mp4`, od sada i `source_data.themeVideo`).
+- Pravila (vlasnik, 16.11.2026): pomoćni fajlovi objavljene objave (kopije sa stoka, snimci i slojevi videa) brišu se 30 dana posle objave; objavljeni slajdovi i gotov video ostaju zauvek, kao i slika videa. Fajlovi obrisane objave brišu se 30 dana posle brisanja. Stare verzije (nacrt nacrtan ponovo, izbor koji nije postao objava) brišu se kad su starije od 7 dana i ničemu ne trebaju. Nacrt, odobravanje, zakazana, neuspela i otkazana objava čuvaju sve, jer mogu da se nacrtaju ili objave ponovo.
+- Nikad se ne briše: galerija (otpremljeno i Canva), video koji je korisnik sam otpremio, logo, Figma šabloni, sve što pominju dizajn i podešavanja brenda (Sadržaj brenda). Vreme objave je najkasnije vreme objave po mrežama (ili potvrde kod objave preko pomoći), a bez njega vreme poslednje izmene objave.
+- Fajl se briše iz skladišta, a red u `media_assets` ostaje obrisan, sa `source_data.purgedAt`: Sova i dalje zna koje fotografije je brend dobio (D-121) i čija je atribucija.
+- Admin panel (Platforma → Skladište) ima „Očisti otpad sada” (`media-cleanup-now`, audit `media.cleanup`): jednokratno briše sve što nijedna objava ne koristi i što je starije od dana, i fajlove obrisanih objava odmah; pomoćni fajlovi objavljene objave i tu čekaju 30 dana. Kartica pokazuje poslednjih deset čišćenja (`platform_settings.media_cleanup`).
+- Jedno pokretanje briše najviše 2.000 fajlova, po 300 u koraku; ostatak ide sledeći put. Spisak se računa u aplikaciji (bez migracije); kad objava bude desetine hiljada, prelazi u SQL funkciju.
+
+Razlog: skladište je 16.11.2026 bilo 1,27 GB na besplatnom Supabase planu od 1 GB, a Sova ništa nije brisala: oko 800 MB su bili fajlovi koje nijedna objava više ne koristi (Pexels snimci 329 MB, stare verzije gotovog videa 265 MB, slike sa stoka 118 MB, stari slajdovi 95 MB). Vlasnik planira 90 klijenata; bez čišćenja to je oko 75 GB godišnje samo od generisanih fajlova.

@@ -251,3 +251,19 @@ export async function enqueueHarmonize(brandId: string): Promise<void> {
     )
   }
 }
+
+/** Jednokratno čišćenje skladišta iz admin panela (D-168). */
+export async function enqueueMediaCleanup(requestedBy: string | null): Promise<void> {
+  try {
+    await inngest.send(events.mediaCleanupRequested.create({ requestedBy }))
+  } catch (error) {
+    logger.error('enqueue_media_cleanup_failed', { error })
+    throw new AiError(
+      'PROVIDER_ERROR',
+      process.env.NODE_ENV === 'development'
+        ? 'Pozadinski servis nije dostupan. Pokrenite `npm run inngest:dev` pa pokušajte ponovo.'
+        : 'Pozadinski servis trenutno nije dostupan. Pokušajte ponovo za minut.',
+      { retryable: true, cause: error },
+    )
+  }
+}

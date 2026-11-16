@@ -97,6 +97,11 @@ export const events = {
     schema: z.object({ brandId: uuid }),
   }),
 
+  // čišćenje skladišta (D-168): jednokratno, iz admin panela
+  mediaCleanupRequested: eventType('media/cleanup.requested', {
+    schema: z.object({ requestedBy: uuid.nullable() }),
+  }),
+
   // Faza 12
   billingWebhookReceived: eventType('billing/webhook.received', {
     schema: z.object({ paymentEventId: uuid, provider: z.enum(['stripe', 'paddle']) }),
