@@ -1,7 +1,8 @@
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 
-import { PEOPLE_CHECK_TAG, type PeopleVerdict } from '@/lib/ai/prompts/people-check'
+import { PHOTO_CHECK_TAG, type MatchLevel, type PeopleVerdict } from '@/lib/ai/prompts/photo-check'
+import { PHOTO_QUERY_TAG } from '@/lib/ai/prompts/photo-query'
 
 /**
  * MSW mock Gemini API-ja za integracione testove: red odgovora po pozivu,
@@ -22,21 +23,47 @@ export function enqueueReply(...replies: MockReply[]): void {
 }
 
 /**
- * Provera ljudi (D-154) ima svoj red: ne troši odgovore ostalih poziva i ne ulazi u `calls`.
- * Bez odgovora u redu svaka slika je „none”; `fail` vraća grešku 500.
+ * Provera fotografija (D-154, D-167) ima svoj red: ne troši odgovore ostalih poziva i ne ulazi u
+ * `calls`. Bez odgovora u redu svaka slika je bez ljudi, odgovara temi, upotrebljiva, sa predmetom
+ * u sredini; `fail` vraća grešku 500. Stavka može biti samo ocena ljudi („other”) ili cela ocena.
  */
-const peopleQueue: Array<PeopleVerdict[] | 'fail'> = []
-export const peopleCalls: Array<{ model: string; images: number }> = []
+export interface PhotoCheckReply {
+  people?: PeopleVerdict
+  match?: MatchLevel
+  usable?: boolean
+  /** sredina glavnog predmeta, u procentima */
+  focus?: [number, number]
+}
+const photoQueue: Array<Array<PeopleVerdict | PhotoCheckReply> | 'fail'> = []
+/** svaki poziv provere: model, broj slika i tekst zahteva (tema i upit) */
+export const photoCalls: Array<{ model: string; images: number; text: string }> = []
 
 export function enqueuePeopleVerdicts(...replies: Array<PeopleVerdict[] | 'fail'>): void {
-  peopleQueue.push(...replies)
+  photoQueue.push(...replies)
+}
+
+export function enqueuePhotoChecks(...replies: Array<PhotoCheckReply[] | 'fail'>): void {
+  photoQueue.push(...replies)
+}
+
+/**
+ * Upit za fotografije starije objave (D-167) takođe ima svoj red, da ne troši odgovore ostalih
+ * poziva; bez odgovora u redu upit je „mock photo query”.
+ */
+const photoQueryQueue: string[] = []
+export const photoQueryCalls: Array<{ text: string }> = []
+
+export function enqueuePhotoQueries(...queries: string[]): void {
+  photoQueryQueue.push(...queries)
 }
 
 export function resetGeminiMock(): void {
   queue.length = 0
   calls.length = 0
-  peopleQueue.length = 0
-  peopleCalls.length = 0
+  photoQueue.length = 0
+  photoCalls.length = 0
+  photoQueryQueue.length = 0
+  photoQueryCalls.length = 0
 }
 
 export const defaultTextOutput = {
@@ -118,17 +145,32 @@ export const geminiServer = setupServer(
         body = null
       }
       const raw = JSON.stringify(body ?? null)
-      if (raw.includes(PEOPLE_CHECK_TAG)) {
+      if (raw.includes(PHOTO_CHECK_TAG)) {
         const images = (raw.match(/"inline_?[dD]ata"/g) ?? []).length
-        peopleCalls.push({ model, images })
-        const verdicts = peopleQueue.shift()
-        if (verdicts === 'fail')
+        // tekst zahteva bez slika (base64 bi samo napunio memoriju testa)
+        const text = raw.replace(/"data":"[^"]*"/g, '"data":""')
+        photoCalls.push({ model, images, text })
+        const replies = photoQueue.shift()
+        if (replies === 'fail')
           return HttpResponse.json(buildBody({ kind: 'status', status: 500 }), { status: 500 })
-        const items = Array.from({ length: images }, (_, index) => ({
-          index,
-          verdict: verdicts?.[index] ?? 'none',
-        }))
+        const items = Array.from({ length: images }, (_, index) => {
+          const r = replies?.[index]
+          const reply: PhotoCheckReply = typeof r === 'string' ? { people: r } : (r ?? {})
+          return {
+            index,
+            people: reply.people ?? 'none',
+            match: reply.match ?? 'exact',
+            usable: reply.usable ?? true,
+            focus_x: reply.focus?.[0] ?? 50,
+            focus_y: reply.focus?.[1] ?? 50,
+          }
+        })
         return HttpResponse.json(buildBody({ kind: 'text', json: { items } }))
+      }
+      if (raw.includes(PHOTO_QUERY_TAG)) {
+        photoQueryCalls.push({ text: raw })
+        const query = photoQueryQueue.shift() ?? 'mock photo query'
+        return HttpResponse.json(buildBody({ kind: 'text', json: { query } }))
       }
       calls.push({ model, body })
       const reply = queue.shift() ?? { kind: 'text', json: defaultTextOutput }

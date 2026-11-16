@@ -1316,6 +1316,8 @@ alter table posts add column design jsonb;          -- kontekst za „Generiši 
 -- posts.design.logoAssetId: logo kojim je objava nacrtana (D-133, `null` bez logoa); po njemu „Uskladi sa temom” zna da je objava nacrtana drugim logoom; starije objave ga nemaju (tada važi: logo brenda postavljen posle objave)
 -- posts.design.logoVersion: način crtanja logoa (D-134; 2 = bez pozadine, verzija po podlozi); nacrt sa logoom bez njega (ili sa starijim) „Uskladi sa temom” crta ponovo
 -- posts.design.video.layout: raspored kadra videa (D-135; 2 = snimak preko celog kadra); video bez njega „Uskladi sa temom” crta ponovo, a izmena teksta na njemu crta sve kadrove
+-- posts.design.photoQuery: engleski upit za fotografije koji je model napisao uz tekst (D-167); „Uskladi sa temom” i Studio traže nove fotografije po njemu, a starija objava bez njega dobija ga od Gemini-ja kad joj fotografije zatrebaju
+-- media_assets.source_data.focus {x, y} (0–1): sredina glavnog predmeta na fotografiji (D-167); stok fotografije su isečene oko njega, a stil ih pri crtanju pomera u okviru (object-position); upisuje ga i izbor iz galerije
 
 -- glas brenda, uvod i PDF o brendu (migracija 033, D-112)
 alter table brands add column voice jsonb not null default '{}';   -- offer, audience, tone, usp, avoid, cta, topics[] (do 8), updated_at, updated_by

@@ -38,6 +38,11 @@ export const postDesignSchema = z.object({
   dmCta: z.boolean().optional(),
   /** fotografije je dao korisnik: „Generiši ponovo” ih zadržava umesto da traži nove */
   ownPhotos: z.boolean().optional(),
+  /**
+   * engleski upit za fotografije koji je model napisao uz tekst (D-167): usklađivanje sa temom i
+   * izmena u Studiju traže nove fotografije po njemu; starije objave ga nemaju
+   */
+  photoQuery: z.string().max(200).optional(),
   /** boje u kojima je objava nacrtana (D-121, D-125); po njima Sova zna da li je objava u temi brenda */
   colors: designColorsSchema.optional(),
   /** font u kom je objava nacrtana (D-125) */

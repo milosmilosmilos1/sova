@@ -12,11 +12,14 @@ import { photoOrder, slideRanges } from '@/lib/visuals/design/batches'
 import type { PhotoSource } from '@/lib/visuals/design/catalog'
 import { preparePhoto, renderSlide } from '@/lib/visuals/design/render'
 import type { DesignColors, DesignFormat, Slide, ThemeVariant } from '@/lib/visuals/design/types'
+import { parseFocus, type Focus } from '@/lib/visuals/focus'
 import type { StepRunner } from '@/services/autopilot/runner'
 import { downloadAsset, type MediaAssetRow } from '@/services/media'
 import { pickPexelsPhotos } from '@/services/visuals/pexels'
+import { checkPhotos } from '@/services/visuals/photo-check'
 import { storeServerImage } from '@/services/visuals/store'
 import { pickUnsplashPhotos } from '@/services/visuals/unsplash'
+import type { Json } from '@/types/database'
 
 import { brandLogo, type ResolvedDesign } from './brand-design'
 
@@ -34,11 +37,23 @@ export interface RenderedDesign {
   height: number
 }
 
-/** Fotografije iz galerije brenda: prvo one čiji opis ili oznake liče na pojam, pa najnovije. */
+/** Fotografije galerije koje provera gleda za jednu objavu: koliko treba i još nekoliko (D-167). */
+const GALLERY_CHECK_SPARE = 4
+const GALLERY_CHECK_MAX = 10
+const GALLERY_CHECK_MS = 12_000
+
+/** Fokus u `source_data` medija, uz ono što već ima. */
+function withFocus(sourceData: Json | null, focus: Focus): Json {
+  const base = sourceData && typeof sourceData === 'object' && !Array.isArray(sourceData) ? sourceData : {}
+  return { ...base, focus: { x: focus.x, y: focus.y } }
+}
+
 /**
  * Fotografije iz galerije brenda (D-114): samo kategorija toka kad je zadata (a sve kad je ona
  * prazna), redosled po poklapanju opisa, kategorije i tagova sa temom, pa po najdužem nekorišćenju.
- * Izabrane dobijaju `last_used_at`, da sledeća objava uzme druge.
+ * Prvih nekoliko gleda provera fotografija (D-167): ono što temi ne pripada (mačka u objavi o psima)
+ * se ne uzima, jasno poklapanje ide napred, a uz izabranu se pamti gde je glavni predmet. Izabrane
+ * dobijaju `last_used_at`, da sledeća objava uzme druge.
  */
 export async function pickGalleryPhotos(
   brandId: string,
@@ -78,16 +93,34 @@ export async function pickGalleryPhotos(
     })),
     words,
   )
-  const picked = ranked.slice(0, count).map((x) => x.row)
-  if (picked.length)
-    await admin
-      .from('media_assets')
-      .update({ last_used_at: new Date().toISOString() })
-      .in(
-        'id',
-        picked.map((a) => a.id),
-      )
-  return picked
+  const candidates = ranked
+    .slice(0, Math.min(GALLERY_CHECK_MAX, count + GALLERY_CHECK_SPARE))
+    .map((x) => x.row)
+  const checked = await checkPhotos(
+    candidates.map((row) => ({
+      item: row,
+      text: [row.description, row.alt_text, ...row.tags].filter(Boolean).join(' '),
+      // original se preuzima tek kad provera zaista gleda slike
+      frames: [() => downloadAsset(row)],
+    })),
+    {
+      label: 'gallery',
+      mode: 'gallery',
+      until: Date.now() + GALLERY_CHECK_MS,
+      subject: { topic: opts.topic, query },
+    },
+  )
+  const picked = checked.slice(0, count)
+  const now = new Date().toISOString()
+  await Promise.all(
+    picked.map(({ item, focus }) =>
+      admin
+        .from('media_assets')
+        .update({ last_used_at: now, ...(focus ? { source_data: withFocus(item.source_data, focus) } : {}) })
+        .eq('id', item.id),
+    ),
+  )
+  return picked.map((p) => p.item)
 }
 
 async function pickPhotos(input: {
@@ -113,6 +146,7 @@ async function pickPhotos(input: {
     query: input.query,
     crop: input.crop,
     uploadedBy: input.uploadedBy,
+    topic: input.topic,
   }
   // Unsplash koji ne odgovori (limit, mreža) ne ostavlja objavu bez slike: ostatak daje Pexels
   let fromUnsplash: MediaAssetRow[] = []
@@ -229,8 +263,8 @@ export async function pickDesignPhotos(input: DesignRenderInput): Promise<Picked
   if (count > 0 && input.photoSource !== 'none' && photos.length === 0)
     notes.push(
       input.photoSource === 'gallery'
-        ? 'U galeriji nema fotografija, pa su slajdovi bez njih. Dodajte fotografije u galeriju.'
-        : 'Fotografija za temu nije nađena, pa su slajdovi u bojama brenda.',
+        ? 'U galeriji nema fotografije koja odgovara ovoj temi, pa su slajdovi u bojama brenda. Dodajte fotografije u galeriju.'
+        : 'Fotografija koja odgovara temi nije nađena, pa su slajdovi u bojama brenda.',
     )
   return { photoIds: photos.map((p) => p.id), notes }
 }
@@ -258,13 +292,17 @@ export async function renderDesignRange(
     input.brandId,
     wanted.map((k) => photoIds[k]!),
   )
-  const prepared = new Map<number, string>()
+  // fotografija i sredina glavnog predmeta na njoj (D-167): stil je pomera tako da predmet ostane u kadru
+  const prepared = new Map<number, { src: string; focus: Focus | null }>()
   await Promise.all(
     wanted.map(async (k) => {
       const row = rows.get(photoIds[k]!)
       if (!row) return
       try {
-        prepared.set(k, await preparePhoto(await downloadAsset(row), photoStyle, colors))
+        prepared.set(k, {
+          src: await preparePhoto(await downloadAsset(row), photoStyle, colors),
+          focus: parseFocus((row.source_data as { focus?: unknown } | null)?.focus),
+        })
       } catch (error) {
         logger.warn('design_photo_prepare_failed', { assetId: row.id, error })
       }
@@ -292,7 +330,8 @@ export async function renderDesignRange(
               brandName: input.design.brandName,
               handle: input.design.handle,
               logo,
-              photo,
+              photo: photo?.src ?? null,
+              photoFocus: photo?.focus ?? null,
             })
           : await renderSlide({
               styleId: input.styleId,
@@ -304,7 +343,8 @@ export async function renderDesignRange(
               brandName: input.design.brandName,
               handle: input.design.handle,
               logo,
-              photo,
+              photo: photo?.src ?? null,
+              photoFocus: photo?.focus ?? null,
               index: i,
               total: input.slides.length,
               variant: input.variant,

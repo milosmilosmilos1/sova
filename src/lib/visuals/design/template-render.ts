@@ -9,6 +9,7 @@ import {
   type TemplateLayer,
 } from '@/lib/figma/template'
 
+import { objectPosition, type Focus } from '../focus'
 import { BUNDLED_FAMILY, loadFonts } from '../fonts'
 import { fontWidth } from './font-choices'
 import { cleanSlideText } from './index'
@@ -32,6 +33,8 @@ export interface TemplateSlideInput {
   handle: string | null
   logo: BrandLogo | null
   photo: string | null
+  /** sredina glavnog predmeta na fotografiji (D-167); bez nje fotografija se seče po sredini */
+  photoFocus?: Focus | null
   outputWidth?: number
   format_out?: 'jpeg' | 'png'
 }
@@ -105,9 +108,17 @@ export async function renderTemplateSlide(input: TemplateSlideInput): Promise<{
     if (layer.role === 'photo') {
       if (input.photo)
         children.push(
-          node('img', { ...place, objectFit: 'cover', borderRadius: layer.radius ?? 0 }, undefined, {
-            src: input.photo,
-          }),
+          node(
+            'img',
+            {
+              ...place,
+              objectFit: 'cover',
+              ...(input.photoFocus ? { objectPosition: objectPosition(input.photoFocus) } : {}),
+              borderRadius: layer.radius ?? 0,
+            },
+            undefined,
+            { src: input.photo },
+          ),
         )
       continue
     }

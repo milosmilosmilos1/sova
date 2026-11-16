@@ -15,6 +15,7 @@ import { snapshotVersion } from '@/services/posts/posts'
 import type { Json } from '@/types/database'
 
 import { resolveDesign, type ResolvedDesign } from './brand-design'
+import { photoQueryOf, resolvePhotoQuery } from './photo-query'
 import { parsePostDesign, themeOf, type PostDesignContext } from './post-design'
 import { renderDesignInSteps, type DesignRenderInput } from './render-post'
 import { buildThemeVideoInSteps, type ThemeVideo } from './video-post'
@@ -157,9 +158,17 @@ async function prepare(postId: string): Promise<HarmonizeWork | null> {
   const theme = await resolveDesign(brand)
   if (inTheme(design, theme, { createdAt: post.created_at, logoSince: await logoSince(theme.logoAssetId) }))
     return null
+  // nove fotografije se traže engleskim upitom, ne temom na srpskom (D-167); objava koja ga nema
+  // dobija ga od modela jednom, samo kad joj fotografije mogu zatrebati, i čuva ga
+  const mayTopUp =
+    theme.photoSource !== 'none' &&
+    !design.ownPhotos &&
+    design.copy.photoAssetIds.length < design.copy.slides.length
+  const query = mayTopUp ? await resolvePhotoQuery(design) : photoQueryOf(design)
+  const learned = mayTopUp && !design.photoQuery && query !== design.topic.slice(0, 100)
   return {
     version: post.version,
-    design,
+    design: learned ? { ...design, photoQuery: query } : design,
     render: {
       workspaceId: brand.workspace_id,
       brandId: brand.id,
@@ -168,9 +177,9 @@ async function prepare(postId: string): Promise<HarmonizeWork | null> {
       format: design.format === 'story' ? 'story' : design.size,
       slides: design.copy.slides,
       photoSource: theme.photoSource,
-      query: design.topic.slice(0, 100),
+      query,
       uploadedBy: null,
-      topic: design.topic,
+      topic: [design.topic, ...design.copy.slides.map((s) => s.title)].join(' '),
       photoAssetIds: design.copy.photoAssetIds.length ? design.copy.photoAssetIds : undefined,
       // fotografije koje je dao korisnik idu ukrug kao do sada; izabrane automatski se dopunjuju
       cyclePhotos: Boolean(design.ownPhotos),

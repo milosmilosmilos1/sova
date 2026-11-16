@@ -125,7 +125,7 @@ export function buildCarouselPrompt(input: CarouselPromptInput): string {
     'short_caption: ista poruka do 250 znakova, za X.',
     hashtagCap > 0 ? `hashtags: ${hashtagCap} relevantnih heštegova sa #.` : 'hashtags: prazna lista.',
     'first_comment: predlog prvog komentara (pitanje za publiku ili link) ili null.',
-    'visual_query: 2 do 5 reči na engleskom za pretragu fotografija koje prate temu (npr. „coffee shop interior”), bez imena brenda.',
+    'visual_query: 2 do 5 reči na engleskom za pretragu fotografija. Počni glavnim predmetom teme, i to tačno onim o kom je objava (za ishranu pasa „dog eating kibble”, ne „pet food”; za kafić „coffee shop interior”), pa dodaj ono što se još vidi na fotografiji. Bez imena brenda i bez apstraktnih reči (quiz, tips, guide, ideas).',
     'alt_text: kratak opis vizuala za čitače ekrana.',
     'Ako tema nije u opisu brenda, piši o njoj korisno i opšte, bez izmišljenih činjenica o brendu; brend se tada pojavljuje samo u pozivu na akciju.',
     'Nikad ne izmišljaj utiske klijenata, klijente, ljude iz tima ni rezultate radova.',

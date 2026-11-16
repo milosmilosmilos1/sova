@@ -3,6 +3,7 @@ import satori from 'satori'
 import sharp from 'sharp'
 
 import { BUNDLED_FAMILY, loadFonts } from '../fonts'
+import { objectPosition, type Focus } from '../focus'
 import { toDataUri } from '../render'
 import { fontWidth } from './font-choices'
 import { cleanSlideText, getStyle } from './index'
@@ -38,6 +39,8 @@ export interface SlideRenderInput {
   handle: string | null
   logo: BrandLogo | null
   photo: string | null
+  /** sredina glavnog predmeta na fotografiji (D-167); bez nje fotografija se seče po sredini */
+  photoFocus?: Focus | null
   index: number
   total: number
   /** ritam teme (D-132); bez nje osnovni raspored */
@@ -58,6 +61,32 @@ export interface SlideRenderResult {
 
 function family(choice: FontChoice, brand: string): string {
   return choice === 'brand' ? brand || BUNDLED_FAMILY : choice
+}
+
+/**
+ * Fotografija ide ka glavnom predmetu (D-167): svaki `img` sa fotografijom koji stil seče
+ * (`objectFit: cover`) dobija `objectPosition` po fokusu, pa predmet ostaje u okviru bilo kog
+ * oblika (traka, krug, ceo kadar). Stil koji je sam zadao položaj ostaje kakav jeste.
+ */
+export function focusPhotoNodes(tree: unknown, photo: string, focus: Focus): void {
+  const position = objectPosition(focus)
+  const visit = (node: unknown): void => {
+    if (!node || typeof node !== 'object') return
+    if (Array.isArray(node)) {
+      node.forEach(visit)
+      return
+    }
+    const n = node as {
+      type?: unknown
+      props?: { src?: unknown; style?: Record<string, unknown>; children?: unknown }
+    }
+    if (!n.props) return
+    const style = n.props.style
+    if (n.type === 'img' && n.props.src === photo && style?.objectFit === 'cover' && !style.objectPosition)
+      n.props.style = { ...style, objectPosition: position }
+    visit(n.props.children)
+  }
+  visit(tree)
 }
 
 export async function renderSlide(input: SlideRenderInput): Promise<SlideRenderResult> {
@@ -95,6 +124,7 @@ export async function renderSlide(input: SlideRenderInput): Promise<SlideRenderR
       ? Math.min(1.6, Math.max(0.8, fontWidth(fonts.headings) / fontWidth(designed)))
       : 1
   const tree = withWidthScale(scale, () => style.render(cleanSlideText(input.slide), ctx))
+  if (input.photo && input.photoFocus) focusPhotoNodes(tree, input.photo, input.photoFocus)
   const drawn = await satori(tree as unknown as Parameters<typeof satori>[0], {
     width: size.width,
     height: size.height,

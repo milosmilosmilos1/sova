@@ -45,6 +45,7 @@ import { assertDailyQuota, failGeneration, startGeneration } from '@/services/ai
 import { buildBrandContext } from '@/services/ai/text'
 import { getBrand, type BrandRow } from '@/services/brands'
 import { resolveDesign } from '@/services/design/brand-design'
+import { photoQueryOf, resolvePhotoQuery } from '@/services/design/photo-query'
 import { parsePostDesign, themeOf, type PostDesignContext } from '@/services/design/post-design'
 import { renderDesignSlides } from '@/services/design/render-post'
 import { buildThemeVideoInSteps, videoPostDesign } from '@/services/design/video-post'
@@ -352,7 +353,8 @@ async function reviseStudioPost(
       brandId: brand.id,
       design: theme,
       scenes: slides,
-      query: design.topic.slice(0, 100),
+      query: photoQueryOf(design),
+      topic: design.topic,
       uploadedBy: viewer.user.id,
       clipAssetIds: design.video.clipAssetIds,
       photoAssetIds: design.copy.photoAssetIds,
@@ -378,6 +380,9 @@ async function reviseStudioPost(
     // izmena crta objavu u trenutnoj temi brenda (D-125); priložena fotografija ostaje vidljiva
     const theme = await resolveDesign(brand)
     const styleId = styleForPhotos(theme.styleId, Boolean(design.ownPhotos))
+    // objava bez fotografija dobija nove, i to engleskim upitom, ne temom na srpskom (D-167)
+    const newPhotos = theme.photoSource !== 'none' && !design.copy.photoAssetIds.length
+    const query = newPhotos ? await resolvePhotoQuery(design) : photoQueryOf(design)
     const rendered = await renderDesignSlides({
       workspaceId: brand.workspace_id,
       brandId: brand.id,
@@ -386,7 +391,8 @@ async function reviseStudioPost(
       format: design.format === 'story' ? 'story' : design.size,
       slides: slides as Slide[],
       photoSource: theme.photoSource,
-      query: design.topic.slice(0, 100),
+      query,
+      topic: [design.topic, ...slides.map((s) => s.title)].join(' '),
       uploadedBy: viewer.user.id,
       // iste fotografije kao do sada; menja se samo tekst
       photoAssetIds: design.copy.photoAssetIds.length ? design.copy.photoAssetIds : undefined,
@@ -401,6 +407,9 @@ async function reviseStudioPost(
       styleId,
       photoSource: theme.photoSource,
       ...themeOf(theme),
+      ...(newPhotos && !design.photoQuery && query !== design.topic.slice(0, 100)
+        ? { photoQuery: query }
+        : {}),
       copy: { slides, photoAssetIds: rendered.photoIds },
     }
   }

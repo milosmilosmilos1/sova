@@ -142,6 +142,8 @@ export async function composeDesigned(
     photoSource,
     query: (copy.visualQuery || input.topic).slice(0, 100),
     uploadedBy: viewer.user.id,
+    // tema za proveru fotografija (D-167): fotografija mora da prikazuje ono o čemu je objava
+    topic: [input.topic, ...copy.slides.map((s) => s.title)].join(' '),
     photoAssetIds: photos.length ? photos : undefined,
     cyclePhotos: !kindPhotos && photoIds.length > 0,
     variant,
@@ -187,6 +189,7 @@ export async function composeDesigned(
     locale,
     platforms,
     ...(photos.length ? { ownPhotos: true } : {}),
+    ...(copy.visualQuery ? { photoQuery: copy.visualQuery.slice(0, 200) } : {}),
     copy: { slides: copy.slides, photoAssetIds: rendered.photoIds },
   }
   await createSupabaseAdminClient()

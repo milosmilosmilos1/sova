@@ -508,6 +508,8 @@ export async function createHighlightStory(
     photoSource: design.photoSource,
     query: (highlight.visual_query || highlight.title).slice(0, 100),
     uploadedBy: viewer.user.id,
+    // tema za proveru fotografija (D-167)
+    topic: [highlight.title, ...highlight.frames.map((f) => f.title)].join(' '),
     variant: 0,
     origin: { highlight: highlight.title },
   })
@@ -539,6 +541,7 @@ export async function createHighlightStory(
     variant: 0,
     locale,
     platforms: ['instagram'],
+    ...(highlight.visual_query ? { photoQuery: highlight.visual_query.slice(0, 200) } : {}),
     copy: { slides, photoAssetIds: rendered.photoIds },
   }
   await createSupabaseAdminClient()

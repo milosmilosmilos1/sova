@@ -32,10 +32,12 @@ import {
   type UnsplashOrientation,
   type UnsplashPhoto,
 } from '@/integrations/unsplash/client'
+import type { Focus } from '@/lib/visuals/focus'
 import { getBrand } from '@/services/brands'
 import type { MediaAssetRow } from '@/services/media'
+import { cropAroundFocus, stockFetchSize } from '@/services/visuals/focus-crop'
+import { checkPhotos, type CheckedPhoto, type PhotoCandidate } from '@/services/visuals/photo-check'
 import { storeServerImage } from '@/services/visuals/store'
-import { allowedByPeople, type PeopleCandidate } from '@/services/visuals/people-check'
 import { queryVariants, STOCK_PARALLEL, usedStockIds } from '@/services/visuals/used'
 
 export interface UnsplashPhotoView {
@@ -170,15 +172,18 @@ export async function selectUnsplashPhoto(
   return { asset, attribution, reused: false }
 }
 
-/** Fotografije u jednoj proveri ljudi (D-154): koliko treba i još nekoliko, za odbijene. */
-const PHOTO_CHECK_BATCH = 10
-const PHOTO_CHECK_SPARE = 3
+/**
+ * Fotografije u jednoj proveri (D-154, D-167): koliko treba i još nekoliko, za odbijene. Provera
+ * teme odbija više nego provera ljudi, pa je rezerva veća.
+ */
+const PHOTO_CHECK_BATCH = 12
+const PHOTO_CHECK_SPARE = 5
 /** Zajednički rok svih provera u jednom izboru i najviše provera po izboru. */
 const PHOTO_CHECKS_MS = 12_000
-const MAX_PEOPLE_CHECKS = 3
+const MAX_PHOTO_CHECKS = 3
 
-/** Fotografija za proveru ljudi: alt, opis, ime iz adrese i manja sličica. */
-function peopleCandidate(photo: UnsplashPhoto): PeopleCandidate<UnsplashPhoto> {
+/** Fotografija za proveru: alt, opis, ime iz adrese i manja sličica (ceo kadar, bez isecanja). */
+function photoCandidate(photo: UnsplashPhoto): PhotoCandidate<UnsplashPhoto> {
   return {
     item: photo,
     text: [photo.alt, photo.description, slugText(photo.htmlLink)].filter(Boolean).join(' '),
@@ -187,11 +192,12 @@ function peopleCandidate(photo: UnsplashPhoto): PeopleCandidate<UnsplashPhoto> {
 }
 
 /**
- * Automatski izbor za „Novu objavu”, plan i Autopilot (D-107): rezultati pretrage redom, isečeni za
- * vrstu objave (kvadrat staje na svaku mrežu, 9:16 je za priču). Fotografija koju je brend već
- * dobio se preskače (D-121): traže se sledeće strane i kraći oblici upita, a bez nove fotografije
- * slajd ostaje u bojama. Izabrane se čuvaju paralelno, i samo onoliko koliko satni limit još prima
- * (D-122); ostatak traži pozivalac sa Pexels-a.
+ * Automatski izbor za „Novu objavu”, plan i Autopilot (D-107): rezultati pretrage redom, ali samo
+ * oni koji prikazuju ono o čemu je objava i lepo stoje u objavi (D-167), isečeni za vrstu objave
+ * oko glavnog predmeta (kvadrat staje na svaku mrežu, 9:16 je za priču). Fotografija koju je brend
+ * već dobio se preskače (D-121): traže se sledeće strane i kraći oblici upita, a bez odgovarajuće
+ * nove fotografije slajd ostaje u bojama. Izabrane se čuvaju paralelno, i samo onoliko koliko satni
+ * limit još prima (D-122); ostatak traži pozivalac sa Pexels-a.
  */
 export async function pickUnsplashPhotos(input: {
   workspaceId: string
@@ -200,6 +206,8 @@ export async function pickUnsplashPhotos(input: {
   count: number
   crop: 'square' | 'portrait'
   uploadedBy: string | null
+  /** tema objave, po kojoj provera zna šta fotografija mora da prikazuje (D-167) */
+  topic?: string | null
 }): Promise<SelectedPhoto[]> {
   if (!isUnsplashConfigured() || input.count <= 0) return []
   // pretraga i bar jedno praćenje preuzimanja; sa potrošenim limitom se odmah prelazi na Pexels
@@ -209,10 +217,12 @@ export async function pickUnsplashPhotos(input: {
   }
   if (spent()) return []
   const used = await usedStockIds(input.brandId, 'unsplash')
-  const chosen: UnsplashPhoto[] = []
+  const chosen: Array<CheckedPhoto<UnsplashPhoto>> = []
   // ljudi samo evropskog izgleda (D-136, D-154): upit koji pominje ljude traži evropske ljude, a
-  // fotografije se pre preuzimanja proveravaju po opisu i sličici, sa zajedničkim rokom
+  // fotografije se pre preuzimanja proveravaju po opisu i sličici, sa zajedničkim rokom; tema se
+  // proverava prema prvobitnom upitu, i kad pretraga ide kraćim oblikom (D-167)
   const variants = queryVariants(input.query).map(localPeopleQuery)
+  const subject = { topic: input.topic, query: input.query }
   const until = Date.now() + PHOTO_CHECKS_MS
   let checks = 0
   search: for (let v = 0; v < variants.length && chosen.length < input.count; v++) {
@@ -227,12 +237,12 @@ export async function pickUnsplashPhotos(input: {
       })
       const fresh = r.results.filter((p) => !used.has(p.id))
       for (let i = 0; i < fresh.length && chosen.length < input.count;) {
-        if (checks++ >= MAX_PEOPLE_CHECKS) break search
+        if (checks++ >= MAX_PHOTO_CHECKS) break search
         const size = Math.min(PHOTO_CHECK_BATCH, input.count - chosen.length + PHOTO_CHECK_SPARE)
         const batch = fresh.slice(i, i + size)
         i += size
         for (const photo of batch) used.add(photo.id)
-        const allowed = await allowedByPeople(batch.map(peopleCandidate), { label: 'unsplash', until })
+        const allowed = await checkPhotos(batch.map(photoCandidate), { label: 'unsplash', until, subject })
         chosen.push(...allowed.slice(0, input.count - chosen.length))
       }
       if (page >= r.totalPages) break
@@ -241,9 +251,9 @@ export async function pickUnsplashPhotos(input: {
   // svaka upotrebljena fotografija troši jedan zahtev (praćenje preuzimanja)
   const room = unsplashRemaining()
   const take = room === null ? chosen : chosen.slice(0, Math.max(0, room))
-  const stored = await mapLimit(take, STOCK_PARALLEL, async (photo) => {
+  const stored = await mapLimit(take, STOCK_PARALLEL, async ({ item: photo, focus }) => {
     try {
-      return await storePickedPhoto(photo, input)
+      return await storePickedPhoto(photo, focus, input)
     } catch (error) {
       logger.warn('unsplash_pick_store_failed', { photoId: photo.id, error })
       return null
@@ -254,24 +264,27 @@ export async function pickUnsplashPhotos(input: {
 
 async function storePickedPhoto(
   photo: UnsplashPhoto,
+  focus: Focus | null,
   input: { workspaceId: string; brandId: string; crop: 'square' | 'portrait'; uploadedBy: string | null },
 ): Promise<SelectedPhoto> {
   const attribution = attributionFor(photo)
-  const size = input.crop === 'portrait' ? { w: 1080, h: 1920 } : { w: 1600, h: 1600 }
+  // ceo kadar u veličini za isečak; seče se ovde, oko glavnog predmeta (D-167)
+  const size = stockFetchSize(photo.width, photo.height, input.crop)
   // praćenje preuzimanja ide uporedo sa preuzimanjem (greška praćenja se samo beleži)
   const [, res] = await Promise.all([
     trackDownload(photo.downloadLocation),
-    safeFetch(resizedUrl(photo.urls.raw, { ...size, fit: 'crop', q: 85 }), {
+    safeFetch(resizedUrl(photo.urls.raw, { ...size, q: 90 }), {
       timeoutMs: 20_000,
       maxBytes: 15 * 1024 * 1024,
       headers: { accept: 'image/*' },
     }),
   ])
   if (!res.ok) throw new ApiError('PROVIDER_ERROR', 'Fotografija nije mogla da se preuzme sa Unsplash-a.')
+  const cropped = await cropAroundFocus(res.body, input.crop, focus)
   const asset = await storeServerImage({
     workspaceId: input.workspaceId,
     brandId: input.brandId,
-    bytes: res.body,
+    bytes: cropped.bytes,
     mimeType: 'image/jpeg',
     source: 'unsplash',
     folder: 'unsplash',
@@ -284,6 +297,7 @@ async function storePickedPhoto(
       urls: photo.urls,
       downloadLocation: photo.downloadLocation,
       photographer: photo.user,
+      ...(cropped.focus ? { focus: cropped.focus } : {}),
     } as unknown as Record<string, string>,
     uploadedBy: input.uploadedBy,
   })
@@ -428,8 +442,13 @@ export async function pickPhotoForTemplate(input: {
       orientation: orientationFor(input.aspect),
       contentFilter: 'high',
     })
-    // ljudi samo evropskog izgleda (D-154) pre rangiranja
-    const allowed = await allowedByPeople(search.results.map(peopleCandidate), { label: 'unsplash-template' })
+    // ljudi samo evropskog izgleda (D-154) i fotografija koja prikazuje temu (D-167) pre rangiranja
+    const allowed = (
+      await checkPhotos(search.results.map(photoCandidate), {
+        label: 'unsplash-template',
+        subject: { topic: input.headline, query },
+      })
+    ).map((c) => c.item)
     if (!allowed.length) return null
     rank = await rankCandidates(allowed, {
       headline: input.headline,

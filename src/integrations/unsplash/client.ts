@@ -262,12 +262,12 @@ export function attributionFor(photo: Pick<UnsplashPhoto, 'user' | 'htmlLink'>):
 /** Hotlink sa promenom veličine; `ixid` ostaje u URL-u (obavezno po smernicama). */
 export function resizedUrl(
   rawOrRegular: string,
-  opts: { w: number; h?: number; fit?: 'crop' | 'max'; q?: number },
+  opts: { w?: number; h?: number; fit?: 'crop' | 'max'; q?: number },
 ): string {
   const u = new URL(rawOrRegular)
-  u.searchParams.set('w', String(opts.w))
+  if (opts.w) u.searchParams.set('w', String(opts.w))
   if (opts.h) u.searchParams.set('h', String(opts.h))
-  u.searchParams.set('fit', opts.fit ?? (opts.h ? 'crop' : 'max'))
+  u.searchParams.set('fit', opts.fit ?? (opts.w && opts.h ? 'crop' : 'max'))
   u.searchParams.set('q', String(opts.q ?? 80))
   u.searchParams.set('auto', 'format')
   return u.toString()

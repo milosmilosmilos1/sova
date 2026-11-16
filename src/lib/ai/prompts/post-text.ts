@@ -136,7 +136,7 @@ function formatLines(input: PostTextInput): string[] {
       : `Vrsta objave: ${FORMAT_LABEL[input.format]}. ${FORMAT_WRITING[input.format]} U polje format upiši ${input.format}.`
   return [
     choice,
-    'visual_query: 2 do 5 reči na engleskom za pretragu fotografija i snimaka koji prate objavu (npr. „night club crowd neon”), bez imena brenda.',
+    'visual_query: 2 do 5 reči na engleskom za pretragu fotografija i snimaka. Počni glavnim predmetom objave, i to tačno onim o kom je objava (za ishranu pasa „dog eating kibble”, ne „pet food”; za klub „night club crowd neon”), pa dodaj ono što se još vidi. Bez imena brenda i bez apstraktnih reči (quiz, tips, guide, ideas).',
   ]
 }
 

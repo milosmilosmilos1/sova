@@ -18,9 +18,15 @@ import { renderDesignSlides } from '@/services/design/render-post'
 import { storeServerImage } from '@/services/visuals/store'
 import type { Json } from '@/types/database'
 
-import { geminiServer } from './gemini-mock'
+import {
+  enqueuePhotoQueries,
+  geminiServer,
+  photoCalls,
+  photoQueryCalls,
+  resetGeminiMock,
+} from './gemini-mock'
 import { admin, call, createTestUser, deleteTestUser, type TestUser } from './helpers'
-import { pexelsHandlers, unsplashHandlers } from './visuals-mock'
+import { pexelsHandlers, resetVisualsState, unsplashHandlers, visualsState } from './visuals-mock'
 
 /**
  * Jedna tema za sve objave (D-125): nacrti koji čekaju a nisu u temi brenda crtaju se ponovo u temi,
@@ -284,5 +290,40 @@ describe('jedna tema za sve objave (D-125)', () => {
       })
       .eq('id', older.id)
     expect(await offThemeDraftIds(brandId)).toContain(older.id)
+  })
+
+  it('nacrt bez sačuvanog upita traži fotografije engleskim upitom i pamti ga (D-167)', async () => {
+    const { id } = await draft('in_review', 'vivid')
+    // starija objava: tema na srpskom, bez upita i bez fotografija, pa joj usklađivanje traži nove
+    const { data: p } = await admin.from('posts').select('design').eq('id', id).single()
+    const old = p!.design as { copy: { slides: unknown[] } }
+    await admin
+      .from('posts')
+      .update({
+        design: {
+          ...old,
+          topic: 'Noć u Beogradu: gde za vikend',
+          copy: { ...old.copy, photoAssetIds: [] },
+        } as Json,
+      })
+      .eq('id', id)
+    // raniji nacrti su potrošili sve lažne fotografije, a izbor ne ponavlja one koje brend ima (D-121)
+    await admin.from('media_assets').delete().eq('brand_id', brandId).in('source', ['unsplash', 'pexels'])
+    resetGeminiMock()
+    resetVisualsState()
+    enqueuePhotoQueries(`night club neon lights ${crypto.randomUUID().slice(0, 8)}`)
+    expect(await harmonizePost(id)).toBe('done')
+
+    expect(photoQueryCalls).toHaveLength(1)
+    expect(photoQueryCalls[0]!.text).toContain('Noć u Beogradu: gde za vikend')
+    const english = visualsState.unsplashQueries[0]!
+    expect(english.startsWith('night club neon lights ')).toBe(true)
+    expect(visualsState.unsplashQueries.every((q) => !q.includes('Beogradu'))).toBe(true)
+    // provera fotografija dobija temu objave
+    expect(photoCalls[0]!.text).toContain('Noć u Beogradu: gde za vikend')
+    const { data: after } = await admin.from('posts').select('design').eq('id', id).single()
+    const design = after!.design as { photoQuery?: string; copy: { photoAssetIds: string[] } }
+    expect(design.photoQuery).toBe(english)
+    expect(design.copy.photoAssetIds).toHaveLength(slides.length)
   })
 })

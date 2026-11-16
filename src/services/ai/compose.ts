@@ -157,7 +157,13 @@ export async function composePost(
 
   // vizual po vrsti i izvoru; kad izvor nema rezultat, prelazi se na sledeći uz napomenu
   const need = mediaNeed(format)
-  const ctx = { workspaceId: brand.workspace_id, brandId: brand.id, uploadedBy: viewer.user.id }
+  // tema za proveru fotografija i snimaka (D-167): moraju da prikazuju ono o čemu je objava
+  const ctx = {
+    workspaceId: brand.workspace_id,
+    brandId: brand.id,
+    uploadedBy: viewer.user.id,
+    topic: [input.topic, first.hook].filter(Boolean).join(' '),
+  }
   let media: Picked[] = []
   if (input.mediaAssetIds?.length) {
     for (const id of input.mediaAssetIds) {

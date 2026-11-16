@@ -234,8 +234,10 @@ export async function regeneratePost(viewer: Viewer, postId: string, version: nu
     format: ctx.format === 'story' ? 'story' : ctx.size,
     slides: copy.slides as Slide[],
     photoSource: design.photoSource,
-    query: (copy.visualQuery || ctx.topic).slice(0, 100),
+    query: (copy.visualQuery || ctx.photoQuery || ctx.topic).slice(0, 100),
     uploadedBy: viewer.user.id,
+    // tema za proveru fotografija koje se dopunjuju (D-167)
+    topic: [ctx.topic, ...copy.slides.map((s) => s.title)].join(' '),
     // iste fotografije kao do sada; ukrug idu samo one koje je dao korisnik, ostale se dopunjuju
     photoAssetIds: ctx.copy?.photoAssetIds.length ? ctx.copy.photoAssetIds : undefined,
     cyclePhotos: Boolean(ctx.ownPhotos),
@@ -262,6 +264,7 @@ export async function regeneratePost(viewer: Viewer, postId: string, version: nu
     photoSource: design.photoSource,
     ...themeOf(design),
     slides: copy.slides.length,
+    ...(copy.visualQuery ? { photoQuery: copy.visualQuery.slice(0, 200) } : {}),
     copy: { slides: copy.slides as Slide[], photoAssetIds: rendered.photoIds },
   }
   await createSupabaseAdminClient()
@@ -303,7 +306,8 @@ async function regenerateVideo(
     brandId: brand.id,
     design,
     scenes,
-    query: (copy.visualQuery || ctx.topic).slice(0, 100),
+    query: (copy.visualQuery || ctx.photoQuery || ctx.topic).slice(0, 100),
+    topic: ctx.topic,
     uploadedBy: viewer.user.id,
     clipAssetIds: ctx.video?.clipAssetIds ?? [],
     photoAssetIds: ctx.copy?.photoAssetIds ?? [],

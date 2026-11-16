@@ -20,6 +20,7 @@ import { DESIGN_SIZES, type DesignColors, type Slide, type StyleDef } from '@/li
 import { clipPlan, sceneSeconds, VIDEO_LAYOUT, videoStyleFor } from '@/lib/visuals/design/video'
 import { getBrand } from '@/services/brands'
 import { brandLogo, resolveDesign, type ResolvedDesign } from '@/services/design/brand-design'
+import { photoQueryOf } from '@/services/design/photo-query'
 import { parsePostDesign, themeOf, type PostDesignContext } from '@/services/design/post-design'
 import { renderDesignRange, renderDesignSlides, type DesignRenderInput } from '@/services/design/render-post'
 import {
@@ -135,7 +136,7 @@ function slideInput(work: TextWork, slides: Slide[], uploadedBy: string): Design
     slides,
     // iste fotografije kao do sada; objava bez njih ne dobija nove, jer se menja samo tekst
     photoSource: photos.length ? theme.photoSource : 'none',
-    query: work.design.topic.slice(0, 100),
+    query: photoQueryOf(work.design),
     uploadedBy,
     photoAssetIds: photos.length ? photos : undefined,
     cyclePhotos: Boolean(work.design.ownPhotos),
@@ -150,7 +151,7 @@ function videoInput(work: TextWork, scenes: Slide[], uploadedBy: string): ThemeV
     brandId: work.post.brand_id,
     design: work.theme ?? work.brandTheme,
     scenes,
-    query: work.design.topic.slice(0, 100),
+    query: photoQueryOf(work.design),
     uploadedBy,
     clipAssetIds: work.design.video!.clipAssetIds,
     photoAssetIds: work.design.copy.photoAssetIds,

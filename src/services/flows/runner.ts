@@ -225,6 +225,7 @@ export async function runFlow(runId: string, step: StepRunner): Promise<FlowRunR
             platforms,
             flowId: flow.id,
             dmCta: flow.cta_mode === 'dm',
+            ...(copy.visualQuery ? { photoQuery: copy.visualQuery.slice(0, 200) } : {}),
             // korak iz ranije verzije (pre D-116) nema photoIds
             copy: { slides: copy.slides as Slide[], photoAssetIds: rendered.photoIds ?? [] },
           } satisfies PostDesignContext as unknown as Json,

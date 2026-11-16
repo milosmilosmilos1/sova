@@ -9,6 +9,8 @@ import { buildMp4 } from '../fixtures/mp4'
  */
 export const visualsState = {
   unsplashSearches: 0,
+  /** upit svake Unsplash pretrage (D-167: usklađivanje traži engleskim upitom) */
+  unsplashQueries: [] as string[],
   unsplashDownloads: [] as string[],
   canvaTokenCalls: [] as Record<string, string>[],
   canvaUploads: 0,
@@ -32,6 +34,7 @@ export const visualsState = {
 
 export function resetVisualsState(): void {
   visualsState.unsplashSearches = 0
+  visualsState.unsplashQueries = []
   visualsState.unsplashDownloads = []
   visualsState.canvaTokenCalls = []
   visualsState.canvaUploads = 0
@@ -121,6 +124,7 @@ export const unsplashHandlers = [
     if (!auth.startsWith('Client-ID ')) return HttpResponse.json({ errors: ['OAuth error'] }, { status: 401 })
     const url = new URL(request.url)
     const q = url.searchParams.get('query') ?? ''
+    visualsState.unsplashQueries.push(q)
     if (q === 'ratelimit')
       return new HttpResponse('Rate Limit Exceeded', {
         status: 403,

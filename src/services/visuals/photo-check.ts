@@ -1,0 +1,227 @@
+import 'server-only'
+
+import sharp from 'sharp'
+import { z } from 'zod'
+
+import { classifyProviderError } from '@/lib/ai/errors'
+import { generateText, type ImageInput } from '@/lib/ai/gemini'
+import { textModelChain } from '@/lib/ai/models'
+import { callWithFallback } from '@/lib/ai/orchestrator'
+import {
+  buildPhotoCheckPrompt,
+  buildPhotoCheckSystemPrompt,
+  peopleAllowed,
+  photoCheckItemSchema,
+  photoCheckJsonSchema,
+  type MatchLevel,
+  type PhotoCheckItem,
+} from '@/lib/ai/prompts/photo-check'
+import { env } from '@/lib/env'
+import { logger } from '@/lib/logger'
+import { mapLimit } from '@/lib/map-limit'
+import { safeFetch } from '@/lib/ssrf'
+import type { Focus } from '@/lib/visuals/focus'
+import { foreignPeopleText, mentionsPeople } from '@/lib/visuals/people'
+import { textMatchesQuery } from '@/lib/visuals/relevance'
+
+/**
+ * Provera kandidata pre automatskog izbora (D-154, D-167). Sa Unsplash-a i Pexels-a Sova uzima samo
+ * fotografiju ili snimak koji prikazuje glavni predmet objave (prvo u situaciji iz objave, pa sam
+ * predmet), lepo stoji u objavi brenda i na kom su ljudi samo evropskog izgleda. Iz galerije brenda
+ * (njegove fotografije, ljudi se ne gledaju) uzima i fotografiju iz iste oblasti, ali ne ono što temi
+ * ne pripada. Uz prihvaćen kandidat ide i sredina glavnog predmeta, da isečak ne odseče ono zbog
+ * čega je slika izabrana.
+ */
+export interface PhotoCandidate<T> {
+  item: T
+  /** opis: alt fotografije, ime snimka iz adrese, opis i oznake u galeriji */
+  text: string
+  /**
+   * adrese sličica, same slike ili funkcija koja sliku preuzme tek kad je provera zaista gleda;
+   * kadrovi snimka se spajaju u jednu sliku
+   */
+  frames: Frame[]
+}
+
+type Frame = string | Buffer | (() => Promise<Buffer>)
+
+export interface PhotoSubject {
+  /** tema objave kako ju je napisao korisnik ili plan (jezik brenda) */
+  topic?: string | null
+  /** upit pretrage na engleskom */
+  query: string
+}
+
+export interface CheckedPhoto<T> {
+  item: T
+  /** sredina glavnog predmeta na slici; `null` kad slika nije gledana (rezerva po opisu) */
+  focus: Focus | null
+}
+
+export interface PhotoCheckOptions {
+  label: string
+  /** rok (ms od epohe) za celu proveru */
+  until?: number
+  subject: PhotoSubject
+  /**
+   * `stock` (Unsplash, Pexels): glavni predmet na slici, upotrebljiva slika i ljudi evropskog izgleda.
+   * `gallery` (fotografije brenda): sve osim onoga što temi ne pripada.
+   * U oba slučaja bolje poklapanje ide napred, a upotrebljiva slika pre neupotrebljive.
+   */
+  mode?: 'stock' | 'gallery'
+}
+
+/** Provera bez roka pozivaoca. */
+const DEFAULT_CHECK_MS = 10_000
+/** Sa manje vremena od ovoga Gemini se ne pita, pa važi rezerva po opisu. */
+const MIN_CHECK_MS = 2_500
+const FRAME_HEIGHT = 320
+const FRAME_GAP = 8
+
+async function framePart(frame: Frame, timeoutMs: number) {
+  try {
+    let bytes: Buffer
+    if (typeof frame === 'string') {
+      const res = await safeFetch(frame, {
+        timeoutMs,
+        maxBytes: 3 * 1024 * 1024,
+        headers: { accept: 'image/*' },
+      })
+      if (!res.ok) return null
+      bytes = res.body
+    } else if (typeof frame === 'function') {
+      let timer: ReturnType<typeof setTimeout> | undefined
+      bytes = await Promise.race([
+        frame(),
+        new Promise<never>((_, reject) => {
+          timer = setTimeout(() => reject(new Error('Slika nije stigla na vreme.')), timeoutMs)
+        }),
+      ]).finally(() => clearTimeout(timer))
+    } else bytes = frame
+    // okret iz EXIF-a, kao pri crtanju: fokus važi za sliku kakvu stil prikazuje
+    return await sharp(bytes, { limitInputPixels: 80_000_000 })
+      .rotate()
+      .resize({ height: FRAME_HEIGHT })
+      .jpeg({ quality: 70 })
+      .toBuffer({ resolveWithObject: true })
+  } catch {
+    return null
+  }
+}
+
+/** Sličica ili kadrovi snimka jedan pored drugog, kao jedna slika; `null` kad nijedan kadar ne stigne. */
+async function frameSheet(frames: Frame[], timeoutMs: number): Promise<ImageInput | null> {
+  const parts = (await Promise.all(frames.map((f) => framePart(f, timeoutMs)))).filter((p) => p !== null)
+  if (!parts.length) return null
+  if (parts.length === 1) return { data: parts[0]!.data.toString('base64'), mimeType: 'image/jpeg' }
+  let left = 0
+  const composite = parts.map((p) => {
+    const at = { input: p.data, left, top: 0 }
+    left += p.info.width + FRAME_GAP
+    return at
+  })
+  const sheet = await sharp({
+    create: { width: left - FRAME_GAP, height: FRAME_HEIGHT, channels: 3, background: '#ffffff' },
+  })
+    .composite(composite)
+    .jpeg({ quality: 70 })
+    .toBuffer()
+  return { data: sheet.toString('base64'), mimeType: 'image/jpeg' }
+}
+
+const looseOutput = z.object({ items: z.array(z.unknown()) })
+
+const toFocus = (item: PhotoCheckItem): Focus => ({
+  x: Math.min(1, Math.max(0, item.focus_x / 100)),
+  y: Math.min(1, Math.max(0, item.focus_y / 100)),
+})
+
+/** Redosled poklapanja: niži broj ide napred. */
+const MATCH_RANK: Record<MatchLevel, number> = { exact: 0, subject: 1, area: 2, off: 3 }
+
+/**
+ * Kandidati koje Sova sme da uzme, sa fokusom: bolje poklapanje napred, a pri istom poklapanju
+ * redom kao na ulazu (redosled pretrage). Bez ključa, posle greške modela ili kad do roka nema
+ * vremena za Gemini: stok prolazi samo kad opis ne pominje ljude i deli reč sa upitom, a galerija
+ * ostaje u redosledu kakav je dobila.
+ */
+export async function checkPhotos<T>(
+  candidates: PhotoCandidate<T>[],
+  options: PhotoCheckOptions,
+): Promise<CheckedPhoto<T>[]> {
+  const mode = options.mode ?? 'stock'
+  const stock = mode === 'stock'
+  // fotografije brenda su njegove: ljudi na njima se ne proveravaju
+  const clean = stock ? candidates.filter((c) => !foreignPeopleText(c.text)) : candidates
+  if (!clean.length) return []
+  const byText = (): CheckedPhoto<T>[] =>
+    (stock
+      ? clean.filter((c) => !mentionsPeople(c.text) && textMatchesQuery(c.text, options.subject.query))
+      : clean
+    ).map((c) => ({ item: c.item, focus: null }))
+  const until = options.until ?? Date.now() + DEFAULT_CHECK_MS
+  if (!env.GEMINI_API_KEY || until - Date.now() < MIN_CHECK_MS) return byText()
+
+  const sheets = await mapLimit(clean, 6, (c) =>
+    frameSheet(c.frames, Math.max(1_000, Math.min(6_000, until - Date.now() - 1_000))),
+  )
+  // kandidat čija sličica ne stigne se ne uzima: nije proveren
+  const shown = clean.flatMap((c, i) => (sheets[i] ? [{ item: c.item, image: sheets[i] }] : []))
+  if (!shown.length) return byText()
+  if (until - Date.now() < MIN_CHECK_MS / 2) return byText()
+  try {
+    const outcome = await callWithFallback(
+      await textModelChain(),
+      (model) =>
+        generateText({
+          model,
+          system: buildPhotoCheckSystemPrompt(),
+          prompt: buildPhotoCheckPrompt({
+            count: shown.length,
+            topic: options.subject.topic,
+            query: options.subject.query,
+          }),
+          images: shown.map((s) => s.image),
+          jsonSchema: photoCheckJsonSchema(),
+          maxOutputTokens: 160 + shown.length * 70,
+          temperature: 0,
+          thinking: 'minimal',
+          timeoutMs: Math.max(1_000, until - Date.now()),
+        }),
+      { label: 'photo-check', attempts: 1 },
+    )
+    const parsed = looseOutput.safeParse(outcome.result.json)
+    if (!parsed.success) throw new Error('Provera fotografija nije po šemi.')
+    // stavka van šeme ili indeks koji model nije vratio se ne uzima
+    const verdicts = new Map<number, PhotoCheckItem>()
+    for (const raw of parsed.data.items) {
+      const item = photoCheckItemSchema.safeParse(raw)
+      if (item.success && item.data.index < shown.length && !verdicts.has(item.data.index))
+        verdicts.set(item.data.index, item.data)
+    }
+    const reasons = { people: 0, off: 0, area: 0, unusable: 0, missing: 0 }
+    const taken: Array<CheckedPhoto<T> & { rank: number }> = []
+    shown.forEach((s, i) => {
+      const v = verdicts.get(i)
+      if (!v) return void reasons.missing++
+      if (stock && !peopleAllowed(v.people)) return void reasons.people++
+      if (v.match === 'off') return void reasons.off++
+      // sa stoka samo slika sa glavnim predmetom; iz galerije i slika iz iste oblasti
+      if (stock && v.match === 'area') return void reasons.area++
+      if (stock && !v.usable) return void reasons.unusable++
+      taken.push({ item: s.item, focus: toFocus(v), rank: MATCH_RANK[v.match] * 2 + (v.usable ? 0 : 1) })
+    })
+    logger.info('photo_check', {
+      label: options.label,
+      checked: shown.length,
+      taken: taken.length,
+      exact: taken.filter((t) => t.rank < 2).length,
+      rejected: { ...reasons, text: candidates.length - clean.length, frames: clean.length - shown.length },
+    })
+    // stabilno: pri istom poklapanju ostaje redosled pretrage
+    return [...taken].sort((a, b) => a.rank - b.rank).map(({ item, focus }) => ({ item, focus }))
+  } catch (error) {
+    logger.warn('photo_check_failed', { label: options.label, code: classifyProviderError(error).code })
+    return byText()
+  }
+}

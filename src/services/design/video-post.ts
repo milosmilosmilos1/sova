@@ -28,6 +28,8 @@ export interface ThemeVideoInput {
   /** kadrovi videa (`videoScenes`) */
   scenes: Slide[]
   query: string
+  /** tema objave za proveru snimaka i fotografija (D-167); bez nje naslovi kadrova */
+  topic?: string | null
   uploadedBy: string | null
   colors?: DesignColors
   /** snimci i fotografije koje video već ima (usklađivanje, „Generiši ponovo”): ne biraju se novi */
@@ -56,6 +58,11 @@ const CLIP_MAX_BYTES = 30 * 1024 * 1024
 /** Izbor jednog snimka (pretraga, preuzimanje, čuvanje) u jednom koraku od najviše 30 s. */
 const CLIP_STEP_BUDGET_MS = 22_000
 
+/** Tema za proveru snimaka i fotografija (D-167): zadata, ili naslovi kadrova. */
+function videoTopic(input: ThemeVideoInput): string {
+  return input.topic || input.scenes.map((s) => s.title).join(' ')
+}
+
 /** Jedan nov snimak za upit; `null` kad Pexels nije podešen ili novog snimka nema. */
 export async function pickVideoClip(input: ThemeVideoInput): Promise<string | null> {
   try {
@@ -63,6 +70,7 @@ export async function pickVideoClip(input: ThemeVideoInput): Promise<string | nu
       workspaceId: input.workspaceId,
       brandId: input.brandId,
       query: input.query,
+      topic: videoTopic(input),
       orientation: 'portrait',
       uploadedBy: input.uploadedBy,
       preferShortSide: CLIP_SHORT_SIDE,
@@ -85,6 +93,7 @@ async function pickVideoPhotos(input: ThemeVideoInput): Promise<string[]> {
       workspaceId: input.workspaceId,
       brandId: input.brandId,
       query: input.query,
+      topic: videoTopic(input),
       count: CLIPS_PER_VIDEO,
       crop: 'portrait',
       uploadedBy: input.uploadedBy,

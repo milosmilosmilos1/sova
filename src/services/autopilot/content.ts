@@ -242,6 +242,8 @@ export async function draftMedia(
     format: PostFormat
     required: boolean
     query: string
+    /** tema objave, po kojoj provera zna šta fotografija i snimak moraju da prikazuju (D-167) */
+    topic?: string | null
     headline: string
     cta: string | null
     postId: string
@@ -251,7 +253,12 @@ export async function draftMedia(
   const need = mediaNeed(input.format)
   if (need.kind === 'none' && !input.required)
     return { assetIds: [], tokens: 0, format: input.format, note: null }
-  const ctx = { workspaceId: brand.workspace_id, brandId: brand.id, uploadedBy: null }
+  const ctx = {
+    workspaceId: brand.workspace_id,
+    brandId: brand.id,
+    uploadedBy: null,
+    topic: input.topic ?? input.headline,
+  }
   let format = input.format
   let note: string | null = null
   try {

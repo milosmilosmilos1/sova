@@ -5,7 +5,7 @@ import { resetBreakerForTests } from '@/lib/ai/orchestrator'
 import { resetMemoryRateLimit } from '@/lib/ratelimit'
 import { pickPexelsPhotos, pickPexelsVideo } from '@/services/visuals/pexels'
 
-import { enqueuePeopleVerdicts, geminiServer, peopleCalls, resetGeminiMock } from './gemini-mock'
+import { enqueuePeopleVerdicts, geminiServer, photoCalls, resetGeminiMock } from './gemini-mock'
 import { admin, call, createTestUser, deleteTestUser, type TestUser } from './helpers'
 import { pexelsHandlers, resetVisualsState, unsplashHandlers, visualsState } from './visuals-mock'
 
@@ -85,16 +85,16 @@ describe('ljudi samo evropskog izgleda (D-136, D-154)', () => {
     enqueuePeopleVerdicts(['other', 'european', 'none', 'european'])
     const picked = await video(`cleaning service at home ${tag()}`)
     expect(pexelsId(picked?.asset)).toBe(303)
-    expect(peopleCalls).toHaveLength(1)
+    expect(photoCalls).toHaveLength(1)
     // naslovna slika i dva kadra po snimku idu kao jedna slika
-    expect(peopleCalls[0]!.images).toBe(4)
+    expect(photoCalls[0]!.images).toBe(4)
   })
 
   it('snimak čije ime pominje drugi izgled se odbija bez gledanja kadrova', async () => {
     visualsState.pexelsVideoSlugs = { 101: 'black-woman-vacuuming-the-floor' }
     const picked = await video(`vacuum cleaner ${tag()}`)
     expect(pexelsId(picked?.asset)).toBe(303)
-    expect(peopleCalls[0]!.images).toBe(3)
+    expect(photoCalls[0]!.images).toBe(3)
   })
 
   it('fotografija sa drugim izgledom se preskače', async () => {
@@ -103,21 +103,22 @@ describe('ljudi samo evropskog izgleda (D-136, D-154)', () => {
     expect(picked.map((p) => pexelsId(p.asset))).toEqual([302])
   })
 
-  it('kad provera ne uspe, prolazi samo snimak čije ime ne pominje ljude', async () => {
+  it('kad provera ne uspe, prolazi samo snimak čije ime ne pominje ljude i odgovara upitu (D-167)', async () => {
     visualsState.pexelsVideoSlugs = {
       101: 'a-woman-cleaning-the-kitchen',
       303: 'air-conditioner-on-the-wall',
+      505: 'clean-kitchen-counter',
     }
     // glavni i rezervni model padaju
     enqueuePeopleVerdicts('fail', 'fail')
     const picked = await video(`kitchen cleaning ${tag()}`)
-    expect(pexelsId(picked?.asset)).toBe(303)
+    expect(pexelsId(picked?.asset)).toBe(505)
   })
 
   it('kad nijedan snimak ne prođe, izbor vraća null posle najviše tri provere', async () => {
     enqueuePeopleVerdicts(['other', 'other', 'other', 'other'], ['other', 'other', 'other', 'other'])
     const picked = await video(`busy office ${tag()}`)
     expect(picked).toBeNull()
-    expect(peopleCalls.length).toBeLessThanOrEqual(3)
+    expect(photoCalls.length).toBeLessThanOrEqual(3)
   })
 })
