@@ -889,5 +889,11 @@
   "članova": "учасників",
   "Šablon ne postoji.": "Шаблону не існує.",
   "Šta je objavljeno, rezultati i plan za narednu nedelju.": "Що опубліковано, результати й план на наступний тиждень.",
-  "„{0}”: {1}": "«{0}»: {1}"
+  "„{0}”: {1}": "«{0}»: {1}",
+  "Razgovor ne postoji.": "Розмова не існує.",
+  "Postavili ste 20 pitanja u poslednjih sat vremena. Pokušajte malo kasnije ili pišite podršci.": "Ви поставили 20 питань за останню годину. Спробуйте трохи пізніше або напишіть у підтримку.",
+  "Napišite pitanje.": "Напишіть питання.",
+  "Pitanje ima najviše 1.000 znakova.": "Питання може мати щонайбільше 1000 символів.",
+  "Podrška: pitanje iz chatbota": "Підтримка: питання з чат-бота",
+  "Razgovor je poslat podršci kao prijava problema. Status pratite u „Predlozi i podrška”.": "Розмову надіслано в підтримку як повідомлення про проблему. Статус дивіться в «Пропозиції й підтримка»."
 }

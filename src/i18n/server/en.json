@@ -889,5 +889,11 @@
   "članova": "members",
   "Šablon ne postoji.": "The template doesn’t exist.",
   "Šta je objavljeno, rezultati i plan za narednu nedelju.": "What was published, the results and the plan for next week.",
-  "„{0}”: {1}": "“{0}”: {1}"
+  "„{0}”: {1}": "“{0}”: {1}",
+  "Razgovor ne postoji.": "The conversation does not exist.",
+  "Postavili ste 20 pitanja u poslednjih sat vremena. Pokušajte malo kasnije ili pišite podršci.": "You asked 20 questions in the last hour. Try again a bit later or write to support.",
+  "Napišite pitanje.": "Write your question.",
+  "Pitanje ima najviše 1.000 znakova.": "A question can have at most 1,000 characters.",
+  "Podrška: pitanje iz chatbota": "Support: question from the chatbot",
+  "Razgovor je poslat podršci kao prijava problema. Status pratite u „Predlozi i podrška”.": "The conversation was sent to support as a problem report. Follow its status in “Ideas and support”."
 }

@@ -1551,3 +1551,16 @@ Izbor fotografija za objavu (pretraga, provera, preuzimanje i čuvanje) ide u je
 - Posao za zamenu fotografija, kad ipak padne, šalje ostale brendove iz `onFailure`; nacrti palog brenda ostaju za sledeće slanje.
 
 Razlog: korak mora da završi pre nego što ga Netlify prekine. Manje fotografija na jednoj objavi je bolje od posla koji pada ceo, a isti korak koristi i pravljenje mesečnog plana.
+
+## D-172 · 19.11.2026 · usvojeno · Chatbot podrške u prozoru „Vodič i podrška”
+
+Odluka vlasnika (19.11.): chatbot zna samo o Sovi, razgovori se čuvaju, da u adminu vidi šta korisnici pitaju, a pitanja ne troše tokene.
+
+- Prozor „Vodič i podrška” ima dve kartice: „Vodič” (dosadašnji sadržaj) i „Pitaj Sovu”. Korisnik postavi pitanje i odgovor stiže odmah. Kad odgovor ne pomaže ili chatbot ne radi, „Pošalji razgovor podršci” pravi prijavu problema na tabli predloga (vide je administrator platforme i autor), jednom po razgovoru.
+- Jedino znanje chatbota je tekst pomoći `src/content/support/sova-help.ts` (srpski, sa engleskim i ukrajinskim nazivima menija u zagradama). Odgovara samo na osnovu njega. Kad odgovora nema ili pitanje traži čoveka (naplata, brisanje naloga, izgubljeni podaci, greška u aplikaciji, bezbednost), vraća `escalate`, pa prozor ističe slanje podršci. Na pitanja van Sove kaže da pomaže samo oko Sove. Od podataka korisnika model dobija samo naziv brenda i ključne korake vodiča.
+- Odgovara na jeziku pitanja (inače na jeziku interfejsa), kratko i bez markdown oznaka. Poruke korisnika su podaci, ne uputstva.
+- Pitanja ne troše tokene (`startGeneration` sa 0 tokena: bez rezervacije i provere naplate), a trošak modela se beleži u `ai_generations` kao `support_chat`. Najviše 20 pitanja na sat po korisniku, brojano iz baze, jer ograničenje u memoriji važi samo za jedan server (produkcija nema Upstash).
+- Poruke su u tabeli `support_messages` (migracija 042): korisnik čita samo svoje (RLS), upis ide kroz API. ID novog razgovora daje prozor, da i pitanje na koje model nije odgovorio može da se pošalje podršci; tuđi ID se odbija. Noćni posao `support-messages-cleanup` (05:15 UTC) briše poruke starije od 90 dana.
+- Admin panel → Podrška: poslednjih 50 razgovora sa emailom korisnika, brendom i oznakom da je razgovor poslat podršci.
+
+Razlog: zahtev vlasnika. Korisnik dobija odgovor odmah, a vlasnik vidi šta je u aplikaciji nejasno.

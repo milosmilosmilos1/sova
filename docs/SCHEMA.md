@@ -1392,6 +1392,20 @@ create table studio_messages (
 );
 -- RLS: korisnik čita samo svoj razgovor za brend kome ima pristup; piše service role; najviše 200 poruka po razgovoru
 
+-- Chatbot podrške (D-172, migracija 042): pitanja i odgovori u prozoru „Vodič i podrška”
+create table support_messages (
+  id uuid primary key default gen_random_uuid(),
+  conversation_id uuid not null,                   -- razgovor nema svoj red; ID novog daje prozor
+  user_id uuid not null references profiles(id) on delete cascade,
+  brand_id uuid references brands(id) on delete set null,  -- brend na kom je korisnik pitao (kontekst)
+  role text not null,                               -- user | assistant
+  body text not null,                               -- 1–4000 znakova
+  meta jsonb not null default '{}',                 -- odgovor: {escalate}; potvrda slanja podršci: {escalated, ideaId}
+  created_at timestamptz not null default now()
+);
+-- RLS: korisnik čita samo svoje poruke; piše service role (API); admin panel čita kroz service role.
+-- Poruke starije od 90 dana briše `support-messages-cleanup`. ai_generation_type ima i 'support_chat' (0 tokena).
+
 -- Inbox i DM automatizacija (migracija 038, D-117)
 create table inbox_threads (
   id uuid primary key default gen_random_uuid(),

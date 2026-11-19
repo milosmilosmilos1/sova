@@ -13,6 +13,7 @@ import { designPhotosRefresh } from './design-photos-refresh'
 import { flowRun, flowsTick } from './flows'
 import { inboxSync } from './inbox-sync'
 import { mediaCleanupDaily, mediaCleanupNow } from './media-cleanup'
+import { supportMessagesCleanup } from './support-cleanup'
 import { mediaIncomingCleanup } from './media-incoming-cleanup'
 import { monthPlanCreate, monthPlanGenerate } from './month-plan'
 import { ping } from './ping'
@@ -55,6 +56,7 @@ export const functions = [
   mediaIncomingCleanup,
   mediaCleanupDaily,
   mediaCleanupNow,
+  supportMessagesCleanup,
   billingProcessEvent,
   billingDaily,
   reportsMonthly,

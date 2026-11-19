@@ -1298,7 +1298,25 @@
     "setupContinue": "Nastavite uvod",
     "idea": "Predložite funkciju",
     "bug": "Prijavite problem",
-    "email": "Pišite podršci"
+    "email": "Pišite podršci",
+    "chat": {
+      "tabGuide": "Vodič",
+      "tabChat": "Pitaj Sovu",
+      "loading": "Učitavam razgovor…",
+      "intro": "Pitajte bilo šta o Sovi: kako se povezuje mreža, šta znači neki status ili gde je neko podešavanje. Sova odgovara odmah.",
+      "history": "Razgovor sa podrškom",
+      "you": "Vi",
+      "bot": "Sova",
+      "thinking": "Sova piše…",
+      "error": "Odgovor nije stigao. Pokušajte ponovo ili pošaljite razgovor podršci.",
+      "escalate": "Pošalji razgovor podršci",
+      "escalated": "Razgovor je poslat podršci kao prijava problema. Status pratite u „Predlozi i podrška”.",
+      "label": "Pitanje za podršku",
+      "placeholder": "Vaše pitanje…",
+      "send": "Pošalji",
+      "newChat": "Nov razgovor",
+      "disclaimer": "Odgovara automatski i samo o Sovi. Razgovori se čuvaju 90 dana."
+    }
   },
   "home": {
     "noBrand": "Napravite prvi brend u delu Brend i nalog.",

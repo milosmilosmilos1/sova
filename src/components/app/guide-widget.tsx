@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
+import { SupportChat } from '@/components/app/support-chat'
 import { api } from '@/components/shared/api-client'
 import { GUIDE_HREF, type GuideStepKey as StepKey } from '@/lib/guide'
 import { cn } from '@/lib/utils'
@@ -20,12 +21,14 @@ interface GuideView {
 
 /**
  * „Vodič i podrška” (D-115): plutajuće dugme sa sledećim ključnim korakom, a u prozoru svi koraci,
- * uvod, tabla predloga i email podrške. U uvodu se ne prikazuje, jer uvod ima svoje korake.
+ * uvod, tabla predloga i email podrške. U uvodu se ne prikazuje, jer uvod ima svoje korake. Druga
+ * kartica je chatbot podrške (D-172).
  */
 export function GuideWidget({ brandId, supportEmail }: { brandId: string; supportEmail: string }) {
   const t = useTranslations('guide')
   const pathname = usePathname()
   const [open, setOpen] = useState(false)
+  const [tab, setTab] = useState<'guide' | 'chat'>('guide')
   const query = useQuery({
     queryKey: ['guide', brandId],
     queryFn: () => api<GuideView>(`/api/guide?brandId=${brandId}`),
@@ -41,7 +44,7 @@ export function GuideWidget({ brandId, supportEmail }: { brandId: string; suppor
         <section
           role="dialog"
           aria-label={t('title')}
-          className="pointer-events-auto w-[min(22rem,calc(100vw-2rem))] space-y-4 rounded-2xl border bg-card p-4 shadow-lg"
+          className="pointer-events-auto w-[min(24rem,calc(100vw-2rem))] space-y-4 rounded-2xl border bg-card p-4 shadow-lg"
         >
           <div className="flex items-start justify-between gap-3">
             <div>
@@ -59,68 +62,108 @@ export function GuideWidget({ brandId, supportEmail }: { brandId: string; suppor
               <X className="size-4" aria-hidden />
             </button>
           </div>
-          <ol className="space-y-1">
-            {view.steps.map((s, i) => (
-              <li key={s.key}>
-                <Link
-                  href={GUIDE_HREF[s.key]}
-                  onClick={() => setOpen(false)}
-                  className={cn(
-                    'flex items-start gap-3 rounded-lg p-2 text-sm transition-colors hover:bg-muted',
-                    view.next === s.key && 'bg-primary/5 ring-1 ring-primary/30',
-                  )}
-                >
-                  {s.done ? (
-                    <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" aria-hidden />
-                  ) : (
-                    <Circle className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
-                  )}
-                  <span className="min-w-0">
-                    <span className={cn('block font-medium', s.done && 'text-muted-foreground')}>
-                      {i + 1}. {t(`steps.${s.key}.title`)}
-                    </span>
-                    {view.next === s.key ? (
-                      <span className="block text-xs text-muted-foreground">{t(`steps.${s.key}.hint`)}</span>
-                    ) : null}
-                  </span>
-                  <span className="sr-only">{s.done ? t('done') : t('todo')}</span>
-                </Link>
-              </li>
+          <div
+            role="tablist"
+            aria-label={t('title')}
+            className="grid grid-cols-2 gap-1 rounded-lg bg-muted p-1 text-sm"
+          >
+            {(['guide', 'chat'] as const).map((key) => (
+              <button
+                key={key}
+                type="button"
+                role="tab"
+                id={`guide-tab-${key}`}
+                aria-selected={tab === key}
+                aria-controls={`guide-panel-${key}`}
+                onClick={() => setTab(key)}
+                className={cn(
+                  'rounded-md px-2 py-1.5 font-medium transition-colors',
+                  tab === key
+                    ? 'bg-card text-foreground shadow-sm'
+                    : 'text-muted-foreground hover:text-foreground',
+                )}
+              >
+                {key === 'guide' ? t('chat.tabGuide') : t('chat.tabChat')}
+              </button>
             ))}
-          </ol>
-          <div className="grid gap-1 border-t pt-3 text-sm">
-            <Link
-              href="/app/setup"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2 rounded-lg p-2 hover:bg-muted"
-            >
-              <Compass className="size-4 text-primary" aria-hidden />
-              {view.setupCompleted ? t('setupAgain') : t('setupContinue')}
-            </Link>
-            <Link
-              href="/app/ideas"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2 rounded-lg p-2 hover:bg-muted"
-            >
-              <Lightbulb className="size-4 text-primary" aria-hidden />
-              {t('idea')}
-            </Link>
-            <Link
-              href="/app/ideas?new=bug"
-              onClick={() => setOpen(false)}
-              className="flex items-center gap-2 rounded-lg p-2 hover:bg-muted"
-            >
-              <Bug className="size-4 text-primary" aria-hidden />
-              {t('bug')}
-            </Link>
-            <a
-              href={`mailto:${supportEmail}`}
-              className="flex items-center gap-2 rounded-lg p-2 hover:bg-muted"
-            >
-              <Mail className="size-4 text-primary" aria-hidden />
-              {t('email')}
-            </a>
           </div>
+          {tab === 'chat' ? (
+            <div role="tabpanel" id="guide-panel-chat" aria-labelledby="guide-tab-chat">
+              <SupportChat brandId={brandId} supportEmail={supportEmail} />
+            </div>
+          ) : (
+            <div
+              role="tabpanel"
+              id="guide-panel-guide"
+              aria-labelledby="guide-tab-guide"
+              className="space-y-4"
+            >
+              <ol className="space-y-1">
+                {view.steps.map((s, i) => (
+                  <li key={s.key}>
+                    <Link
+                      href={GUIDE_HREF[s.key]}
+                      onClick={() => setOpen(false)}
+                      className={cn(
+                        'flex items-start gap-3 rounded-lg p-2 text-sm transition-colors hover:bg-muted',
+                        view.next === s.key && 'bg-primary/5 ring-1 ring-primary/30',
+                      )}
+                    >
+                      {s.done ? (
+                        <CheckCircle2 className="mt-0.5 size-4 shrink-0 text-emerald-600" aria-hidden />
+                      ) : (
+                        <Circle className="mt-0.5 size-4 shrink-0 text-muted-foreground" aria-hidden />
+                      )}
+                      <span className="min-w-0">
+                        <span className={cn('block font-medium', s.done && 'text-muted-foreground')}>
+                          {i + 1}. {t(`steps.${s.key}.title`)}
+                        </span>
+                        {view.next === s.key ? (
+                          <span className="block text-xs text-muted-foreground">
+                            {t(`steps.${s.key}.hint`)}
+                          </span>
+                        ) : null}
+                      </span>
+                      <span className="sr-only">{s.done ? t('done') : t('todo')}</span>
+                    </Link>
+                  </li>
+                ))}
+              </ol>
+              <div className="grid gap-1 border-t pt-3 text-sm">
+                <Link
+                  href="/app/setup"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2 rounded-lg p-2 hover:bg-muted"
+                >
+                  <Compass className="size-4 text-primary" aria-hidden />
+                  {view.setupCompleted ? t('setupAgain') : t('setupContinue')}
+                </Link>
+                <Link
+                  href="/app/ideas"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2 rounded-lg p-2 hover:bg-muted"
+                >
+                  <Lightbulb className="size-4 text-primary" aria-hidden />
+                  {t('idea')}
+                </Link>
+                <Link
+                  href="/app/ideas?new=bug"
+                  onClick={() => setOpen(false)}
+                  className="flex items-center gap-2 rounded-lg p-2 hover:bg-muted"
+                >
+                  <Bug className="size-4 text-primary" aria-hidden />
+                  {t('bug')}
+                </Link>
+                <a
+                  href={`mailto:${supportEmail}`}
+                  className="flex items-center gap-2 rounded-lg p-2 hover:bg-muted"
+                >
+                  <Mail className="size-4 text-primary" aria-hidden />
+                  {t('email')}
+                </a>
+              </div>
+            </div>
+          )}
         </section>
       ) : null}
       <button

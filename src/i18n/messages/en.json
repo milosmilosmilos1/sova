@@ -1298,7 +1298,25 @@
     "setupContinue": "Continue setup",
     "idea": "Suggest a feature",
     "bug": "Report a problem",
-    "email": "Email support"
+    "email": "Email support",
+    "chat": {
+      "tabGuide": "Guide",
+      "tabChat": "Ask Sova",
+      "loading": "Loading the conversation…",
+      "intro": "Ask anything about Sova: how to connect a network, what a status means or where a setting is. Sova answers right away.",
+      "history": "Support conversation",
+      "you": "You",
+      "bot": "Sova",
+      "thinking": "Sova is typing…",
+      "error": "No answer came back. Try again or send the conversation to support.",
+      "escalate": "Send the conversation to support",
+      "escalated": "The conversation was sent to support as a problem report. Follow its status in “Ideas and support”.",
+      "label": "Question for support",
+      "placeholder": "Your question…",
+      "send": "Send",
+      "newChat": "New conversation",
+      "disclaimer": "Answers are automatic and only about Sova. Conversations are kept for 90 days."
+    }
   },
   "home": {
     "noBrand": "Create your first brand under Brand and account.",

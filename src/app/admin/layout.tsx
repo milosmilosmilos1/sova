@@ -15,6 +15,7 @@ const NAV: Array<{ href: Route; label: string }> = [
   { href: '/admin/publishing', label: 'Objave' },
   { href: '/admin/ai-costs', label: 'AI troškovi' },
   { href: '/admin/platform', label: 'Platforma' },
+  { href: '/admin/support', label: 'Podrška' },
   { href: '/admin/audit', label: 'Audit log' },
 ]
 
