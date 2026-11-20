@@ -1042,7 +1042,8 @@
       "noAccounts": "Nema povezanih mreža. Nacrt možete preuzeti i objaviti ručno.",
       "save": "Napravi nacrt",
       "saving": "Pravim nacrt…",
-      "savedHint": "Nacrt se otvara u editoru, gde ga zakazujete."
+      "savedHint": "Nacrt se otvara u editoru, gde ga zakazujete.",
+      "languageWarning": "Ova polja nisu na jeziku objava ({language}): {fields}. Sova vaš tekst ne prevodi, pa ih prepišite, da objava bude na jednom jeziku."
     }
   }
 }

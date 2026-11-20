@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { WRITE_IN, type ContentLocale } from '@/config/locales'
+import { ONE_LANGUAGE, WRITE_IN, type ContentLocale } from '@/config/locales'
 import { VOICE_LIMITS, VOICE_TOPICS_MAX } from '@/lib/schemas/voice'
 
 /**
@@ -56,6 +56,7 @@ function section(title: string, lines: string[]): string[] {
 export function buildVoiceDraftPrompt(input: VoiceDraftInput): string {
   return [
     WRITE_IN[input.locale],
+    ONE_LANGUAGE[input.locale],
     '',
     `Brend: ${input.brandName}`,
     ...section('PROFIL SA SAJTA', input.profile),

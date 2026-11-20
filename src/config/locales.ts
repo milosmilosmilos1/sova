@@ -33,6 +33,25 @@ export const WRITE_IN: Record<ContentLocale, string> = {
   en: 'Write in English.',
 }
 
+const LANGUAGE_NAME: Record<ContentLocale, string> = {
+  'sr-Latn': 'srpskom jeziku, latinicom',
+  'sr-Cyrl': 'srpskom jeziku, ćirilicom',
+  en: 'engleskom jeziku',
+}
+
+/**
+ * Jedan jezik u objavi (vlasnik, 21.11.2026: „šta je na engleskom ide samo engleski, šta je srpski
+ * ide samo srpski”): sve što ide u objavu je na jeziku objave. Podaci o brendu, teme i poziv na
+ * akciju na drugom jeziku se prevode, a vlastita imena ostaju. Ide uz `WRITE_IN` u svako uputstvo
+ * koje piše tekst za objavu ili profil.
+ */
+export const ONE_LANGUAGE: Record<ContentLocale, string> = Object.fromEntries(
+  CONTENT_LOCALES.map((locale) => [
+    locale,
+    `Sav tekst koji pišeš je samo na ${LANGUAGE_NAME[locale]}: naslovi, tekst slajdova, opis, heštegovi i poziv na akciju. Podatke o brendu, teme i poziv na akciju koji su na drugom jeziku prevedi na taj jezik. Ne mešaj jezike u istom tekstu; na drugom jeziku ostaju samo vlastita imena (naziv brenda, mesta, proizvoda).`,
+  ]),
+) as Record<ContentLocale, string>
+
 /** Kod za `Intl` (datumi i brojevi u tekstu objave). */
 export const INTL_LOCALE: Record<ContentLocale, string> = {
   'sr-Latn': 'sr-Latn-RS',

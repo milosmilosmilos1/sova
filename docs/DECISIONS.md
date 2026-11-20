@@ -1617,3 +1617,17 @@ Nalaz QA pregleda (docs/QA.md, 20.11.): Meta callback za brisanje podataka samo 
 - Ostale mreže ne javljaju uklanjanje aplikacije; Sova to vidi pri sledećem korišćenju naloga i traži ponovno povezivanje.
 
 Razlog: obaveza prema Meti i korisnicima; tvrdnja na javnoj strani mora da odgovara onome što aplikacija radi.
+
+## D-177 · 21.11.2026 · usvojeno · Jedan jezik u objavi
+
+Odluka vlasnika (21.11.): jezici objava se ne mešaju; šta je na engleskom ide samo na engleskom, šta je na srpskom samo na srpskom.
+
+- Jezik objave je jezik objava brenda, ili onaj koji je izabran za tok, plan ili objavu u Studiju. Sve što ide u objavu je na tom jeziku: naslovi i tekst slajdova, opis, heštegovi i poziv na akciju. Vlastita imena (naziv brenda, mesta, proizvoda) ostaju kako jesu.
+- Uputstvo modelu: pravilo `ONE_LANGUAGE` (`config/locales.ts`) ide uz jezik pisanja u svako uputstvo koje piše tekst za objavu ili profil: karusel i dizajnirana objava, tekst objave, Studio, mesečni plan, strategija, glas brenda, opisi, istaknute priče i dodaci profila. Podatke o brendu, teme i poziv na akciju na drugom jeziku model prevodi.
+- Provera u kodu (`lib/content-language.ts`): rečenica je strana tek kad ima bar dve reči koje postoje samo u drugom jeziku i nijednu iz jezika objave; heštegovi, @nalozi, linkovi, email adrese i vlastita imena se ne broje, a reči koje postoje u oba jezika nisu na spiskovima. Provera je namerno oprezna, jer lažna uzbuna bi odbacila dobru objavu.
+- Dizajnirana objava (Studio, tokovi, plan, Autopilot): kad tekst ima rečenicu na drugom jeziku, Sova jednom traži ispravku sa navedenim rečenicama i zadržava odgovor sa manje takvih rečenica; ispravka se ne naplaćuje tokenima. Provera kvaliteta tokova i Autopilota ima novu stavku „jezik”, pa ostatak vidi onaj ko odobrava. Alat „Tekst za objavu” uz takav predlog piše upozorenje.
+- Šabloni: poziv na akciju iz glasa brenda ulazi u objavu samo ako je na jeziku objave, inače kratak poziv na jeziku objave; forma upozori kad je upisan tekst na drugom jeziku (Sova tekst korisnika ne prevodi).
+- Utisak klijenta se citira doslovno (D-165), pa ga mesečni plan sam bira samo kad je napisan na jeziku objava; izričit izbor korisnika u Studiju ostaje.
+- Uvod, korak Brend: kad je sajt na jednom jeziku, a objave na drugom, napomena kaže oba jezika i da se jezik objava menja u prvom koraku. Predlog poziva na akciju je uvek na jeziku objava.
+
+Razlog: zahtev vlasnika; objava koja meša jezike izgleda nemarno i zbunjuje publiku.

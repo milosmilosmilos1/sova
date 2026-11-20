@@ -1042,7 +1042,8 @@
       "noAccounts": "No connected networks. You can download the draft and post it yourself.",
       "save": "Create draft",
       "saving": "Creating draft…",
-      "savedHint": "The draft opens in the editor, where you schedule it."
+      "savedHint": "The draft opens in the editor, where you schedule it.",
+      "languageWarning": "These fields aren’t in the post language ({language}): {fields}. Sova doesn’t translate your text, so rewrite them to keep the post in one language."
     }
   }
 }

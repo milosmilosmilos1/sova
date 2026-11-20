@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { WRITE_IN, type ContentLocale } from '@/config/locales'
+import { ONE_LANGUAGE, WRITE_IN, type ContentLocale } from '@/config/locales'
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { FORMAT_LABEL, type PostFormat } from '@/config/post-formats'
 import type { ContentKind } from '@/lib/schemas/brand-content'
@@ -189,6 +189,7 @@ export function buildMonthPlanPrompt(input: MonthPlanPromptInput): string {
   const formats = [...new Set(input.slots.map((s) => s.format))]
   return [
     WRITE_IN[input.locale],
+    ONE_LANGUAGE[input.locale],
     '',
     ...brandPromptLines(input.brand),
     ...dataBlock(

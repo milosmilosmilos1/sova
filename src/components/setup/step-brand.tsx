@@ -75,6 +75,7 @@ function BrandEditor({
 }) {
   const t = useTranslations('setup')
   const tv = useTranslations('voice')
+  const tc = useTranslations('contentLocale')
   const qc = useQueryClient()
   const [value, setValue] = useState<BrandVoice>(view.voice)
   // isti uslov kao na serveru (D-174), iz onoga što je upisano, pre čuvanja
@@ -93,6 +94,11 @@ function BrandEditor({
       {view.fromProfile && !view.saved ? (
         <p className="rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm">
           {tv('fromProfile')}
+        </p>
+      ) : null}
+      {view.siteLocale && view.siteLocale !== view.postLocale ? (
+        <p role="status" className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
+          {t('brand.languageMismatch', { site: tc(view.siteLocale), post: tc(view.postLocale) })}
         </p>
       ) : null}
       <VoiceForm

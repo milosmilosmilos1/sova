@@ -18,6 +18,7 @@ import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import { AiError } from '@/lib/ai/errors'
+import { foreignSentences } from '@/lib/content-language'
 import type { TextRequestInput } from '@/lib/schemas/ai'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getTokenPrice } from '@/lib/tokens/prices'
@@ -187,12 +188,20 @@ export async function generatePostText(
     const validation: PostTextResult['validation'] = {}
     for (const v of output.variants) {
       const r = validateText(v.platform as SocialPlatform, `${v.hook}\n\n${v.body}\n\n${v.cta}`, v.hashtags)
+      // jedan jezik u objavi: predlog sa rečenicom na drugom jeziku dobija upozorenje
+      const foreign = foreignSentences(`${v.hook}\n${v.body}\n${v.cta}`, brandContext.locale)
+      const languageProblem = foreign.length
+        ? `Rečenice na drugom jeziku: ${foreign
+            .slice(0, 2)
+            .map((s) => `„${s.slice(0, 80)}”`)
+            .join(', ')}.`
+        : null
       validation[`${v.platform}:${Object.keys(validation).filter((k) => k.startsWith(v.platform)).length}`] =
         {
           ok: r.ok,
           length: r.length,
           max: r.max,
-          problems: r.problems,
+          problems: languageProblem ? [...r.problems, languageProblem] : r.problems,
         }
     }
 

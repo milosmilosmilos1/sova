@@ -1,5 +1,6 @@
 import { z } from 'zod'
 
+import { ONE_LANGUAGE } from '@/config/locales'
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import type { BrandContext, ContentLocale } from '@/lib/ai/prompts/post-text'
 
@@ -153,6 +154,7 @@ export function buildStrategyPrompt(input: StrategyPromptInput): string {
 
   return [
     LOCALE_INSTRUCTION[b.locale],
+    ONE_LANGUAGE[b.locale],
     '',
     'BREND',
     ...brandLines,

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { WRITE_IN, type ContentLocale } from '@/config/locales'
+import { ONE_LANGUAGE, WRITE_IN, type ContentLocale } from '@/config/locales'
 
 import { clipText } from './profile-bios'
 
@@ -74,6 +74,7 @@ export function buildHighlightsSystemPrompt(): string {
 export function buildHighlightsPrompt(input: HighlightsInput): string {
   return [
     WRITE_IN[input.locale],
+    ONE_LANGUAGE[input.locale],
     '',
     `Brend: ${input.brandName}`,
     input.website ? `Sajt: ${input.website}` : 'Sajt: nema',

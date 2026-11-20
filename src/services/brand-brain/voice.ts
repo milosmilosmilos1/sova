@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { toContentLocale } from '@/config/locales'
+import { toContentLocale, type ContentLocale } from '@/config/locales'
 import { AiError, toApiError } from '@/lib/ai/errors'
 import { generateText } from '@/lib/ai/gemini'
 import { textModelChain } from '@/lib/ai/models'
@@ -45,6 +45,9 @@ export interface VoiceView {
   fromProfile: boolean
   sources: { profile: boolean; documents: number; posts: number }
   draftPrice: number
+  /** jezik objava brenda i jezik sajta iz analize (null bez analize); predlog sa sajta je na jeziku sajta */
+  postLocale: ContentLocale
+  siteLocale: ContentLocale | null
 }
 
 async function currentProfile(brandId: string): Promise<BrandProfile | null> {
@@ -94,6 +97,8 @@ export async function getVoiceView(viewer: Viewer, brandId: string): Promise<Voi
     fromProfile: Boolean(suggested && !isVoiceEmpty(suggested)),
     sources: { profile: Boolean(profile), ...counts },
     draftPrice,
+    postLocale: locale,
+    siteLocale: profile ? profile.identity.content_locale.value : null,
   }
 }
 

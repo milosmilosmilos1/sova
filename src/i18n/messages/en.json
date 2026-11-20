@@ -811,7 +811,8 @@
     },
     "brand": {
       "title": "How your brand speaks",
-      "text": "These words take priority over what Sova concluded from the website. The topics at the bottom become automation flows."
+      "text": "These words take priority over what Sova concluded from the website. The topics at the bottom become automation flows.",
+      "languageMismatch": "Site language: {site}. Post language: {post}. The suggestion from your site is in the site’s language, and Sova writes posts only in the post language, without mixing. If your posts should be in the site’s language, change the post language in the first step."
     },
     "colors": {
       "title": "Logo and post look",

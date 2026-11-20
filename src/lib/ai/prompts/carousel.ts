@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { SLIDES_MAX } from '@/lib/visuals/design/catalog'
 
-import { WRITE_IN } from '@/config/locales'
+import { ONE_LANGUAGE, WRITE_IN } from '@/config/locales'
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 
 import { brandPromptLines, publishDateLine, type BrandContext } from './post-text'
@@ -105,6 +105,7 @@ export function buildCarouselPrompt(input: CarouselPromptInput): string {
   const captionMax = Math.min(2000, ...input.platforms.map((p) => (p === 'x' ? 2000 : PLATFORMS[p].textMax)))
   return [
     WRITE_IN[input.brand.locale],
+    ONE_LANGUAGE[input.brand.locale],
     '',
     ...brandPromptLines(input.brand),
     '',

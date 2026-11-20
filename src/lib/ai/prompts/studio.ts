@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { CONTENT_LOCALES, type ContentLocale } from '@/config/locales'
+import { CONTENT_LOCALES, ONE_LANGUAGE, type ContentLocale } from '@/config/locales'
 import type { AppLocale } from '@/i18n/config'
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { FORMAT_LABEL, POST_FORMATS, type PostFormat } from '@/config/post-formats'
@@ -185,6 +185,7 @@ export function buildStudioPrompt(input: StudioPromptInput): string {
       ? 'Vrstu objave biraš ti, među dozvoljenima, ili je korisnik kaže u poruci.'
       : `Korisnik je za sledeću objavu izabrao vrstu ${input.format} (${FORMAT_LABEL[input.format]}): koristi nju.`,
     `Jezik objava: ${LOCALE_NAME[postLocale]}${input.locale ? ' (izabrao korisnik)' : ' (jezik brenda)'}, osim kad korisnik u poruci traži drugi.`,
+    ONE_LANGUAGE[postLocale],
     // jezik objava nije jezik razgovora: korisnica sa engleskim interfejsom i brendom na srpskom dobija odgovor na engleskom
     `Jezik razgovora: ${UI_LOCALE_NAME[input.uiLocale]} (jezik aplikacije korisnika). reply i suggestions su na tom jeziku, osim kad je nova poruka korisnika cela rečenica na drugom jeziku: tada na jeziku poruke. Naziv stila, broj ili jedna reč nisu jezik poruke. Jezik objava i ranije poruke Sove ne određuju jezik razgovora. ${REPLY_IN[input.uiLocale]}`,
     `Stil slajdova brenda: ${input.styleName}. Drugi stilovi (id: naziv): ${input.styles.map((s) => `${s.id}: ${s.name}`).join('; ')}.`,

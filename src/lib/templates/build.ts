@@ -1,4 +1,5 @@
 import { INTL_LOCALE, type ContentLocale } from '@/config/locales'
+import { isForeign } from '@/lib/content-language'
 import type { Slide } from '@/lib/visuals/design/types'
 
 import type { TemplateFormat, TemplateId } from './catalog'
@@ -98,7 +99,9 @@ function shape(format: TemplateFormat, cover: Slide, rest: Slide[], cta: Slide |
 export function buildTemplate(templateId: TemplateId, values: V, opts: BuildOptions): TemplateBuild {
   const p = phrasesFor(opts.locale)
   const L = opts.locale
-  const cta = opts.cta.trim()
+  // jedan jezik u objavi: poziv na akciju iz glasa brenda na drugom jeziku ne ide u objavu, već kratak
+  // poziv na jeziku objave
+  const cta = isForeign(opts.cta, L) ? '' : opts.cta.trim()
   const q = (text: string) => (L === 'en' ? `“${text}”` : `„${text}”`)
   const day = (key: string) => (str(values, key) ? formatDay(str(values, key), L) : '')
   const photo = id(values, 'photo')

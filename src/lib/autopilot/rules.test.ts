@@ -96,10 +96,26 @@ describe('kontrola kvaliteta', () => {
       'length',
       'forbidden',
       'script',
+      'language',
       'similarity',
       'facts',
       'media',
     ])
+  })
+
+  it('jedan jezik: engleska rečenica u srpskoj objavi i srpska u engleskoj padaju (vlasnik, 21.11.)', () => {
+    const mixed = qaCheck({ ...ok, text: `${ok.text} Book your appointment now and save time.` })
+    expect(mixed.checks.find((c) => c.name === 'language')).toMatchObject({ ok: false })
+    expect(mixed.checks.find((c) => c.name === 'language')!.message).toContain('Book your appointment now')
+    const english = qaCheck({
+      ...ok,
+      locale: 'en',
+      text: 'We service air conditioners across Belgrade and come to your address. Pozovite nas danas za termin.',
+    })
+    expect(english.checks.find((c) => c.name === 'language')).toMatchObject({ ok: false })
+    // engleski naziv brenda u srpskoj rečenici nije greška
+    const brand = qaCheck({ ...ok, text: `${ok.text} Happy hour u našem baru svakog petka.` })
+    expect(brand.checks.find((c) => c.name === 'language')).toMatchObject({ ok: true })
   })
   it('zabranjena reč, ćirilica, izmišljena cena, sličnost i vizual padaju', () => {
     expect(

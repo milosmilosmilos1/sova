@@ -288,6 +288,32 @@ describe('Nova objava sa dizajnom (D-108)', () => {
     expect(prompt).toContain('Napravi tačno 5 slajdova karusela')
   })
 
+  it('jedan jezik: engleska rečenica u srpskoj objavi traži jednu ispravku, ostaje ispravljen tekst (vlasnik, 21.11.)', async () => {
+    enqueueReply(
+      carouselReply(3, {
+        caption: 'Prvi red je hook.\n\nBook your free consultation now and grow your business.',
+      }),
+      carouselReply(3, {
+        caption: 'Prvi red je hook.\n\nZakažite besplatne konsultacije i pišite nam u poruke.',
+      }),
+    )
+    const r = await compose({ format: 'carousel', slides: 3, styleId: 'headline' })
+    expect(r.status).toBe(200)
+    expect(calls).toHaveLength(2)
+    const correction = JSON.stringify(calls[1]!.body)
+    expect(correction).toContain('prethodni odgovor je imao rečenice na drugom jeziku')
+    expect(correction).toContain('Book your free consultation now')
+    const { data: post } = await admin
+      .from('posts')
+      .select('master_text')
+      .eq('id', r.json.data!.postId)
+      .single()
+    expect(post!.master_text).toContain('Zakažite besplatne konsultacije')
+    expect(post!.master_text).not.toContain('Book your')
+    // i dalje 2 tokena: ispravka se ne naplaćuje
+    expect(r.json.data!.tokensCharged).toBe(2)
+  })
+
   it('stil sa fotografijom uzima fotografije sa Unsplash-a, kvadrat 1:1 po izboru', async () => {
     enqueueReply(carouselReply(3))
     const r = await compose({

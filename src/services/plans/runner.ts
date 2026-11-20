@@ -248,7 +248,7 @@ export async function runPlanningMonth(
     }),
   )
   const formats = chunk.map((c) => c.slot.format)
-  const assigned = assignKinds({ formats, content, used })
+  const assigned = assignKinds({ formats, content, used, locale })
   const { data: kindData, labels } = planKindData(content, assigned)
 
   const [context, { data: pillars }, { data: recent }, { data: holidays }, { data: planned }] =

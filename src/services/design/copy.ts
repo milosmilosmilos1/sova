@@ -1,5 +1,6 @@
 import 'server-only'
 
+import { ONE_LANGUAGE, type ContentLocale } from '@/config/locales'
 import type { SocialPlatform } from '@/config/platforms'
 import { AiError, toApiError } from '@/lib/ai/errors'
 import { generateText } from '@/lib/ai/gemini'
@@ -15,6 +16,8 @@ import {
   type DesignedFormat,
 } from '@/lib/ai/prompts/carousel'
 import type { BrandContext } from '@/lib/ai/prompts/post-text'
+import { foreignSentences } from '@/lib/content-language'
+import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { getTokenPrice } from '@/lib/tokens/prices'
 import { confirmReservation } from '@/lib/tokens/reservation'
@@ -38,6 +41,17 @@ export interface DesignedCopy {
   generationId: string
   tokens: number
   model: string
+}
+
+/** Rečenice slajdova i opisa koje su jasno na drugom jeziku od jezika objave. */
+export function mixedLanguage(output: CarouselOutput, locale: ContentLocale): string[] {
+  const texts = [
+    ...output.slides.flatMap((s) => [s.kicker, s.title, s.body, ...(s.items ?? [])]),
+    output.caption,
+    output.short_caption,
+    output.first_comment,
+  ].filter((t): t is string => Boolean(t))
+  return [...new Set(texts.flatMap((t) => foreignSentences(t, locale)))]
 }
 
 export async function generateDesignedCopy(input: {
@@ -80,46 +94,90 @@ export async function generateDesignedCopy(input: {
     idempotencyKey: input.idempotencyKey ?? null,
   })
   try {
-    const outcome = await callWithFallback(
-      await textModelChain(),
-      (model) =>
-        generateText({
-          model,
-          system: buildCarouselSystemPrompt(),
-          prompt: buildCarouselPrompt({
-            brand: input.context,
-            topic: input.topic,
-            cta: input.cta,
-            format: input.format,
-            slides: input.slides,
-            platforms: input.platforms,
-            includeHashtags: input.includeHashtags ?? true,
-            publishDate: input.publishDate ?? null,
-            dmCta: input.dmCta,
-            extra: input.kindLines,
+    const chain = await textModelChain()
+    const locale = input.context.locale
+    const attempt = async (correction: string[]) => {
+      const extra = [...(input.kindLines ?? []), ...correction]
+      const outcome = await callWithFallback(
+        chain,
+        (model) =>
+          generateText({
+            model,
+            system: buildCarouselSystemPrompt(),
+            prompt: buildCarouselPrompt({
+              brand: input.context,
+              topic: input.topic,
+              cta: input.cta,
+              format: input.format,
+              slides: input.slides,
+              platforms: input.platforms,
+              includeHashtags: input.includeHashtags ?? true,
+              publishDate: input.publishDate ?? null,
+              dmCta: input.dmCta,
+              extra: extra.length ? extra : undefined,
+            }),
+            jsonSchema: carouselJsonSchema(),
+            maxOutputTokens: 4096,
+            temperature: 0.8,
+            thinking: 'low',
           }),
-          jsonSchema: carouselJsonSchema(),
-          maxOutputTokens: 4096,
-          temperature: 0.8,
-          thinking: 'low',
-        }),
-      { label: 'designed-copy' },
-    )
-    const parsed = carouselOutputSchema.safeParse(outcome.result.json)
-    if (!parsed.success || !parsed.data.slides.length) {
-      throw new AiError('INVALID_RESPONSE', 'Model je vratio JSON koji ne odgovara šemi.', {
-        model: outcome.model,
+        { label: 'designed-copy' },
+      )
+      const parsed = carouselOutputSchema.safeParse(outcome.result.json)
+      if (!parsed.success || !parsed.data.slides.length) {
+        throw new AiError('INVALID_RESPONSE', 'Model je vratio JSON koji ne odgovara šemi.', {
+          model: outcome.model,
+        })
+      }
+      const output: CarouselOutput = {
+        ...parsed.data,
+        slides: normalizeSlides(parsed.data.slides, input.slides, input.format),
+      }
+      return { outcome, output, foreign: mixedLanguage(output, locale) }
+    }
+    const attempts = [await attempt([])]
+    let best = attempts[0]!
+    // jedan jezik u objavi (vlasnik, 21.11.2026): rečenice na drugom jeziku traže jednu ispravku, a
+    // ostaje odgovor sa manje takvih rečenica (provera kvaliteta u Odobravanju javlja ostatak)
+    if (best.foreign.length) {
+      logger.warn('designed_copy_language_mixed', {
+        brandId: input.brandId,
+        foreign: best.foreign.slice(0, 3),
       })
+      try {
+        const quoted = best.foreign
+          .slice(0, 3)
+          .map((s) => `„${s.slice(0, 120)}”`)
+          .join('; ')
+        const retry = await attempt([
+          `JEZIK: prethodni odgovor je imao rečenice na drugom jeziku: ${quoted}. ${ONE_LANGUAGE[locale]}`,
+        ])
+        attempts.push(retry)
+        if (retry.foreign.length < best.foreign.length) best = retry
+      } catch (error) {
+        logger.warn('designed_copy_language_retry_failed', { brandId: input.brandId, error })
+      }
     }
-    const output: CarouselOutput = {
-      ...parsed.data,
-      slides: normalizeSlides(parsed.data.slides, input.slides, input.format),
-    }
-    const cost = await costFor(outcome.model, {
-      inputTokens: outcome.result.usage.inputTokens,
-      outputTokens: outcome.result.usage.outputTokens,
-      thoughtTokens: outcome.result.usage.thoughtTokens,
-    })
+    const { outcome, output } = best
+    const usage = attempts.reduce(
+      (sum, a) => ({
+        inputTokens: sum.inputTokens + a.outcome.result.usage.inputTokens,
+        outputTokens: sum.outputTokens + a.outcome.result.usage.outputTokens,
+        thoughtTokens: sum.thoughtTokens + a.outcome.result.usage.thoughtTokens,
+      }),
+      { inputTokens: 0, outputTokens: 0, thoughtTokens: 0 },
+    )
+    const cost = (
+      await Promise.all(
+        attempts.map((a) =>
+          costFor(a.outcome.model, {
+            inputTokens: a.outcome.result.usage.inputTokens,
+            outputTokens: a.outcome.result.usage.outputTokens,
+            thoughtTokens: a.outcome.result.usage.thoughtTokens,
+          }),
+        ),
+      )
+    ).reduce((a, b) => a + b, 0)
     const admin = createSupabaseAdminClient()
     await admin
       .from('ai_generations')
@@ -127,9 +185,9 @@ export async function generateDesignedCopy(input: {
         model: outcome.model,
         fallback_used: outcome.fallbackUsed,
         output: output as unknown as NonNullable<Json>,
-        duration_ms: outcome.result.durationMs,
-        provider_input_tokens: outcome.result.usage.inputTokens,
-        provider_output_tokens: outcome.result.usage.outputTokens + outcome.result.usage.thoughtTokens,
+        duration_ms: attempts.reduce((sum, a) => sum + a.outcome.result.durationMs, 0),
+        provider_input_tokens: usage.inputTokens,
+        provider_output_tokens: usage.outputTokens + usage.thoughtTokens,
         cost_usd: cost,
       })
       .eq('id', generationId)

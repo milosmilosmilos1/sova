@@ -811,7 +811,8 @@
     },
     "brand": {
       "title": "Kako vaš brend govori",
-      "text": "Ove reči imaju prednost nad onim što je Sova zaključila sa sajta. Teme na dnu postaju tokovi automatizacije."
+      "text": "Ove reči imaju prednost nad onim što je Sova zaključila sa sajta. Teme na dnu postaju tokovi automatizacije.",
+      "languageMismatch": "Jezik sajta: {site}. Jezik objava: {post}. Predlog sa sajta je na jeziku sajta, a Sova objave piše samo na jeziku objava, bez mešanja. Ako objave treba da budu na jeziku sajta, promenite jezik objava u prvom koraku."
     },
     "colors": {
       "title": "Logo i izgled objava",

@@ -29,7 +29,7 @@ Namenjena je vlasnicima malih firmi i agencijama i frilenserima koji vode mreže
 
 Podrazumevano se ništa ne objavljuje bez odobrenja korisnika. Objave idu same samo kad to korisnik izričito uključi: viši nivoi Autopilota ili „Zakaži odmah” u Mesečnom planu.
 
-Interfejs je na srpskom i engleskom. Objave Sova piše na srpskom (latinicom ili ćirilicom) i engleskom.
+Interfejs je na srpskom i engleskom. Objave Sova piše na srpskom (latinicom ili ćirilicom) i engleskom. Svaka objava je na jednom jeziku: jeziku objava brenda, ili onom koji je izabran za tok ili objavu. Podatke o brendu, teme i poziv na akciju koji su na drugom jeziku Sova prevodi, a vlastita imena (naziv brenda, mesta, proizvoda) ostaju. Ako AI ipak ubaci rečenicu na drugom jeziku, Sova jednom traži ispravku, a provera kvaliteta u Odobravanju to javlja. Utisak klijenta se citira doslovno, pa ga mesečni plan bira samo kad je na jeziku objava, a „Šabloni” upozore kad upisan tekst nije na jeziku objava.
 
 Sova ne pravi AI fotografije. Slike u objavama su besplatne fotografije i snimci sa Unsplash-a i Pexels-a, fotografije iz korisnikove galerije i slajdovi koje Sova nacrta.
 

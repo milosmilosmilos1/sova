@@ -5,6 +5,7 @@ import { Plus, Sparkles, X } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
+import type { ContentLocale } from '@/config/locales'
 import { api } from '@/components/shared/api-client'
 import { ErrorBox } from '@/components/shared/error-box'
 import { Button } from '@/components/ui/button'
@@ -26,6 +27,8 @@ export interface VoiceViewData {
   fromProfile: boolean
   sources: { profile: boolean; documents: number; posts: number }
   draftPrice: number
+  postLocale: ContentLocale
+  siteLocale: ContentLocale | null
 }
 
 const FIELDS: Array<{ key: VoiceTextField; rows: number }> = [

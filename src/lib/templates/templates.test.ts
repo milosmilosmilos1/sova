@@ -157,6 +157,20 @@ describe('šabloni koje biznis popunjava (D-175)', () => {
     expect(toCyrillic('Ljubav njuška džep, NJIVA')).toBe('Љубав њушка џеп, ЊИВА')
   })
 
+  it('jedan jezik: poziv na akciju iz glasa brenda na drugom jeziku ne ide u objavu', () => {
+    const values = templateValuesSchema('launch').parse(SAMPLE.launch)
+    const english = buildTemplate('launch', values, {
+      ...opts,
+      cta: 'Ready to grow your website visibility? Book a call now.',
+      format: 'carousel',
+    })
+    expect(english.caption).not.toContain('Ready to grow')
+    expect(english.slides.at(-1)).toMatchObject({ kind: 'cta', title: 'Pišite nam' })
+    // poziv na jeziku objave ostaje
+    const serbian = buildTemplate('launch', values, { ...opts, format: 'carousel' })
+    expect(serbian.slides.at(-1)!.title).toBe('Pozovite 060 123 4567.')
+  })
+
   it('engleski i datumi', () => {
     const values = templateValuesSchema('event').parse(SAMPLE.event)
     const r = buildTemplate('event', values, { ...opts, locale: 'en', format: 'image' })

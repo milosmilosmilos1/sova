@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { WRITE_IN, type ContentLocale } from '@/config/locales'
+import { ONE_LANGUAGE, WRITE_IN, type ContentLocale } from '@/config/locales'
 import type { SocialPlatform } from '@/config/platforms'
 
 /**
@@ -79,6 +79,7 @@ export function buildProfileBiosPrompt(input: ProfileBiosInput): string {
   const site = input.website
   return [
     WRITE_IN[input.locale],
+    ONE_LANGUAGE[input.locale],
     '',
     `Brend: ${input.brandName}`,
     site ? `Sajt: ${site}` : 'Sajt: nema',

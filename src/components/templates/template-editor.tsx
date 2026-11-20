@@ -14,6 +14,8 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { uploadMediaFile } from '@/lib/media/client-upload'
+import type { ContentLocale } from '@/config/locales'
+import { isForeign } from '@/lib/content-language'
 import { templateValuesSchema } from '@/lib/schemas/templates'
 import { TEMPLATES, type FieldDef, type TemplateFormat, type TemplateId } from '@/lib/templates/catalog'
 import { cn } from '@/lib/utils'
@@ -72,13 +74,17 @@ export function TemplateEditor({
   brandId,
   canEdit,
   accounts,
+  contentLocale,
 }: {
   templateId: TemplateId
   brandId: string
   canEdit: boolean
   accounts: TemplateAccount[]
+  /** jezik objava brenda: upisan tekst na drugom jeziku dobija upozorenje (jedan jezik u objavi) */
+  contentLocale: ContentLocale
 }) {
   const t = useTranslations('templates')
+  const tc = useTranslations('contentLocale')
   const router = useRouter()
   const def = TEMPLATES[templateId]
   const [values, setValues] = useState<Values>(() => initialValues(def.fields))
@@ -145,6 +151,26 @@ export function TemplateEditor({
   const set = (key: string, value: unknown) => setValues((cur) => ({ ...cur, [key]: value }))
   const remember = (id: string, url: string) => setUrls((cur) => ({ ...cur, [id]: url }))
   const shownCaption = edited ? caption : (preview?.caption ?? '')
+  // jedan jezik u objavi: polja čiji je tekst jasno na drugom jeziku od jezika objava
+  type Key = Parameters<typeof t>[0]
+  const labelOf = (key: string) => {
+    const own = `items.${templateId}.fields.${key}` as Key
+    return t.has(own) ? t(own) : t(`fields.${key}` as Key)
+  }
+  const foreignFields = def.fields
+    .filter((f) => {
+      const v = values[f.key]
+      if (typeof v === 'string') return isForeign(v, contentLocale)
+      if (!Array.isArray(v)) return false
+      return v.some((x) =>
+        typeof x === 'string'
+          ? isForeign(x, contentLocale)
+          : x && typeof x === 'object' && 'q' in x
+            ? isForeign(`${(x as { q: string }).q} ${(x as { a: string }).a}`, contentLocale)
+            : false,
+      )
+    })
+    .map((f) => labelOf(f.key))
   const disabled = !canEdit || save.isPending
 
   const submit = () => {
@@ -203,6 +229,12 @@ export function TemplateEditor({
               error={submitted ? errors[field.key] : undefined}
             />
           ))}
+
+          {foreignFields.length ? (
+            <p role="status" className="rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
+              {t('ui.languageWarning', { language: tc(contentLocale), fields: foreignFields.join(', ') })}
+            </p>
+          ) : null}
 
           {def.formats.length > 1 ? (
             <fieldset className="space-y-2">

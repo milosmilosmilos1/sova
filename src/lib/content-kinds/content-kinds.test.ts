@@ -90,6 +90,20 @@ describe('raspored vrsta u mesecu (D-165)', () => {
     expect(big.filter((k) => k?.kind === 'team')).toHaveLength(1)
   })
 
+  it('jedan jezik: plan sam ne bira utisak napisan na drugom jeziku (citat se ne prevodi)', () => {
+    const english = review(
+      'aaaaaaaaa3',
+      7,
+      null,
+      'They came on time and left everything clean. Highly recommend them to all.',
+    )
+    const content = { ...empty(), testimonials: [english, review('aaaaaaaaa1', 1)] }
+    const sr = assignKinds({ formats: month(30), content, used: new Set(), locale: 'sr-Latn' })
+    expect(sr.filter((k) => k?.kind === 'review').map((k) => k!.ref)).toEqual(['aaaaaaaaa1'])
+    const en = assignKinds({ formats: month(30), content, used: new Set(), locale: 'en' })
+    expect(en.filter((k) => k?.kind === 'review').map((k) => k!.ref)).toEqual(['aaaaaaaaa3'])
+  })
+
   it('stavka uzeta ranije u planu se ne ponavlja; kad nema novih, vrsta ne ide', () => {
     const content = { ...empty(), testimonials: [review('aaaaaaaaa1', 1)] }
     const kinds = assignKinds({ formats: month(13), content, used: new Set(['aaaaaaaaa1']) })

@@ -3,6 +3,7 @@ import { notFound, redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 
 import { TemplateEditor } from '@/components/templates/template-editor'
+import { toContentLocale } from '@/config/locales'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { requireCompleteBrand } from '@/lib/auth/brand-ready'
 import { getViewer } from '@/lib/auth/viewer'
@@ -37,6 +38,7 @@ export default async function TemplatePage({ params }: PageProps<'/app/templates
       accounts={accounts
         .filter((a) => a.status === 'active')
         .map((a) => ({ id: a.id, platform: a.platform, name: a.name, username: a.username }))}
+      contentLocale={toContentLocale(brand.content_locale)}
     />
   )
 }

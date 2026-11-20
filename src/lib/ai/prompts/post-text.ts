@@ -2,7 +2,7 @@ import { z } from 'zod'
 
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { FORMAT_LABEL, POST_FORMATS, type PostFormat } from '@/config/post-formats'
-import type { ContentLocale } from '@/config/locales'
+import { ONE_LANGUAGE, type ContentLocale } from '@/config/locales'
 
 /**
  * Prompt i šema za „Tekst za objavu” (brif 6.1). Brand kontekst je opcion do faze 6
@@ -265,6 +265,7 @@ export function buildPostTextPrompt(input: PostTextInput): string {
 
   return [
     LOCALE_INSTRUCTION[b.locale],
+    ONE_LANGUAGE[b.locale],
     '',
     ...brandPromptLines(b),
     '',

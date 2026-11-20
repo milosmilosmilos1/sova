@@ -1,4 +1,6 @@
+import type { ContentLocale } from '@/config/locales'
 import type { PostFormat } from '@/config/post-formats'
+import { isForeign } from '@/lib/content-language'
 import {
   DATA_KINDS,
   kindAvailability,
@@ -119,14 +121,23 @@ export function assignKinds(input: {
   formats: readonly PostFormat[]
   content: StoredContent
   used: ReadonlySet<string>
+  /**
+   * jezik objava plana: utisak se citira doslovno i ne prevodi, pa plan sam ne bira utisak napisan na
+   * drugom jeziku (jedan jezik u objavi, vlasnik 21.11.2026)
+   */
+  locale?: ContentLocale
 }): Array<SlotKind | null> {
   const n = input.formats.length
   const kinds: Array<SlotKind | null> = Array.from({ length: n }, () => null)
+  const sameLanguage = (item: DataItem, kind: DataKind) =>
+    kind !== 'review' || !input.locale || !isForeign((item as Testimonial).text, input.locale)
   ORDER.forEach((kind, offset) => {
     const availability = kindAvailability(input.content, kind)
     if (availability === 'no') return
     const tentative = availability === 'auto'
-    const refs = isDataKind(kind) ? pickRefs(input.content, kind, input.used) : null
+    const refs = isDataKind(kind)
+      ? pickRefs(input.content, kind, input.used).filter((item) => sameLanguage(item, kind))
+      : null
     const quota = tentative ? autoQuota(n) : kindQuota(kind, n)
     const count = refs ? Math.min(quota, refs.length) : quota
     for (let j = 0; j < count; j++) {

@@ -1,5 +1,6 @@
 import { validateText, type SocialPlatform } from '@/config/platforms'
 import { CYRILLIC_LOCALES, type ContentLocale } from '@/config/locales'
+import { foreignSentences } from '@/lib/content-language'
 
 /**
  * Čista pravila Autopilota (brif 9.2–9.3, faza 10c): nivoi, budžet tokena (80 % / 100 %),
@@ -168,7 +169,7 @@ export interface QaInput {
 }
 
 export interface QaCheck {
-  name: 'empty' | 'length' | 'forbidden' | 'script' | 'similarity' | 'facts' | 'media'
+  name: 'empty' | 'length' | 'forbidden' | 'script' | 'language' | 'similarity' | 'facts' | 'media'
   ok: boolean
   message: string
 }
@@ -275,6 +276,19 @@ export function qaCheck(input: QaInput): QaReport {
       : cyrillic
         ? 'Tekst nije na ćirilici.'
         : 'Tekst je na pogrešnom pismu (ćirilica).',
+  })
+
+  // jedan jezik u objavi (vlasnik, 21.11.2026): rečenica jasno na drugom jeziku je greška
+  const foreign = foreignSentences(text, input.locale)
+  checks.push({
+    name: 'language',
+    ok: foreign.length === 0,
+    message: foreign.length
+      ? `Rečenice na drugom jeziku: ${foreign
+          .slice(0, 2)
+          .map((s) => `„${s.slice(0, 80)}”`)
+          .join(', ')}.`
+      : 'Tekst je na jeziku objave.',
   })
 
   const sim = input.recentTexts.reduce((max, t) => Math.max(max, similarity(text, t)), 0)
