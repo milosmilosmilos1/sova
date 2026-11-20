@@ -114,7 +114,7 @@ interface Kept {
   notice: string
 }
 
-const INTL: Record<string, string> = { 'sr-Latn': 'sr-Latn-RS', en: 'en-GB', uk: 'uk-UA' }
+const INTL: Record<string, string> = { 'sr-Latn': 'sr-Latn-RS', en: 'en-GB' }
 
 /**
  * Odobravanje (D-108): lista nacrta po karticama, pregled slajdova i panel za odluku (opis po mreži,

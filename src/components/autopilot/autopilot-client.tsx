@@ -34,7 +34,7 @@ interface View {
   level3Available: boolean
   level3ConfirmedAt: string | null
   level3AccountIds: string[]
-  language: 'sr-Latn' | 'sr-Cyrl' | 'en' | 'uk'
+  language: 'sr-Latn' | 'sr-Cyrl' | 'en'
   formats: PostFormat[]
   mix: boolean
   paused: boolean
@@ -474,7 +474,7 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
   )
 }
 
-const AUTOPILOT_LOCALES = ['sr-Latn', 'sr-Cyrl', 'en', 'uk'] as const
+const AUTOPILOT_LOCALES = ['sr-Latn', 'sr-Cyrl', 'en'] as const
 
 /**
  * Sadržaj Autopilota (D-107): jezik objava, dozvoljene vrste i da li AI meša vrste kroz nedelju.

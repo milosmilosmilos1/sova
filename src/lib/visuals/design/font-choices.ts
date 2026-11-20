@@ -1,6 +1,6 @@
 /**
  * Fontovi koje korisnik bira za svoj izgled (D-123): Google fontovi sa latinicom i ćirilicom, jer se
- * objave pišu i na srpskoj ćirilici i ukrajinskom. Svaki dobro radi i za naslov i za tekst slajda.
+ * objave pišu i na srpskoj ćirilici. Svaki dobro radi i za naslov i za tekst slajda.
  * Sme u klijentski kod (birač).
  */
 export const LOOK_FONTS = [

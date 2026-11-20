@@ -1,19 +1,20 @@
 import { isAppLocale, locales, type AppLocale } from './config'
 
 /**
- * Jezik u adresi javnog sajta (D-130): srpski bez prefiksa, engleski pod /en, ukrajinski pod /uk.
+ * Jezik u adresi javnog sajta (D-130): srpski bez prefiksa, engleski pod /en. Ukrajinski je uklonjen
+ * (D-173): stare adrese /uk/... trajno vode na istu stranu pod /en.
  * Proxy skida prefiks i prepisuje zahtev na istu stranu, a jezik joj šalje u zaglavlju. Aplikacija
  * (/app) nema prefiks: jezik čita iz kolačića koji postavlja javni sajt i iz profila.
  */
-export const URL_PREFIX: Record<AppLocale, string> = { 'sr-Latn': '', en: '/en', uk: '/uk' }
+export const URL_PREFIX: Record<AppLocale, string> = { 'sr-Latn': '', en: '/en' }
 
 /** Zaglavlja koja proxy šalje strani: jezik iz adrese i interna putanja bez prefiksa. */
 export const LOCALE_HEADER = 'x-sova-locale'
 export const PATH_HEADER = 'x-sova-path'
 
 /** Oznaka jezika za hreflang i OpenGraph. */
-export const HREFLANG: Record<AppLocale, string> = { 'sr-Latn': 'sr', en: 'en', uk: 'uk' }
-export const OG_LOCALE: Record<AppLocale, string> = { 'sr-Latn': 'sr_RS', en: 'en_US', uk: 'uk_UA' }
+export const HREFLANG: Record<AppLocale, string> = { 'sr-Latn': 'sr', en: 'en' }
+export const OG_LOCALE: Record<AppLocale, string> = { 'sr-Latn': 'sr_RS', en: 'en_US' }
 
 const PUBLIC_EXACT = new Set([
   '/',
@@ -37,7 +38,7 @@ export function isPublicPath(path: string): boolean {
 
 /** Putanja u adresi koja se razlikuje od interne (engleska reč umesto srpske). */
 const SLUGS: Record<string, Partial<Record<AppLocale, string>>> = {
-  '/kontakt': { en: '/contact', uk: '/contact' },
+  '/kontakt': { en: '/contact' },
 }
 
 /** Sidra sekcija početne strane, na jeziku strane. */
@@ -45,7 +46,6 @@ export type SectionKey = 'features' | 'networks' | 'how' | 'pricing' | 'faq'
 export const SECTION_IDS: Record<AppLocale, Record<SectionKey, string>> = {
   'sr-Latn': { features: 'funkcije', networks: 'mreze', how: 'kako-radi', pricing: 'cene', faq: 'pitanja' },
   en: { features: 'features', networks: 'networks', how: 'how-it-works', pricing: 'pricing', faq: 'faq' },
-  uk: { features: 'features', networks: 'networks', how: 'how-it-works', pricing: 'pricing', faq: 'faq' },
 }
 
 /**
@@ -64,7 +64,7 @@ export function localePath(locale: AppLocale, href: string): string {
 
 /** Adresa sa prefiksom jezika → jezik i interna putanja; `null` za adresu bez prefiksa. */
 export function splitLocalePath(pathname: string): { locale: AppLocale; path: string } | null {
-  const match = /^\/(en|uk)(\/.*)?$/.exec(pathname)
+  const match = /^\/(en)(\/.*)?$/.exec(pathname)
   if (!match) return null
   const locale = match[1] as AppLocale
   const rest = match[2] && match[2] !== '/' ? match[2].replace(/\/+$/, '') : '/'
@@ -108,7 +108,6 @@ export function detectLocale(acceptLanguage: string | null | undefined): AppLoca
   if (!ranked.length) return 'sr-Latn'
   for (const { base } of ranked) {
     if (REGIONAL.has(base)) return 'sr-Latn'
-    if (base === 'uk') return 'uk'
     if (base === 'en') return 'en'
   }
   return 'en'

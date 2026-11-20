@@ -23,14 +23,6 @@ export interface EmailCopy {
   reportFooter: string
 }
 
-const slavic = (n: number, one: string, few: string, many: string) => {
-  const mod10 = n % 10
-  const mod100 = n % 100
-  if (mod10 === 1 && mod100 !== 11) return one
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few
-  return many
-}
-
 export const EMAIL_COPY: Record<AppLocale, EmailCopy> = {
   'sr-Latn': {
     htmlLang: 'sr-Latn',
@@ -71,26 +63,5 @@ export const EMAIL_COPY: Record<AppLocale, EmailCopy> = {
     reportSummary: (summary) => `In short: ${summary}.`,
     reportFooter:
       "You're receiving this email because your address was added as a recipient of the monthly report. If you no longer want to receive it, contact the person who runs your social media.",
-  },
-  uk: {
-    htmlLang: 'uk',
-    hello: (name) => `Вітаємо, ${name}!`,
-    openInSova: 'Відкрити в Sova',
-    roles: { admin: 'адміністратор', editor: 'редактор', approver: 'погоджувач', viewer: 'спостерігач' },
-    invitePreview: (inviter, workspace) => `${inviter} запрошує вас до робочого простору ${workspace}`,
-    inviteLead: (inviter) => `${inviter} запрошує вас приєднатися до робочого простору `,
-    inviteRole: (role) => ` у Sova з роллю «${role}».`,
-    inviteExpires: (days) =>
-      `Натисніть кнопку, щоб прийняти запрошення. Посилання дійсне ${days} ${slavic(days, 'день', 'дні', 'днів')}.`,
-    inviteAccept: 'Прийняти запрошення',
-    inviteIgnore: (url) =>
-      `Якщо ви не очікували цього запрошення, просто проігноруйте лист. Посилання: ${url}`,
-    reportPreview: (brand, month) => `${brand}: звіт про соцмережі за ${month}`,
-    reportHeading: (month) => `Звіт за ${month}`,
-    reportBody: (brand) =>
-      `У вкладенні — PDF-звіт про соцмережі для ${brand}: дописи, охоплення, залученість, найкращі дописи й рекомендації на наступний місяць.`,
-    reportSummary: (summary) => `Коротко: ${summary}.`,
-    reportFooter:
-      'Ви отримуєте цей лист, бо вашу адресу вказано як отримувача місячного звіту. Якщо більше не хочете його отримувати, зверніться до людини, яка веде ваші соцмережі.',
   },
 }

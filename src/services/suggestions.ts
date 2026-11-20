@@ -131,7 +131,7 @@ function draftFor(
   row: SuggestionRow,
   contentLocale: string,
 ): { title: string; text: string; linkUrl?: string } {
-  const locale: AppLocale = contentLocale === 'en' || contentLocale === 'uk' ? contentLocale : 'sr-Latn'
+  const locale: AppLocale = contentLocale === 'en' ? 'en' : 'sr-Latn'
   const tr = (s: string) => translateServerText(s, locale)
   const p = (row.payload as Record<string, Json>) ?? {}
   const url = typeof p.url === 'string' ? p.url : undefined

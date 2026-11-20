@@ -122,7 +122,7 @@ describe('heuristic profile', () => {
     expect(profile.meta.generated_by).toBe('heuristic')
     expect(brandProfileSchema.safeParse(profile).success).toBe(true)
   })
-  it('detektuje ukrajinski po slovima і, ї, є, ґ (D-108)', () => {
+  it('ćirilica bez srpskih slova (ruski, ukrajinski) ne menja izabrani jezik (D-173)', () => {
     expect(
       detectLocale(
         [
@@ -134,7 +134,7 @@ describe('heuristic profile', () => {
         ],
         'sr-Latn',
       ).locale,
-    ).toBe('uk')
+    ).toBe('sr-Latn')
   })
   it('detektuje ćirilicu i engleski', () => {
     expect(

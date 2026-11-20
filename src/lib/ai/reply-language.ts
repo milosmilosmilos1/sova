@@ -8,9 +8,7 @@ import type { AppLocale } from '@/i18n/config'
 
 const CYRILLIC = /\p{Script=Cyrillic}/gu
 const LETTERS = /\p{L}/gu
-/** slova kojih nema u srpskoj ćirilici */
-const UKRAINIAN = /[іїєґІЇЄҐ]/u
-/** slova kojih nema u ukrajinskom */
+/** slova koja ima samo srpska ćirilica */
 const SERBIAN_CYRILLIC = /[ђћљњџјЂЋЉЊЏЈ]/u
 const SERBIAN_LATIN = /[čćžšđČĆŽŠĐ]/u
 /** česte srpske reči koje se ne javljaju u engleskom tekstu */
@@ -28,7 +26,6 @@ export function conversationLocale(message: string, uiLocale: AppLocale): AppLoc
   if (words.length < 3) return uiLocale
   if (cyrillicShare(message) > 0.6) {
     if (SERBIAN_CYRILLIC.test(message)) return 'sr-Latn'
-    if (UKRAINIAN.test(message)) return 'uk'
     return uiLocale
   }
   if (SERBIAN_LATIN.test(message)) return 'sr-Latn'
@@ -39,7 +36,6 @@ export function conversationLocale(message: string, uiLocale: AppLocale): AppLoc
 export function isInLocale(text: string, locale: AppLocale): boolean {
   if (!(text.match(LETTERS)?.length ?? 0)) return true
   const share = cyrillicShare(text)
-  if (locale === 'uk') return share > 0.6 && !SERBIAN_CYRILLIC.test(text)
   if (locale === 'en') return share < 0.2 && !SERBIAN_LATIN.test(text) && !SERBIAN_WORDS.test(text)
   return share < 0.4
 }
@@ -47,5 +43,4 @@ export function isInLocale(text: string, locale: AppLocale): boolean {
 export const LOCALE_TARGET: Record<AppLocale, string> = {
   'sr-Latn': 'srpski jezik, latinica',
   en: 'engleski jezik',
-  uk: 'ukrajinski jezik (українська мова), ćirilica',
 }

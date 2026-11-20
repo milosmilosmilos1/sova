@@ -22,13 +22,6 @@ const COPY: Record<
     inbox: 'Inbox',
     studio: 'Studio',
   },
-  uk: {
-    lang: 'uk',
-    description: 'Погоджуйте чернетки й відповідайте на повідомлення з телефона.',
-    approvals: 'Погодження',
-    inbox: 'Вхідні',
-    studio: 'Студія',
-  },
 }
 
 /**

@@ -14,7 +14,7 @@ import { Fa } from './icons'
 /**
  * Interaktivni delovi kartica u sekciji „Funkcije” (D-098); sve je lokalno stanje, bez servera.
  * Primer objave pokazuje jezike koje Sova piše, sa jezikom strane na prvom mestu (D-130): na srpskoj
- * strani latinica, ćirilica i engleski, na engleskoj i ukrajinskoj taj jezik pa ostali.
+ * strani latinica, ćirilica i engleski, na engleskoj engleski pa ostali.
  */
 const OPTIONS = ['a', 'b', 'c'] as const
 

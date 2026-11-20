@@ -123,12 +123,12 @@ describe('glas brenda', () => {
   it('prompt za predlog piše na jeziku brenda i podatke drži između oznaka', () => {
     const prompt = buildVoiceDraftPrompt({
       brandName: 'Klima Plus',
-      locale: 'uk',
+      locale: 'en',
       profile: ['Opis: servis klima'],
       documents: ['Cenovnik ugradnje'],
       posts: [],
     })
-    expect(prompt.startsWith('Пиши українською мовою.')).toBe(true)
+    expect(prompt.startsWith('Write in English.')).toBe(true)
     expect(prompt).toContain('ODLOMCI IZ DOKUMENTA O BRENDU')
     expect(prompt).not.toContain('RANIJE OBJAVE BRENDA')
     expect(prompt.match(/<<<PODACI>>>/g)).toHaveLength(2)

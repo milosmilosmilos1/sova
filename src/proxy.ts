@@ -9,7 +9,7 @@ import { buildCsp } from '@/lib/security/csp'
 /**
  * Proxy (Next.js 16): osvežava Supabase sesiju u cookie-jima, grubo štiti
  * /app i /admin, dodaje request id, nonce i CSP, i vodi jezik javnog sajta
- * (D-130: /en i /uk). Autorizacija po resursu je na serveru i u bazi (RLS), ne ovde.
+ * (D-130: /en; stare adrese /uk vode na /en, D-173). Autorizacija po resursu je na serveru i u bazi (RLS), ne ovde.
  */
 const PROTECTED_PREFIXES = ['/app', '/admin']
 const AUTH_PAGES = new Set(['/login', '/register', '/forgot-password'])
@@ -117,14 +117,15 @@ export async function proxy(request: NextRequest) {
     if (isAppLocale(row?.locale)) profileLocale = row.locale
   }
 
-  // jezik javnog sajta (D-130): preusmerenje na verziju na jeziku ili prepisivanje /en i /uk
+  // jezik javnog sajta (D-130): preusmerenje na verziju na jeziku ili prepisivanje /en
   let target = response
   if (profileLocale) {
     requestHeaders.set(LOCALE_HEADER, profileLocale)
     target = NextResponse.next({ request: { headers: requestHeaders } })
     target.cookies.set(LOCALE_COOKIE, profileLocale, LOCALE_COOKIE_OPTIONS)
   }
-  if (route.kind === 'redirect') target = NextResponse.redirect(new URL(route.location, request.url))
+  if (route.kind === 'redirect')
+    target = NextResponse.redirect(new URL(route.location, request.url), route.permanent ? 308 : 307)
   if (route.kind === 'rewrite') {
     const url = request.nextUrl.clone()
     url.pathname = route.path
@@ -162,7 +163,8 @@ export const config = {
         { type: 'header', key: 'purpose', value: 'prefetch' },
       ],
     },
-    // i unapred učitane strane na jeziku idu kroz proxy: bez prepisivanja /en/... nema stranu iza sebe
+    // i unapred učitane strane na jeziku idu kroz proxy: bez prepisivanja /en/... nema stranu iza sebe;
+    // /uk ostaje ovde samo da bi stare adrese bile preusmerene (D-173)
     '/(en|uk)',
     '/(en|uk)/:path*',
   ],

@@ -63,22 +63,6 @@ const SR_MONTHS = [
   'novembar',
   'decembar',
 ]
-/** ukrajinski mesec u instrumentalu („порівняно з вереснем”) */
-const UK_MONTHS_WITH = [
-  'січнем',
-  'лютим',
-  'березнем',
-  'квітнем',
-  'травнем',
-  'червнем',
-  'липнем',
-  'серпнем',
-  'вереснем',
-  'жовтнем',
-  'листопадом',
-  'груднем',
-]
-
 const monthIntl = (intl: string, year: number, month: number) =>
   new Intl.DateTimeFormat(intl, { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(
     new Date(Date.UTC(year, month - 1, 15)),
@@ -193,54 +177,5 @@ export const REPORT_COPY: Record<AppLocale, ReportCopy> = {
       ),
     summary: (posts, postsText, reach, engagement) =>
       `${postsText} ${posts === 1 ? 'post' : 'posts'}, reach ${reach}, engagement ${engagement}`,
-  },
-  uk: {
-    intl: 'uk-UA',
-    fileStem: 'zvit',
-    title: 'Місячний звіт',
-    docTitle: (brand, month) => `Місячний звіт · ${brand} · ${month}`,
-    subject: (month) => `Соцмережі за ${month}`,
-    footer: (brand, date) => `Sova · ${brand} · створено ${date}`,
-    page: (n, total) => `сторінка ${n} з ${total}`,
-    kpi: {
-      posts: 'Дописи',
-      reach: 'Охоплення',
-      impressions: 'Покази',
-      engagement: 'Залученість',
-      rate: 'Рівень залученості',
-    },
-    noComparison: 'без порівняння',
-    same: (previousMonth) => `без змін порівняно з ${previousMonth}`,
-    vs: (change, previousMonth) => `${change} порівняно з ${previousMonth}`,
-    empty: 'Цього місяця не було опублікованих дописів, тож немає охоплення чи залученості для показу.',
-    sections: {
-      daily: 'Охоплення за днем публікації',
-      platforms: 'За мережами',
-      topPosts: 'Найкращі дописи',
-      pillars: 'Стовпи контенту',
-      followers: 'Підписники',
-      insights: 'Інсайти й рекомендації',
-    },
-    notMeasured:
-      'Охоплення ще не виміряно: мережі повідомляють його через годину після публікації, потім через 24 години, 7 і 30 днів.',
-    columns: {
-      posts: 'Дописи',
-      reach: 'Охоплення',
-      engagement: 'Залученість',
-      rate: 'Рівень',
-      date: 'Дата',
-      network: 'Мережа',
-      post: 'Допис',
-      pillar: 'Стовп',
-      account: 'Акаунт',
-      monthStart: 'Початок місяця',
-      monthEnd: 'Кінець місяця',
-      change: 'Зміна',
-    },
-    accountFallback: 'Акаунт',
-    monthLabel: (year, month) => monthIntl('uk-UA', year, month),
-    monthForComparison: (month) => UK_MONTHS_WITH[month - 1]!,
-    summary: (posts, postsText, reach, engagement) =>
-      `${postsText} ${slavic(posts, 'допис', 'дописи', 'дописів')}, охоплення ${reach}, залученість ${engagement}`,
   },
 }

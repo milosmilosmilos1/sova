@@ -5,7 +5,6 @@ import { describe, expect, it } from 'vitest'
 
 import { translateFields, translateServerText } from './server-text'
 import en from './server/en.json'
-import uk from './server/uk.json'
 
 /**
  * Poruke servera na jeziku korisnika (D-130). Test izvlači poruke iz koda (greške API-ja, provere
@@ -210,10 +209,10 @@ const hasPlural = (text: string) => /\{\w+\|[^{}]*\}/.test(text)
 
 describe('poruke servera na jeziku korisnika (D-130)', () => {
   const messages = serverMessages()
-  const dictionaries = { en: en as Record<string, string>, uk: uk as Record<string, string> }
+  const dictionaries = { en: en as Record<string, string> }
 
-  it('svaka poruka iz koda ima engleski i ukrajinski prevod', () => {
-    const missing = [...messages.keys()].filter((m) => !(m in dictionaries.en) || !(m in dictionaries.uk))
+  it('svaka poruka iz koda ima engleski prevod', () => {
+    const missing = [...messages.keys()].filter((m) => !(m in dictionaries.en))
     if (process.env.WRITE_SERVER_MISSING)
       writeFileSync(
         process.env.WRITE_SERVER_MISSING,
@@ -240,24 +239,20 @@ describe('poruke servera na jeziku korisnika (D-130)', () => {
     expect(
       translateServerText(
         'Objava nije spremna za zakazivanje. Instagram: Instagram objava mora imati bar jednu sliku ili video.',
-        'uk',
+        'en',
       ),
-    ).toBe(
-      'Допис не готовий до планування. Instagram: Допис в Instagram має містити принаймні одне зображення або відео.',
-    )
+    ).not.toMatch(/objava|nije|sliku/)
     expect(translateServerText('Tekst ima 2300 karaktera, a Instagram dozvoljava 2200.', 'en')).toBe(
       'The text has 2300 characters and Instagram allows 2200.',
     )
   })
 
-  it('reč uz broj dobija oblik jezika: engleski dva, ukrajinski tri', () => {
+  it('reč uz broj dobija engleski oblik: jedan i ostalo', () => {
     const linkedin = (days: number) =>
       `Firma: veza ističe za ${days} ${days === 1 ? 'dan' : 'dana'}. Povežite nalog ponovo na strani Mreže da objave ne bi stale.`
     expect(translateServerText(linkedin(1), 'en')).toContain('expires in 1 day.')
     expect(translateServerText(linkedin(3), 'en')).toContain('expires in 3 days.')
-    expect(translateServerText(linkedin(1), 'uk')).toContain('через 1 день.')
-    expect(translateServerText(linkedin(3), 'uk')).toContain('через 3 дні.')
-    expect(translateServerText(linkedin(5), 'uk')).toContain('через 5 днів.')
+    expect(translateServerText(linkedin(21), 'en')).toContain('expires in 21 days.')
   })
 
   it('obaveštenje od više rečenica bez šablona za celinu prevodi se rečenicu po rečenicu', () => {
@@ -265,9 +260,6 @@ describe('poruke servera na jeziku korisnika (D-130)', () => {
       'Prošle nedelje: 3 objava, doseg 120, angažovanje 15. Za nedelju od 2026-11-02: 1 nacrta. Čeka odobrenje: 1.'
     expect(translateServerText(weekly, 'en')).toBe(
       'Last week: 3 posts, reach 120, engagement 15. For the week of 2026-11-02: 1 draft. Waiting for approval: 1.',
-    )
-    expect(translateServerText('„Leto”: Tekst je prazan ili prekratak. Vizual je u redu.', 'uk')).toBe(
-      '«Leto»: Текст порожній або закороткий. Візуал у порядку.',
     )
     // šablon sa dva problema: drugi problem je posebna rečenica posle šablona
     const notReady = translateServerText(
@@ -284,7 +276,7 @@ describe('poruke servera na jeziku korisnika (D-130)', () => {
     expect(translateServerText('Ovo nije u rečniku.', 'en')).toBe('Ovo nije u rečniku.')
     expect(translateServerText('Bilo šta', 'sr-Latn')).toBe('Bilo šta')
     const forbidden = 'Nemate dozvolu za ovu radnju.'
-    if (forbidden in dictionaries.uk)
-      expect(translateFields({ x: [forbidden] }, 'uk')).toEqual({ x: [dictionaries.uk[forbidden]] })
+    if (forbidden in dictionaries.en)
+      expect(translateFields({ x: [forbidden] }, 'en')).toEqual({ x: [dictionaries.en[forbidden]] })
   })
 })

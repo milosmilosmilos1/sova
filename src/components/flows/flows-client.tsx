@@ -32,7 +32,7 @@ export interface FlowItem {
   lastRun: { status: string; error: string | null; postId: string | null } | null
 }
 
-const INTL: Record<string, string> = { 'sr-Latn': 'sr-Latn-RS', en: 'en-GB', uk: 'uk-UA' }
+const INTL: Record<string, string> = { 'sr-Latn': 'sr-Latn-RS', en: 'en-GB' }
 
 /** Ključ poruke za dan u nedelji (0 = nedelja … 6 = subota). */
 export const dayKey = (d: number) => `days.${d as 0 | 1 | 2 | 3 | 4 | 5 | 6}` as const

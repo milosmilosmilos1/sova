@@ -287,7 +287,7 @@ export function listItems(slide: Slide): string[] {
 /** Istaknut broj: slide.stat ili prvi broj iz naslova, sa jedinicom kad je ima (%, x, h, min, dana). */
 export function statValue(slide: Slide): string | null {
   if (slide.stat?.trim()) return slide.stat.trim()
-  const m = /\d+(?:[.,]\d+)?(?:\s?(?:%|x|×|h|min|dana|days|днів)(?![\p{L}]))?/iu.exec(slide.title)
+  const m = /\d+(?:[.,]\d+)?(?:\s?(?:%|x|×|h|min|dana|days|дана)(?![\p{L}]))?/iu.exec(slide.title)
   return m ? m[0].trim() : null
 }
 

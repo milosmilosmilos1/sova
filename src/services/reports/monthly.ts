@@ -47,7 +47,7 @@ const BUCKET = 'exports'
 const MONTHS_BACK = 12
 /** Jezik izveštaja je jezik brenda (D-130); ćirilica ide kao srpski latinicom. */
 export function reportLocale(contentLocale: string | null | undefined): AppLocale {
-  return contentLocale === 'en' || contentLocale === 'uk' ? contentLocale : 'sr-Latn'
+  return contentLocale === 'en' ? 'en' : 'sr-Latn'
 }
 
 /** „oktobar 2026.”, „October 2026”, „жовтень 2026 р.” */

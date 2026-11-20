@@ -171,7 +171,6 @@ export async function startSubscriptionCheckout(
 function topupName(planName: string, tokens: number, locale: AppLocale): string {
   const count = new Intl.NumberFormat(INTL_UI[locale]).format(tokens)
   if (locale === 'en') return `Sova tokens: ${count}`
-  if (locale === 'uk') return `Токени Sova: ${count}`
   return `Sova tokeni: ${planName}`
 }
 

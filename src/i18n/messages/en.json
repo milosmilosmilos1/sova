@@ -51,15 +51,13 @@
   "locale": {
     "label": "Interface language",
     "sr-Latn": "Srpski",
-    "en": "English",
-    "uk": "Українська"
+    "en": "English"
   },
   "contentLocale": {
     "label": "Post language",
     "sr-Latn": "Serbian (Latin)",
     "sr-Cyrl": "Serbian (Cyrillic)",
-    "en": "English",
-    "uk": "Ukrainian"
+    "en": "English"
   },
   "design": {
     "title": "Post design",

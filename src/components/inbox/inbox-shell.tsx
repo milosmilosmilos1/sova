@@ -67,7 +67,7 @@ interface Message {
   source: string
 }
 
-const INTL: Record<string, string> = { 'sr-Latn': 'sr-Latn-RS', en: 'en-GB', uk: 'uk-UA' }
+const INTL: Record<string, string> = { 'sr-Latn': 'sr-Latn-RS', en: 'en-GB' }
 const KINDS: Kind[] = ['message', 'comment', 'review']
 
 export function InboxShell({

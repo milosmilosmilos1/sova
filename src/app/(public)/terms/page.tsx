@@ -19,7 +19,7 @@ const PAYMENT = ['usage', 'allowance', 'renewal', 'prices', 'refunds', 'value'] 
 
 /**
  * Uslovi korišćenja na jeziku strane (D-130). Srpska strana ima i kratak sažetak na engleskom
- * (za recenzente mreža); engleska i ukrajinska strana imaju ceo tekst na svom jeziku.
+ * (za recenzente mreža); engleska strana ima ceo tekst na engleskom.
  */
 export default async function TermsPage() {
   const [locale, t] = await Promise.all([getLocale(), getTranslations('legal.terms')])

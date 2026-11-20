@@ -275,7 +275,7 @@ describe('utisak klijenta: citat bez izmena (D-165)', () => {
     expect(copy.shortCaption).toBe(reviewShortQuote(t, 'sr-Latn'))
     expect(copy.shortCaption.length).toBeLessThanOrEqual(280)
     expect(copy.shortCaption.endsWith('” — Marija P.')).toBe(true)
-    expect(reviewQuoteBlock(t, 'uk').startsWith('«Majstori')).toBe(true)
+    expect(reviewQuoteBlock(t, 'en').startsWith('“Majstori')).toBe(true)
   })
 
   it('uputstvo po vrsti nosi podatke između oznaka, a pitanje i humor ih nemaju', () => {

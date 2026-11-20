@@ -9,11 +9,6 @@
     <p style="font-size:15px;line-height:24px;margin:0 0 16px">Click the button to confirm your address and activate your Sova account.</p>
     <p style="margin:0 0 16px"><a href="{{ .ConfirmationURL }}" style="background:#2563eb;color:#ffffff;border-radius:8px;padding:12px 20px;font-size:15px;font-weight:600;text-decoration:none;display:inline-block">Confirm email</a></p>
     <p style="font-size:13px;line-height:20px;color:#6b7280;margin:0">If you didn't create an account, you can ignore this email.</p>
-    {{ else if eq .Data.locale "uk" }}
-    <h2 style="font-size:20px;margin:0 0 12px">Підтвердьте адресу пошти</h2>
-    <p style="font-size:15px;line-height:24px;margin:0 0 16px">Натисніть кнопку, щоб підтвердити адресу й активувати акаунт у Sova.</p>
-    <p style="margin:0 0 16px"><a href="{{ .ConfirmationURL }}" style="background:#2563eb;color:#ffffff;border-radius:8px;padding:12px 20px;font-size:15px;font-weight:600;text-decoration:none;display:inline-block">Підтвердити пошту</a></p>
-    <p style="font-size:13px;line-height:20px;color:#6b7280;margin:0">Якщо ви не створювали акаунт, просто проігноруйте цей лист.</p>
     {{ else }}
     <h2 style="font-size:20px;margin:0 0 12px">Potvrdite email adresu</h2>
     <p style="font-size:15px;line-height:24px;margin:0 0 16px">Kliknite na dugme da potvrdite adresu i aktivirate nalog u Sovi.</p>

@@ -3,14 +3,15 @@ import { detectLocale, isPublicPath, localePath, splitLocalePath } from './paths
 
 /**
  * Odluka proxy-ja o jeziku javnog sajta (D-130), bez Next-a da bi se testirala:
- * - `/en/...` i `/uk/...` se prepisuju na istu stranu, a kolačić pamti jezik;
+ * - `/en/...` se prepisuje na istu stranu, a kolačić pamti jezik; stare adrese `/uk/...` (ukrajinski je
+ *   uklonjen, D-173) trajno vode na istu adresu pod `/en`;
  * - `?lang=` je izričit izbor (birač jezika): kolačić, pa adresa na tom jeziku;
  * - stranica bez prefiksa je srpska; posetilac koji je izabrao drugi jezik (kolačić) ili čiji
- *   pregledač pri prvoj poseti traži engleski ili ukrajinski ide na tu verziju. Botovi i servisi za
+ *   pregledač pri prvoj poseti traži engleski ili jezik van regiona ide na englesku verziju. Botovi i servisi za
  *   pregled linkova ostaju na adresi koju su tražili, da deljen link ima pravi jezik.
  */
 export type LocaleRoute =
-  | { kind: 'redirect'; location: string; cookie: AppLocale | null }
+  | { kind: 'redirect'; location: string; cookie: AppLocale | null; permanent?: true }
   | { kind: 'rewrite'; path: string; locale: AppLocale; cookie: AppLocale | null }
   | { kind: 'next'; path: string; locale: AppLocale | null; cookie: AppLocale | null }
 
@@ -30,7 +31,13 @@ export interface LocaleRequest {
 const BOT =
   /bot|crawl|spider|slurp|facebookexternalhit|facebookcatalog|preview|embed|whatsapp|telegram|discord|linkedin|skype|vkshare|pinterest|headless/i
 
+/** Adrese uklonjene ukrajinske verzije sajta (D-173). */
+const LEGACY_UK = /^\/uk(\/.*)?$/
+
 export function routeLocale(req: LocaleRequest): LocaleRoute {
+  const legacy = LEGACY_UK.exec(req.pathname)
+  if (legacy)
+    return { kind: 'redirect', location: `/en${legacy[1] ?? ''}${req.search}`, cookie: 'en', permanent: true }
   const prefixed = splitLocalePath(req.pathname)
   if (prefixed) {
     const cookie = req.cookie === prefixed.locale ? null : prefixed.locale

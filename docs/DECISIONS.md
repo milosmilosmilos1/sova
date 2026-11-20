@@ -1564,3 +1564,15 @@ Odluka vlasnika (19.11.): chatbot zna samo o Sovi, razgovori se čuvaju, da u ad
 - Admin panel → Podrška: poslednjih 50 razgovora sa emailom korisnika, brendom i oznakom da je razgovor poslat podršci.
 
 Razlog: zahtev vlasnika. Korisnik dobija odgovor odmah, a vlasnik vidi šta je u aplikaciji nejasno.
+
+## D-173 · 20.11.2026 · usvojeno · Ukrajinski uklonjen
+
+Odluka vlasnika (20.11.): ukrajinski se uklanja kompletno.
+
+- Jezik interfejsa je srpski ili engleski. Ukrajinski prevodi (glavni fajl, četiri dela i rečnik serverskih poruka) su obrisani, a birač jezika ga više ne nudi. Pregledač na ukrajinskom, kao i svaki jezik van regiona, dobija englesku verziju.
+- Jezik objava je srpski latinicom, srpski ćirilicom ili engleski. Studio, tokovi, Autopilot i mesečni plan ne nude ukrajinski, a API ga odbija (400). Sajt na ćirilici bez srpskih slova (ruski, ukrajinski) pri analizi više ne menja jezik brenda.
+- Javni sajt: stare adrese `/uk/...` trajno (308) vode na istu stranu pod `/en`. Hreflang i mapa sajta više nemaju ukrajinsku verziju.
+- Migracija 043: provere jezika profila i toka više ne primaju `uk`; redovi sa `uk` prelaze na engleski (na produkciji ih nema). Objave se ne diraju: četiri stara nacrta na ukrajinskom u tuđem brendu ostaju kakva jesu, a kod ih čita kao nepoznat jezik.
+- Mejlovi (pozivnice, izveštaji), PDF izveštaj, chatbot podrške i tekst pomoći su na srpskom i engleskom. Šabloni mejlova za prijavu u repou nemaju ukrajinsku granu; na produkciji je i dalje imaju, ali se ona više ne koristi.
+
+Razlog: zahtev vlasnika.

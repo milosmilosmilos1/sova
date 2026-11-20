@@ -29,13 +29,6 @@ const TEXT: Record<
     retry: 'Try again',
     newVersion: 'A new version of Sova is here. The page is refreshing.',
   },
-  uk: {
-    title: 'Щось пішло не так',
-    text: 'Помилку записано. Спробуйте ще раз, а якщо вона повторюється, напишіть у підтримку з ID нижче.',
-    errorId: 'ID помилки:',
-    retry: 'Спробуйте ще раз',
-    newVersion: 'Вийшла нова версія Sova. Сторінка оновлюється.',
-  },
 }
 
 function cookieLocale(): AppLocale {

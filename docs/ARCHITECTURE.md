@@ -131,7 +131,7 @@ sova/
 │   │   ├── auth/callback/
 │   │   ├── error.tsx, global-error.tsx, not-found.tsx, loading.tsx
 │   │   └── layout.tsx
-│   ├── proxy.ts                 sesija + redirect + admin gate + bezbednosni headeri + jezik (/en, /uk; D-130)
+│   ├── proxy.ts                 sesija + redirect + admin gate + bezbednosni headeri + jezik (/en; stare /uk adrese → /en, D-130, D-173)
 │   ├── components/
 │   │   ├── ui/                  shadcn/ui
 │   │   ├── shared/              AsyncState, ConfirmDialog, TokenBadge, NetworkBadge (mreže u bojama, D-131), ...

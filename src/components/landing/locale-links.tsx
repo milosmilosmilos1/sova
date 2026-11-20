@@ -5,9 +5,9 @@ import { localePath, splitLocalePath } from '@/i18n/paths'
 import { cn } from '@/lib/utils'
 
 /** Oznake jezika: kratka u zaglavlju, puno ime za čitače ekrana, kod jezika za pregledač. */
-const SHORT: Record<AppLocale, string> = { 'sr-Latn': 'SR', en: 'EN', uk: 'UA' }
-const NAME: Record<AppLocale, string> = { 'sr-Latn': 'Srpski', en: 'English', uk: 'Українська' }
-const LANG: Record<AppLocale, string> = { 'sr-Latn': 'sr-Latn', en: 'en', uk: 'uk' }
+const SHORT: Record<AppLocale, string> = { 'sr-Latn': 'SR', en: 'EN' }
+const NAME: Record<AppLocale, string> = { 'sr-Latn': 'Srpski', en: 'English' }
+const LANG: Record<AppLocale, string> = { 'sr-Latn': 'sr-Latn', en: 'en' }
 
 /**
  * Ista strana na drugom jeziku (D-130). Srpska adresa nema prefiks, pa nosi `?lang=` da prepiše

@@ -28,13 +28,6 @@ const COPY: Record<AppLocale, { first: string; accent: string; rest: string; sub
     sub: 'Strategy, posts, visuals, scheduling and analytics for eight networks.',
     font: 64,
   },
-  uk: {
-    first: 'Вкажіть сайт,',
-    accent: 'Sova веде',
-    rest: 'ваші соцмережі.',
-    sub: 'Стратегія, дописи, візуали, планування й аналітика для восьми мереж.',
-    font: 68,
-  },
 }
 
 export async function GET(_req: Request, { params }: { params: Promise<{ locale: string }> }) {

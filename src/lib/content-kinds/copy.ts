@@ -22,7 +22,6 @@ const QUOTES: Record<ContentLocale, readonly [string, string]> = {
   'sr-Latn': ['„', '”'],
   'sr-Cyrl': ['„', '”'],
   en: ['“', '”'],
-  uk: ['«', '»'],
 }
 
 function dataBlock(lines: Array<string | null | undefined>): string[] {

@@ -4,7 +4,6 @@ import { SOVA_HELP } from '@/content/support/sova-help'
 import type { AppLocale } from '@/i18n/config'
 import en from '@/i18n/messages/en.json'
 import sr from '@/i18n/messages/sr-Latn.json'
-import uk from '@/i18n/messages/uk.json'
 import { AiError, toApiError } from '@/lib/ai/errors'
 import { generateText } from '@/lib/ai/gemini'
 import { textModelChain } from '@/lib/ai/models'
@@ -64,7 +63,6 @@ export const SUPPORT_RETENTION_DAYS = 90
 const STEP_TITLES: Record<AppLocale, Record<string, { title: string }>> = {
   'sr-Latn': sr.guide.steps,
   en: en.guide.steps,
-  uk: uk.guide.steps,
 }
 
 const meta = (row: Pick<Row, 'meta'>) => (row.meta ?? {}) as { escalate?: boolean; ideaId?: string }

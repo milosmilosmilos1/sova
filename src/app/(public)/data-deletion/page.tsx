@@ -22,7 +22,7 @@ const SCOPE = ['deleted', 'kept', 'member'] as const
 
 /**
  * Uputstvo za brisanje podataka na jeziku strane (D-130). Srpska strana ima i kratko uputstvo na
- * engleskom (za recenzente mreža); engleska i ukrajinska strana imaju ceo tekst na svom jeziku.
+ * engleskom (za recenzente mreža); engleska strana ima ceo tekst na engleskom.
  */
 export default async function DataDeletionPage({ searchParams }: PageProps<'/data-deletion'>) {
   const params = await searchParams

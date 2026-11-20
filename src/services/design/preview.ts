@@ -78,25 +78,6 @@ const SAMPLES: Record<ContentLocale, Record<SlideKind, Slide>> = {
       body: 'Send us a message and get a plan for your brand.',
     },
   },
-  uk: {
-    cover: {
-      kind: 'cover',
-      kicker: 'Посібник',
-      title: 'Три зміни, що приносять більше запитів',
-      body: 'Короткий посібник для брендів, які хочуть кращих результатів у соцмережах.',
-    },
-    point: {
-      kind: 'point',
-      title: 'Одна чітка думка в кожному дописі',
-      body: 'Коли допис каже одне, люди це запам’ятовують. Решту приберіть.',
-      stat: '3x',
-    },
-    cta: {
-      kind: 'cta',
-      title: 'Хочете такі дописи?',
-      body: 'Напишіть нам і отримайте план для вашого бренду.',
-    },
-  },
 }
 
 const SAMPLE_PHOTO = path.join(process.cwd(), 'src', 'lib', 'visuals', 'design', 'sample', 'photo.jpg')

@@ -195,14 +195,15 @@ describe('Nova objava (POST /api/ai/compose)', () => {
     expect(targets.every((t) => t.options?.format === 'story')).toBe(true)
   })
 
-  it('ukrajinski: model dobija uputstvo na ukrajinskom, nacrt nosi jezik uk (D-108)', async () => {
-    enqueueReply(reply('image', 'kyiv cafe'))
-    const r = await compose({ format: 'image', locale: 'uk' })
+  it('engleski: model dobija uputstvo na engleskom, nacrt nosi jezik en; ukrajinski se odbija (D-108, D-173)', async () => {
+    enqueueReply(reply('image', 'london cafe'))
+    const r = await compose({ format: 'image', locale: 'en' })
     expect(r.status).toBe(200)
-    expect(r.json.data!.locale).toBe('uk')
-    expect(JSON.stringify(calls[0]!.body)).toContain('Пиши українською мовою.')
+    expect(r.json.data!.locale).toBe('en')
+    expect(JSON.stringify(calls[0]!.body)).toContain('Write in English.')
     const { data: post } = await admin.from('posts').select('language').eq('id', r.json.data!.postId).single()
-    expect(post!.language).toBe('uk')
+    expect(post!.language).toBe('en')
+    expect((await compose({ format: 'image', locale: 'uk' })).status).toBe(400)
   })
 
   it('Reels: uspravan snimak sa Pexels-a; bez snimka nacrt ostaje bez videa uz napomenu', async () => {
@@ -216,7 +217,7 @@ describe('Nova objava (POST /api/ai/compose)', () => {
     expect(r.json.data!.media).toEqual([
       expect.objectContaining({ kind: 'video', attribution: 'Video by Autor 101 on Pexels' }),
     ])
-    // brend objavljuje za Srbiju i Ukrajinu: upit sa ljudima traži evropske ljude (D-136)
+    // upit sa ljudima traži evropske ljude (D-136)
     expect(visualsState.pexelsSearches).toEqual(['video:european barista coffee:portrait'])
     visualsState.pexelsEmpty = true
     const none = await compose({ format: 'video', platforms: ['instagram'] })

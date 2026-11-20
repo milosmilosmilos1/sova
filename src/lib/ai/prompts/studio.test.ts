@@ -169,8 +169,8 @@ describe('studio: upit', () => {
     expect(prompt).toContain('Jezik objava: engleski (izabrao korisnik)')
     // jezik razgovora je jezik korisnika, ne jezik objava (D-156)
     expect(prompt).toContain('Jezik razgovora: srpski, latinica (jezik aplikacije korisnika)')
-    expect(buildStudioPrompt(input({ uiLocale: 'uk' }))).toContain(
-      'Jezik razgovora: ukrajinski (jezik aplikacije korisnika)',
+    expect(buildStudioPrompt(input({ uiLocale: 'en' }))).toContain(
+      'Jezik razgovora: engleski (jezik aplikacije korisnika)',
     )
     expect(prompt).toContain('quote: Citat')
     expect(prompt).toContain('«Napravi karusel o letnjem servisu»')

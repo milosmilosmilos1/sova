@@ -23,7 +23,7 @@ const jetbrainsMono = JetBrains_Mono({
 /**
  * Javne strane u izgledu landinga (D-098): tamna paleta, Onest, lepljivo zaglavlje sa sovom.
  * `dark` ostaje zbog shadcn komponenti na prijavi, registraciji i pravnim stranama. Svaki link nosi
- * jezik strane (D-130: srpski bez prefiksa, /en, /uk), a birač jezika vodi na istu stranu.
+ * jezik strane (D-130: srpski bez prefiksa, /en), a birač jezika vodi na istu stranu.
  */
 export default async function PublicLayout({ children }: LayoutProps<'/'>) {
   const [t, locale, registrationOpen, h] = await Promise.all([

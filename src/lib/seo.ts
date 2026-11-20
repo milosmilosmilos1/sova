@@ -44,7 +44,7 @@ export const ROBOTS_DISALLOW = [
   '/api/',
   '/auth/',
   ...PRIVATE_PUBLIC,
-  ...PRIVATE_PUBLIC.flatMap((p) => [`/en${p}`, `/uk${p}`]),
+  ...PRIVATE_PUBLIC.map((p) => `/en${p}`),
 ]
 export const ROBOTS_ALLOW = ['/', '/api/media/public/']
 

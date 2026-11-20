@@ -9,11 +9,6 @@
     <p style="font-size:15px;line-height:24px;margin:0 0 16px">Click the button to choose a new password for your Sova account.</p>
     <p style="margin:0 0 16px"><a href="{{ .ConfirmationURL }}" style="background:#2563eb;color:#ffffff;border-radius:8px;padding:12px 20px;font-size:15px;font-weight:600;text-decoration:none;display:inline-block">Choose a new password</a></p>
     <p style="font-size:13px;line-height:20px;color:#6b7280;margin:0">If you didn't ask for a reset, ignore this email; your password stays the same.</p>
-    {{ else if eq .Data.locale "uk" }}
-    <h2 style="font-size:20px;margin:0 0 12px">Зміна пароля</h2>
-    <p style="font-size:15px;line-height:24px;margin:0 0 16px">Натисніть кнопку, щоб вибрати новий пароль для акаунта в Sova.</p>
-    <p style="margin:0 0 16px"><a href="{{ .ConfirmationURL }}" style="background:#2563eb;color:#ffffff;border-radius:8px;padding:12px 20px;font-size:15px;font-weight:600;text-decoration:none;display:inline-block">Вибрати новий пароль</a></p>
-    <p style="font-size:13px;line-height:20px;color:#6b7280;margin:0">Якщо ви не запитували зміну, проігноруйте лист; пароль залишиться тим самим.</p>
     {{ else }}
     <h2 style="font-size:20px;margin:0 0 12px">Promena lozinke</h2>
     <p style="font-size:15px;line-height:24px;margin:0 0 16px">Kliknite na dugme da izaberete novu lozinku za nalog u Sovi.</p>

@@ -21,7 +21,7 @@ function translatedJsonSchema(): Record<string, unknown> {
 
 /**
  * Odgovor Sove na jeziku razgovora (D-156): kad su odgovor ili predlozi na drugom jeziku (jezik brenda,
- * srodan jezik, ukrajinski latinicom), jedan kratak poziv ih prevodi. Neuspeo prevod ostavlja odgovor
+ * srodan jezik), jedan kratak poziv ih prevodi. Neuspeo prevod ostavlja odgovor
  * kakav jeste, jer je i takav bolji od greške u razgovoru.
  */
 export async function inConversationLanguage(

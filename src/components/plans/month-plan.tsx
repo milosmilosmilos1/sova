@@ -128,7 +128,7 @@ function PlanTheme({ theme }: { theme: Page['options']['theme'] }) {
   )
 }
 
-const INTL: Record<string, string> = { 'sr-Latn': 'sr-Latn-RS', en: 'en-GB', uk: 'uk-UA' }
+const INTL: Record<string, string> = { 'sr-Latn': 'sr-Latn-RS', en: 'en-GB' }
 const FORMAT_ICON: Record<PostFormat, typeof ImageIcon> = {
   carousel: GalleryHorizontalEnd,
   image: ImageIcon,

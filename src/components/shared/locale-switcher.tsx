@@ -9,7 +9,7 @@ import { changeLocaleAction } from '@/i18n/actions'
 import { locales } from '@/i18n/config'
 import { cn } from '@/lib/utils'
 
-/** Izbor jezika interfejsa (D-108): srpski, engleski, ukrajinski. */
+/** Izbor jezika interfejsa (D-108): srpski i engleski (ukrajinski uklonjen, D-173). */
 export function LocaleSwitcher({ className }: { className?: string }) {
   const t = useTranslations('locale')
   const locale = useLocale()

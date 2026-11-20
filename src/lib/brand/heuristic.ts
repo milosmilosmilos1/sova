@@ -99,10 +99,10 @@ export function detectLocale(
   const cyr = (text.match(/[Ѐ-ӿ]/g) ?? []).length
   const lat = (text.match(/[A-Za-zČĆŽŠĐčćžšđ]/g) ?? []).length
   if (cyr > lat * 0.5 && cyr > 200) {
-    // ukrajinski ima і, ї, є, ґ; srpska ćirilica ђ, ј, љ, њ, ћ, џ (D-108)
-    const uk = (text.match(/[іїєґІЇЄҐ]/g) ?? []).length
+    // srpska ćirilica ima ђ, ј, љ, њ, ћ, џ; ćirilica bez njih (ruski, ukrajinski) nije jezik objava
+    // koji Sova piše, pa ostaje izabrani jezik (D-173)
     const sr = (text.match(/[ђјљњћџЂЈЉЊЋЏ]/g) ?? []).length
-    if (uk > sr) return { locale: 'uk', confidence: 0.85 }
+    if (!sr) return { locale: fallback, confidence: 0.3 }
     return { locale: 'sr-Cyrl', confidence: 0.9 }
   }
   const lang = pages.find((p) => p.lang)?.lang ?? ''

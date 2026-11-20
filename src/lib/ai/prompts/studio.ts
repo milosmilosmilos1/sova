@@ -104,21 +104,18 @@ const LOCALE_NAME: Record<ContentLocale, string> = {
   'sr-Latn': 'srpski, latinica',
   'sr-Cyrl': 'srpski, ćirilica',
   en: 'engleski',
-  uk: 'ukrajinski',
 }
 
-/** Jezik razgovora (D-156): interfejs ima srpski latinicom, engleski i ukrajinski. */
+/** Jezik razgovora (D-156): interfejs ima srpski latinicom i engleski. */
 const UI_LOCALE_NAME: Record<AppLocale, string> = {
   'sr-Latn': 'srpski, latinica',
   en: 'engleski',
-  uk: 'ukrajinski',
 }
 
-/** Uputstvo na samom jeziku razgovora: model tada ne sklizne u srodan jezik (poljski umesto ukrajinskog). */
+/** Uputstvo na samom jeziku razgovora: model tada ne sklizne u jezik brenda ili srodan jezik. */
 const REPLY_IN: Record<AppLocale, string> = {
   'sr-Latn': 'Odgovaraj na srpskom, latinicom.',
   en: 'Reply in English.',
-  uk: 'Відповідай українською мовою.',
 }
 
 const REPLY_MAX = 1500
@@ -188,7 +185,7 @@ export function buildStudioPrompt(input: StudioPromptInput): string {
       ? 'Vrstu objave biraš ti, među dozvoljenima, ili je korisnik kaže u poruci.'
       : `Korisnik je za sledeću objavu izabrao vrstu ${input.format} (${FORMAT_LABEL[input.format]}): koristi nju.`,
     `Jezik objava: ${LOCALE_NAME[postLocale]}${input.locale ? ' (izabrao korisnik)' : ' (jezik brenda)'}, osim kad korisnik u poruci traži drugi.`,
-    // jezik objava nije jezik razgovora: ukrajinska korisnica brenda na srpskom dobija odgovor na ukrajinskom
+    // jezik objava nije jezik razgovora: korisnica sa engleskim interfejsom i brendom na srpskom dobija odgovor na engleskom
     `Jezik razgovora: ${UI_LOCALE_NAME[input.uiLocale]} (jezik aplikacije korisnika). reply i suggestions su na tom jeziku, osim kad je nova poruka korisnika cela rečenica na drugom jeziku: tada na jeziku poruke. Naziv stila, broj ili jedna reč nisu jezik poruke. Jezik objava i ranije poruke Sove ne određuju jezik razgovora. ${REPLY_IN[input.uiLocale]}`,
     `Stil slajdova brenda: ${input.styleName}. Drugi stilovi (id: naziv): ${input.styles.map((s) => `${s.id}: ${s.name}`).join('; ')}.`,
     ...(input.current ? currentLines(input.current) : ['', 'Desno trenutno nije otvorena nijedna objava.']),

@@ -1495,7 +1495,7 @@ function PexelsPanel({ brandId }: { brandId: string }) {
   )
 }
 
-const COMPOSE_LOCALES = ['sr-Latn', 'sr-Cyrl', 'en', 'uk'] as const
+const COMPOSE_LOCALES = ['sr-Latn', 'sr-Cyrl', 'en'] as const
 
 interface ComposeView {
   postId: string

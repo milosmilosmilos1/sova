@@ -9,11 +9,6 @@
     <p style="font-size:15px;line-height:24px;margin:0 0 16px">Click the button to log in. The link is valid for a short time and works only once.</p>
     <p style="margin:0 0 16px"><a href="{{ .ConfirmationURL }}" style="background:#2563eb;color:#ffffff;border-radius:8px;padding:12px 20px;font-size:15px;font-weight:600;text-decoration:none;display:inline-block">Log in</a></p>
     <p style="font-size:13px;line-height:20px;color:#6b7280;margin:0">If you didn't ask to log in, you can ignore this email.</p>
-    {{ else if eq .Data.locale "uk" }}
-    <h2 style="font-size:20px;margin:0 0 12px">Вхід у Sova</h2>
-    <p style="font-size:15px;line-height:24px;margin:0 0 16px">Натисніть кнопку, щоб увійти. Посилання діє недовго й працює лише один раз.</p>
-    <p style="margin:0 0 16px"><a href="{{ .ConfirmationURL }}" style="background:#2563eb;color:#ffffff;border-radius:8px;padding:12px 20px;font-size:15px;font-weight:600;text-decoration:none;display:inline-block">Увійти</a></p>
-    <p style="font-size:13px;line-height:20px;color:#6b7280;margin:0">Якщо ви не запитували вхід, просто проігноруйте цей лист.</p>
     {{ else }}
     <h2 style="font-size:20px;margin:0 0 12px">Prijava u Sovu</h2>
     <p style="font-size:15px;line-height:24px;margin:0 0 16px">Kliknite na dugme da se prijavite. Link važi kratko i radi samo jednom.</p>

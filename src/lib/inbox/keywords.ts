@@ -1,6 +1,6 @@
 /**
  * Ključne reči DM automatizacije (D-117): „CENA”, „cena?”, „Цена” i „cená” su ista reč. Tekst se
- * prevodi sa ćirilice (srpske i ukrajinske) na latinicu, skidaju se akcenti i kvačice, a reč mora
+ * prevodi sa ćirilice na latinicu, skidaju se akcenti i kvačice, a reč mora
  * da stoji sama (ne „cenovnik” za „cena”). Ključna reč od više reči traži te reči jednu do druge.
  */
 const CYRILLIC: Record<string, string> = {
@@ -8,16 +8,12 @@ const CYRILLIC: Record<string, string> = {
   б: 'b',
   в: 'v',
   г: 'g',
-  ґ: 'g',
   д: 'd',
   ђ: 'dj',
   е: 'e',
-  є: 'e',
   ж: 'z',
   з: 'z',
   и: 'i',
-  і: 'i',
-  ї: 'i',
   й: 'j',
   ј: 'j',
   к: 'k',

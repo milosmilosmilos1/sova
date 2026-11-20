@@ -72,7 +72,7 @@ interface Draft {
   active: boolean
 }
 
-const INTL: Record<string, string> = { 'sr-Latn': 'sr-Latn-RS', en: 'en-GB', uk: 'uk-UA' }
+const INTL: Record<string, string> = { 'sr-Latn': 'sr-Latn-RS', en: 'en-GB' }
 
 function emptyDraft(accountId: string): Draft {
   return {

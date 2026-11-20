@@ -51,15 +51,13 @@
   "locale": {
     "label": "Jezik interfejsa",
     "sr-Latn": "Srpski",
-    "en": "English",
-    "uk": "Українська"
+    "en": "English"
   },
   "contentLocale": {
     "label": "Jezik objava",
     "sr-Latn": "Srpski, latinica",
     "sr-Cyrl": "Srpski, ćirilica",
-    "en": "Engleski",
-    "uk": "Ukrajinski"
+    "en": "Engleski"
   },
   "design": {
     "title": "Dizajn objava",

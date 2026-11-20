@@ -148,9 +148,9 @@ describe('createHandler', () => {
       items: [{ title: 'Termin je prošao.', error: 'Termin je prošao.' }],
     }))
     const body = (await (
-      await ok(req('/api/x', { headers: { cookie: 'sova_locale=uk' } }), routeCtx)
+      await ok(req('/api/x', { headers: { cookie: 'sova_locale=en' } }), routeCtx)
     ).json()) as { data: { notes: string[]; items: Array<{ title: string; error: string }> } }
-    expect(body.data.notes).toEqual(['Час минув.'])
-    expect(body.data.items[0]).toEqual({ title: 'Termin je prošao.', error: 'Час минув.' })
+    expect(body.data.notes).toEqual(['The time has passed.'])
+    expect(body.data.items[0]).toEqual({ title: 'Termin je prošao.', error: 'The time has passed.' })
   })
 })

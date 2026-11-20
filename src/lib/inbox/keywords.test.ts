@@ -7,7 +7,6 @@ describe('ključne reči', () => {
   it('ćirilica, kvačice i velika slova daju istu reč', () => {
     expect(normalizeText('ЦЕНА')).toBe('cena')
     expect(normalizeText('Čćšžđ')).toBe('ccszdj')
-    expect(normalizeText('Ціна')).toBe('cina')
   })
 
   it('reč mora da stoji sama, a ključna reč od više reči traži reči jednu do druge', () => {

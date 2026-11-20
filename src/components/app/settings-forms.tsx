@@ -56,7 +56,6 @@ export function ProfileForm({
             {/* nazivi jezika se pišu na svom jeziku, isti su u svakom interfejsu */}
             <option value="sr-Latn">Srpski (latinica)</option>
             <option value="en">English</option>
-            <option value="uk">Українська</option>
           </select>
         </div>
         <div className="space-y-1.5">
@@ -146,7 +145,6 @@ export function CreateBrandForm({ workspaceId }: { workspaceId: string }) {
             <option value="sr-Latn">{tc('sr-Latn')}</option>
             <option value="sr-Cyrl">{tc('sr-Cyrl')}</option>
             <option value="en">{tc('en')}</option>
-            <option value="uk">{tc('uk')}</option>
           </select>
         </div>
         <div className="space-y-1.5">

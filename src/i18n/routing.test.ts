@@ -15,19 +15,33 @@ const page = (over: Partial<LocaleRequest> = {}): LocaleRequest => ({
 })
 
 describe('jezik javnog sajta u proxy-ju (D-130)', () => {
-  it('/en i /uk se prepisuju na istu stranu i pamte jezik', () => {
+  it('/en se prepisuje na istu stranu i pamti jezik; stare /uk adrese trajno vode na /en (D-173)', () => {
     expect(routeLocale(page({ pathname: '/en/contact' }))).toEqual({
       kind: 'rewrite',
       path: '/kontakt',
       locale: 'en',
       cookie: 'en',
     })
-    expect(routeLocale(page({ pathname: '/uk', cookie: 'uk' }))).toEqual({
+    expect(routeLocale(page({ pathname: '/en', cookie: 'en' }))).toEqual({
       kind: 'rewrite',
       path: '/',
-      locale: 'uk',
+      locale: 'en',
       cookie: null,
     })
+    expect(routeLocale(page({ pathname: '/uk', cookie: 'uk' }))).toEqual({
+      kind: 'redirect',
+      location: '/en',
+      cookie: 'en',
+      permanent: true,
+    })
+    expect(routeLocale(page({ pathname: '/uk/contact', search: '?a=1' }))).toEqual({
+      kind: 'redirect',
+      location: '/en/contact?a=1',
+      cookie: 'en',
+      permanent: true,
+    })
+    // reč koja počinje sa „uk” nije stara adresa
+    expect(routeLocale(page({ pathname: '/ukrasi' })).kind).toBe('next')
   })
 
   it('aplikacija nema prefiks: /en/app vodi na /app, a jezik se pamti', () => {
@@ -74,8 +88,8 @@ describe('jezik javnog sajta u proxy-ju (D-130)', () => {
   it('prva poseta prati pregledač; bot i pregled linka ostaju na srpskom', () => {
     expect(routeLocale(page({ acceptLanguage: 'uk-UA,uk;q=0.9' }))).toEqual({
       kind: 'redirect',
-      location: '/uk',
-      cookie: 'uk',
+      location: '/en',
+      cookie: 'en',
     })
     expect(routeLocale(page({ acceptLanguage: 'sr-RS,sr;q=0.9' }))).toEqual({
       kind: 'next',

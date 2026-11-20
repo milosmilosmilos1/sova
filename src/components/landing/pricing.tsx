@@ -27,8 +27,7 @@ import {
 type PricingT = ReturnType<typeof useTranslations<'site.pricing'>>
 
 /**
- * Celi iznosi bez decimala („47 €”), ostali sa dve. Uži znak valute: ukrajinski bi inače pisao
- * „47 EUR”, a srpski i engleski ostaju isti.
+ * Celi iznosi bez decimala („47 €”), ostali sa dve. Uži znak valute, da nijedan jezik ne piše „47 EUR”.
  */
 function moneyFormatter(locale: string, currency: string) {
   const base = { style: 'currency', currency, currencyDisplay: 'narrowSymbol' } as const

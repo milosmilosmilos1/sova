@@ -1,6 +1,5 @@
 import type { AppLocale } from './config'
 import en from './server/en.json'
-import uk from './server/uk.json'
 
 /**
  * Poruke servera na jeziku korisnika (D-130). Server i dalje piše poruke na srpskom (greške API-ja,
@@ -12,7 +11,7 @@ import uk from './server/uk.json'
 type Translated = Exclude<AppLocale, 'sr-Latn'>
 type Dictionary = Record<string, string>
 
-const DICTIONARIES: Record<Translated, Dictionary> = { en, uk }
+const DICTIONARIES: Record<Translated, Dictionary> = { en }
 
 interface Pattern {
   re: RegExp
@@ -95,15 +94,10 @@ export function translateServerText(text: string, locale: AppLocale, depth = 0):
   return out.join(' ')
 }
 
-/** Oblik reči uz broj: engleski jedan i ostalo, ukrajinski jedan, nekoliko (2–4) i mnogo. */
-function pluralForm(locale: Translated, raw: string, forms: string[]): string {
+/** Oblik reči uz broj: engleski ima jedan i ostalo. */
+function pluralForm(_locale: Translated, raw: string, forms: string[]): string {
   const n = Number(raw.replace(/[^\d]/g, '') || '0')
-  if (locale === 'en') return (n === 1 ? forms[0] : forms[1]) ?? forms[0] ?? ''
-  const mod10 = n % 10
-  const mod100 = n % 100
-  const i =
-    mod10 === 1 && mod100 !== 11 ? 0 : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14) ? 1 : 2
-  return forms[i] ?? forms[forms.length - 1] ?? ''
+  return (n === 1 ? forms[0] : forms[1]) ?? forms[0] ?? ''
 }
 
 /** Poruke polja (Zod) na jeziku korisnika. */

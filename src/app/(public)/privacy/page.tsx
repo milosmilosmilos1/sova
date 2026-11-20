@@ -34,7 +34,7 @@ const strong = (chunks: ReactNode) => <strong>{chunks}</strong>
 
 /**
  * Politika privatnosti na jeziku strane (D-130). Srpska strana ima i kratak sažetak na engleskom
- * (za recenzente mreža); engleska i ukrajinska strana imaju ceo tekst na svom jeziku.
+ * (za recenzente mreža); engleska strana ima ceo tekst na engleskom.
  */
 export default async function PrivacyPage() {
   const [locale, t, tl] = await Promise.all([

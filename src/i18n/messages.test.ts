@@ -4,18 +4,13 @@ import { locales } from './config'
 import en from './messages/en.json'
 import enA from './messages/parts/a/en.json'
 import srA from './messages/parts/a/sr-Latn.json'
-import ukA from './messages/parts/a/uk.json'
 import enB from './messages/parts/b/en.json'
 import srB from './messages/parts/b/sr-Latn.json'
-import ukB from './messages/parts/b/uk.json'
 import enC from './messages/parts/c/en.json'
 import srC from './messages/parts/c/sr-Latn.json'
-import ukC from './messages/parts/c/uk.json'
 import enD from './messages/parts/d/en.json'
 import srD from './messages/parts/d/sr-Latn.json'
-import ukD from './messages/parts/d/uk.json'
 import srLatn from './messages/sr-Latn.json'
-import uk from './messages/uk.json'
 
 type Messages = { [key: string]: string | Messages }
 
@@ -39,16 +34,15 @@ describe('poruke interfejsa (D-108)', () => {
   const all = {
     'sr-Latn': merged(srLatn, srA, srB, srC, srD),
     en: merged(en, enA, enB, enC, enD),
-    uk: merged(uk, ukA, ukB, ukC, ukD),
   }
 
   it('svaki jezik interfejsa ima svoj fajl', () => {
     expect(Object.keys(all).sort()).toEqual([...locales].sort())
   })
 
-  it('sva tri jezika imaju iste ključeve i iste promenljive', () => {
+  it('oba jezika imaju iste ključeve i iste promenljive', () => {
     const base = all['sr-Latn']
-    for (const locale of ['en', 'uk'] as const) {
+    for (const locale of ['en'] as const) {
       expect(Object.keys(all[locale]).sort()).toEqual(Object.keys(base).sort())
       for (const [key, text] of Object.entries(base))
         expect(placeholders(all[locale][key] ?? ''), `${locale}: ${key}`).toEqual(placeholders(text))

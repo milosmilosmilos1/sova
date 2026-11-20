@@ -1,8 +1,8 @@
 /**
  * Tekst pomoći o Sovi (D-172): jedino znanje chatbota podrške u prozoru „Vodič i podrška”. Menja se
  * ovde kad se promeni nešto što korisnik vidi (meni, koraci, cene, mreže, poruke grešaka). Nazivi u
- * navodnicima su tačni natpisi iz aplikacije, a uz prvo pominjanje menija ili strane stoje engleski i
- * ukrajinski natpis. Bez internih naziva (servisi, putanje, oznake odluka) i bez podataka korisnika;
+ * navodnicima su tačni natpisi iz aplikacije, a uz prvo pominjanje menija ili strane stoji engleski
+ * natpis. Bez internih naziva (servisi, putanje, oznake odluka) i bez podataka korisnika;
  * to proverava `sova-help.test.ts`.
  */
 export const SOVA_HELP = `# Sova: znanje za podršku
@@ -13,7 +13,7 @@ Stanje na dan 19. novembra 2026. Ovo je jedini izvor znanja za asistenta podršk
 
 Odgovaraj samo na osnovu ovog teksta. Ako nešto ovde ne piše, reci da ne znaš sigurno i ponudi slanje pitanja podršci.
 
-Nazivi u navodnicima su tačni natpisi iz aplikacije. Kod prvog pominjanja menija ili strane u zagradi su natpisi na engleskom (EN) i ukrajinskom (UK).
+Nazivi u navodnicima su tačni natpisi iz aplikacije. Kod prvog pominjanja menija ili strane u zagradi je natpis na engleskom (EN).
 
 Dostupnost mreža, plaćanja i nekih funkcija se menja, a ovde je stanje na gornji datum. Ako korisnik kaže da mu nešto već radi, veruj onome što vidi u aplikaciji. Ne obećavaj datume.
 
@@ -29,7 +29,7 @@ Namenjena je vlasnicima malih firmi i agencijama i frilenserima koji vode mreže
 
 Podrazumevano se ništa ne objavljuje bez odobrenja korisnika. Objave idu same samo kad to korisnik izričito uključi: viši nivoi Autopilota ili „Zakaži odmah” u Mesečnom planu.
 
-Interfejs je na srpskom, engleskom i ukrajinskom. Objave Sova piše na srpskom (latinicom ili ćirilicom), engleskom i ukrajinskom.
+Interfejs je na srpskom i engleskom. Objave Sova piše na srpskom (latinicom ili ćirilicom) i engleskom.
 
 Sova ne pravi AI fotografije. Slike u objavama su besplatne fotografije i snimci sa Unsplash-a i Pexels-a, fotografije iz korisnikove galerije i slajdovi koje Sova nacrta.
 
@@ -45,9 +45,9 @@ Privremene email adrese nisu dozvoljene. Dok email nije potvrđen, AI radnje ne 
 
 ### Radni prostor i uvod
 
-Na strani „Početak” (EN: Getting started, UK: Початок) izaberite „Jedan biznis” ili „Agencija ili freelancer”, upišite naziv firme (agencija i prvog klijenta) i sajt (ako ga nema, ostavite prazno) i kliknite „Napravite radni prostor”. Radni prostor ima svoj tim, brendove i tokene.
+Na strani „Početak” (EN: Getting started) izaberite „Jedan biznis” ili „Agencija ili freelancer”, upišite naziv firme (agencija i prvog klijenta) i sajt (ako ga nema, ostavite prazno) i kliknite „Napravite radni prostor”. Radni prostor ima svoj tim, brendove i tokene.
 
-Zatim se otvara „Uvod” (EN: Setup, UK: Налаштування) u sedam koraka:
+Zatim se otvara „Uvod” (EN: Setup) u sedam koraka:
 
 1. Dobrodošli: jezik aplikacije i jezik objava.
 2. Mreže: povezivanje naloga (vlasnik ili administrator).
@@ -61,7 +61,7 @@ Uvod može da se preskoči („Preskoči uvod”), a do kraja na početnoj stoji
 
 ### Četiri ključna koraka
 
-Na strani „Početna” (EN: Home, UK: Головна) i u plutajućem dugmetu „Vodič i podrška” (EN: Guide and support, UK: Посібник і підтримка) dole desno, aplikacija preporučuje ovim redom:
+Na strani „Početna” (EN: Home) i u plutajućem dugmetu „Vodič i podrška” (EN: Guide and support) dole desno, aplikacija preporučuje ovim redom:
 
 1. „Povežite mrežu”.
 2. „Opišite glas brenda”.
@@ -72,16 +72,16 @@ Posle toga Sova redovno priprema nacrte. Početna pokazuje i rezultate za 30 dan
 
 ### Meni
 
-- „Rad” (EN: Work, UK: Робота): „Početna”, „Automatizuj objave” (EN: Automate posts, UK: Автоматизація дописів), „Odobravanje” (EN: Approvals, UK: Погодження), „Inbox” (EN: Inbox, UK: Вхідні), „DM automatizacija” (EN: DM automation, UK: DM-автоматизація), „Objave” (EN: Posts, UK: Дописи), „Kalendar” (EN: Calendar, UK: Календар).
-- „Plan i rast” (EN: Planning and growth, UK: План і зростання): „Mesečni plan” (EN: Monthly plan, UK: Місячний план), „Strategija” (EN: Strategy, UK: Стратегія), „Analitika” (EN: Analytics, UK: Аналітика), „Autopilot” (EN: Autopilot, UK: Автопілот).
-- „Sadržaj” (EN: Content, UK: Контент): „AI Studio” (EN: AI Studio, UK: AI-студія), „Galerija” (EN: Gallery, UK: Галерея), „Brain” (EN: Brain, UK: Brain).
-- „Podešavanja” (EN: Settings, UK: Налаштування): „Mreže” (EN: Networks, UK: Мережі), „Tim” (EN: Team, UK: Команда), „Brend i nalog” (EN: Brand and account, UK: Бренд і акаунт), „Predlozi i podrška” (EN: Ideas and support, UK: Пропозиції й підтримка).
+- „Rad” (EN: Work): „Početna”, „Automatizuj objave” (EN: Automate posts), „Odobravanje” (EN: Approvals), „Inbox” (EN: Inbox), „DM automatizacija” (EN: DM automation), „Objave” (EN: Posts), „Kalendar” (EN: Calendar).
+- „Plan i rast” (EN: Planning and growth): „Mesečni plan” (EN: Monthly plan), „Strategija” (EN: Strategy), „Analitika” (EN: Analytics), „Autopilot” (EN: Autopilot).
+- „Sadržaj” (EN: Content): „AI Studio” (EN: AI Studio), „Galerija” (EN: Gallery), „Brain” (EN: Brain).
+- „Podešavanja” (EN: Settings): „Mreže” (EN: Networks), „Tim” (EN: Team), „Brend i nalog” (EN: Brand and account), „Predlozi i podrška” (EN: Ideas and support).
 
-Gore su birač radnog prostora, birač brenda (kad ih ima više) i link „Novi brend” (EN: New brand, UK: Новий бренд), a zvono pored logoa otvara obaveštenja. Na dnu su jezik interfejsa i odjava. Sve u aplikaciji važi za trenutno izabran brend.
+Gore su birač radnog prostora, birač brenda (kad ih ima više) i link „Novi brend” (EN: New brand), a zvono pored logoa otvara obaveštenja. Na dnu su jezik interfejsa i odjava. Sve u aplikaciji važi za trenutno izabran brend.
 
 ## 3. Podešavanje brenda
 
-„Brend i nalog” ima kartice „Glas brenda” (EN: Brand voice, UK: Голос бренду), „Vizuelni identitet” (EN: Visual identity, UK: Візуальний стиль), „Stilovi” (EN: Styles, UK: Стилі), „Sadržaj brenda” (EN: Brand content, UK: Контент бренду), „Profili mreža” (EN: Network profiles, UK: Профілі мереж), „Brendovi” (EN: Brands, UK: Бренди), „Pretplata” (EN: Subscription, UK: Підписка) i „Nalog” (EN: Account, UK: Акаунт). Brend podešavaju vlasnik, administrator i urednik.
+„Brend i nalog” ima kartice „Glas brenda” (EN: Brand voice), „Vizuelni identitet” (EN: Visual identity), „Stilovi” (EN: Styles), „Sadržaj brenda” (EN: Brand content), „Profili mreža” (EN: Network profiles), „Brendovi” (EN: Brands), „Pretplata” (EN: Subscription) i „Nalog” (EN: Account). Brend podešavaju vlasnik, administrator i urednik.
 
 ### Glas brenda
 
@@ -101,13 +101,13 @@ Polja „Šta nudite”, „Kome se obraćate”, „Kako zvučite”, „Po če
 
 ### Vizuelni identitet i stilovi
 
-„Izgled objava” (EN: Post look, UK: Вигляд дописів): Sova od boja i fontova sa sajta predloži tri svetle i tri tamne teme. Sedma je „Vaša tema”: bilo koji od 28 stilova, tri boje i font (sa sajta, „Drugi Google font” ili „Otpremi svoj font”: TTF, OTF ili WOFF do 2 MB). „Sačuvaj temu” važi za sve nove objave. Postojeći nacrti se prebacuju u temu dugmetom „Uskladi sa temom”, bez tokena.
+„Izgled objava” (EN: Post look): Sova od boja i fontova sa sajta predloži tri svetle i tri tamne teme. Sedma je „Vaša tema”: bilo koji od 28 stilova, tri boje i font (sa sajta, „Drugi Google font” ili „Otpremi svoj font”: TTF, OTF ili WOFF do 2 MB). „Sačuvaj temu” važi za sve nove objave. Postojeći nacrti se prebacuju u temu dugmetom „Uskladi sa temom”, bez tokena.
 
 Na istoj strani su logo („Otpremi logo”, PNG, JPG ili WebP do 20 MB, najbolje PNG sa providnom pozadinom; „Vrati logo sa sajta”), boje brenda, „Fotografije u objavama” („Bez fotografija”, „Besplatne fotografije” ili „Moja galerija”), format („Uspravno 4:5” ili „Kvadrat 1:1”; priča je 9:16), broj slajdova (3 do 20) i „Nalog na slajdovima”. Čuva se sa „Sačuvaj dizajn”. Bez logoa slajd ispisuje ime brenda, a slabo čitljiv tekst sam dobija čitljiviju boju.
 
 Kartica „Stilovi” nudi 28 stilova. Stil kome treba fotografija, a nema je, crta slajd kao preliv u bojama brenda.
 
-„Šabloni iz Figme” (EN: Templates from Figma, UK: Шаблони з Figma) još nisu uključeni za sve naloge. Ko ih ne vidi u Vizuelnom identitetu, za njega još nisu dostupni.
+„Šabloni iz Figme” (EN: Templates from Figma) još nisu uključeni za sve naloge. Ko ih ne vidi u Vizuelnom identitetu, za njega još nisu dostupni.
 
 ### Galerija i sadržaj brenda
 
@@ -180,9 +180,9 @@ Poruka košta 1 token. Poruka koja napravi objavu ne plaća se posebno, plaća s
 
 ### Ručni alati
 
-„Ručni alati” (EN: Manual tools, UK: Ручні інструменти) u Studiju imaju kartice:
+„Ručni alati” (EN: Manual tools) u Studiju imaju kartice:
 
-- „Nova objava” (EN: New post, UK: Новий допис): mreže, jezik, vrsta ili „AI bira”, tema, poziv na akciju, link i heštegovi, pa „NAPRAVI OBJAVU”. Nastaje nacrt („Otvori nacrt i zakaži”). Tekst košta 2 tokena, slajdovi ništa, a „Vizual iz šablona” još 2.
+- „Nova objava” (EN: New post): mreže, jezik, vrsta ili „AI bira”, tema, poziv na akciju, link i heštegovi, pa „NAPRAVI OBJAVU”. Nastaje nacrt („Otvori nacrt i zakaži”). Tekst košta 2 tokena, slajdovi ništa, a „Vizual iz šablona” još 2.
 - „Tekst za objavu” (2 tokena) i „Vizual iz šablona” (2 tokena).
 - „Unsplash fotografije” i „Pexels video i fotografije”: bez tokena, u biblioteku brenda sa imenom autora.
 - „Iz Canve” i „Iz Figme”: ove veze još nisu dostupne svim korisnicima.
@@ -266,7 +266,7 @@ Urednik piše objave i šalje ih na odobrenje. Odobravalac odobrava, traži izme
 
 ### Odobrenje klijenta bez naloga
 
-U editoru objave, „Javni link za klijenta” (EN: Public link for the client, UK: Публічне посилання для клієнта), dugme „Napravi link”. Važi za objave „na odobrenju”. Klijent bez naloga odobrava, traži izmene ili odbija i komentariše. Link važi 7 dana.
+U editoru objave, „Javni link za klijenta” (EN: Public link for the client), dugme „Napravi link”. Važi za objave „na odobrenju”. Klijent bez naloga odobrava, traži izmene ili odbija i komentariše. Link važi 7 dana.
 
 ### Kalendar i Objave
 
@@ -297,7 +297,7 @@ Status ide od „Zakazano” preko „Objavljuje se” do „Objavljeno”, „D
 
 ### Inbox i DM automatizacija
 
-„Inbox” ima kartice „Poruke”, „Komentari”, „Recenzije” i „Predlozi”. Prve tri čekaju odobrenje Mete („Čeka odobrenje Mete”). Kartica „Predlozi” (EN: Suggestions, UK: Пропозиції) radi: predlozi stižu iz bloga i promena na sajtu, iz analitike i AI uvida, a za praznike kad je Autopilot na nivou 1 ili višem. „Prihvati” pravi nacrt, „Odbaci” sklanja predlog.
+„Inbox” ima kartice „Poruke”, „Komentari”, „Recenzije” i „Predlozi”. Prve tri čekaju odobrenje Mete („Čeka odobrenje Mete”). Kartica „Predlozi” (EN: Suggestions) radi: predlozi stižu iz bloga i promena na sajtu, iz analitike i AI uvida, a za praznike kad je Autopilot na nivou 1 ili višem. „Prihvati” pravi nacrt, „Odbaci” sklanja predlog.
 
 „DM automatizacija” odgovara na komentare sa ključnom reči i šalje privatnu poruku sa linkom. Tokovi mogu da se pripreme, ali se uključuju tek kad Meta odobri dozvole za poruke.
 
@@ -307,13 +307,13 @@ Status ide od „Zakazano” preko „Objavljuje se” do „Objavljeno”, „D
 
 ### Mesečni izveštaj
 
-„Mesečni izveštaj (PDF)” (EN: Monthly report (PDF), UK: Місячний звіт (PDF)) je u Analitici: izaberite mesec, „Napravi PDF”, pa „Preuzmi”. Prvog u mesecu ujutru izveštaj za prethodni mesec stiže sam vlasniku i administratorima, a klijentu emailom ako su upisane adrese (do 5). Adrese menjaju vlasnik i administrator.
+„Mesečni izveštaj (PDF)” (EN: Monthly report (PDF))) je u Analitici: izaberite mesec, „Napravi PDF”, pa „Preuzmi”. Prvog u mesecu ujutru izveštaj za prethodni mesec stiže sam vlasniku i administratorima, a klijentu emailom ako su upisane adrese (do 5). Adrese menjaju vlasnik i administrator.
 
 ### Obaveštenja
 
-Zvono pokazuje nepročitana, a strana „Obaveštenja” (EN: Notifications, UK: Сповіщення) sva obaveštenja. Šta stiže u aplikaciji, a šta i na email, bira se na kartici Nalog, deo Obaveštenja, po radnom prostoru.
+Zvono pokazuje nepročitana, a strana „Obaveštenja” (EN: Notifications) sva obaveštenja. Šta stiže u aplikaciji, a šta i na email, bira se na kartici Nalog, deo Obaveštenja, po radnom prostoru.
 
-Kartica „Odobravajte sa telefona” (EN: Approve from your phone, UK: Погоджуйте з телефона) na početnoj objašnjava instalaciju: Android, meni ⋮ pa „Instaliraj aplikaciju”; iPhone, Podeli pa „Dodaj na početni ekran”. Ako piše da obaveštenja na uređaju još nisu podešena, ta mogućnost još nije uključena.
+Kartica „Odobravajte sa telefona” (EN: Approve from your phone) na početnoj objašnjava instalaciju: Android, meni ⋮ pa „Instaliraj aplikaciju”; iPhone, Podeli pa „Dodaj na početni ekran”. Ako piše da obaveštenja na uređaju još nisu podešena, ta mogućnost još nije uključena.
 
 ## 8. Tim, uloge, brendovi i agencije
 
@@ -327,7 +327,7 @@ Vlasnik ima sve. Administrator ima sve osim naplate. Urednik kreira, menja i zak
 
 Pozivnica stiže emailom, važi 7 dana i samo za tu adresu. Osoba se prijavi ili registruje tom adresom i klikne „Prihvatite pozivnicu”. Pozivnice se mogu opozvati („Opozovi”). Pozivaju vlasnik i administrator. Besplatno ima samo vlasnika, a Mesečni i Godišnji do 2 člana sa vlasnikom; pozivnice koje čekaju se računaju.
 
-Vlasnik i administrator menjaju uloge i uklanjaju članove („Ukloni”). Član može da ode sam („Napustite”). Kroz „Prenos vlasništva” (EN: Transfer ownership, UK: Передача прав власника) vlasnik prenosi vlasništvo na postojećeg člana, a sam postaje administrator.
+Vlasnik i administrator menjaju uloge i uklanjaju članove („Ukloni”). Član može da ode sam („Napustite”). Kroz „Prenos vlasništva” (EN: Transfer ownership) vlasnik prenosi vlasništvo na postojećeg člana, a sam postaje administrator.
 
 ### Brendovi i radni prostori
 
@@ -339,9 +339,9 @@ Agencija vodi svakog klijenta kao brend. Klijent odobrava preko javnog linka ili
 
 ### Planovi
 
-- „Besplatno” (EN: Free, UK: Безкоштовний): 0 €, 50 tokena jednom, 1 brend, 2 mreže, 1 član.
-- „Mesečni” (EN: Monthly, UK: Місячний): 47 € mesečno, 500 tokena svakog meseca, do 5 brendova, 10 mreža i 2 člana.
-- „Godišnji” (EN: Yearly, UK: Річний): 297 € godišnje, plaćeno unapred, 500 tokena svakog meseca, isti limiti.
+- „Besplatno” (EN: Free): 0 €, 50 tokena jednom, 1 brend, 2 mreže, 1 član.
+- „Mesečni” (EN: Monthly): 47 € mesečno, 500 tokena svakog meseca, do 5 brendova, 10 mreža i 2 člana.
+- „Godišnji” (EN: Yearly): 297 € godišnje, plaćeno unapred, 500 tokena svakog meseca, isti limiti.
 
 47 € i 297 € su uvodne cene; pored njih stoji precrtana redovna cena od 90 € i 500 €. Dopune: 100 tokena za 12 €, 300 za 30 €, 1.000 za 85 €. Kupljeni tokeni ne ističu i troše se posle tokena iz pretplate, koji važe za tekući mesec.
 
@@ -363,7 +363,7 @@ Kad tokena nema: „Nemate dovoljno tokena za ovu radnju. Dopunite tokene pa pok
 
 ### Plaćanje
 
-Kartica „Pretplata” (naslov strane „Naplata”, EN: Billing, UK: Оплата) ima plan, ponudu, „Dopuna tokena” (EN: Token top-up, UK: Поповнення токенів) i „Istorija tokena” (EN: Token history, UK: Історія токенів) za vlasnika i administratora. Plaća samo vlasnik.
+Kartica „Pretplata” (naslov strane „Naplata”, EN: Billing) ima plan, ponudu, „Dopuna tokena” (EN: Token top-up) i „Istorija tokena” (EN: Token history) za vlasnika i administratora. Plaća samo vlasnik.
 
 Kad je online plaćanje uključeno, „Pretplatite se” vodi na plaćanje karticom, a „Upravljajte pretplatom i karticom” na karticu i otkazivanje. Po čestim pitanjima na sajtu, plan posle otkazivanja ostaje aktivan do kraja plaćenog perioda. Ako na kartici piše da plaćanje još nije uključeno, kupovina u aplikaciji nije moguća i korisnik piše podršci.
 
@@ -373,15 +373,15 @@ Ako plaćanje pretplate ne uspe, vlasnik ima 7 dana da ažurira karticu, uz pods
 
 - Zaboravljena lozinka: „Zaboravili ste lozinku?” na prijavi, pa link iz mejla. Lozinka se menja isto, preko linka na email.
 - Posle 5 neuspelih prijava čeka se 15 minuta.
-- Dvofaktorska zaštita: kartica Nalog, link „Bezbednost” (EN: Security, UK: Безпека), „Uključite dvofaktorsku zaštitu”. Skenirajte QR kod aplikacijom za kodove i upišite 6-cifreni kod. Za isključivanje treba kod iz aplikacije.
+- Dvofaktorska zaštita: kartica Nalog, link „Bezbednost” (EN: Security), „Uključite dvofaktorsku zaštitu”. Skenirajte QR kod aplikacijom za kodove i upišite 6-cifreni kod. Za isključivanje treba kod iz aplikacije.
 - „Vaš profil” na kartici Nalog: ime, jezik i vremenska zona. Jezik interfejsa je i na dnu menija. Jezik objava je poseban izbor.
 - Email adresa naloga ne menja se u aplikaciji.
 - Odjava u jednom tabu odjavljuje sve tabove.
-- „Privatnost i podaci” (EN: Privacy and data, UK: Приватність і дані): „Preuzmi moje podatke (JSON)” (najviše 3 puta na sat) i „Obriši nalog…”. Brisanje je trajno: brišu se nalog, radni prostori u kojima ste sami, objave, mediji i veze sa mrežama. Vlasnik tima sa članovima prvo prenosi vlasništvo. Asistent samo kaže gde je opcija i upućuje na podršku.
+- „Privatnost i podaci” (EN: Privacy and data): „Preuzmi moje podatke (JSON)” (najviše 3 puta na sat) i „Obriši nalog…”. Brisanje je trajno: brišu se nalog, radni prostori u kojima ste sami, objave, mediji i veze sa mrežama. Vlasnik tima sa članovima prvo prenosi vlasništvo. Asistent samo kaže gde je opcija i upućuje na podršku.
 
 ## 11. Vodič, predlozi i podrška
 
-Dugme „Vodič i podrška” je dole desno na svim stranama osim uvoda. Kartica „Vodič” (EN: Guide, UK: Посібник) ima ključne korake, uvod, „Predložite funkciju”, „Prijavite problem” i „Pišite podršci”. Kartica „Pitaj Sovu” (EN: Ask Sova, UK: Запитати Sova) daje automatske odgovore o Sovi; razgovori se čuvaju 90 dana. „Pošalji razgovor podršci” šalje razgovor timu kao prijavu problema.
+Dugme „Vodič i podrška” je dole desno na svim stranama osim uvoda. Kartica „Vodič” (EN: Guide) ima ključne korake, uvod, „Predložite funkciju”, „Prijavite problem” i „Pišite podršci”. Kartica „Pitaj Sovu” (EN: Ask Sova) daje automatske odgovore o Sovi; razgovori se čuvaju 90 dana. „Pošalji razgovor podršci” šalje razgovor timu kao prijavu problema.
 
 Na strani „Predlozi i podrška” korisnici predlažu funkcije i glasaju. Ideje vide svi, bez imena autora, a status (Ideja, Planirano, U izradi, Gotovo, Odbijeno) menja tim Sove. Prijavu problema vide samo autor i tim Sove. Dobra prijava ima korake, tekst sa ekrana i naziv strane, a uz grešku i ID greške.
 
