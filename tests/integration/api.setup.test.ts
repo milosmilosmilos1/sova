@@ -178,6 +178,8 @@ describe('glas brenda', () => {
     expect(r.json.data!.voice.offer).toBe('Montaža klima uređaja u Beogradu i okolini.')
     expect(r.json.data!.voice.tone).toBe('prijateljski, stručno')
     expect(r.json.data!.voice.topics).toEqual(['Održavanje pred leto'])
+    // poziv na akciju je obavezan u uvodu (D-174): bez kontakta na sajtu predlog zove da pišu u poruke
+    expect(r.json.data!.voice.cta).toBe('Pišite nam u poruke.')
     expect(r.json.data!.sources.profile).toBe(true)
   })
 

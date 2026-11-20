@@ -19,7 +19,7 @@ import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
 import { toBrandContext } from '@/lib/brand/compose'
 import { brandProfileSchema, type BrandProfile } from '@/lib/brand/profile-schema'
 import { parsePlaybook } from '@/lib/brand/playbook'
-import { clip, parseVoice, voiceFromProfile } from '@/lib/brand/voice'
+import { clip, ctaFromProfile, defaultCta, parseVoice, voiceFromProfile } from '@/lib/brand/voice'
 import { EMPTY_VOICE, isVoiceEmpty, type BrandVoice } from '@/lib/schemas/voice'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError } from '@/lib/supabase/errors'
@@ -81,9 +81,14 @@ export async function getVoiceView(viewer: Viewer, brandId: string): Promise<Voi
     getTokenPrice('text'),
   ])
   const stored = (brand.voice ?? {}) as { updated_at?: string }
-  const suggested = !saved && profile ? voiceFromProfile(profile) : null
+  const locale = toContentLocale(brand.content_locale)
+  const suggested = !saved && profile ? voiceFromProfile(profile, locale) : null
+  // sačuvan glas bez poziva na akciju dobija predlog iz kontakta sa sajta (uvod traži poziv, D-174);
+  // čuva se tek kad vlasnik sačuva formu
+  const filled =
+    saved && !saved.cta.trim() && profile ? { ...saved, cta: ctaFromProfile(profile, locale) } : saved
   return {
-    voice: saved ?? suggested ?? EMPTY_VOICE,
+    voice: filled ?? suggested ?? EMPTY_VOICE,
     saved: Boolean(saved),
     updatedAt: saved ? (stored.updated_at ?? null) : null,
     fromProfile: Boolean(suggested && !isVoiceEmpty(suggested)),
@@ -254,6 +259,11 @@ export async function draftVoice(
       })
     }
     const draft = normalizeVoiceDraft(parsed.data)
+    // poziv na akciju je obavezan u uvodu (D-174): kad ga model ne vrati, ide predlog iz kontakta
+    if (!draft.cta.trim()) {
+      const locale = toContentLocale(brand.content_locale)
+      draft.cta = profile ? ctaFromProfile(profile, locale) : defaultCta(locale)
+    }
     const cost = await costFor(outcome.model, {
       inputTokens: outcome.result.usage.inputTokens,
       outputTokens: outcome.result.usage.outputTokens,

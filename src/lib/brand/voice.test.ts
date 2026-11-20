@@ -6,7 +6,54 @@ import { completeSetupSchema, setupFlowDays } from '@/lib/schemas/setup'
 import { brandVoiceSchema, EMPTY_VOICE, mergeVoice } from '@/lib/schemas/voice'
 
 import { emptyField, emptyProfile } from './profile-schema'
-import { parseVoice, voiceFromProfile } from './voice'
+import { ctaFromProfile, defaultCta, parseVoice, voiceFromProfile } from './voice'
+
+describe('poziv na akciju iz kontakta sa sajta (D-174)', () => {
+  const profile = (opts: {
+    phone?: string
+    email?: string
+    social?: Record<string, string>
+    site?: string
+  }) => {
+    const p = emptyProfile({ name: 'Klima Plus', contentLocale: 'sr-Latn', websiteUrl: opts.site ?? null })
+    if (opts.phone) p.contact.phone = emptyField(opts.phone, 0.9)
+    if (opts.email) p.contact.email = emptyField(opts.email, 0.9)
+    if (opts.social) p.social = emptyField(opts.social, 0.8)
+    return p
+  }
+
+  it('telefon i email, pa telefon, email, WhatsApp, sajt, inače poruke', () => {
+    expect(ctaFromProfile(profile({ phone: '060 123 4567', email: 'info@klima.rs' }))).toBe(
+      'Pozovite 060 123 4567 ili nam pišite na info@klima.rs.',
+    )
+    expect(ctaFromProfile(profile({ phone: '060 123 4567' }))).toBe('Pozovite 060 123 4567.')
+    expect(ctaFromProfile(profile({ email: 'info@klima.rs' }))).toBe('Pišite nam na info@klima.rs.')
+    expect(ctaFromProfile(profile({ social: { whatsapp: 'https://wa.me/38160' } }))).toBe(
+      'Pišite nam na WhatsApp.',
+    )
+    expect(ctaFromProfile(profile({ site: 'https://www.klima.rs/kontakt' }))).toBe(
+      'Pogledajte ponudu na klima.rs.',
+    )
+    expect(ctaFromProfile(profile({}))).toBe('Pišite nam u poruke.')
+  })
+
+  it('jezik objava brenda i obraćanje sa sajta; ćirilica ne dira kontakt', () => {
+    const p = profile({ phone: '+381616351596', email: 'office@belgrademidnight.rs' })
+    expect(ctaFromProfile(p, 'en')).toBe('Call +381616351596 or email office@belgrademidnight.rs.')
+    p.voice.address = emptyField('ti', 0.7)
+    expect(ctaFromProfile(p)).toBe('Pozovi +381616351596 ili nam piši na office@belgrademidnight.rs.')
+    expect(ctaFromProfile(p, 'sr-Cyrl')).toBe(
+      'Позови +381616351596 или нам пиши на office@belgrademidnight.rs.',
+    )
+    expect(defaultCta('en')).toBe('Send us a message.')
+  })
+
+  it('predugačak poziv pada na kraći: dugačak email se izostavlja', () => {
+    const p = profile({ phone: '060 123 4567', email: `${'a'.repeat(150)}@klima.rs` })
+    expect(ctaFromProfile(p)).toBe('Pozovite 060 123 4567.')
+    expect(voiceFromProfile(p).cta).toBe('Pozovite 060 123 4567.')
+  })
+})
 
 /** Glas brenda i uvod u sedam koraka (D-112). */
 describe('glas brenda', () => {
