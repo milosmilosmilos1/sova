@@ -109,7 +109,7 @@
       "email": "Email address",
       "role": "Role",
       "roleOptions": {
-        "editor": "Editor: creates, edits and schedules content",
+        "editor": "Editor: creates and edits content, schedules approved posts",
         "approver": "Approver (client): approves and comments",
         "viewer": "Viewer: views content and reports only",
         "admin": "Admin: everything except billing"
@@ -437,7 +437,7 @@
     "paid": "Payment received. Your plan and tokens will update in a few seconds.",
     "canceled": "Payment cancelled; nothing was charged.",
     "loadFailed": "Couldn't load billing details.",
-    "notConfigured": "Payments aren't enabled on the server yet (Stripe keys). Your plan and tokens work as before.",
+    "notConfigured": "Paying for a subscription isn't available yet. Your plan and tokens work as before.",
     "ownerOnly": "Payments are handled by the workspace owner.",
     "blocked": "The payment deadline has passed: generation has stopped. Scheduled posts still go out.",
     "pastDue": "The subscription payment failed. Update your card by {date}; after that, generation stops.",

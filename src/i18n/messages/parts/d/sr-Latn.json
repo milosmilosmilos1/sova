@@ -499,7 +499,7 @@
         },
         "cancel": {
           "q": "Mogu li da otkažem pretplatu?",
-          "a": "Da, u svakom trenutku, sa stranice Naplata u aplikaciji. Plan ostaje aktivan do kraja plaćenog perioda, a kupljene dopune tokena ne ističu."
+          "a": "Da, u svakom trenutku, na kartici Pretplata u delu Brend i nalog. Plan ostaje aktivan do kraja plaćenog perioda, a kupljene dopune tokena ne ističu."
         },
         "data": {
           "q": "Šta se dešava sa mojim podacima?",
@@ -686,15 +686,15 @@
       "title": "Brisanje podataka",
       "metaDescription": "Kako da obrišete nalog, prekinete vezu sa mrežom ili zatražite brisanje podataka iz Sove.",
       "received": {
-        "title": "Zahtev za brisanje je primljen.",
-        "text": "Kod potvrde: <mono>{code}</mono>. Brisanje se izvršava u roku od 30 dana. O završetku ćemo obavestiti email adresu povezanu sa nalogom. / Your deletion request has been received and will be completed within 30 days."
+        "title": "Zahtev za brisanje je izvršen.",
+        "text": "Kod potvrde: <mono>{code}</mono>. Nalozi povezani sa vašim Facebook nalogom obrisani su iz Sove, zajedno sa tokenima, uvezenim objavama i metrikama. Ako želite da obrišete i ceo Sova nalog, pratite korake ispod. / Your deletion request has been completed: the accounts connected through your Facebook login, their tokens, imported posts and metrics have been deleted from Sova."
       },
       "s1": {
         "title": "1. Brisanje celog naloga (u aplikaciji)",
         "items": {
           "login": "Prijavite se u Sovu.",
-          "open": "Otvorite Podešavanja → Privatnost i podaci → Obriši nalog.",
-          "confirm": "Ukucajte svoju email adresu radi potvrde i kliknite „Obriši nalog”.",
+          "open": "Otvorite Brend i nalog → Nalog → Privatnost i podaci → Obriši nalog….",
+          "confirm": "Upišite svoju email adresu i lozinku radi potvrde (nalog bez lozinke, na primer preko Google-a, traži novu prijavu) i kliknite „Obriši nalog”.",
           "result": "Sova odmah opoziva pristupne tokene svih povezanih mreža, otkazuje zakazane objave i briše podatke. Brisanje iz rezervnih kopija završava se najkasnije za 30 dana."
         },
         "note": "Ako ste jedini vlasnik radnog prostora sa drugim članovima, prvo prenesite vlasništvo ili obrišite radni prostor; aplikacija vas vodi kroz taj korak."
@@ -702,7 +702,7 @@
       "s2": {
         "title": "2. Prekid veze sa jednom mrežom",
         "p1": "Otvorite Mreže, pronađite nalog i kliknite „Prekini vezu”. Sova briše pristupni token, uvezene objave i metrike tog naloga. Već objavljen sadržaj ostaje na mreži; njega brišete direktno na mreži.",
-        "p2": "Vezu možete prekinuti i sa strane mreže: Facebook i Instagram (Podešavanja → Aplikacije i sajtovi), LinkedIn (Podešavanja → Dozvole aplikacija), TikTok (Podešavanja → Bezbednost → Aplikacije), X (Podešavanja → Povezane aplikacije), Google (myaccount.google.com → Bezbednost → Aplikacije trećih strana), Pinterest (Podešavanja → Bezbednost → Povezane aplikacije). Sova to prepoznaje i briše tokene."
+        "p2": "Vezu možete prekinuti i sa strane mreže: Facebook i Instagram (Podešavanja → Aplikacije i sajtovi), LinkedIn (Podešavanja → Dozvole aplikacija), TikTok (Podešavanja → Bezbednost → Aplikacije), X (Podešavanja → Povezane aplikacije), Google (myaccount.google.com → Bezbednost → Aplikacije trećih strana), Pinterest (Podešavanja → Bezbednost → Povezane aplikacije). Facebook i Instagram to javljaju Sovi odmah, pa Sova briše pristupne tokene tog naloga. Ostale mreže to ne javljaju: Sova to vidi kad sledeći put koristi nalog i traži da ga ponovo povežete. Tokene, uvezene objave i metrike odmah briše „Prekini vezu” u Mrežama."
       },
       "s3": {
         "title": "3. Zahtev emailom",

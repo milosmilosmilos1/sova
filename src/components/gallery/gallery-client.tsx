@@ -50,7 +50,7 @@ interface GalleryView {
 type Edit = { description?: string; categoryId?: string | null }
 type Filter = 'all' | 'none' | string
 
-const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/heic', 'image/heif']
+const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp']
 
 /**
  * Galerija brenda (D-114): fotografije sa kategorijama i opisom koji pomaže Sovi da za temu izabere
@@ -174,9 +174,7 @@ export function GalleryClient({
 
   const uploadFiles = async (files: File[]) => {
     setUploadError(null)
-    const images = files.filter(
-      (f) => IMAGE_TYPES.includes(f.type) || /\.(png|jpe?g|webp|heic|heif)$/i.test(f.name),
-    )
+    const images = files.filter((f) => IMAGE_TYPES.includes(f.type) || /\.(png|jpe?g|webp)$/i.test(f.name))
     if (!images.length) return setUploadError(new Error(t('notImage')))
     setUpload({ done: 0, total: images.length })
     const category = filter !== 'all' && filter !== 'none' ? filter : null

@@ -1605,3 +1605,14 @@ Odluka vlasnika (20.11.): šabloni za sve što klijent mora sam da unese, a Sova
 - Šabloni traže kompletan brend (D-174), kao i ostalo pravljenje sadržaja. Bez migracije.
 
 Razlog: zahtev vlasnika. Ljudi, utisci, radovi, cene i datumi su podaci koje samo biznis ima; izmišljen utisak ili rad je obmana kupaca, a ovako biznis za par minuta ima objavu u svom stilu.
+
+## D-176 · 20.11.2026 · usvojeno · Zahtev Mete za brisanje stvarno briše podatke
+
+Nalaz QA pregleda (docs/QA.md, 20.11.): Meta callback za brisanje podataka samo je opozivao naloge, a tokeni, uvezene objave i metrike ostajali su u bazi; posle uklanjanja Sove na Facebook-u tokeni su ostajali sačuvani. Javna strana i odgovor Meti tvrdili su da se podaci brišu, a pravila Meta platforme to traže.
+
+- Uklanjanje Sove na Facebook-u ili Instagramu (deauthorize): nalozi tog Meta korisnika prelaze u `revoked` i gube tokene. Red naloga ostaje, da korisnik u Sovi vidi da treba ponovo da poveže mrežu.
+- Zahtev za brisanje podataka (data deletion): nalozi tog Meta korisnika se brišu kao kod „Prekini vezu”, a sa njima kaskadno uvezene objave i metrike. Zahtev se beleži u `account_deletion_requests` sa kodom potvrde i odmah dobija `done`. Brisanje celog Sova naloga ostaje u aplikaciji (Brend i nalog → Nalog → Privatnost i podaci) ili emailom.
+- Javna strana „Brisanje podataka” opisuje to tačno: put do brisanja naloga sa potvrdom emailom i lozinkom, da samo Facebook i Instagram javljaju uklanjanje aplikacije, i šta se briše po zahtevu Mete.
+- Ostale mreže ne javljaju uklanjanje aplikacije; Sova to vidi pri sledećem korišćenju naloga i traži ponovno povezivanje.
+
+Razlog: obaveza prema Meti i korisnicima; tvrdnja na javnoj strani mora da odgovara onome što aplikacija radi.

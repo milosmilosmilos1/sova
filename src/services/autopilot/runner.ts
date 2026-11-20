@@ -41,6 +41,7 @@ import { notifyUsers, usersWithRoles } from '@/services/notifications'
 import { wallClock, zonedToUtc } from '@/lib/zoned-time'
 import { systemSchedule, systemSubmitForReview } from '@/services/posts/system'
 import { runStrategyGeneration } from '@/services/strategy/strategy'
+import { incompleteBrand } from '@/services/brand-readiness'
 import type { Database, Json } from '@/types/database'
 
 /**
@@ -285,6 +286,8 @@ async function prepareWeek(job: WeeklyJob, now: Date): Promise<Prepared> {
   if (brand.status !== 'active') return { status: 'skipped', runId: null, reason: 'Brend je pauziran.' }
   const level = brand.autopilot_level as AutopilotLevel
   if (level < 1) return { status: 'skipped', runId: null, reason: 'Autopilot je isključen (nivo 0).' }
+  if (await incompleteBrand(brand))
+    return { status: 'skipped', runId: null, reason: 'Brend nije kompletno podešen.' }
   const weekStart = job.weekStart ?? nextWeekRange(now, brand.timezone).start
   const admin = createSupabaseAdminClient()
   const { data: run, error } = await admin
@@ -1031,6 +1034,8 @@ export async function runMonthlyForBrand(brandId: string, now = new Date()): Pro
     return { status: 'skipped', reason: 'Brend nije aktivan.' }
   const level = brand.autopilot_level as AutopilotLevel
   if (level < 1) return { status: 'skipped', reason: 'Autopilot je isključen.' }
+  // nepotpun brend (D-174) se preskače: greška bi u dnevnom poslu zaustavila i brendove posle njega
+  if (await incompleteBrand(brand)) return { status: 'skipped', reason: 'Brend nije kompletno podešen.' }
   const periodStart = firstMondayNextMonth(now, brand.timezone)
   const admin = createSupabaseAdminClient()
   const { data: run, error } = await admin

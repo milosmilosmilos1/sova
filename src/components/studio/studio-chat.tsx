@@ -89,9 +89,9 @@ interface GalleryItem {
   description: string | null
 }
 
-const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/heic', 'image/heif']
+const IMAGE_TYPES = ['image/png', 'image/jpeg', 'image/webp']
 const DEFAULT_PLATFORMS: SocialPlatform[] = ['instagram', 'facebook']
-const isImage = (f: File) => IMAGE_TYPES.includes(f.type) || /\.(png|jpe?g|webp|heic|heif)$/i.test(f.name)
+const isImage = (f: File) => IMAGE_TYPES.includes(f.type) || /\.(png|jpe?g|webp)$/i.test(f.name)
 
 export function StudioChat({
   workspaceId,

@@ -328,7 +328,7 @@ Kartica „Odobravajte sa telefona” (EN: Approve from your phone) na početnoj
 
 ## 8. Tim, uloge, brendovi i agencije
 
-Vlasnik ima sve. Administrator ima sve osim naplate. Urednik kreira, menja i zakazuje sadržaj. Odobravalac (obično klijent) odobrava i komentariše. Posmatrač samo gleda. Mreže povezuju vlasnik i administrator, a plaćanja vodi samo vlasnik.
+Vlasnik ima sve. Administrator ima sve osim naplate. Urednik pravi i menja sadržaj i zakazuje odobrene objave. Odobravalac (obično klijent) odobrava i komentariše. Posmatrač samo gleda. Mreže povezuju vlasnik i administrator, a plaćanja vodi samo vlasnik.
 
 ### Pozivanje člana
 

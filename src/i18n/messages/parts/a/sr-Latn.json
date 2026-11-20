@@ -109,7 +109,7 @@
       "email": "Email osobe",
       "role": "Uloga",
       "roleOptions": {
-        "editor": "Urednik: kreira, menja i zakazuje sadržaj",
+        "editor": "Urednik: pravi i menja sadržaj, zakazuje odobrene objave",
         "approver": "Odobravalac (klijent): odobrava i komentariše",
         "viewer": "Posmatrač: samo pregled i izveštaji",
         "admin": "Administrator: sve osim naplate"
@@ -437,7 +437,7 @@
     "paid": "Plaćanje je primljeno. Plan i tokeni se ažuriraju za nekoliko sekundi.",
     "canceled": "Plaćanje je otkazano; ništa nije naplaćeno.",
     "loadFailed": "Podaci o naplati nisu učitani.",
-    "notConfigured": "Plaćanje još nije uključeno na serveru (Stripe ključevi). Plan i tokeni rade kao i do sada.",
+    "notConfigured": "Plaćanje pretplate još nije uključeno. Plan i tokeni rade kao i do sada.",
     "ownerOnly": "Plaćanja vodi vlasnik radnog prostora.",
     "blocked": "Rok za plaćanje je istekao: generisanje je zaustavljeno. Zakazane objave i dalje izlaze.",
     "pastDue": "Plaćanje pretplate nije uspelo. Ažurirajte karticu do {date}; posle toga generisanje staje.",

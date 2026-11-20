@@ -78,7 +78,7 @@ export default async function DataDeletionPage({ searchParams }: PageProps<'/dat
           <LegalSection title="Data Deletion (English)">
             <LegalList
               items={[
-                'Delete your whole account in the app: Settings → Privacy and data → Delete account, type your email to confirm. Tokens for all connected networks are revoked immediately, scheduled posts are cancelled and data is deleted; backups are purged within 30 days.',
+                'Delete your whole account in the app: Brand and account → Account → Privacy and data → Delete account, then confirm with your email and password. Tokens for all connected networks are revoked immediately, scheduled posts are cancelled and data is deleted; backups are purged within 30 days.',
                 'Disconnect a single network: Networks → Disconnect. The token, imported posts and metrics for that account are deleted. Content already published stays on the network.',
                 <>
                   Request by email: write from your registered address to{' '}
@@ -88,7 +88,7 @@ export default async function DataDeletionPage({ searchParams }: PageProps<'/dat
                   with the subject “Data deletion”. We verify your identity and delete within 30 days.
                 </>,
                 'Invoices and payment records are kept for the period required by accounting law; everything else is deleted.',
-                'When you remove Sova from your Facebook or Instagram settings, Meta sends us an automatic deletion request. We delete that account’s data immediately and return a confirmation code with a link to this page.',
+                'When you remove Sova from your Facebook or Instagram settings, Meta tells us and we delete that account’s access tokens. When Meta sends a data deletion request, we delete the connected accounts with their tokens, imported posts and metrics immediately and return a confirmation code with a link to this page.',
               ]}
             />
             <p>

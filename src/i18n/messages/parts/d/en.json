@@ -499,7 +499,7 @@
         },
         "cancel": {
           "q": "Can I cancel my subscription?",
-          "a": "Yes, at any time, from the Billing page in the app. Your plan stays active until the end of the period you've paid for, and token top-ups you've bought never expire."
+          "a": "Yes, at any time, on the Subscription tab under Brand and account. Your plan stays active until the end of the period you've paid for, and token top-ups you've bought never expire."
         },
         "data": {
           "q": "What happens to my data?",
@@ -686,15 +686,15 @@
       "title": "Data deletion",
       "metaDescription": "How to delete your account, disconnect a network or ask for your data to be deleted from Sova.",
       "received": {
-        "title": "Your deletion request has been received.",
-        "text": "Confirmation code: <mono>{code}</mono>. Deletion is completed within 30 days. We will let you know at the email address linked to your account once it is done."
+        "title": "Your deletion request has been completed.",
+        "text": "Confirmation code: <mono>{code}</mono>. The accounts connected through your Facebook login have been deleted from Sova, together with their tokens, imported posts and metrics. To delete your whole Sova account as well, follow the steps below."
       },
       "s1": {
         "title": "1. Deleting your whole account (in the app)",
         "items": {
           "login": "Log in to Sova.",
-          "open": "Open Settings → Privacy and data → Delete account.",
-          "confirm": "Type your email address to confirm and click “Delete account”.",
+          "open": "Open Brand and account → Account → Privacy and data → Delete account….",
+          "confirm": "Enter your email address and password to confirm (an account without a password, for example one using Google, asks you to log in again) and click “Delete account”.",
           "result": "Sova immediately revokes the access tokens for all connected networks, cancels scheduled posts and deletes your data. Deletion from backups is completed within 30 days at the latest."
         },
         "note": "If you are the only owner of a workspace that has other members, first transfer ownership or delete the workspace; the app walks you through this step."
@@ -702,7 +702,7 @@
       "s2": {
         "title": "2. Disconnecting a single network",
         "p1": "Open Networks, find the account and click “Disconnect”. Sova deletes the access token, imported posts and metrics for that account. Content already published stays on the network; you delete it directly on the network.",
-        "p2": "You can also disconnect from the network's side: Facebook and Instagram (Settings → Apps and websites), LinkedIn (Settings → App permissions), TikTok (Settings → Security → Apps), X (Settings → Connected apps), Google (myaccount.google.com → Security → Third-party apps), Pinterest (Settings → Security → Connected apps). Sova detects this and deletes the tokens."
+        "p2": "You can also disconnect from the network’s side: Facebook and Instagram (Settings → Apps and websites), LinkedIn (Settings → App permissions), TikTok (Settings → Security → Apps), X (Settings → Connected apps), Google (myaccount.google.com → Security → Third-party apps), Pinterest (Settings → Security → Connected apps). Facebook and Instagram tell Sova straight away, and Sova deletes that account’s access tokens. The other networks don’t: Sova notices the next time it uses the account and asks you to reconnect it. “Disconnect” in Networks deletes the tokens, imported posts and metrics immediately."
       },
       "s3": {
         "title": "3. Request by email",

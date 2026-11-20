@@ -386,7 +386,7 @@ describe('Meta povezivanje', () => {
       .eq('brand_id', brandId)
   })
 
-  it('Meta webhook-ovi: deauthorize opoziva naloge, data deletion vraća url i kod; loš potpis 403', async () => {
+  it('Meta webhook-ovi: deauthorize opoziva naloge i briše tokene; data deletion briše naloge i vraća url i kod; loš potpis 403', async () => {
     const bad = await deauthPost(
       new NextRequest(new URL('/api/webhooks/meta', APP), {
         method: 'POST',
@@ -414,12 +414,42 @@ describe('Meta povezivanje', () => {
     expect(((await ok.json()) as { data: { revoked: number } }).data.revoked).toBe(2)
     const after = await list()
     expect(after.accounts.every((a) => a.status === 'revoked')).toBe(true)
+    // opozvan nalog više nema tokene: posle uklanjanja Sove na Facebook-u ne smeju da se koriste
+    const { data: tokens } = await admin
+      .from('social_accounts')
+      .select('access_token_enc, refresh_token_enc')
+      .eq('brand_id', brandId)
+      .in('platform', ['facebook', 'instagram'])
+    expect(tokens!.length).toBe(2)
+    expect(tokens!.every((t) => t.access_token_enc === null && t.refresh_token_enc === null)).toBe(true)
 
+    // zahtev za brisanje podataka drugog Meta korisnika briše samo njegove naloge (kaskadno i uvoz)
+    const { data: ws } = await admin.from('brands').select('workspace_id').eq('id', brandId).single()
+    const { data: other, error: otherError } = await admin
+      .from('social_accounts')
+      .insert({
+        brand_id: brandId,
+        workspace_id: ws!.workspace_id,
+        platform: 'facebook',
+        external_id: 'fb-page-88',
+        name: 'Druga strana',
+        account_type: 'facebook_page',
+        metadata: { metaUserId: 'fb-user-88' },
+      })
+      .select('id')
+      .single()
+    expect(otherError).toBeNull()
+    const deletionForm = new URLSearchParams({
+      signed_request: makeSignedRequest(
+        { user_id: 'fb-user-88', algorithm: 'HMAC-SHA256', issued_at: Math.floor(Date.now() / 1000) },
+        SECRET,
+      ),
+    })
     const del = await deletionPost(
       new NextRequest(new URL('/api/webhooks/meta/data-deletion', APP), {
         method: 'POST',
         headers: { 'content-type': 'application/x-www-form-urlencoded' },
-        body: form.toString(),
+        body: deletionForm.toString(),
       }),
       { params: Promise.resolve({}) },
     )
@@ -432,7 +462,11 @@ describe('Meta povezivanje', () => {
       .select('source, external_user_id, status')
       .eq('confirmation_code', body.confirmation_code)
       .single()
-    expect(req).toMatchObject({ source: 'meta_callback', external_user_id: 'fb-user-77', status: 'pending' })
+    expect(req).toMatchObject({ source: 'meta_callback', external_user_id: 'fb-user-88', status: 'done' })
+    const { data: gone } = await admin.from('social_accounts').select('id').eq('id', other!.id)
+    expect(gone).toEqual([])
+    // nalozi prvog korisnika ostaju (opozvani), da ih sledeći test obriše ručno
+    expect((await list()).accounts.length).toBe(2)
   })
 
   it('prekid veze briše nalog i uvezene objave (kaskada)', async () => {

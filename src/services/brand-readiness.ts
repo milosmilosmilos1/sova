@@ -65,6 +65,15 @@ function enforced(): boolean {
   return process.env.SOVA_BRAND_GATE !== 'off'
 }
 
+/**
+ * Pozadinski posao (Autopilot) mirno preskače nepotpun brend (D-174), umesto da greška obori prolaz
+ * i za brendove posle njega. Prekidač testova važi i ovde.
+ */
+export async function incompleteBrand(brand: ReadinessBrand): Promise<boolean> {
+  if (!enforced()) return false
+  return !(await brandReadiness(brand)).complete
+}
+
 /** Pravljenje sadržaja traži kompletan brend (D-174); inače 409 SETUP_INCOMPLETE. */
 export async function assertBrandReady(brandId: string): Promise<void> {
   if (!enforced()) return

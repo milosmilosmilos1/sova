@@ -1251,7 +1251,7 @@
     "saving": "Čuvam…",
     "add": "Dodaj fotografije",
     "uploading": "Otpremam {done} od {total}…",
-    "notImage": "Izaberite slike: PNG, JPG, WebP ili HEIC.",
+    "notImage": "Izaberite slike: PNG, JPG ili WebP. Fotografiju u HEIC formatu (iPhone) sačuvajte kao JPEG.",
     "stats": {
       "total": "Ukupno fotografija",
       "categories": "Kategorije",
@@ -1656,7 +1656,7 @@
       "fromGallery": "Izaberi fotografije iz galerije",
       "remove": "Ukloni fotografiju",
       "uploading": "Otpremam fotografiju…",
-      "notImage": "Priložite fotografiju (JPG, PNG, WebP ili HEIC).",
+      "notImage": "Priložite fotografiju (JPG, PNG ili WebP). Fotografiju u HEIC formatu sačuvajte kao JPEG.",
       "maxPhotos": "Uz poruku idu najviše četiri fotografije.",
       "link": "Sova će pročitati stranicu sa linka.",
       "price": "Poruka košta {message, plural, one {# token} other {# tokena}}. Nova objava košta {text, plural, one {# token} other {# tokena}} za tekst, a poruka uz nju se ne plaća.",

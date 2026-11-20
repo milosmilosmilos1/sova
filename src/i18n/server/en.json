@@ -913,5 +913,6 @@
   "Opis ima najviše 2.200 znakova.": "The caption can have up to 2,200 characters.",
   "Objava iz šablona nosi vaš tekst, pa se ne generiše ponovo. Izmenite je u editoru objave.": "A post from a template carries your own text, so it isn’t regenerated. Edit it in the post editor.",
   "Ovaj šablon nema taj oblik objave.": "This template doesn’t come in that format.",
-  "Fotografija mora biti iz galerije ovog brenda.": "The photo must be from this brand’s gallery."
+  "Fotografija mora biti iz galerije ovog brenda.": "The photo must be from this brand’s gallery.",
+  "Brend nije kompletno podešen.": "The brand isn’t fully set up."
 }

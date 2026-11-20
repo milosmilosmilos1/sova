@@ -2,6 +2,7 @@ import { cron } from 'inngest'
 
 import { inngest } from '@/inngest/client'
 import { events } from '@/inngest/events'
+import { logger } from '@/lib/logger'
 import { runAutopilotDeadlines } from '@/services/autopilot/deadlines'
 import {
   dueMonthlyBrands,
@@ -65,7 +66,15 @@ export const autopilotDaily = inngest.createFunction(
     const brands = await step.run('monthly-due', () => dueMonthlyBrands(new Date()))
     const monthly: Record<string, string> = {}
     for (const brandId of brands) {
-      const r = await step.run(`monthly-${brandId}`, () => runMonthlyForBrand(brandId))
+      // greška jednog brenda ne sme da zaustavi mesečni prolaz za brendove posle njega
+      const r = await step.run(`monthly-${brandId}`, async () => {
+        try {
+          return await runMonthlyForBrand(brandId)
+        } catch (error) {
+          logger.error('autopilot_monthly_failed', { brandId, error })
+          return { status: 'failed' as const }
+        }
+      })
       monthly[brandId] = r.status
     }
     return { expired, holidays, monthly }

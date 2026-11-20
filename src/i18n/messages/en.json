@@ -1251,7 +1251,7 @@
     "saving": "Saving…",
     "add": "Add photos",
     "uploading": "Uploading {done} of {total}…",
-    "notImage": "Choose images: PNG, JPG, WebP or HEIC.",
+    "notImage": "Choose images: PNG, JPG or WebP. Save HEIC photos (iPhone) as JPEG first.",
     "stats": {
       "total": "Total photos",
       "categories": "Categories",
@@ -1656,7 +1656,7 @@
       "fromGallery": "Pick photos from the gallery",
       "remove": "Remove photo",
       "uploading": "Uploading photo…",
-      "notImage": "Attach a photo (JPG, PNG, WebP or HEIC).",
+      "notImage": "Attach a photo (JPG, PNG or WebP). Save HEIC photos as JPEG first.",
       "maxPhotos": "A message can carry up to four photos.",
       "link": "Sova will read the page behind the link.",
       "price": "A message costs {message, plural, one {# token} other {# tokens}}. A new post costs {text, plural, one {# token} other {# tokens}} for the text, and the message that makes it is free.",
