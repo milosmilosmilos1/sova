@@ -708,13 +708,31 @@
     "title": "Let's set up Sova for {brand}",
     "subtitle": "Seven short steps. You can change everything later.",
     "stepOf": "Step {n} of {total}",
-    "skipAll": "Skip setup",
-    "skipConfirm": "Skip setup? You can set everything up later under Brand and Flows.",
     "back": "Back",
     "next": "Next",
     "saveNext": "Save and continue",
     "skipStep": "Skip this step",
     "viewOnly": "Your role can only view. The owner or an editor goes through setup.",
+    "readiness": {
+      "title": "What the brand still needs",
+      "text": "Sova makes posts only once it knows the brand and its look. Until this is done, Studio, posts, calendar, flows and the other parts that make content are locked.",
+      "done": "The brand is fully set up.",
+      "items": {
+        "brain": "Brain has learned from your site, a PDF or a note",
+        "voice": "Brand voice: every field",
+        "topics": "At least three main topics",
+        "logo": "Brand logo",
+        "colors": "Post colours",
+        "style": "Post style"
+      },
+      "needBrain": "To continue, analyse your site, upload a PDF or write a note about the brand.",
+      "needVoice": "To continue, fill in: {fields}.",
+      "needTopics": "To continue, add {count, plural, one {# more topic} other {# more topics}}. At least three.",
+      "needLogo": "To continue, upload the brand logo.",
+      "needColors": "To continue, choose a look for your posts.",
+      "goTo": "Go to step"
+    },
+    "viewOnlyLocked": "The brand isn’t fully set up yet. The owner, an admin or an editor finishes the setup, and until then the post pages are locked.",
     "completed": "Setup was finished on {date}. You can go through it again; flows won't be duplicated.",
     "steps": {
       "welcome": "Welcome",
@@ -726,7 +744,7 @@
       "brand": "Brand",
       "brandHint": "Voice and topics",
       "colors": "Look",
-      "colorsHint": "Colours and font from your site",
+      "colorsHint": "Logo, colours and font",
       "style": "Style",
       "styleHint": "How posts look",
       "done": "Done",
@@ -796,8 +814,8 @@
       "text": "These words take priority over what Sova concluded from the website. The topics at the bottom become automation flows."
     },
     "colors": {
-      "title": "Post look",
-      "text": "Sova looked at your website and suggests three light and three dark themes. Pick one or build your own from three colours and a font."
+      "title": "Logo and post look",
+      "text": "Upload your logo, then pick one of the themes Sova suggests from your site or build your own from three colours and a font."
     },
     "style": {
       "title": "How posts look",
@@ -822,7 +840,8 @@
         "siteNone": "not analyzed",
         "documents": "Documents",
         "style": "Style"
-      }
+      },
+      "incomplete": "You can finish once the brand has everything on the list above."
     },
     "banner": {
       "title": "Finish setting up",

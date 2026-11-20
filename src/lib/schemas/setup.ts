@@ -43,13 +43,15 @@ export const documentParamsSchema = z.object({
   documentId: z.uuid({ error: 'Neispravan identifikator dokumenta.' }),
 })
 
-/** Kraj uvoda: teme postaju tokovi (aktivne prave nacrte odmah po rasporedu), ili preskok bez tokova. */
+/**
+ * Kraj uvoda: teme postaju tokovi (aktivne prave nacrte odmah po rasporedu), ili kraj bez tokova.
+ * Preskok uvoda više ne postoji (D-174): brend mora biti kompletan.
+ */
 export const completeSetupSchema = z.object({
   flows: z
     .array(z.object({ topic: voiceTopicSchema, active: z.boolean() }))
     .max(VOICE_TOPICS_MAX, { error: `Najviše ${VOICE_TOPICS_MAX} tokova.` })
     .default([]),
-  skip: z.boolean().default(false),
 })
 export type CompleteSetupInput = z.infer<typeof completeSetupSchema>
 

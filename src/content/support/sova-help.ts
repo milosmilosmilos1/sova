@@ -51,13 +51,13 @@ Zatim se otvara „Uvod” (EN: Setup) u sedam koraka:
 
 1. Dobrodošli: jezik aplikacije i jezik objava.
 2. Mreže: povezivanje naloga (vlasnik ili administrator).
-3. Analiza: sajt (prva analiza je besplatna i traje minut ili dva), PDF o brendu i ranije objave. Može i bez sajta („Nemam sajt”).
-4. Brend: glas brenda i glavne teme.
-5. Izgled: tema od boja i fontova sa sajta.
+3. Analiza: sajt (prva analiza je besplatna i traje minut ili dva), PDF o brendu, beleška i ranije objave. Može i bez sajta („Nemam sajt”), ali Brain mora da uči bar iz jednog izvora: sajta, pročitanog PDF-a ili beleške.
+4. Brend: glas brenda (sva polja: šta nudite, kome se obraćate, kako zvučite, po čemu ste drugačiji, šta nikad ne pišete i poziv na akciju) i bar tri glavne teme.
+5. Izgled: logo brenda (sa sajta ili otpremljen) i tema od boja i fontova.
 6. Stil: stil objava i izvor fotografija.
-7. Gotovo: svaka tema postaje tok koji dva puta nedeljno pravi nacrt karusela za odobravanje (2 tokena po nacrtu). Bez povezane mreže tokovi nastaju pauzirani.
+7. Gotovo: spisak šta brendu još fali i teme koje postaju tokovi; svaki tok dva puta nedeljno pravi nacrt karusela za odobravanje (2 tokena po nacrtu). Bez povezane mreže tokovi nastaju pauzirani.
 
-Uvod može da se preskoči („Preskoči uvod”), a do kraja na početnoj stoji traka „Završite podešavanje” sa dugmetom „Nastavi uvod”. Ponovo se prolazi iz prozora Vodič i podrška („Prođite uvod ponovo”), bez dupliranja tokova.
+Uvod se ne preskače. Dok brend nije kompletan (Brain, ceo glas brenda i tri teme, logo, boje i stil), Početna, Studio, Objave, Kalendar, Odobravanje, tokovi, Autopilot, Mesečni plan, Strategija, Analitika, Inbox i Šabloni vode na uvod, na korak koji fali, a Sova ne pravi sadržaj za taj brend. Otvoreni su Brend i nalog, Brain, Galerija, Mreže, Tim, Pretplata i podešavanja. Na tim stranama traka „Nastavite podešavanje” vodi na korak koji fali. Mreže nisu uslov: objava može da se preuzme i objavi ručno. Uvod se ponovo prolazi iz prozora Vodič i podrška („Prođite uvod ponovo”), bez dupliranja tokova.
 
 ### Četiri ključna koraka
 

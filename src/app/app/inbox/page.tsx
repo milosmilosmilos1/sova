@@ -6,6 +6,7 @@ import { InboxShell } from '@/components/inbox/inbox-shell'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
+import { requireCompleteBrand } from '@/lib/auth/brand-ready'
 import { INBOX_FLAG, isFeatureEnabledFor } from '@/lib/flags'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -21,6 +22,7 @@ export default async function InboxPage() {
   if (!current) redirect('/app/onboarding')
   const brand = await getCurrentBrand(viewer, current.workspaceId)
   if (!brand) redirect('/app/settings')
+  await requireCompleteBrand(brand.id)
   return (
     <InboxShell
       brandId={brand.id}

@@ -11,6 +11,9 @@ for (const name of UNSET_IN_TESTS) delete process.env[name]
 process.env.LINKEDIN_PAGES ||= 'true'
 process.env.LINKEDIN_MEMBER_ANALYTICS ||= 'true'
 process.env.PUBLIC_MEDIA_BASE_URL ||= 'https://media.sova.test'
+// Kompletan brend (D-174): testovi drugih delova prave brend bez podešavanja, pa ga servisi ne traže;
+// provere kompletnosti imaju svoj test (brand.readiness.test.ts), koji prekidač vraća.
+process.env.SOVA_BRAND_GATE = 'off'
 
 if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
   throw new Error('Integracioni testovi traže pokrenut lokalni Supabase i .env.local (npm run db:start).')

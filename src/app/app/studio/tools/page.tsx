@@ -6,6 +6,7 @@ import { StudioClient } from '@/components/studio/studio-client'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { getCurrentWorkspace } from '@/lib/auth/workspace'
+import { requireCompleteBrand } from '@/lib/auth/brand-ready'
 import { configured } from '@/lib/env'
 import { AI_IMAGES_FLAG, isFeatureEnabled } from '@/lib/flags'
 
@@ -22,6 +23,7 @@ export default async function StudioToolsPage() {
   if (!current) redirect('/app/onboarding')
   const brand = await getCurrentBrand(viewer, current.workspaceId)
   if (!brand) redirect('/app/settings')
+  await requireCompleteBrand(brand.id)
   return (
     <StudioClient
       workspaceId={current.workspaceId}

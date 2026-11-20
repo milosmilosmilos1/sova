@@ -6,6 +6,7 @@ import { StudioChat } from '@/components/studio/studio-chat'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
+import { requireCompleteBrand } from '@/lib/auth/brand-ready'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('studio')
@@ -20,6 +21,7 @@ export default async function StudioPage() {
   if (!current) redirect('/app/onboarding')
   const brand = await getCurrentBrand(viewer, current.workspaceId)
   if (!brand) redirect('/app/settings')
+  await requireCompleteBrand(brand.id)
   return (
     <StudioChat
       workspaceId={current.workspaceId}

@@ -6,6 +6,7 @@ import { CalendarClient } from '@/components/posts/calendar-client'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { getCurrentWorkspace } from '@/lib/auth/workspace'
+import { requireCompleteBrand } from '@/lib/auth/brand-ready'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('calendar')
@@ -19,5 +20,6 @@ export default async function CalendarPage() {
   if (!current) redirect('/app/onboarding')
   const brand = await getCurrentBrand(viewer, current.workspaceId)
   if (!brand) redirect('/app/settings')
+  await requireCompleteBrand(brand.id)
   return <CalendarClient brandId={brand.id} timezone={brand.timezone} />
 }

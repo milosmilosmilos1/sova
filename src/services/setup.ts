@@ -1,18 +1,22 @@
 import 'server-only'
 
+import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
+import type { Readiness } from '@/lib/brand/readiness'
 import { createFlowSchema } from '@/lib/schemas/flows'
 import { setupFlowDays, type CompleteSetupInput } from '@/lib/schemas/setup'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError } from '@/lib/supabase/errors'
 import { parseVoice } from '@/lib/brand/voice'
+import { brandReadiness } from '@/services/brand-readiness'
 import { getBrand } from '@/services/brands'
 import { createFlow, type FlowView } from '@/services/flows/flows'
 
 /**
  * Uvod u sedam koraka (D-112). Koraci čuvaju svoje podatke kroz postojeće rute (jezik, mreže, analiza,
  * glas, dizajn); ovde je samo stanje uvoda i kraj, kad izabrane teme postaju tokovi automatizacije.
+ * Uvod se ne preskače: kraj traži kompletan brend (D-174).
  */
 export interface SetupState {
   brandId: string
@@ -22,12 +26,14 @@ export interface SetupState {
   documents: number
   voiceSaved: boolean
   flows: number
+  /** šta brendu još fali do prve objave (D-174) */
+  readiness: Readiness
 }
 
 export async function getSetupState(viewer: Viewer, brandId: string): Promise<SetupState> {
   const brand = await getBrand(viewer, brandId)
   const admin = createSupabaseAdminClient()
-  const [accounts, crawls, documents, flows] = await Promise.all([
+  const [accounts, crawls, documents, flows, readiness] = await Promise.all([
     admin
       .from('social_accounts')
       .select('id', { count: 'exact', head: true })
@@ -48,6 +54,7 @@ export async function getSetupState(viewer: Viewer, brandId: string): Promise<Se
       .select('id', { count: 'exact', head: true })
       .eq('brand_id', brand.id)
       .is('deleted_at', null),
+    brandReadiness(brand),
   ])
   return {
     brandId: brand.id,
@@ -57,6 +64,7 @@ export async function getSetupState(viewer: Viewer, brandId: string): Promise<Se
     documents: documents.count ?? 0,
     voiceSaved: Boolean(parseVoice(brand.voice)),
     flows: flows.count ?? 0,
+    readiness,
   }
 }
 
@@ -68,7 +76,7 @@ export interface CompleteSetupResult {
 }
 
 /**
- * Kraj uvoda: svaka izabrana tema postaje tok (karusel u stilu brenda, sve povezane mreže, vreme koje
+ * Kraj uvoda (samo za kompletan brend, D-174): svaka izabrana tema postaje tok (karusel u stilu brenda, sve povezane mreže, vreme koje
  * bira Sova). Tema koju brend već ima kao tok se preskače, pa ponovljen poziv ne pravi duplikate.
  * Bez povezane mreže tokovi nastaju pauzirani, jer prolaz bez naloga ne može da napravi nacrt.
  */
@@ -79,10 +87,11 @@ export async function completeSetup(
 ): Promise<CompleteSetupResult> {
   const brand = await getBrand(viewer, brandId)
   await requireMembership(viewer, brand.workspace_id, EDIT_ROLES)
+  if (!(await brandReadiness(brand)).complete) throw new ApiError('SETUP_INCOMPLETE')
   const admin = createSupabaseAdminClient()
   const flows: FlowView[] = []
   let pausedForAccounts = false
-  if (!input.skip && input.flows.length) {
+  if (input.flows.length) {
     const [{ count: accounts }, { data: existing }] = await Promise.all([
       admin
         .from('social_accounts')

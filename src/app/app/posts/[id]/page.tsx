@@ -6,6 +6,7 @@ import { PostEditor } from '@/components/posts/post-editor'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { getCurrentWorkspace } from '@/lib/auth/workspace'
+import { requireCompleteBrand } from '@/lib/auth/brand-ready'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('shell')
@@ -19,6 +20,7 @@ export default async function PostPage({ params }: PageProps<'/app/posts/[id]'>)
   if (!current) redirect('/app/onboarding')
   const brand = await getCurrentBrand(viewer, current.workspaceId)
   if (!brand) redirect('/app/settings')
+  await requireCompleteBrand(brand.id)
   const { id } = await params
   return (
     <PostEditor

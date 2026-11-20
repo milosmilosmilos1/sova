@@ -6,6 +6,7 @@ import { AutopilotClient } from '@/components/autopilot/autopilot-client'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
+import { requireCompleteBrand } from '@/lib/auth/brand-ready'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('autopilot')
@@ -19,6 +20,7 @@ export default async function AutopilotPage() {
   if (!current) redirect('/app/onboarding')
   const brand = await getCurrentBrand(viewer, current.workspaceId)
   if (!brand) redirect('/app/settings')
+  await requireCompleteBrand(brand.id)
   return (
     <AutopilotClient
       brandId={brand.id}

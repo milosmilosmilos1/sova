@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 
 import { FlowWizard, type WizardFlow } from '@/components/flows/flow-wizard'
 import { getCurrentBrand } from '@/lib/auth/brand'
+import { requireCompleteBrand } from '@/lib/auth/brand-ready'
 import { getViewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
 import { getBrand } from '@/services/brands'
@@ -21,6 +22,7 @@ export async function FlowWizardPage({ flowId }: { flowId: string | null }) {
   const flow = flowId ? await getFlow(viewer, flowId).catch(() => null) : null
   if (flowId && !flow) redirect('/app/flows')
   const brand = await getBrand(viewer, flow?.brandId ?? summary.id)
+  await requireCompleteBrand(brand.id)
   const [design, { accounts }, gallery] = await Promise.all([
     resolveDesign(brand),
     listSocialAccounts(viewer, brand.id),

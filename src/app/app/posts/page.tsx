@@ -6,6 +6,7 @@ import { PostsListClient } from '@/components/posts/posts-list-client'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
+import { requireCompleteBrand } from '@/lib/auth/brand-ready'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('shell')
@@ -19,6 +20,7 @@ export default async function PostsPage({ searchParams }: PageProps<'/app/posts'
   if (!current) redirect('/app/onboarding')
   const brand = await getCurrentBrand(viewer, current.workspaceId)
   if (!brand) redirect('/app/settings')
+  await requireCompleteBrand(brand.id)
   const sp = await searchParams
   return (
     <PostsListClient

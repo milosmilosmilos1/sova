@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test'
 
+import { admin, completeBrand } from './fixtures'
 import { extractLink, waitForEmail } from './mailpit'
 
 const stamp = Date.now()
@@ -71,6 +72,26 @@ test.describe.serial('registracija, potvrda emaila, onboarding, tim, nacrt, odja
     // 50 besplatnih tokena vidi se na Naplati
     await page.goto('/app/billing')
     await expect(page.getByRole('main').getByText('50', { exact: true }).first()).toBeVisible()
+
+    // nepotpun brend (D-174): strane sa objavama vode na uvod, na korak koji fali, a podešavanja ne
+    await expect(page.getByRole('status').filter({ hasText: 'Nastavite podešavanje' })).toBeVisible()
+    await page.goto('/app/studio')
+    await expect(page).toHaveURL(/\/app\/setup\?step=\d/)
+    await expect(page.getByRole('button', { name: 'Preskoči uvod' })).toHaveCount(0)
+    await page.goto('/app')
+    await expect(page).toHaveURL(/\/app\/setup/)
+
+    // ostatak testova radi sa kompletnim brendom
+    const { data: brand } = await admin
+      .from('brands')
+      .select('id, workspace_id')
+      .eq('name', 'E2E Firma')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .single()
+    await completeBrand(brand!.id, brand!.workspace_id)
+    await page.goto('/app')
+    await expect(page).toHaveURL(/\/app$/)
   })
 
   test('tim: pozivnica, limit plana, podešavanja', async ({ page }) => {

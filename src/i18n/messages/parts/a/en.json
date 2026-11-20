@@ -60,7 +60,11 @@
       "post": "Post",
       "studioTools": "Studio manual tools"
     },
-    "addBrand": "New brand"
+    "addBrand": "New brand",
+    "setupGate": {
+      "text": "The brand “{brand}” isn’t fully set up yet. Studio, posts and flows unlock once you finish the setup.",
+      "cta": "Continue setup"
+    }
   },
   "team": {
     "metaTitle": "Team",

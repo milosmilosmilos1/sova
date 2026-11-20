@@ -60,7 +60,11 @@
       "post": "Objava",
       "studioTools": "Ručni alati Studija"
     },
-    "addBrand": "Novi brend"
+    "addBrand": "Novi brend",
+    "setupGate": {
+      "text": "Brend „{brand}” još nije kompletno podešen. Studio, objave i tokovi se otključavaju kad završite podešavanje.",
+      "cta": "Nastavite podešavanje"
+    }
   },
   "team": {
     "metaTitle": "Tim",

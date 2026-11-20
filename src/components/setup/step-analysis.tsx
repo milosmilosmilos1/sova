@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 
+import { ReadinessHint, useSetupState } from './readiness'
 import { StepFooter } from './step-footer'
 
 interface CrawlView {
@@ -82,10 +83,9 @@ export function StepAnalysis({
     queryKey: ['brand-voice', brandId],
     queryFn: () => api<VoiceViewData>(`/api/brands/${brandId}/voice`),
   })
-  const setup = useQuery({
-    queryKey: ['setup-state', brandId],
-    queryFn: () => api<{ accounts: number }>(`/api/brands/${brandId}/setup`),
-  })
+  // analiza sajta i čitanje PDF-a završavaju se u pozadini, pa se stanje čita dok Brain ne nauči
+  const setup = useSetupState(brandId, 'analysis')
+  const ready = setup.data?.readiness.items.brain ?? false
 
   const current = crawl.data ?? latest
   const analyzed = (crawls.data ?? []).some((c) => c.status === 'succeeded' || c.status === 'partial')
@@ -222,7 +222,8 @@ export function StepAnalysis({
         <p className="text-sm text-muted-foreground">{t('postsNone')}</p>
       ) : null}
 
-      <StepFooter onBack={onBack} onNext={onNext} />
+      <ReadinessHint readiness={setup.data?.readiness} step="analysis" />
+      <StepFooter onBack={onBack} onNext={onNext} nextDisabled={canEdit && !ready} />
     </div>
   )
 }

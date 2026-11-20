@@ -1576,3 +1576,17 @@ Odluka vlasnika (20.11.): ukrajinski se uklanja kompletno.
 - Mejlovi (pozivnice, izveštaji), PDF izveštaj, chatbot podrške i tekst pomoći su na srpskom i engleskom. Šabloni mejlova za prijavu u repou nemaju ukrajinsku granu; na produkciji je i dalje imaju, ali se ona više ne koristi.
 
 Razlog: zahtev vlasnika.
+
+## D-174 · 20.11.2026 · usvojeno · Brend mora biti kompletno podešen pre prve objave
+
+Odluka vlasnika (20.11.): pri unosu brenda korisnik mora da uradi sve, da profil bude kompletan, da se zna vizuelni identitet i da je prošao Brain.
+
+- Kompletan brend ima: Brain koji je učio bar iz jednog izvora (uspešna analiza sajta, pročitan PDF ili beleška), glas brenda sa svim poljima (šta nudi, kome se obraća, kako zvuči, po čemu je drugačiji, šta nikad ne piše, poziv na akciju) i bar tri teme, logo (sa sajta ili otpremljen), boje ili izgled koje je korisnik izabrao i stil objava koji je korisnik sačuvao. Predlog boja sa sajta nije izbor. Pravila su u `lib/brand/readiness.ts`, a stanje iz baze u `services/brand-readiness.ts`.
+- Mreže nisu uslov: danas radi samo LinkedIn lični profil, a objava može da se preuzme i objavi ručno. Ako vlasnik želi i mrežu kao uslov, to je jedna nova stavka.
+- Uvod se ne preskače: nema „Preskoči uvod”, a koraci sa uslovom nemaju „Preskoči korak”. „Dalje” se otključava kad je korak urađen, kvačica stoji uz korak tek kad je urađen, a poslednji korak pokazuje spisak šta fali, sa dugmetom do koraka. Korak „Izgled” sada ima i logo. Kraj uvoda za nepotpun brend vraća 409 SETUP_INCOMPLETE; polje `skip` više ne postoji.
+- Strane koje prave, odobravaju i objavljuju sadržaj (Početna, Studio i ručni alati, Objave, nova objava i editor, Kalendar, Odobravanje, Automatizuj objave i tokovi, Autopilot, Mesečni plan, Strategija, Analitika, Inbox, DM automatizacija) vode na uvod, na korak sa prvom stavkom koja fali. Otvoreni ostaju Brend i nalog, Brain, Galerija, Mreže, Tim, Pretplata, podešavanja, obaveštenja i predlozi; na njima traka „Nastavite podešavanje” vodi na korak koji fali. Provera je na svakoj strani, jer raspored aplikacije ne vidi pouzdano putanju.
+- Server: svako generisanje koje pravi sadržaj (tekst i varijante, slike, karusel iz šablona, strategija, Studio razgovor, Canva, odgovor u Inbox-u, mesečni plan) za nepotpun brend vraća 409 SETUP_INCOMPLETE pre rezervacije tokena (`startGeneration`). To važi i za pozadinske poslove: tok nepotpunog brenda ne pravi nacrt i javlja zašto. Analiza sajta, predlog glasa, opis fotografija, uvidi i chatbot podrške rade i dok podešavanje nije gotovo. Zakazane objave idu po rasporedu.
+- Pravilo važi i za postojeće brendove. Na produkciji 20.11. kompletni su TangerineSEO, GdeSlavimo, Eventiko, Adaptiko i Klima24; BelgradeMidnight-u fale glas brenda i teme, Tangerine-u logo, Šapi poziv na akciju. Dok se ne dopune, njihove strane sa objavama vode na uvod, a tokovi i Autopilot ne prave nacrte.
+- Integracioni testovi drugih delova isključuju proveru u servisima (`SOVA_BRAND_GATE=off` u okruženju testova); provere kompletnosti imaju svoj test. E2E radi sa pravom proverom: pripremljen brend je kompletan, a test registracije proverava zaključane strane.
+
+Razlog: zahtev vlasnika. Bez glasa, logoa i izgleda brenda Sova pravi generičke objave koje ne liče na brend.

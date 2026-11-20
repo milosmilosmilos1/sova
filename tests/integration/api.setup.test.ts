@@ -23,7 +23,7 @@ import { indexDocument } from '@/services/brand-brain/documents'
 
 import { embedHandler } from './fixture-site'
 import { calls, enqueueReply, geminiServer, resetGeminiMock } from './gemini-mock'
-import { admin, call, createTestUser, deleteTestUser, type TestUser } from './helpers'
+import { admin, call, completeBrand, createTestUser, deleteTestUser, type TestUser } from './helpers'
 
 /** Glas brenda, dokumenti o brendu i uvod u sedam koraka (D-112). */
 let owner: TestUser
@@ -410,7 +410,27 @@ describe('dokumenti o brendu', () => {
 })
 
 describe('uvod u sedam koraka', () => {
+  it('kraj uvoda traži kompletan brend (D-174): dok nešto fali 409, a stanje kaže šta', async () => {
+    const state = await call<{ readiness: { complete: boolean; missing: string[] } }>(
+      setupGet,
+      `/api/brands/${brandId}/setup`,
+      { token: owner.token, params: { id: brandId } },
+    )
+    expect(state.json.data!.readiness.complete).toBe(false)
+    expect(state.json.data!.readiness.missing).toEqual(expect.arrayContaining(['logo', 'colors', 'style']))
+    const r = await call(setupPost, `/api/brands/${brandId}/setup`, {
+      token: owner.token,
+      params: { id: brandId },
+      body: { flows: [] },
+    })
+    expect(r.status).toBe(409)
+    expect(r.json.error!.code).toBe('SETUP_INCOMPLETE')
+    const { data: brand } = await admin.from('brands').select('setup_completed_at').eq('id', brandId).single()
+    expect(brand!.setup_completed_at).toBeNull()
+  })
+
   it('bez povezane mreže teme postaju pauzirani tokovi, a ponovljen kraj ne pravi duplikate', async () => {
+    await completeBrand(brandId, { keepVoice: true })
     // mreža iz testa za predlog glasa je jedina aktivna; ovde je isključena
     await admin.from('social_accounts').update({ status: 'disabled' }).eq('brand_id', brandId)
     const state = await call<{ completedAt: string | null; accounts: number }>(
@@ -477,7 +497,7 @@ describe('uvod u sedam koraka', () => {
     expect(flows!.every((f) => f.cta === voiceBody.cta && f.auto_time)).toBe(true)
   })
 
-  it('preskok uvoda samo označava uvod kao završen', async () => {
+  it('kraj bez tokova samo označava uvod kao završen; preskoka više nema (D-174)', async () => {
     const before = await admin
       .from('content_flows')
       .select('id', { count: 'exact', head: true })
@@ -485,7 +505,7 @@ describe('uvod u sedam koraka', () => {
     const r = await call<{ flows: unknown[] }>(setupPost, `/api/brands/${brandId}/setup`, {
       token: owner.token,
       params: { id: brandId },
-      body: { skip: true, flows: [{ topic: 'Nova tema koja se ne pravi', active: true }] },
+      body: { flows: [] },
     })
     expect(r.status).toBe(200)
     expect(r.json.data!.flows).toEqual([])

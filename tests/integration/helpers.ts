@@ -77,3 +77,47 @@ export async function call<T = unknown>(
   }
   return { status: res.status, json }
 }
+
+/** Glas brenda sa svim poljima i tri teme (D-174). */
+export const COMPLETE_VOICE = {
+  offer: 'Ugradnja i servis klima uređaja u Beogradu.',
+  audience: 'Vlasnici stanova i malih lokala.',
+  tone: 'opušteno i stručno',
+  usp: 'Ugradnja za jedan dan.',
+  avoid: 'Bez cena u objavama.',
+  cta: 'Pozovite 060 123 4567.',
+  topics: ['Saveti za održavanje klime', 'Iza scene ugradnje', 'Pitanja kupaca'],
+}
+
+/**
+ * Kompletan brend (D-174): beleška u Brain-u, glas (osim kad ga test već ima), logo, izabrane boje i
+ * stil. Logo je samo oznaka u dizajnu, bez fajla: proverama kompletnosti fajl ne treba.
+ */
+export async function completeBrand(brandId: string, opts: { keepVoice?: boolean } = {}): Promise<void> {
+  const { data: brand, error } = await admin
+    .from('brands')
+    .select('workspace_id, design')
+    .eq('id', brandId)
+    .single()
+  if (error || !brand) throw new Error(`Brend: ${error?.message}`)
+  const design = {
+    ...((brand.design as Record<string, unknown> | null) ?? {}),
+    styleId: 'headline',
+    look: 'light-1',
+    logoAssetId: crypto.randomUUID(),
+  }
+  const update: Record<string, unknown> = { design }
+  if (!opts.keepVoice) update.voice = COMPLETE_VOICE
+  const saved = await admin.from('brands').update(update).eq('id', brandId)
+  if (saved.error) throw new Error(`Dizajn i glas: ${saved.error.message}`)
+  const note = await admin.from('brand_documents').insert({
+    brand_id: brandId,
+    workspace_id: brand.workspace_id,
+    kind: 'note',
+    name: 'O nama',
+    content: 'Radimo od 2015. godine, ugradnja za jedan dan.',
+    size_bytes: 46,
+    status: 'ready',
+  })
+  if (note.error) throw new Error(`Beleška: ${note.error.message}`)
+}

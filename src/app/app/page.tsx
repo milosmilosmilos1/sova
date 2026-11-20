@@ -27,6 +27,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
+import { requireCompleteBrand } from '@/lib/auth/brand-ready'
 import { parsePlaybook } from '@/lib/brand/playbook'
 import { brandSwatch } from '@/lib/brands/swatch'
 import { GUIDE_HREF, type GuideStepKey } from '@/lib/guide'
@@ -122,6 +123,8 @@ export default async function AppHomePage({ searchParams }: PageProps<'/app'>) {
       </div>
     )
   }
+
+  await requireCompleteBrand(summary.id)
 
   const now = new Date()
   const tz = summary.timezone

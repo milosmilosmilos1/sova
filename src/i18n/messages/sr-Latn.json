@@ -708,13 +708,31 @@
     "title": "Podesimo Sovu za {brand}",
     "subtitle": "Sedam kratkih koraka. Sve možete promeniti i kasnije.",
     "stepOf": "Korak {n} od {total}",
-    "skipAll": "Preskoči uvod",
-    "skipConfirm": "Preskočiti uvod? Sve možete podesiti kasnije u Brendu i Tokovima.",
     "back": "Nazad",
     "next": "Dalje",
     "saveNext": "Sačuvaj i dalje",
     "skipStep": "Preskoči korak",
     "viewOnly": "Vaša uloga može samo da gleda. Uvod prolazi vlasnik ili urednik.",
+    "readiness": {
+      "title": "Šta brendu još fali",
+      "text": "Sova pravi objave tek kad zna brend i njegov izgled. Dok ovo nije gotovo, Studio, objave, kalendar, tokovi i ostali delovi koji prave sadržaj su zaključani.",
+      "done": "Brend je kompletno podešen.",
+      "items": {
+        "brain": "Brain je učio iz sajta, PDF-a ili beleške",
+        "voice": "Glas brenda: sva polja",
+        "topics": "Bar tri glavne teme",
+        "logo": "Logo brenda",
+        "colors": "Boje objava",
+        "style": "Stil objava"
+      },
+      "needBrain": "Za dalje: analizirajte sajt, otpremite PDF ili napišite belešku o brendu.",
+      "needVoice": "Za dalje popunite: {fields}.",
+      "needTopics": "Za dalje dodajte još {count, plural, one {# temu} few {# teme} other {# tema}}. Najmanje tri.",
+      "needLogo": "Za dalje otpremite logo brenda.",
+      "needColors": "Za dalje izaberite izgled objava.",
+      "goTo": "Idi na korak"
+    },
+    "viewOnlyLocked": "Brend još nije kompletno podešen. Podešavanje završava vlasnik, administrator ili urednik, a do tada su strane sa objavama zaključane.",
     "completed": "Uvod je završen {date}. Možete ga proći ponovo, tokovi se neće duplirati.",
     "steps": {
       "welcome": "Dobrodošli",
@@ -726,7 +744,7 @@
       "brand": "Brend",
       "brandHint": "Glas i teme",
       "colors": "Izgled",
-      "colorsHint": "Boje i font sa sajta",
+      "colorsHint": "Logo, boje i font",
       "style": "Stil",
       "styleHint": "Izgled objava",
       "done": "Gotovo",
@@ -796,8 +814,8 @@
       "text": "Ove reči imaju prednost nad onim što je Sova zaključila sa sajta. Teme na dnu postaju tokovi automatizacije."
     },
     "colors": {
-      "title": "Izgled objava",
-      "text": "Sova je pogledala vaš sajt i predlaže tri svetle i tri tamne teme. Izaberite jednu ili sastavite svoju od tri boje i fonta."
+      "title": "Logo i izgled objava",
+      "text": "Otpremite logo, pa izaberite jednu od tema koje Sova predlaže sa vašeg sajta ili sastavite svoju od tri boje i fonta."
     },
     "style": {
       "title": "Izgled objava",
@@ -822,7 +840,8 @@
         "siteNone": "nije analiziran",
         "documents": "Dokumenti",
         "style": "Stil"
-      }
+      },
+      "incomplete": "Završiti možete kad brend ima sve sa spiska iznad."
     },
     "banner": {
       "title": "Završite podešavanje",

@@ -43,7 +43,45 @@ function must<T>(res: { data: T | null; error: { message: string } | null }, wha
   return res.data
 }
 
-export async function seedWorkspace(tag: string): Promise<Seeded> {
+/**
+ * Kompletan brend (D-174): beleška u Brain-u, glas sa svim poljima i tri teme, logo, boje i stil.
+ * Bez toga strane sa objavama vode na uvod. Logo je samo oznaka u dizajnu (crtanje bez fajla ide bez
+ * logoa), jer E2E ne proverava izgled logoa.
+ */
+export async function completeBrand(brandId: string, workspaceId: string): Promise<void> {
+  const voice = {
+    offer: 'Ugradnja i servis klima uređaja u Beogradu.',
+    audience: 'Vlasnici stanova i malih lokala.',
+    tone: 'opušteno i stručno',
+    usp: 'Ugradnja za jedan dan.',
+    avoid: 'Bez cena u objavama.',
+    cta: 'Pozovite 060 123 4567.',
+    topics: ['Saveti za održavanje klime', 'Iza scene ugradnje', 'Pitanja kupaca'],
+  }
+  const design = { styleId: 'headline', look: 'light-1', logoAssetId: crypto.randomUUID() }
+  must(
+    await admin.from('brands').update({ voice, design }).eq('id', brandId).select('id').single(),
+    'Kompletan brend',
+  )
+  must(
+    await admin
+      .from('brand_documents')
+      .insert({
+        brand_id: brandId,
+        workspace_id: workspaceId,
+        kind: 'note',
+        name: 'O nama',
+        content: 'Radimo od 2015. godine, ugradnja za jedan dan.',
+        size_bytes: 46,
+        status: 'ready',
+      })
+      .select('id')
+      .single(),
+    'Beleška o brendu',
+  )
+}
+
+export async function seedWorkspace(tag: string, opts: { complete?: boolean } = {}): Promise<Seeded> {
   const stamp = `${Date.now()}-${randomBytes(3).toString('hex')}`
   const email = `e2e-${tag}-${stamp}@sova.local`
   const password = `Lozinka-${randomBytes(8).toString('base64url')}`
@@ -87,6 +125,7 @@ export async function seedWorkspace(tag: string): Promise<Seeded> {
       .select('id, platform'),
     'Nalozi mreža',
   )
+  if (opts.complete !== false) await completeBrand(ws.brand_id, ws.workspace_id)
   return {
     email,
     password,

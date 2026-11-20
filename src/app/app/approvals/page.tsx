@@ -6,6 +6,7 @@ import { ReviewDesk } from '@/components/review/review-desk'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
+import { requireCompleteBrand } from '@/lib/auth/brand-ready'
 import { getTokenPrice } from '@/lib/tokens/prices'
 import { getBrand } from '@/services/brands'
 
@@ -20,6 +21,7 @@ export default async function ApprovalsPage() {
   if (!current) redirect('/app/onboarding')
   const summary = await getCurrentBrand(viewer, current.workspaceId)
   if (!summary) redirect('/app/settings')
+  await requireCompleteBrand(summary.id)
   const brand = await getBrand(viewer, summary.id)
   return (
     <ReviewDesk

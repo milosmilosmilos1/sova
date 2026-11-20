@@ -895,5 +895,6 @@
   "Napišite pitanje.": "Write your question.",
   "Pitanje ima najviše 1.000 znakova.": "A question can have at most 1,000 characters.",
   "Podrška: pitanje iz chatbota": "Support: question from the chatbot",
-  "Razgovor je poslat podršci kao prijava problema. Status pratite u „Predlozi i podrška”.": "The conversation was sent to support as a problem report. Follow its status in “Ideas and support”."
+  "Razgovor je poslat podršci kao prijava problema. Status pratite u „Predlozi i podrška”.": "The conversation was sent to support as a problem report. Follow its status in “Ideas and support”.",
+  "Brend još nije kompletno podešen. Završite podešavanje (Brain, glas brenda i teme, logo, boje i stil), pa Sova pravi objave.": "The brand isn’t fully set up yet. Finish the setup (Brain, brand voice and topics, logo, colours and style), then Sova can make posts."
 }

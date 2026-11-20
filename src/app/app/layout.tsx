@@ -4,10 +4,13 @@ import { redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
 
 import { AppShell } from '@/components/app/app-shell'
+import { SetupGateBanner } from '@/components/app/setup-gate-banner'
 import { isAppLocale, LOCALE_COOKIE } from '@/i18n/config'
 import { getCurrentBrand } from '@/lib/auth/brand'
+import { readinessOf } from '@/lib/auth/brand-ready'
 import { getViewer } from '@/lib/auth/viewer'
 import { getCurrentWorkspace, listMemberships } from '@/lib/auth/workspace'
+import { readinessStep } from '@/lib/brand/readiness'
 import { configured, isPreview } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import { listBrands, listBrandSwatches } from '@/services/brands'
@@ -68,7 +71,7 @@ export default async function AppLayout({ children }: LayoutProps<'/app'>) {
     if (error) logger.warn('profile_locale_sync_failed', { error: error.message })
     await viewer.supabase.auth.updateUser({ data: { locale: cookieLocale } }).catch(() => undefined)
   }
-  const [{ count: waitingApprovals }, swatches] = await Promise.all([
+  const [{ count: waitingApprovals }, swatches, readiness] = await Promise.all([
     currentBrand
       ? viewer.supabase
           .from('posts')
@@ -79,6 +82,8 @@ export default async function AppLayout({ children }: LayoutProps<'/app'>) {
       : Promise.resolve({ count: 0 }),
     // boje brendova za birač u bočnoj traci (D-137)
     current ? listBrandSwatches(viewer, current.workspaceId) : Promise.resolve({}),
+    // kompletan brend (D-174): traka vodi na korak koji fali
+    currentBrand ? readinessOf(currentBrand.id) : Promise.resolve(null),
   ])
 
   return (
@@ -104,6 +109,9 @@ export default async function AppLayout({ children }: LayoutProps<'/app'>) {
         <p role="status" className="mb-4 rounded-md border border-warning/40 bg-warning/10 px-3 py-2 text-sm">
           {t('preview.banner', { list: pending.map((item) => t(`preview.${item}`)).join(', ') })}
         </p>
+      ) : null}
+      {currentBrand && readiness && !readiness.complete ? (
+        <SetupGateBanner brand={currentBrand.name} step={readinessStep(readiness)} />
       ) : null}
       {children}
     </AppShell>

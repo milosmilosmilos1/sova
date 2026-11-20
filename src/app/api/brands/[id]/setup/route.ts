@@ -8,7 +8,7 @@ export const GET = createHandler({ auth: 'user', params: uuidParamSchema }, asyn
   getSetupState(assertViewer(viewer), params.id),
 )
 
-/** Kraj uvoda: izabrane teme postaju tokovi, ili preskok bez tokova. */
+/** Kraj uvoda (kompletan brend, D-174): izabrane teme postaju tokovi, ili kraj bez tokova. */
 export const POST = createHandler(
   {
     auth: 'user',

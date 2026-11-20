@@ -318,7 +318,7 @@ function VisualEditor({
   )
 }
 
-function LogoSection({
+export function LogoSection({
   brandId,
   source,
   disabled,

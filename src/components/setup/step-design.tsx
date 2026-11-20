@@ -4,7 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
-import type { DesignView } from '@/components/design/design-card'
+import { LogoSection, type DesignView } from '@/components/design/design-card'
 import { LookPicker, type LookChoice } from '@/components/design/look-picker'
 import { StylePicker } from '@/components/design/style-picker'
 import { api } from '@/components/shared/api-client'
@@ -12,6 +12,7 @@ import { ErrorBox } from '@/components/shared/error-box'
 import { Label } from '@/components/ui/label'
 import { PHOTO_SOURCES, POST_SIZES, type PostSize } from '@/lib/visuals/design/catalog'
 
+import { ReadinessHint, useSetupState } from './readiness'
 import { StepFooter } from './step-footer'
 import { optionClass } from './step-welcome'
 
@@ -31,35 +32,69 @@ function Loading({ error }: { error: unknown }) {
 }
 
 /**
- * Korak 5: izgled objava (D-123). Sova je sajt upravo analizirala, pa odmah predlaže tri izgleda od
- * njegovih boja i fontova; četvrti korisnik sastavlja od tri boje i fonta.
+ * Korak 5: logo i izgled objava (D-123, D-174). Sova je sajt upravo analizirala, pa odmah predlaže
+ * izglede od njegovih boja i fontova, a korisnik može da sastavi svoj od tri boje i fonta. Logo je
+ * obavezan: sa sajta ili otpremljen ovde.
  */
 export function StepColors({ brandId, canEdit, onBack, onNext }: StepProps) {
   const t = useTranslations('setup')
   const qc = useQueryClient()
+  const design = useDesign(brandId)
+  const state = useSetupState(brandId)
+  const readiness = state.data?.readiness
   const [choice, setChoice] = useState<LookChoice | null>(null)
+  const refresh = (data: DesignView) => {
+    qc.setQueryData(['design', brandId], data)
+    void qc.invalidateQueries({ queryKey: ['setup-state', brandId] })
+  }
   const save = useMutation({
     mutationFn: (body: LookChoice) =>
       api<DesignView>(`/api/brands/${brandId}/design`, { method: 'PATCH', json: body }),
     onSuccess: (data) => {
-      qc.setQueryData(['design', brandId], data)
+      refresh(data)
       onNext()
     },
   })
+  const logo = useMutation({
+    mutationFn: (logoAssetId: string | null) =>
+      api<DesignView>(`/api/brands/${brandId}/design`, { method: 'PATCH', json: { logoAssetId } }),
+    onSuccess: refresh,
+  })
+  const hasLogo = Boolean(design.data?.logoSource)
+  const hasColors = Boolean(choice) || Boolean(readiness?.items.colors)
   return (
     <div className="space-y-6">
       <div className="space-y-1">
         <h2 className="text-xl font-semibold tracking-tight">{t('colors.title')}</h2>
         <p className="text-sm text-muted-foreground">{t('colors.text')}</p>
       </div>
+      <div className="rounded-lg border p-4">
+        <LogoSection
+          brandId={brandId}
+          source={design.data?.logoSource ?? null}
+          disabled={!canEdit || logo.isPending || !design.data}
+          pending={logo.isPending}
+          error={logo.error}
+          onPick={(assetId) => logo.mutate(assetId)}
+        />
+      </div>
       <LookPicker brandId={brandId} canEdit={canEdit} onChoice={setChoice} />
       <ErrorBox error={save.error} />
+      {canEdit && readiness ? (
+        <ReadinessHint
+          readiness={{
+            ...readiness,
+            items: { ...readiness.items, logo: hasLogo, colors: hasColors },
+          }}
+          step="colors"
+        />
+      ) : null}
       <StepFooter
         onBack={onBack}
-        onSkip={onNext}
         onNext={() => (canEdit && choice ? save.mutate(choice) : onNext())}
         nextLabel={canEdit && choice ? t('saveNext') : undefined}
         pending={save.isPending}
+        nextDisabled={canEdit && (!hasLogo || !hasColors)}
       />
     </div>
   )
@@ -100,6 +135,7 @@ function StyleForm({ brandId, canEdit, onBack, onNext, initial }: StepProps & { 
       }),
     onSuccess: (data) => {
       qc.setQueryData(['design', brandId], data)
+      void qc.invalidateQueries({ queryKey: ['setup-state', brandId] })
       onNext()
     },
   })
@@ -154,7 +190,6 @@ function StyleForm({ brandId, canEdit, onBack, onNext, initial }: StepProps & { 
       <ErrorBox error={save.error} />
       <StepFooter
         onBack={onBack}
-        onSkip={onNext}
         onNext={() => (canEdit ? save.mutate() : onNext())}
         nextLabel={canEdit ? t('saveNext') : undefined}
         pending={save.isPending}

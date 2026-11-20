@@ -6,6 +6,7 @@ import { FlowsClient } from '@/components/flows/flows-client'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
+import { requireCompleteBrand } from '@/lib/auth/brand-ready'
 import { SLIDES_DEFAULT } from '@/lib/visuals/design/catalog'
 import { getBrand } from '@/services/brands'
 import { storedDesign } from '@/services/design/brand-design'
@@ -21,6 +22,7 @@ export default async function FlowsPage() {
   if (!current) redirect('/app/onboarding')
   const summary = await getCurrentBrand(viewer, current.workspaceId)
   if (!summary) redirect('/app/settings')
+  await requireCompleteBrand(summary.id)
   const brand = await getBrand(viewer, summary.id)
   return (
     <FlowsClient

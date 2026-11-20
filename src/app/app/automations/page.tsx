@@ -6,6 +6,7 @@ import { DmAutomations } from '@/components/inbox/dm-automations'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
+import { requireCompleteBrand } from '@/lib/auth/brand-ready'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('automations')
@@ -20,5 +21,6 @@ export default async function AutomationsPage() {
   if (!current) redirect('/app/onboarding')
   const brand = await getCurrentBrand(viewer, current.workspaceId)
   if (!brand) redirect('/app/settings')
+  await requireCompleteBrand(brand.id)
   return <DmAutomations brandId={brand.id} canEdit={EDIT_ROLES.includes(current.role)} />
 }

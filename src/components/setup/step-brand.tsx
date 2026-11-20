@@ -7,8 +7,10 @@ import { useState } from 'react'
 import { VoiceForm, type VoiceViewData } from '@/components/brand/voice-form'
 import { api } from '@/components/shared/api-client'
 import { ErrorBox } from '@/components/shared/error-box'
+import { readinessFrom } from '@/lib/brand/readiness'
 import type { BrandVoice } from '@/lib/schemas/voice'
 
+import { ReadinessHint } from './readiness'
 import { StepFooter } from './step-footer'
 
 /** Korak 4: glas brenda i glavne teme; predlog iz analize sajta dok vlasnik ne sačuva svoj. */
@@ -75,10 +77,14 @@ function BrandEditor({
   const tv = useTranslations('voice')
   const qc = useQueryClient()
   const [value, setValue] = useState<BrandVoice>(view.voice)
+  // isti uslov kao na serveru (D-174), iz onoga što je upisano, pre čuvanja
+  const local = readinessFrom({ brainSources: 1, voice: value, logo: true, colors: true, style: true })
+  const ready = local.items.voice && local.items.topics
   const save = useMutation({
     mutationFn: () => api<VoiceViewData>(`/api/brands/${brandId}/voice`, { method: 'PUT', json: value }),
     onSuccess: (data) => {
       qc.setQueryData(['brand-voice', brandId], data)
+      void qc.invalidateQueries({ queryKey: ['setup-state', brandId] })
       onNext()
     },
   })
@@ -98,12 +104,13 @@ function BrandEditor({
         emailVerified={emailVerified}
       />
       <ErrorBox error={save.error} />
+      {canEdit ? <ReadinessHint readiness={local} step="brand" /> : null}
       <StepFooter
         onBack={onBack}
-        onSkip={onNext}
         onNext={() => (canEdit ? save.mutate() : onNext())}
         nextLabel={canEdit ? t('saveNext') : undefined}
         pending={save.isPending}
+        nextDisabled={canEdit && !ready}
       />
     </div>
   )

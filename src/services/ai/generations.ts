@@ -35,7 +35,33 @@ export interface StartedGeneration {
  * Pravi red u ai_generations i rezerviše tokene (brif 14.1, koraci 6 i 8).
  * Ako rezervacija padne, red se označi kao failed da trag ostane.
  */
+/**
+ * Vrste koje prave sadržaj brenda traže kompletan brend (D-174). Analiza sajta i predlog glasa
+ * (`brand_profile`), opis fotografija, uvidi i chatbot podrške rade i dok podešavanje nije gotovo.
+ */
+const NEEDS_COMPLETE_BRAND: ReadonlySet<GenerationType> = new Set<GenerationType>([
+  'text',
+  'rewrite',
+  'translate',
+  'hashtags',
+  'repurpose',
+  'variants',
+  'image_from_photo',
+  'image_from_prompt',
+  'visual_template',
+  'strategy',
+  'canva_design',
+  'canva_export',
+  'studio_chat',
+  'inbox_reply',
+  'month_plan',
+])
+
 export async function startGeneration(input: StartGenerationInput): Promise<StartedGeneration> {
+  if (input.brandId && NEEDS_COMPLETE_BRAND.has(input.type)) {
+    const { assertBrandReady } = await import('@/services/brand-readiness')
+    await assertBrandReady(input.brandId)
+  }
   // posle roka za neuspelo plaćanje nova generisanja staju (T9, K6); besplatne radnje rade
   if (input.tokens > 0) await assertBillingActive(input.workspaceId)
   const admin = createSupabaseAdminClient()

@@ -6,6 +6,7 @@ import { MonthPlan } from '@/components/plans/month-plan'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
+import { requireCompleteBrand } from '@/lib/auth/brand-ready'
 
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('plan')
@@ -20,5 +21,6 @@ export default async function PlanPage() {
   if (!current) redirect('/app/onboarding')
   const brand = await getCurrentBrand(viewer, current.workspaceId)
   if (!brand) redirect('/app/settings')
+  await requireCompleteBrand(brand.id)
   return <MonthPlan brandId={brand.id} canEdit={EDIT_ROLES.includes(current.role)} />
 }

@@ -15,14 +15,7 @@ import { Switch } from '@/components/ui/switch'
 import type { ContentLocale } from '@/config/locales'
 import { setupFlowDays } from '@/lib/schemas/setup'
 
-interface SetupState {
-  completedAt: string | null
-  accounts: number
-  crawled: boolean
-  documents: number
-  voiceSaved: boolean
-  flows: number
-}
+import { ReadinessList, useSetupState } from './readiness'
 
 /** Prve dve teme se uključuju same; ostale čekaju pauzirane dok ih vlasnik ne uključi. */
 const ACTIVE_BY_DEFAULT = 2
@@ -36,11 +29,13 @@ export function StepDone({
   canEdit,
   contentLocale,
   onBack,
+  onGo,
 }: {
   brandId: string
   canEdit: boolean
   contentLocale: ContentLocale
   onBack: () => void
+  onGo: (step: number) => void
 }) {
   const t = useTranslations('setup.done')
   const ts = useTranslations('setup')
@@ -53,11 +48,8 @@ export function StepDone({
     queryFn: () => api<VoiceViewData>(`/api/brands/${brandId}/voice`),
     refetchOnMount: 'always',
   })
-  const state = useQuery({
-    queryKey: ['setup-state', brandId],
-    queryFn: () => api<SetupState>(`/api/brands/${brandId}/setup`),
-    refetchOnMount: 'always',
-  })
+  const state = useSetupState(brandId)
+  const complete = state.data?.readiness.complete ?? false
   const design = useQuery({
     queryKey: ['design', brandId],
     queryFn: () => api<DesignView>(`/api/brands/${brandId}/design`),
@@ -98,6 +90,8 @@ export function StepDone({
         <h2 className="text-xl font-semibold tracking-tight">{t('title')}</h2>
         <p className="text-sm text-muted-foreground">{t('text')}</p>
       </div>
+
+      {state.data ? <ReadinessList readiness={state.data.readiness} onGo={onGo} /> : null}
 
       <dl className="grid gap-2 rounded-lg border p-4 text-sm sm:grid-cols-2 lg:grid-cols-3">
         {summary.map(([label, value]) => (
@@ -148,6 +142,9 @@ export function StepDone({
       ) : null}
 
       <ErrorBox error={finish.error} />
+      {state.data && !complete && canEdit ? (
+        <p className="text-sm text-muted-foreground">{t('incomplete')}</p>
+      ) : null}
       <div className="flex flex-col-reverse gap-2 border-t pt-4 sm:flex-row sm:items-center sm:justify-between">
         <Button type="button" variant="ghost" onClick={onBack} disabled={finish.isPending}>
           ← {ts('back')}
@@ -157,7 +154,7 @@ export function StepDone({
             <Button
               type="button"
               variant="outline"
-              disabled={!canEdit || finish.isPending}
+              disabled={!canEdit || !complete || finish.isPending}
               onClick={() => finish.mutate(false)}
             >
               {t('finishNoFlows')}
@@ -165,7 +162,7 @@ export function StepDone({
           ) : null}
           <Button
             type="button"
-            disabled={!canEdit || finish.isPending || !voice.isSuccess}
+            disabled={!canEdit || !complete || finish.isPending || !voice.isSuccess}
             onClick={() => finish.mutate(topics.length > 0)}
           >
             {finish.isPending ? t('finishing') : topics.length ? t('finish') : t('finishNoFlows')}
