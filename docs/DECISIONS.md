@@ -1590,3 +1590,18 @@ Odluka vlasnika (20.11.): pri unosu brenda korisnik mora da uradi sve, da profil
 - Integracioni testovi drugih delova isključuju proveru u servisima (`SOVA_BRAND_GATE=off` u okruženju testova); provere kompletnosti imaju svoj test. E2E radi sa pravom proverom: pripremljen brend je kompletan, a test registracije proverava zaključane strane.
 
 Razlog: zahtev vlasnika. Bez glasa, logoa i izgleda brenda Sova pravi generičke objave koje ne liče na brend.
+
+## D-175 · 20.11.2026 · usvojeno · Šabloni koje biznis popunjava sam
+
+Odluka vlasnika (20.11.): šabloni za sve što klijent mora sam da unese, a Sova ne sme da izmisli (predstavljanje tima, kvizovi, ankete, utisci klijenata, pre i posle i ostalo), koje korisnik popuni i kasnije zakaže.
+
+- Nova strana „Šabloni” (meni Sadržaj, `/app/templates`) sa 18 šablona u četiri grupe: Ljudi i poverenje (član tima, utisak klijenta, pre i posle, rezultat za klijenta, iza kulisa), Zajednica (kviz, anketa, česta pitanja, nagradna igra), Ponuda (akcija, novo u ponudi, cenovnik, događaj) i Vesti (jubilej, zapošljavamo, obaveštenje, nagrada i sertifikat, saradnja). Polja, oblici i provera unosa su u `lib/templates/catalog.ts` i `lib/schemas/templates.ts`.
+- Bez AI-ja i bez tokena: slajdove i opis slaže kod (`lib/templates/build.ts`) od onoga što je korisnik upisao, a dodaje samo kratke stalne reči (oznaka slajda, poziv da se glasa ili prijavi) na jeziku objava brenda; za ćirilicu se prevode samo te reči, podaci ostaju kako su upisani. Utisak se citira tačno. Zato šabloni rade i dok Gemini ne radi.
+- Slajdovi se crtaju istim crtačem kao ostale objave: stil, boje, font i logo brenda. Fotografije su samo korisnikove (galerija brenda ili otpremanje), nikad Unsplash ni Pexels; server prihvata samo sliku iz istog radnog prostora koja pripada ovom brendu ili nijednom. Tipografski stil sa fotografijom prelazi na „Poster”, a pre i posle i iza kulisa traže fotografiju na svakom slajdu. Pre i posle kao jedna slika je spoj dve fotografije jednu do druge (levo pre, desno posle), sačuvan u biblioteci brenda.
+- Bitni podaci su u tekstu koji crta svaki stil: popust, rezultat i broj jubileja u naslovu (istaknut broj crta samo stil „Statistika”), a odgovori ankete i kviza, stavke cenovnika i koraci nagradne igre u tekstu slajda, red po red (spisak crta samo stil „Lista”). Prelom reda u tekstu slajda sada ostaje prelom; tekst bez preloma se crta kao i ranije.
+- Anketa i kviz pozivaju na odgovor u komentarima: Instagram i Facebook kroz API nemaju prave ankete. Kviz u karuselu ima tačan odgovor na drugom slajdu.
+- Forma pokazuje pregled slajdova dok se kuca (pola sekunde posle poslednje izmene, ništa se ne čuva) i predlog opisa, koji korisnik menja; „Napravi nacrt” pravi nacrt sa izabranim mrežama (bez izbora sve povezane) i otvara ga u editoru, gde se zakazuje. Opis za X se skraćuje na 280 znakova.
+- Objava pamti šablon (`posts.design.fillTemplate`), pa „Generiši ponovo” za nju ne postoji (AI bi izmislio tekst); „Uskladi sa temom” je i dalje crta u novoj temi sa istim tekstom i fotografijama, a zamena fotografija (D-170) je preskače.
+- Šabloni traže kompletan brend (D-174), kao i ostalo pravljenje sadržaja. Bez migracije.
+
+Razlog: zahtev vlasnika. Ljudi, utisci, radovi, cene i datumi su podaci koje samo biznis ima; izmišljen utisak ili rad je obmana kupaca, a ovako biznis za par minuta ima objavu u svom stilu.

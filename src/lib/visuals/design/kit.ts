@@ -26,8 +26,18 @@ export const box = (style: Style, children?: Child | Child[]) =>
   el('div', { display: 'flex', ...style }, children)
 export const col = (style: Style, children?: Child | Child[]) =>
   el('div', { display: 'flex', flexDirection: 'column', ...style }, children)
+/**
+ * Tekst slajda. Prelom reda u tekstu (odgovori ankete i kviza, stavke cenovnika iz šablona, D-175)
+ * ostaje prelom: bez toga ga Satori pretvara u razmak. Tekst bez preloma se crta kao i ranije.
+ */
 export const text = (style: Style, value: string | null | undefined) =>
-  value ? el('div', { display: 'flex', ...style }, value) : null
+  value
+    ? el(
+        'div',
+        { display: 'flex', ...(value.includes('\n') ? { whiteSpace: 'pre-line' } : {}), ...style },
+        value,
+      )
+    : null
 export const img = (src: string, style: Style) => el('img', style, undefined, { src })
 
 export const px = (n: number) => `${Math.round(n)}px`

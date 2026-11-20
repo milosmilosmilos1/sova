@@ -74,7 +74,7 @@ Posle toga Sova redovno priprema nacrte. Početna pokazuje i rezultate za 30 dan
 
 - „Rad” (EN: Work): „Početna”, „Automatizuj objave” (EN: Automate posts), „Odobravanje” (EN: Approvals), „Inbox” (EN: Inbox), „DM automatizacija” (EN: DM automation), „Objave” (EN: Posts), „Kalendar” (EN: Calendar).
 - „Plan i rast” (EN: Planning and growth): „Mesečni plan” (EN: Monthly plan), „Strategija” (EN: Strategy), „Analitika” (EN: Analytics), „Autopilot” (EN: Autopilot).
-- „Sadržaj” (EN: Content): „AI Studio” (EN: AI Studio), „Galerija” (EN: Gallery), „Brain” (EN: Brain).
+- „Sadržaj” (EN: Content): „AI Studio” (EN: AI Studio), „Šabloni” (EN: Templates), „Galerija” (EN: Gallery), „Brain” (EN: Brain).
 - „Podešavanja” (EN: Settings): „Mreže” (EN: Networks), „Tim” (EN: Team), „Brend i nalog” (EN: Brand and account), „Predlozi i podrška” (EN: Ideas and support).
 
 Gore su birač radnog prostora, birač brenda (kad ih ima više) i link „Novi brend” (EN: New brand), a zvono pored logoa otvara obaveštenja. Na dnu su jezik interfejsa i odjava. Sve u aplikaciji važi za trenutno izabran brend.
@@ -186,6 +186,17 @@ Poruka košta 1 token. Poruka koja napravi objavu ne plaća se posebno, plaća s
 - „Tekst za objavu” (2 tokena) i „Vizual iz šablona” (2 tokena).
 - „Unsplash fotografije” i „Pexels video i fotografije”: bez tokena, u biblioteku brenda sa imenom autora.
 - „Iz Canve” i „Iz Figme”: ove veze još nisu dostupne svim korisnicima.
+
+### Šabloni
+
+„Šabloni” (EN: Templates) su objave sa podacima koje samo biznis zna, pa ih Sova ne izmišlja: korisnik popuni polja, Sova nacrta slajdove u stilu, bojama i sa logom brenda i složi opis. Ne troše tokene i ne koriste AI, pa rade i kad AI ne radi. Ima ih 18, u četiri grupe:
+
+- „Ljudi i poverenje”: „Član tima”, „Utisak klijenta”, „Pre i posle”, „Rezultat za klijenta”, „Iza kulisa”.
+- „Zajednica”: „Kviz”, „Anketa”, „Česta pitanja”, „Nagradna igra”.
+- „Ponuda”: „Akcija”, „Novo u ponudi”, „Cenovnik”, „Događaj”.
+- „Vesti”: „Jubilej”, „Zapošljavamo”, „Obaveštenje”, „Nagrada i sertifikat”, „Saradnja”.
+
+Kako ide: izaberite šablon i „Popuni”, upišite polja (neobavezna su označena), izaberite oblik („Jedna slika”, „Karusel” ili „Priča (9:16)”, koliko šablon nudi) i mreže (bez izbora idu sve povezane). Desno je „Pregled” slajdova, a ispod polja „Opis objave”, koji Sova složi od podataka; možete ga menjati, a „Vrati predlog” vraća Sovin. „Napravi nacrt” pravi nacrt i otvara ga u editoru, gde se zakazuje. Fotografije su samo vaše: „Iz galerije” ili „Otpremi” (PNG, JPEG, WebP); Sova ovde nikad ne uzima fotografije sa Unsplash-a ni Pexels-a. Utisak klijenta ide tačno kako je napisan. „Pre i posle” kao jedna slika stavlja dve fotografije jednu do druge (levo pre, desno posle), a kao karusel daje slajd pre, slajd posle i poziv. Anketa i kviz pozivaju na odgovor u komentarima, jer Instagram i Facebook kroz Sovu nemaju prave ankete. Objava iz šablona se ne može „Generiši ponovo”, jer bi AI izmislio tekst; menja se u editoru. Šabloni su dostupni kad je brend kompletno podešen.
 
 ### Ručni editor
 

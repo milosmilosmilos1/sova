@@ -833,5 +833,216 @@
     "signedOut": "Log in or create an account with the email address the invitation was sent to.",
     "login": "Log in",
     "register": "Create account"
+  },
+  "templates": {
+    "metaTitle": "Templates",
+    "title": "Templates",
+    "subtitle": "Posts built from your own details: team, reviews, projects, quizzes, offers and events. Fill in the fields, Sova draws them in your brand style, and you schedule them whenever you like. No tokens.",
+    "open": "Fill in",
+    "free": "No tokens",
+    "back": "All templates",
+    "viewOnly": "Your role can only view templates.",
+    "groups": {
+      "people": "People and trust",
+      "community": "Community",
+      "offer": "Offer",
+      "news": "News"
+    },
+    "items": {
+      "team": {
+        "name": "Team member",
+        "description": "Photo, name, role and a short story."
+      },
+      "testimonial": {
+        "name": "Client review",
+        "description": "The exact quote, name and rating."
+      },
+      "before_after": {
+        "name": "Before and after",
+        "description": "Two photos of your work.",
+        "fields": {
+          "title": "Project name (e.g. Bathroom, Camden)"
+        }
+      },
+      "case_study": {
+        "name": "Client result",
+        "description": "The challenge, what you did and the number that proves it."
+      },
+      "behind_scenes": {
+        "name": "Behind the scenes",
+        "description": "Up to six photos from your day.",
+        "fields": {
+          "text": "Short description"
+        }
+      },
+      "quiz": {
+        "name": "Quiz",
+        "description": "A question, answers and the correct one on the next slide."
+      },
+      "poll": {
+        "name": "Poll",
+        "description": "A question and up to four options to vote on in the comments."
+      },
+      "faq": {
+        "name": "FAQ",
+        "description": "Up to five questions customers really ask.",
+        "fields": {
+          "title": "Title (optional)"
+        }
+      },
+      "giveaway": {
+        "name": "Giveaway",
+        "description": "Prize, steps and deadline."
+      },
+      "offer": {
+        "name": "Offer",
+        "description": "Discount, deadline and code."
+      },
+      "launch": {
+        "name": "New in store",
+        "description": "A product or service, the price and where to buy.",
+        "fields": {
+          "name": "Product or service name"
+        }
+      },
+      "price_list": {
+        "name": "Price list",
+        "description": "Up to eight items with prices.",
+        "fields": {
+          "title": "Price list title",
+          "note": "Note (e.g. prices include VAT)"
+        }
+      },
+      "event": {
+        "name": "Event",
+        "description": "Date, time, place and sign-up.",
+        "fields": {
+          "title": "Event name"
+        }
+      },
+      "milestone": {
+        "name": "Milestone",
+        "description": "The number you’re celebrating: years, clients, projects.",
+        "fields": {
+          "title": "Title (e.g. Ten years with you)",
+          "text": "A few words of thanks"
+        }
+      },
+      "hiring": {
+        "name": "We’re hiring",
+        "description": "Role, what you offer, who you’re looking for and how to apply."
+      },
+      "announcement": {
+        "name": "Notice",
+        "description": "Opening hours, holidays, changes.",
+        "fields": {
+          "text": "What’s changing"
+        }
+      },
+      "award": {
+        "name": "Award and certificate",
+        "description": "What you received and from whom.",
+        "fields": {
+          "name": "Award or certificate name",
+          "text": "A few words about the award"
+        }
+      },
+      "partnership": {
+        "name": "Partnership",
+        "description": "A new partner and what you do together.",
+        "fields": {
+          "text": "What you do together"
+        }
+      }
+    },
+    "fields": {
+      "photo": "Photo",
+      "photos": "Photos",
+      "name": "Name",
+      "role": "Role",
+      "bio": "Short story",
+      "funFact": "Fun fact",
+      "quote": "The review, exactly as the client wrote it",
+      "author": "Client name",
+      "detail": "Who the client is (e.g. homeowner in Camden)",
+      "rating": "Rating",
+      "before": "Before photo",
+      "after": "After photo",
+      "title": "Title",
+      "note": "What was done",
+      "client": "Client (e.g. a restaurant in Leeds)",
+      "problem": "The challenge",
+      "solution": "What you did",
+      "result": "Result, as a number (e.g. +40%)",
+      "resultNote": "Next to the result (e.g. more bookings in three months)",
+      "text": "Text",
+      "question": "Question",
+      "answers": "Answers",
+      "correct": "Correct answer",
+      "explanation": "Explanation of the correct answer",
+      "options": "Options to vote on",
+      "pairs": "Questions and answers",
+      "prize": "Prize",
+      "steps": "Steps to enter",
+      "deadline": "Deadline",
+      "rules": "Rules (a link or a short note)",
+      "headline": "Offer headline",
+      "discount": "Discount (e.g. -20%)",
+      "details": "What’s included",
+      "validUntil": "Valid until",
+      "code": "Discount code",
+      "terms": "Terms",
+      "description": "Description",
+      "price": "Price",
+      "where": "Where to buy",
+      "prices": "Items and prices",
+      "date": "Date",
+      "time": "Time",
+      "place": "Place",
+      "signup": "Sign-up (link or phone)",
+      "number": "The number (e.g. 10 years)",
+      "position": "Role",
+      "location": "Location",
+      "offer": "What you offer",
+      "requirements": "Who you’re looking for",
+      "apply": "How to apply",
+      "dates": "Dates (e.g. 31 Dec – 2 Jan)",
+      "issuer": "Awarded by",
+      "year": "Year",
+      "partner": "Partner"
+    },
+    "ui": {
+      "format": "Format",
+      "formats": {
+        "image": "Single image",
+        "carousel": "Carousel",
+        "story": "Story (9:16)"
+      },
+      "optional": "optional",
+      "add": "Add",
+      "remove": "Remove",
+      "answer": "Answer",
+      "item": "Item",
+      "itemPrice": "Price",
+      "noRating": "No rating",
+      "fromGallery": "From gallery",
+      "upload": "Upload",
+      "uploading": "Uploading…",
+      "removePhoto": "Remove photo",
+      "photoHint": "Only your own photos: Sova never uses stock photos here.",
+      "preview": "Preview",
+      "previewEmpty": "Fill in the required fields and the preview appears here.",
+      "previewLoading": "Drawing…",
+      "slide": "Slide {n}",
+      "caption": "Caption",
+      "captionHint": "Sova puts it together from your details; edit it as you like.",
+      "captionReset": "Restore suggestion",
+      "accounts": "Networks",
+      "accountsHint": "With none selected, all connected networks are used.",
+      "noAccounts": "No connected networks. You can download the draft and post it yourself.",
+      "save": "Create draft",
+      "saving": "Creating draft…",
+      "savedHint": "The draft opens in the editor, where you schedule it."
+    }
   }
 }

@@ -209,6 +209,11 @@ export async function regeneratePost(viewer: Viewer, postId: string, version: nu
       'VALIDATION',
       'Ova objava nije napravljena iz teme, pa nema šta da se generiše ponovo.',
     )
+  if (ctx.fillTemplate)
+    throw new ApiError(
+      'VALIDATION',
+      'Objava iz šablona nosi vaš tekst, pa se ne generiše ponovo. Izmenite je u editoru objave.',
+    )
   if (ctx.format === 'video') return regenerateVideo(viewer, view, brand, ctx)
   const context = await buildBrandContext(brand, ctx.topic, ctx.locale)
   const copy = await generateDesignedCopy({

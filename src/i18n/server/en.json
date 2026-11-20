@@ -896,5 +896,22 @@
   "Pitanje ima najviše 1.000 znakova.": "A question can have at most 1,000 characters.",
   "Podrška: pitanje iz chatbota": "Support: question from the chatbot",
   "Razgovor je poslat podršci kao prijava problema. Status pratite u „Predlozi i podrška”.": "The conversation was sent to support as a problem report. Follow its status in “Ideas and support”.",
-  "Brend još nije kompletno podešen. Završite podešavanje (Brain, glas brenda i teme, logo, boje i stil), pa Sova pravi objave.": "The brand isn’t fully set up yet. Finish the setup (Brain, brand voice and topics, logo, colours and style), then Sova can make posts."
+  "Brend još nije kompletno podešen. Završite podešavanje (Brain, glas brenda i teme, logo, boje i stil), pa Sova pravi objave.": "The brand isn’t fully set up yet. Finish the setup (Brain, brand voice and topics, logo, colours and style), then Sova can make posts.",
+  "Previše stavki.": "Too many items.",
+  "Upišite bar jednu stavku.": "Add at least one item.",
+  "Upišite bar {0} stavke.": "Add at least {0} items.",
+  "Najviše {0} stavki.": "No more than {0} items.",
+  "Izaberite bar jednu fotografiju.": "Choose at least one photo.",
+  "Najviše {0} fotografija.": "No more than {0} photos.",
+  "Upišite bar jedno pitanje i odgovor.": "Add at least one question and answer.",
+  "Najviše {0} pitanja.": "No more than {0} questions.",
+  "Upišite bar jednu stavku sa cenom.": "Add at least one item with a price.",
+  "Ocena je od 1 do 5.": "The rating is from 1 to 5.",
+  "Izaberite datum.": "Choose a date.",
+  "Vreme je u obliku 18:30.": "Enter the time as 18:30.",
+  "Izaberite tačan odgovor.": "Choose the correct answer.",
+  "Opis ima najviše 2.200 znakova.": "The caption can have up to 2,200 characters.",
+  "Objava iz šablona nosi vaš tekst, pa se ne generiše ponovo. Izmenite je u editoru objave.": "A post from a template carries your own text, so it isn’t regenerated. Edit it in the post editor.",
+  "Ovaj šablon nema taj oblik objave.": "This template doesn’t come in that format.",
+  "Fotografija mora biti iz galerije ovog brenda.": "The photo must be from this brand’s gallery."
 }

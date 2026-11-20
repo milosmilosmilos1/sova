@@ -1309,6 +1309,7 @@ create table content_flow_runs (
 alter table posts add column flow_id uuid references content_flows(id) on delete set null;
 alter table posts add column design jsonb;          -- kontekst za „Generiši ponovo”: tema, format, stil, slajdovi, fotografije, jezik, mreže (migracija 032, D-111)
 -- posts.design.copy {slides, photoAssetIds}: tekst slajdova i fotografije iz njih, za izmenu slajda iz Studija; ownPhotos: fotografije je dao korisnik (D-116)
+-- posts.design.fillTemplate: šablon koji je biznis popunio (D-175, npr. team, quiz); takva objava se ne generiše ponovo (tekst je korisnikov)
 -- posts.design.colors {primary, secondary, background, text, muted} i fonts {headings, body}: tema u kojoj je objava nacrtana (D-121, D-125); po njima „Uskladi sa temom” zna da li je objava u trenutnoj temi brenda
 -- posts.design.format = 'video' i video {clipAssetIds, overlayAssetIds, seconds, posterAssetId, renderedAssetId}: video u temi (D-128); copy.slides su kadrovi, slojevi teksta su PNG sa providnošću, renderedAssetId je MP4 iz pregledača (bez njega nema zakazivanja)
 -- posts.design.copy.slides menja i korisnik kroz „Tekst na slikama” (D-129): vrsta slajda ostaje, a ponovo se crtaju samo izmenjeni slajdovi (izvor 'template', source_data.edit = 'text')

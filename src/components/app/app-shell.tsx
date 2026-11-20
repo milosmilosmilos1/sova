@@ -7,6 +7,7 @@ import {
   FileText,
   Home,
   Images,
+  LayoutTemplate,
   Inbox,
   Lightbulb,
   LogOut,
@@ -203,6 +204,10 @@ export function AppShell({
               <NavLink href="/app/studio">
                 <Sparkles aria-hidden />
                 {t('nav.studio')}
+              </NavLink>
+              <NavLink href="/app/templates">
+                <LayoutTemplate aria-hidden />
+                {t('nav.templates')}
               </NavLink>
               <NavLink href="/app/gallery">
                 <Images aria-hidden />

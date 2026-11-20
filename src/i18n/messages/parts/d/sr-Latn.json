@@ -833,5 +833,216 @@
     "signedOut": "Prijavite se ili napravite nalog sa email adresom na koju je pozivnica stigla.",
     "login": "Prijavite se",
     "register": "Napravite nalog"
+  },
+  "templates": {
+    "metaTitle": "Šabloni",
+    "title": "Šabloni",
+    "subtitle": "Objave sa vašim podacima: tim, utisci, radovi, kvizovi, akcije i događaji. Popunite polja, Sova ih nacrta u stilu brenda, a vi zakažete kad hoćete. Ne troše tokene.",
+    "open": "Popuni",
+    "free": "Bez tokena",
+    "back": "Svi šabloni",
+    "viewOnly": "Vaša uloga može samo da gleda šablone.",
+    "groups": {
+      "people": "Ljudi i poverenje",
+      "community": "Zajednica",
+      "offer": "Ponuda",
+      "news": "Vesti"
+    },
+    "items": {
+      "team": {
+        "name": "Član tima",
+        "description": "Fotografija, ime, uloga i kratka priča."
+      },
+      "testimonial": {
+        "name": "Utisak klijenta",
+        "description": "Tačan citat, ime i ocena."
+      },
+      "before_after": {
+        "name": "Pre i posle",
+        "description": "Dve fotografije vašeg rada.",
+        "fields": {
+          "title": "Naziv rada (npr. Kupatilo, Vračar)"
+        }
+      },
+      "case_study": {
+        "name": "Rezultat za klijenta",
+        "description": "Izazov, šta ste uradili i broj koji to dokazuje."
+      },
+      "behind_scenes": {
+        "name": "Iza kulisa",
+        "description": "Do šest fotografija iz vašeg dana.",
+        "fields": {
+          "text": "Kratak opis"
+        }
+      },
+      "quiz": {
+        "name": "Kviz",
+        "description": "Pitanje, odgovori i tačan odgovor na sledećem slajdu."
+      },
+      "poll": {
+        "name": "Anketa",
+        "description": "Pitanje i do četiri odgovora za glasanje u komentarima."
+      },
+      "faq": {
+        "name": "Česta pitanja",
+        "description": "Do pet pitanja koja kupci stvarno postavljaju.",
+        "fields": {
+          "title": "Naslov (neobavezno)"
+        }
+      },
+      "giveaway": {
+        "name": "Nagradna igra",
+        "description": "Nagrada, koraci i rok."
+      },
+      "offer": {
+        "name": "Akcija",
+        "description": "Popust, rok i kod."
+      },
+      "launch": {
+        "name": "Novo u ponudi",
+        "description": "Proizvod ili usluga, cena i gde se kupuje.",
+        "fields": {
+          "name": "Naziv proizvoda ili usluge"
+        }
+      },
+      "price_list": {
+        "name": "Cenovnik",
+        "description": "Do osam stavki sa cenama.",
+        "fields": {
+          "title": "Naslov cenovnika",
+          "note": "Napomena (npr. cene su sa PDV-om)"
+        }
+      },
+      "event": {
+        "name": "Događaj",
+        "description": "Datum, vreme, mesto i prijava.",
+        "fields": {
+          "title": "Naziv događaja"
+        }
+      },
+      "milestone": {
+        "name": "Jubilej",
+        "description": "Broj koji slavite: godine, klijenti, projekti.",
+        "fields": {
+          "title": "Naslov (npr. Deset godina sa vama)",
+          "text": "Par reči zahvalnosti"
+        }
+      },
+      "hiring": {
+        "name": "Zapošljavamo",
+        "description": "Pozicija, šta nudite, koga tražite i kako se prijaviti."
+      },
+      "announcement": {
+        "name": "Obaveštenje",
+        "description": "Radno vreme, praznici, promene.",
+        "fields": {
+          "text": "Šta se menja"
+        }
+      },
+      "award": {
+        "name": "Nagrada i sertifikat",
+        "description": "Šta ste dobili i od koga.",
+        "fields": {
+          "name": "Naziv nagrade ili sertifikata",
+          "text": "Par reči o nagradi"
+        }
+      },
+      "partnership": {
+        "name": "Saradnja",
+        "description": "Nov partner i šta radite zajedno.",
+        "fields": {
+          "text": "Šta radite zajedno"
+        }
+      }
+    },
+    "fields": {
+      "photo": "Fotografija",
+      "photos": "Fotografije",
+      "name": "Ime",
+      "role": "Uloga",
+      "bio": "Kratka priča",
+      "funFact": "Zanimljivost",
+      "quote": "Utisak, tačno kako ga je klijent napisao",
+      "author": "Ime klijenta",
+      "detail": "Ko je klijent (npr. vlasnica stana na Vračaru)",
+      "rating": "Ocena",
+      "before": "Fotografija pre",
+      "after": "Fotografija posle",
+      "title": "Naslov",
+      "note": "Šta je urađeno",
+      "client": "Klijent (npr. restoran u Novom Sadu)",
+      "problem": "Izazov",
+      "solution": "Šta ste uradili",
+      "result": "Rezultat, kao broj (npr. +40%)",
+      "resultNote": "Uz rezultat (npr. rezervacija za tri meseca)",
+      "text": "Tekst",
+      "question": "Pitanje",
+      "answers": "Odgovori",
+      "correct": "Tačan odgovor",
+      "explanation": "Objašnjenje uz tačan odgovor",
+      "options": "Odgovori za glasanje",
+      "pairs": "Pitanja i odgovori",
+      "prize": "Nagrada",
+      "steps": "Koraci za učešće",
+      "deadline": "Rok",
+      "rules": "Pravila (link ili kratko)",
+      "headline": "Naslov akcije",
+      "discount": "Popust (npr. -20%)",
+      "details": "Šta je na akciji",
+      "validUntil": "Važi do",
+      "code": "Kod za popust",
+      "terms": "Uslovi",
+      "description": "Opis",
+      "price": "Cena",
+      "where": "Gde se kupuje",
+      "prices": "Stavke i cene",
+      "date": "Datum",
+      "time": "Vreme",
+      "place": "Mesto",
+      "signup": "Prijava (link ili telefon)",
+      "number": "Broj koji slavite (npr. 10 godina)",
+      "position": "Pozicija",
+      "location": "Mesto rada",
+      "offer": "Šta nudite",
+      "requirements": "Koga tražite",
+      "apply": "Kako se prijaviti",
+      "dates": "Datumi (npr. 31.12–2.1.)",
+      "issuer": "Ko dodeljuje",
+      "year": "Godina",
+      "partner": "Partner"
+    },
+    "ui": {
+      "format": "Oblik",
+      "formats": {
+        "image": "Jedna slika",
+        "carousel": "Karusel",
+        "story": "Priča (9:16)"
+      },
+      "optional": "neobavezno",
+      "add": "Dodaj",
+      "remove": "Ukloni",
+      "answer": "Odgovor",
+      "item": "Stavka",
+      "itemPrice": "Cena",
+      "noRating": "Bez ocene",
+      "fromGallery": "Iz galerije",
+      "upload": "Otpremi",
+      "uploading": "Otpremam…",
+      "removePhoto": "Ukloni fotografiju",
+      "photoHint": "Samo vaše fotografije: Sova ovde nikad ne uzima tuđe.",
+      "preview": "Pregled",
+      "previewEmpty": "Popunite obavezna polja i pregled se pojavljuje ovde.",
+      "previewLoading": "Crtam…",
+      "slide": "Slajd {n}",
+      "caption": "Opis objave",
+      "captionHint": "Sova ga složi od vaših podataka; menjajte slobodno.",
+      "captionReset": "Vrati predlog",
+      "accounts": "Mreže",
+      "accountsHint": "Bez izbora idu sve povezane mreže.",
+      "noAccounts": "Nema povezanih mreža. Nacrt možete preuzeti i objaviti ručno.",
+      "save": "Napravi nacrt",
+      "saving": "Pravim nacrt…",
+      "savedHint": "Nacrt se otvara u editoru, gde ga zakazujete."
+    }
   }
 }

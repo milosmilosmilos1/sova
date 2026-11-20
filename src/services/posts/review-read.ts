@@ -254,7 +254,11 @@ export async function getReviewDetail(viewer: Viewer, postId: string): Promise<R
   return {
     post,
     flowName: (row?.content_flows as unknown as { name: string } | null)?.name ?? null,
-    canRegenerate: Boolean(design) && ['draft', 'in_review', 'rejected', 'canceled'].includes(post.status),
+    // objava iz šablona (D-175) nosi tekst biznisa: ponovo generisan tekst bi bio izmišljen
+    canRegenerate:
+      Boolean(design) &&
+      !design?.fillTemplate &&
+      ['draft', 'in_review', 'rejected', 'canceled'].includes(post.status),
     suggestedAt: suggested,
     limits: Object.fromEntries(
       post.targets.map((t) => [t.platform, PLATFORMS[t.platform as SocialPlatform]?.textMax ?? 2200]),

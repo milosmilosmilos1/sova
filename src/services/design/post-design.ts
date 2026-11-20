@@ -5,6 +5,7 @@ import { PLATFORMS } from '@/config/platforms'
 import { designColorsSchema, fontPairSchema } from '@/lib/schemas/design'
 import { PHOTO_SOURCES, POST_SIZES, SLIDES_MAX, STYLE_IDS } from '@/lib/visuals/design/catalog'
 import { LOGO_VERSION } from '@/lib/visuals/design/types'
+import { TEMPLATE_IDS } from '@/lib/templates/catalog'
 
 /** Tekst jednog slajda kako ga je napisao Gemini (D-116: Studio menja pojedinačne slajdove). */
 export const designSlideSchema = z.object({
@@ -59,6 +60,8 @@ export const postDesignSchema = z.object({
     .regex(/^[a-z0-9]{10}$/)
     .nullable()
     .optional(),
+  /** šablon koji je biznis popunio (D-175): tekst je korisnikov, pa se objava ne generiše ponovo */
+  fillTemplate: z.enum(TEMPLATE_IDS).optional(),
   copy: z
     .object({
       slides: z.array(designSlideSchema).min(1).max(SLIDES_MAX),
