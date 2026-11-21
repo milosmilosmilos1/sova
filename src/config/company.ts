@@ -15,8 +15,8 @@ export const company = {
   /** Registrovana adresa firme (Vajoming, SAD; merodavno pravo u uslovima korišćenja, s11). */
   address: '75 E 3rd St, Ste 7, Sheridan, WY 82801, USA',
   /** Kontakt za privatnost i brisanje podataka. */
-  privacyEmail: 'office@tangerineseo.com',
-  supportEmail: 'office@tangerineseo.com',
+  privacyEmail: 'podrska@sovaai.rs',
+  supportEmail: 'podrska@sovaai.rs',
   /** Datum poslednje izmene pravnih dokumenata. */
-  legalUpdatedAt: '2026-11-13',
+  legalUpdatedAt: '2026-11-22',
 } as const

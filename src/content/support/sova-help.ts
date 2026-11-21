@@ -396,7 +396,7 @@ Dugme „Vodič i podrška” je dole desno na svim stranama osim uvoda. Kartica
 
 Na strani „Predlozi i podrška” korisnici predlažu funkcije i glasaju. Ideje vide svi, bez imena autora, a status (Ideja, Planirano, U izradi, Gotovo, Odbijeno) menja tim Sove. Prijavu problema vide samo autor i tim Sove. Dobra prijava ima korake, tekst sa ekrana i naziv strane, a uz grešku i ID greške.
 
-Email podrške je office@tangerineseo.com, na srpskom ili engleskom.
+Email podrške je podrska@sovaai.rs, na srpskom ili engleskom.
 
 ## 12. Rešavanje čestih problema
 
@@ -431,7 +431,7 @@ Email podrške je office@tangerineseo.com, na srpskom ili engleskom.
 
 ## 13. Kada uputiti na podršku
 
-Ove slučajeve rešava čovek. Ponudi „Pošalji razgovor podršci”, „Prijavite problem” ili email office@tangerineseo.com.
+Ove slučajeve rešava čovek. Ponudi „Pošalji razgovor podršci”, „Prijavite problem” ili email podrska@sovaai.rs.
 
 - Naplata: povraćaj novca, sporna ili dupla naplata, računi i PDV, kupovina dok plaćanje nije uključeno, trajanje uvodne cene.
 - Brisanje naloga, radnog prostora ili brenda, vraćanje arhiviranog brenda, zahtevi za brisanje podataka.

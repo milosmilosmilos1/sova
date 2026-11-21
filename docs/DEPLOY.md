@@ -137,7 +137,13 @@ Za punu produkciju:
 5. **Turnstile**: domen `sovaai.netlify.app` (kasnije i `sovaai.rs`).
 6. **Canva i mreže**: adrese iz odeljka 6 sa domenom `sovaai.netlify.app` dok sovaai.rs nije povezan.
 7. **Kraj pregleda**: kad su svi ključevi uneti, obrišite `SOVA_PREVIEW` u Netlify-ju i pustite nov deploy; server tada opet traži sve ključeve.
-8. **Domen sovaai.rs** kasnije: Netlify → Domain management → Add a domain, DNS kod SuperHosting-a, zatim `NEXT_PUBLIC_APP_URL=https://sovaai.rs` i nov deploy. Do tada sajt nosi `noindex` i ne ulazi u pretragu.
+8. **Domen sovaai.rs** (kupljen 22.11.2026, D-179). DNS zona je na SuperHosting-u (alias na vlasnikovom cPanel nalogu, menja se kroz cPanel API `DNS/mass_edit_zone`): `@` A 75.2.60.5, `www` CNAME sovaai.netlify.app, MX `mail.sovaai.rs` (A 45.80.132.100), SPF `v=spf1 +mx +ip4:45.80.132.100 ~all`, DKIM `default._domainkey`, DMARC `p=none`. Sandučići `podrska@` i `info@` sa kopijom na Gmail. Redosled:
+   1. SuperHosting korisnički profil → Domeni → sovaai.rs → nameserveri `ns7.superhosting.rs` i `ns8.superhosting.rs`; potvrda registracije linkom iz RNIDS mejla (rok 20 dana, inače suspenzija).
+   2. Netlify → Domain management → Add a domain → `sovaai.rs` (spoljni DNS), postaviti kao primarni; `www` se dodaje sam. HTTPS: Let's Encrypt se izdaje kad DNS pokazuje na Netlify.
+   3. Supabase → Authentication → URL Configuration: Site URL `https://sovaai.rs`, Redirect URLs dodati `https://sovaai.rs/**` (stare `sovaai.netlify.app` ostaju dok traje prelazak).
+   4. Kod svake mreže dodati adrese iz odeljka 6 sa `https://sovaai.rs` (stare ostaju): Meta (i App Domains, Website, politika, uslovi, deauthorize i data deletion), Google (Authorized domains i redirect URI-ji), LinkedIn, TikTok, Canva.
+   5. Netlify env `NEXT_PUBLIC_APP_URL=https://sovaai.rs`, nov deploy, `curl -X PUT https://sovaai.rs/api/inngest`.
+   6. Resend: nalog, domen `sovaai.rs` (region eu-west-1), zapisi u zonu, verifikacija, `RESEND_API_KEY` i `EMAIL_FROM` u Netlify, SMTP u Supabase-u (korak 2).
 
 **Obaveštenja na telefonu (D-118)**: napravite par ključeva (`npx web-push generate-vapid-keys`) i dodajte `VAPID_PUBLIC_KEY` i `VAPID_PRIVATE_KEY` u Netlify (privatni ključ kao tajnu), pa nov deploy. Bez njih kartica na početnoj nudi samo instalaciju.
 

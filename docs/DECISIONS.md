@@ -1643,3 +1643,16 @@ Zahtev vlasnika (21.11.): u kalendaru opcija „Otkaži” za svaku objavu poseb
 - Otkazana objava ostaje u kalendaru, bleđa i precrtana; vraća se u nacrte iz filtera „Odbijeno i otkazano” na strani Objave.
 
 Razlog: zahtev vlasnika; ranije je otkazivanje tražilo otvaranje svake objave posebno.
+
+## D-179 · 22.11.2026 · usvojeno · Domen sovaai.rs: DNS i mejl na SuperHosting-u, sajt na Netlify-ju
+
+Vlasnik je 22.11. kupio sovaai.rs kod SuperHosting-a (samo domen, bez hostinga) i tražio da se domen poveže sa Sovom i da se srede mejlovi.
+
+- DNS zona je na SuperHosting-u: sovaai.rs je alias (parked) domen na vlasnikovom SuperHosting cPanel nalogu, jer su tamo sva dodatna mesta za domene zauzeta, a alias nema ograničenje. Alias služi samo za zonu i sandučiće; sajt se ne servira sa hostinga. Nameserveri treba da budu ns7.superhosting.rs i ns8.superhosting.rs (menja vlasnik u korisničkom profilu SuperHosting-a; domen je stigao na ns1/ns2.dns-parking.com).
+- Sajt: `sovaai.rs` A 75.2.60.5 (Netlify load balancer za spoljni DNS), `www` CNAME sovaai.netlify.app. Netlify sam prebacuje www na glavni domen, a sovaai.netlify.app ne prebacuje, pa stara adresa radi i posle prelaska (Netlify šalje kanonsko zaglavlje, a kanonske adrese sajta idu na `NEXT_PUBLIC_APP_URL`).
+- Mejl: MX `mail.sovaai.rs` (A 45.80.132.100, mejl server hostinga), a ne apeks, jer apeks vodi na Netlify. SPF `v=spf1 +mx +ip4:45.80.132.100 ~all` (cPanel je upisao stari IP 45.80.132.23 i `+a`, koji bi posle prelaska značio Netlify), DKIM `default._domainkey` od cPanel-a, DMARC `p=none`. Prijem mejla je lokalan.
+- Sandučići `podrska@sovaai.rs` (podrška, privatnost i brisanje podataka) i `info@sovaai.rs` (prijave na mreže i servise), oba sa kopijom na vlasnikov Gmail; lozinke u vlasnikovom fajlu sa pristupima, van repoa. Kontakt u `company.ts` i u tekstu pomoći je `podrska@sovaai.rs`; firma i adresa ostaju TangerineSEO LLC.
+- Mejlovi aplikacije idu kroz Resend sa `noreply@sovaai.rs` (Resend koristi poddomen `send.sovaai.rs` za povratnu adresu, pa apeks SPF ostaje za mejl server hostinga). Zapise za Resend upisujemo kroz cPanel API kad vlasnik napravi Resend nalog.
+- Redosled prelaska: DNS, pa domen u Netlify-ju i sertifikat, pa adrese u Supabase Auth-u i kod mreža (nova se dodaje, stara ostaje dok traje prelazak), pa tek onda `NEXT_PUBLIC_APP_URL=https://sovaai.rs` i nov deploy. Obrnut redosled bi pokvario povezivanje mreža, jer aplikacija šalje adresu za povratak iz `NEXT_PUBLIC_APP_URL`.
+
+Razlog: zahtev vlasnika; domen je i prvi uslov za odobrenja mreža (ODOBRENJA.md, odeljak 1).
