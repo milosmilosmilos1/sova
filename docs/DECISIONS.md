@@ -1631,3 +1631,15 @@ Odluka vlasnika (21.11.): jezici objava se ne mešaju; šta je na engleskom ide 
 - Uvod, korak Brend: kad je sajt na jednom jeziku, a objave na drugom, napomena kaže oba jezika i da se jezik objava menja u prvom koraku. Predlog poziva na akciju je uvek na jeziku objava.
 
 Razlog: zahtev vlasnika; objava koja meša jezike izgleda nemarno i zbunjuje publiku.
+
+## D-178 · 21.11.2026 · usvojeno · Otkazivanje pojedinačne objave iz kalendara
+
+Zahtev vlasnika (21.11.): u kalendaru opcija „Otkaži” za svaku objavu posebno.
+
+- Kalendar ima „Otkaži” na četiri mesta: iks na pločici objave u mreži meseca i nedelje (vidi se kad je miš iznad pločice ili je fokus na njoj, a na ekranu na dodir uvek), iks u listi „Sledećih 7 dana”, dugme „Otkaži” u kartici sledeće objave i u listi objava meseca. Pre otkazivanja korisnik potvrđuje u dijalogu.
+- Otkazuje se iz stanja nacrt, na odobrenju, odobreno, zakazano, pauzirano i neuspelo; objava na odobrenju se prvo povlači sa odobravanja. Objavljena i ona koja se upravo objavljuje nemaju dugme.
+- Dugme vide vlasnik, administrator i urednik (isto pravilo kao radnja `cancel` na serveru); odobravač i posmatrač ga ne vide, a server ih odbija i kad pošalju zahtev.
+- Kalendar koristi postojeću radnju „Preskoči” (`POST /api/posts/bulk`, `action: 'skip'`) sa jednom objavom: server sam čita stanje i verziju, pa nema sukoba sa starom verzijom iz kalendara, a nema ni nove rute ni migracije. Mreže objave dobijaju status otkazano i termin se oslobađa za red objava.
+- Otkazana objava ostaje u kalendaru, bleđa i precrtana; vraća se u nacrte iz filtera „Odbijeno i otkazano” na strani Objave.
+
+Razlog: zahtev vlasnika; ranije je otkazivanje tražilo otvaranje svake objave posebno.

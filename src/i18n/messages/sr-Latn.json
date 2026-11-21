@@ -1542,6 +1542,10 @@
     "weekEmpty": "Ništa nije zakazano za narednu nedelju.",
     "monthList": "Objave · {month}",
     "monthEmpty": "U ovom mesecu nema objava.",
+    "cancel": "Otkaži",
+    "cancelPost": "Otkaži objavu: {title}",
+    "cancelConfirm": "Otkazati objavu „{title}”? Neće biti objavljena ni na jednoj mreži. Kasnije je možete vratiti u nacrte i zakazati ponovo.",
+    "canceled": "Objava je otkazana.",
     "status": {
       "draft": "Nacrt",
       "in_review": "Na odobravanju",

@@ -5,7 +5,7 @@ import { getTranslations } from 'next-intl/server'
 import { CalendarClient } from '@/components/posts/calendar-client'
 import { getCurrentBrand } from '@/lib/auth/brand'
 import { getViewer } from '@/lib/auth/viewer'
-import { getCurrentWorkspace } from '@/lib/auth/workspace'
+import { EDIT_ROLES, getCurrentWorkspace } from '@/lib/auth/workspace'
 import { requireCompleteBrand } from '@/lib/auth/brand-ready'
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -21,5 +21,12 @@ export default async function CalendarPage() {
   const brand = await getCurrentBrand(viewer, current.workspaceId)
   if (!brand) redirect('/app/settings')
   await requireCompleteBrand(brand.id)
-  return <CalendarClient brandId={brand.id} timezone={brand.timezone} />
+  // otkazuju vlasnik, administrator i urednik (isto pravilo kao za radnju „cancel” na serveru)
+  return (
+    <CalendarClient
+      brandId={brand.id}
+      timezone={brand.timezone}
+      canCancel={EDIT_ROLES.includes(current.role)}
+    />
+  )
 }

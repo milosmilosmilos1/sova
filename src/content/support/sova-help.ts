@@ -281,7 +281,7 @@ U editoru objave, „Javni link za klijenta” (EN: Public link for the client),
 
 ### Kalendar i Objave
 
-„Kalendar” pokazuje objave po mesecu ili nedelji, u zoni brenda. „Objave” je lista sa filterima Nacrti, Na odobrenju, Odobreno, Zakazano, Objavljeno, Neuspelo i Odbijeno i otkazano.
+„Kalendar” pokazuje objave po mesecu ili nedelji, u zoni brenda. Svaka objava u kalendaru može da se otkaže posebno: iks na pločici objave (vidi se kad pređete mišem preko nje, a na telefonu uvek), iks u listi „Sledećih 7 dana” i dugme „Otkaži” u kartici sledeće objave i u listi objava meseca. Sova pre toga pita za potvrdu. Otkazana objava se ne objavljuje ni na jednoj mreži, ostaje u kalendaru precrtana i vraća se iz filtera „Odbijeno i otkazano” na strani Objave („Vrati u nacrt”, pa novo zakazivanje). Objava na odobrenju se pri otkazivanju prvo povlači sa odobravanja. Objavljena objava i ona koja se upravo objavljuje ne otkazuju se. Otkazuju vlasnik, administrator i urednik. „Objave” je lista sa filterima Nacrti, Na odobrenju, Odobreno, Zakazano, Objavljeno, Neuspelo i Odbijeno i otkazano.
 
 ### Pravila zakazivanja
 

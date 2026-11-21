@@ -1542,6 +1542,10 @@
     "weekEmpty": "Nothing is scheduled for the coming week.",
     "monthList": "Posts · {month}",
     "monthEmpty": "No posts this month.",
+    "cancel": "Cancel",
+    "cancelPost": "Cancel post: {title}",
+    "cancelConfirm": "Cancel the post “{title}”? It won't be published on any network. You can move it back to drafts and schedule it again later.",
+    "canceled": "The post was canceled.",
     "status": {
       "draft": "Draft",
       "in_review": "In review",

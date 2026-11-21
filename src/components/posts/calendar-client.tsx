@@ -1,21 +1,23 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import {
   CalendarCheck,
   CalendarClock,
   CalendarDays,
   ChevronLeft,
   ChevronRight,
+  LoaderCircle,
   Plus,
   Sparkles,
+  X,
   type LucideIcon,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useFormatter, useLocale, useTranslations } from 'next-intl'
 import { useMemo, useState } from 'react'
 
-import { api } from '@/components/shared/api-client'
+import { api, bulkRequest } from '@/components/shared/api-client'
 import { ErrorBox } from '@/components/shared/error-box'
 import { NetworkIcons, NetworkNames } from '@/components/shared/network-badge'
 import { statusTone } from '@/components/shared/status-badge'
@@ -51,6 +53,13 @@ type PostStatusKey =
 /** legenda boja stanja; iste boje su na listi objava i u Odobravanju (`statusTone`, D-137) */
 const LEGEND = ['scheduled', 'published', 'in_review', 'failed'] as const
 
+/**
+ * Stanja iz kojih se objava otkazuje iz kalendara (D-178). Objava na odobravanju se prvo vraća u
+ * nacrte pa otkazuje, isto kao „Preskoči” u Odobravanju; objavljena i ona koja se upravo objavljuje
+ * ne mogu da se otkažu.
+ */
+const CANCELABLE = new Set(['draft', 'in_review', 'approved', 'scheduled', 'paused', 'failed'])
+
 /** Dan objave u zoni brenda kao YYYY-MM-DD. */
 function zonedDay(iso: string, timeZone: string): string {
   return new Intl.DateTimeFormat('en-CA', {
@@ -85,12 +94,39 @@ function useCalendar(brandId: string, from: Date, to: Date, tag: string) {
 
 /**
  * Kalendar (D-115): mesec ili nedelja sa pločicama dana (sličica, vreme, mreže), brojači, sledeća
- * objava i sledećih sedam dana. Dani su u zoni brenda.
+ * objava i sledećih sedam dana. Dani su u zoni brenda. Svaka objava može da se otkaže pojedinačno
+ * (D-178), sa pločice, iz liste sledećih sedam dana i iz liste meseca.
  */
-export function CalendarClient({ brandId, timezone }: { brandId: string; timezone: string }) {
+export function CalendarClient({
+  brandId,
+  timezone,
+  canCancel = false,
+}: {
+  brandId: string
+  timezone: string
+  /** vlasnik, administrator i urednik; ostali ne vide dugme */
+  canCancel?: boolean
+}) {
   const t = useTranslations('calendar')
   const format = useFormatter()
   const locale = useLocale()
+  const qc = useQueryClient()
+  // otkazivanje ide kroz „Preskoči” (POST /api/posts/bulk): server sam čita verziju i stanje objave,
+  // proverava ulogu i objavu sa odobravanja prvo vraća u nacrte
+  const cancel = useMutation({
+    mutationFn: async (postId: string) => {
+      const r = await bulkRequest('/api/posts/bulk', { action: 'skip' }, [postId])
+      if (r.failed[0]) throw new Error(r.failed[0].message)
+      return postId
+    },
+    onSettled: () => qc.invalidateQueries({ queryKey: ['calendar', brandId] }),
+  })
+  const canceling = (item: Item) => cancel.isPending && cancel.variables === item.postId
+  const cancelable = (item: Item) => canCancel && CANCELABLE.has(item.status)
+  const askCancel = (item: Item) => {
+    if (cancel.isPending) return
+    if (window.confirm(t('cancelConfirm', { title: title(item) }))) cancel.mutate(item.postId)
+  }
   // trenutak otvaranja strane: „danas”, „sledeće” i slobodan dan se računaju od njega
   const [nowMs] = useState(() => Date.now())
   const todayKey = zonedDay(new Date(nowMs).toISOString(), timezone)
@@ -203,7 +239,10 @@ export function CalendarClient({ brandId, timezone }: { brandId: string; timezon
           }
         />
       </div>
-      <ErrorBox error={grid.error ?? upcoming.error} />
+      <ErrorBox error={grid.error ?? upcoming.error ?? cancel.error} />
+      <p className="sr-only" role="status">
+        {cancel.isSuccess ? t('canceled') : ''}
+      </p>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-[minmax(0,1fr)_300px]">
         <section className="space-y-3 rounded-xl border bg-card p-3 sm:p-4">
@@ -288,35 +327,55 @@ export function CalendarClient({ brandId, timezone }: { brandId: string; timezon
                       {d.getUTCDate()}
                     </span>
                     {items.slice(0, limit).map((item) => (
-                      <Link
-                        key={item.postId}
-                        href={`/app/posts/${item.postId}`}
-                        className="flex items-center gap-1.5 rounded-md bg-muted/60 p-1 text-xs transition-colors hover:bg-muted"
-                        title={title(item)}
-                      >
-                        {item.thumb ? (
-                          // eslint-disable-next-line @next/next/no-img-element -- potpisan URL iz skladišta
-                          <img
-                            src={item.thumb}
-                            alt=""
-                            className="size-7 shrink-0 rounded object-cover"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <span
-                            className={cn('ml-1 size-2 shrink-0 rounded-full', statusTone(item.status).dot)}
-                            aria-hidden
-                          />
-                        )}
-                        <span className="min-w-0">
-                          <span className="flex items-center gap-1 font-medium tabular-nums">
-                            {time(item.scheduledFor!)}
-                            <NetworkIcons platforms={platformsOf(item)} size={11} />
+                      <div key={item.postId} className="group/tile relative">
+                        <Link
+                          href={`/app/posts/${item.postId}`}
+                          className={cn(
+                            'flex items-center gap-1.5 rounded-md bg-muted/60 p-1 text-xs transition-colors hover:bg-muted',
+                            cancelable(item) && 'pr-6',
+                            item.status === 'canceled' && 'opacity-60',
+                          )}
+                          title={title(item)}
+                        >
+                          {item.thumb ? (
+                            // eslint-disable-next-line @next/next/no-img-element -- potpisan URL iz skladišta
+                            <img
+                              src={item.thumb}
+                              alt=""
+                              className="size-7 shrink-0 rounded object-cover"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <span
+                              className={cn('ml-1 size-2 shrink-0 rounded-full', statusTone(item.status).dot)}
+                              aria-hidden
+                            />
+                          )}
+                          <span className="min-w-0">
+                            <span className="flex items-center gap-1 font-medium tabular-nums">
+                              {time(item.scheduledFor!)}
+                              <NetworkIcons platforms={platformsOf(item)} size={11} />
+                            </span>
+                            <span
+                              className={cn(
+                                'block truncate text-muted-foreground',
+                                item.status === 'canceled' && 'line-through',
+                              )}
+                            >
+                              {title(item)}
+                            </span>
                           </span>
-                          <span className="block truncate text-muted-foreground">{title(item)}</span>
-                        </span>
-                        <span className="sr-only">{t(`status.${item.status as PostStatusKey}`)}</span>
-                      </Link>
+                          <span className="sr-only">{t(`status.${item.status as PostStatusKey}`)}</span>
+                        </Link>
+                        {cancelable(item) ? (
+                          <CancelButton
+                            label={t('cancelPost', { title: title(item) })}
+                            pending={canceling(item)}
+                            onClick={() => askCancel(item)}
+                            className="absolute top-1/2 right-0.5 -translate-y-1/2 opacity-0 group-focus-within/tile:opacity-100 group-hover/tile:opacity-100 [@media(hover:none)]:opacity-100"
+                          />
+                        ) : null}
+                      </div>
                     ))}
                     {items.length > limit ? (
                       <span className="px-1 text-xs text-muted-foreground">
@@ -352,14 +411,33 @@ export function CalendarClient({ brandId, timezone }: { brandId: string; timezon
                     minute: '2-digit',
                   })}
                 </p>
-                <Button
-                  variant="secondary"
-                  size="sm"
-                  nativeButton={false}
-                  render={<Link href={`/app/posts/${next[0].postId}`} />}
-                >
-                  {t('open')}
-                </Button>
+                <div className="flex flex-wrap gap-2">
+                  <Button
+                    variant="secondary"
+                    size="sm"
+                    nativeButton={false}
+                    render={<Link href={`/app/posts/${next[0].postId}`} />}
+                  >
+                    {t('open')}
+                  </Button>
+                  {cancelable(next[0]) ? (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="text-white hover:bg-white/15 hover:text-white"
+                      disabled={cancel.isPending}
+                      onClick={() => askCancel(next[0]!)}
+                      aria-label={t('cancelPost', { title: title(next[0]) })}
+                    >
+                      {canceling(next[0]) ? (
+                        <LoaderCircle className="animate-spin" aria-hidden />
+                      ) : (
+                        <X aria-hidden />
+                      )}
+                      {t('cancel')}
+                    </Button>
+                  ) : null}
+                </div>
               </div>
             ) : (
               <div className="space-y-3 py-6 text-center">
@@ -387,10 +465,10 @@ export function CalendarClient({ brandId, timezone }: { brandId: string; timezon
                   .filter((i) => new Date(i.scheduledFor!).getTime() < nowMs + 7 * DAY)
                   .slice(0, 6)
                   .map((item) => (
-                    <li key={item.postId}>
+                    <li key={item.postId} className="group/row flex items-start gap-1">
                       <Link
                         href={`/app/posts/${item.postId}`}
-                        className="flex items-start gap-2 rounded-lg p-1.5 text-sm hover:bg-muted"
+                        className="flex min-w-0 flex-1 items-start gap-2 rounded-lg p-1.5 text-sm hover:bg-muted"
                       >
                         <span
                           className={cn('mt-1.5 size-2 shrink-0 rounded-full', statusTone(item.status).dot)}
@@ -413,6 +491,14 @@ export function CalendarClient({ brandId, timezone }: { brandId: string; timezon
                           </span>
                         </span>
                       </Link>
+                      {cancelable(item) ? (
+                        <CancelButton
+                          label={t('cancelPost', { title: title(item) })}
+                          pending={canceling(item)}
+                          onClick={() => askCancel(item)}
+                          className="mt-1 opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100 [@media(hover:none)]:opacity-100"
+                        />
+                      ) : null}
                     </li>
                   ))}
               </ul>
@@ -430,10 +516,13 @@ export function CalendarClient({ brandId, timezone }: { brandId: string; timezon
         {inMonth.length ? (
           <ul className="divide-y">
             {inMonth.map((item) => (
-              <li key={item.postId}>
+              <li key={item.postId} className="flex items-center gap-2">
                 <Link
                   href={`/app/posts/${item.postId}`}
-                  className="flex items-center gap-3 py-2.5 text-sm hover:bg-muted/50"
+                  className={cn(
+                    'flex min-w-0 flex-1 items-center gap-3 py-2.5 text-sm hover:bg-muted/50',
+                    item.status === 'canceled' && 'text-muted-foreground',
+                  )}
                 >
                   <span className="w-32 shrink-0 text-muted-foreground tabular-nums">
                     {format.dateTime(new Date(item.scheduledFor!), {
@@ -444,12 +533,37 @@ export function CalendarClient({ brandId, timezone }: { brandId: string; timezon
                       minute: '2-digit',
                     })}
                   </span>
-                  <span className="min-w-0 flex-1 truncate">{title(item)}</span>
+                  <span
+                    className={cn('min-w-0 flex-1 truncate', item.status === 'canceled' && 'line-through')}
+                  >
+                    {title(item)}
+                  </span>
                   <span className="hidden shrink-0 items-center gap-1.5 text-xs text-muted-foreground sm:flex">
                     <span className={cn('size-2 rounded-full', statusTone(item.status).dot)} aria-hidden />
                     {t(`status.${item.status as PostStatusKey}`)}
                   </span>
                 </Link>
+                {canCancel ? (
+                  // stalna kolona, da se dugmad poravnaju i kad neka objava nema šta da se otkaže
+                  <span className="w-20 shrink-0 text-right">
+                    {cancelable(item) ? (
+                      <Button
+                        size="xs"
+                        variant="ghost"
+                        disabled={cancel.isPending}
+                        onClick={() => askCancel(item)}
+                        aria-label={t('cancelPost', { title: title(item) })}
+                      >
+                        {canceling(item) ? (
+                          <LoaderCircle className="animate-spin" aria-hidden />
+                        ) : (
+                          <X aria-hidden />
+                        )}
+                        {t('cancel')}
+                      </Button>
+                    ) : null}
+                  </span>
+                ) : null}
               </li>
             ))}
           </ul>
@@ -458,6 +572,40 @@ export function CalendarClient({ brandId, timezone }: { brandId: string; timezon
         ) : null}
       </section>
     </div>
+  )
+}
+
+/** Malo dugme „Otkaži” (iks) uz objavu; potvrdu pita roditelj. */
+function CancelButton({
+  label,
+  pending,
+  onClick,
+  className,
+}: {
+  label: string
+  pending: boolean
+  onClick: () => void
+  className?: string
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={pending}
+      aria-label={label}
+      title={label}
+      className={cn(
+        'grid size-5 shrink-0 place-items-center rounded-md text-muted-foreground transition-opacity hover:bg-destructive/10 hover:text-destructive focus-visible:opacity-100 focus-visible:outline-2 focus-visible:outline-ring',
+        className,
+        pending && 'opacity-100',
+      )}
+    >
+      {pending ? (
+        <LoaderCircle className="size-3 animate-spin" aria-hidden />
+      ) : (
+        <X className="size-3" aria-hidden />
+      )}
+    </button>
   )
 }
 
