@@ -1,7 +1,8 @@
 import 'server-only'
 
+import { isAppLocale } from '@/i18n/config'
 import { ApiError } from '@/lib/api/errors'
-import { env } from '@/lib/env'
+import { resendConfirmation } from '@/lib/auth/email-links'
 import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError } from '@/lib/supabase/errors'
@@ -583,12 +584,20 @@ export async function resendVerification(ctx: AdminContext, userId: string): Pro
   const { data: authRows } = await admin.rpc('admin_auth_users', { p_ids: [userId] })
   const confirmed = ((authRows ?? []) as Array<{ email_confirmed_at: string | null }>)[0]?.email_confirmed_at
   if (confirmed || target.email_verified_at) throw new ApiError('CONFLICT', 'Email je već potvrđen.')
-  const { error } = await admin.auth.resend({
-    type: 'signup',
-    email: target.email,
-    options: { emailRedirectTo: `${env.NEXT_PUBLIC_APP_URL}/auth/callback?next=/app/onboarding` },
-  })
-  if (error) throw new ApiError('PROVIDER_ERROR', `Slanje nije uspelo: ${error.message}`)
+  // mejl šalje Sova, kao i pri registraciji (D-187)
+  try {
+    const sent = await resendConfirmation({
+      email: String(target.email).toLowerCase(),
+      locale: isAppLocale(target.locale) ? target.locale : 'sr-Latn',
+    })
+    if (sent === 'confirmed') throw new ApiError('CONFLICT', 'Email je već potvrđen.')
+  } catch (error) {
+    if (error instanceof ApiError) throw error
+    throw new ApiError(
+      'PROVIDER_ERROR',
+      `Slanje nije uspelo: ${error instanceof Error ? error.message : String(error)}`,
+    )
+  }
   await logAdminAction(ctx, { action: 'user.resend_verification', targetType: 'user', targetId: userId })
 }
 

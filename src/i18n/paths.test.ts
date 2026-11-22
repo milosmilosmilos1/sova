@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { alternatesFor, detectLocale, isPublicPath, localePath, splitLocalePath } from './paths'
+import { alternatesFor, isPublicPath, localePath, splitLocalePath } from './paths'
 
 describe('jezik u adresi javnog sajta (D-130)', () => {
   it('putanja na jeziku: prefiks, engleska reč za kontakt, upit i sidro ostaju', () => {
@@ -35,16 +35,5 @@ describe('jezik u adresi javnog sajta (D-130)', () => {
       canonical: '/en/contact',
       languages: { sr: '/kontakt', en: '/en/contact', 'x-default': '/kontakt' },
     })
-  })
-
-  it('prva poseta: region čita srpski, ostali jezici engleski', () => {
-    expect(detectLocale(null)).toBe('sr-Latn')
-    expect(detectLocale('sr-RS,sr;q=0.9,en;q=0.8')).toBe('sr-Latn')
-    expect(detectLocale('hr-HR,hr;q=0.9')).toBe('sr-Latn')
-    expect(detectLocale('uk-UA,uk;q=0.9,en;q=0.8')).toBe('en')
-    expect(detectLocale('ru-RU,ru;q=0.9,uk;q=0.8,en;q=0.7')).toBe('en')
-    expect(detectLocale('en-US,en;q=0.9')).toBe('en')
-    expect(detectLocale('de-DE,de;q=0.9')).toBe('en')
-    expect(detectLocale('en;q=0.5,hr;q=0.9')).toBe('sr-Latn')
   })
 })

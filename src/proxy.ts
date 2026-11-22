@@ -29,8 +29,6 @@ export async function proxy(request: NextRequest) {
     cookie: cookieLocale,
     method: request.method,
     accept: request.headers.get('accept'),
-    acceptLanguage: request.headers.get('accept-language'),
-    userAgent: request.headers.get('user-agent'),
     rsc: request.headers.has('rsc'),
   })
   // interna putanja: bez prefiksa jezika (/en/contact → /kontakt)

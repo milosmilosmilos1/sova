@@ -21,8 +21,9 @@ async function register(page: Page, user: { name: string; email: string; passwor
 }
 
 async function confirmEmail(page: Page, email: string) {
-  const mail = await waitForEmail(email, 'Confirm')
-  const link = extractLink(mail, '/auth/v1/verify')
+  // mejl šalje Sova (D-187), na jeziku strane registracije, sa token_hash linkom na naš callback
+  const mail = await waitForEmail(email, 'Potvrdite email adresu')
+  const link = extractLink(mail, '/auth/callback?token_hash=')
   await page.goto(link)
 }
 

@@ -93,8 +93,6 @@ describe('članci bloga (D-186)', () => {
       cookie: 'en',
       method: 'GET',
       accept: 'text/html',
-      acceptLanguage: null,
-      userAgent: 'Mozilla/5.0',
       rsc: false,
     }
     expect(routeLocale(req)).toEqual({

@@ -120,6 +120,8 @@ export function buildServerEnvSchema(mode: EnvMode) {
     // Email
     RESEND_API_KEY: prodOnly(z.string().min(10)),
     EMAIL_FROM: z.string().default('Sova <noreply@sovaai.rs>'),
+    /** lokalno i u CI-ju, bez Resend-a: mejlovi idu u Mailpit lokalnog Supabase-a (podrazumevano uz lokalni Supabase) */
+    MAILPIT_URL: z.url().optional(),
 
     // Monitoring i zaštita
     SENTRY_DSN: z.url().optional(),

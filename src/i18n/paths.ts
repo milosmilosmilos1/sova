@@ -95,34 +95,4 @@ export function alternatesFor(locale: AppLocale, path: string) {
   }
 }
 
-/** Jezici bliski srpskom: posetilac iz regiona čita srpsku verziju. */
-const REGIONAL = new Set(['sr', 'hr', 'bs', 'me', 'sh', 'cnr', 'sl', 'mk'])
-
-/**
- * Jezik za prvu posetu, iz `Accept-Language`: prvi poznat jezik po težini; region daje srpski, a
- * nepoznat jezik engleski. Bez zaglavlja (pretraživači) ostaje srpski, kao i do sada.
- */
-export function detectLocale(acceptLanguage: string | null | undefined): AppLocale {
-  const ranked = (acceptLanguage ?? '')
-    .split(',')
-    .map((part, i) => {
-      const [tag = '', ...params] = part.trim().split(';')
-      const q = Number(
-        params
-          .find((p) => p.trim().startsWith('q='))
-          ?.trim()
-          .slice(2) ?? '1',
-      )
-      return { base: tag.toLowerCase().split('-')[0]!, q: Number.isFinite(q) ? q : 0, i }
-    })
-    .filter((x) => x.base && x.base !== '*' && x.q > 0)
-    .sort((a, b) => b.q - a.q || a.i - b.i)
-  if (!ranked.length) return 'sr-Latn'
-  for (const { base } of ranked) {
-    if (REGIONAL.has(base)) return 'sr-Latn'
-    if (base === 'en') return 'en'
-  }
-  return 'en'
-}
-
 export { isAppLocale }

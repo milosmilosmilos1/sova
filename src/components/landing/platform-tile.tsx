@@ -16,6 +16,30 @@ export function tiktokGlyph(offset: number): CSSProperties {
 }
 
 /**
+ * Početna slova umesto logoa (TikTok, LinkedIn). Crtež kao i logo, ne tekst: naziv mreže nose
+ * `title` i `aria-label`, a znak na isključenoj pločici (providnost 0,3) ne sme da obori proveru kontrasta.
+ */
+function PlainGlyph({ text, size }: { text: string; size: number }) {
+  const width = Math.round(size * 1.6)
+  const height = Math.round(size * 1.2)
+  return (
+    <svg aria-hidden width={width} height={height} viewBox={`0 0 ${width} ${height}`}>
+      <text
+        x="50%"
+        y="50%"
+        dominantBaseline="central"
+        textAnchor="middle"
+        fill="#fff"
+        fontSize={size}
+        fontWeight={600}
+      >
+        {text}
+      </text>
+    </svg>
+  )
+}
+
+/**
  * Pločica mreže u bojama brenda. Veličine iz dizajna: 28/13 (hero), 38/18 (izbor mreže),
  * 48/21 (povezivanje), 24/12 (raspored objava). Naziv mreže u oblačiću je na jeziku strane (D-130).
  */
@@ -55,9 +79,7 @@ export function PlatformTile({
       }}
     >
       {p.plain ? (
-        <span aria-hidden className="font-semibold text-white" style={{ fontSize: Math.round(glyph * 0.8) }}>
-          {t(`${p.key}.name`).slice(0, 2)}
-        </span>
+        <PlainGlyph text={t(`${p.key}.name`).slice(0, 2)} size={Math.round(glyph * 0.8)} />
       ) : p.icon ? (
         <Fa
           icon={p.icon}

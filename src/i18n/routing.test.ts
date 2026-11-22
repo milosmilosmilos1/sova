@@ -8,8 +8,6 @@ const page = (over: Partial<LocaleRequest> = {}): LocaleRequest => ({
   cookie: undefined,
   method: 'GET',
   accept: 'text/html,application/xhtml+xml',
-  acceptLanguage: null,
-  userAgent: 'Mozilla/5.0',
   rsc: false,
   ...over,
 })
@@ -77,7 +75,7 @@ describe('jezik javnog sajta u proxy-ju (D-130)', () => {
       location: '/en/register',
       cookie: null,
     })
-    expect(routeLocale(page({ cookie: 'sr-Latn', acceptLanguage: 'en-US' }))).toEqual({
+    expect(routeLocale(page({ cookie: 'sr-Latn' }))).toEqual({
       kind: 'next',
       path: '/',
       locale: 'sr-Latn',
@@ -85,26 +83,19 @@ describe('jezik javnog sajta u proxy-ju (D-130)', () => {
     })
   })
 
-  it('prva poseta prati pregledač; bot i pregled linka ostaju na srpskom', () => {
-    expect(routeLocale(page({ acceptLanguage: 'uk-UA,uk;q=0.9' }))).toEqual({
-      kind: 'redirect',
-      location: '/en',
-      cookie: 'en',
-    })
-    expect(routeLocale(page({ acceptLanguage: 'sr-RS,sr;q=0.9' }))).toEqual({
+  it('bez izbora je srpski, i kad pregledač traži engleski (D-187)', () => {
+    expect(routeLocale(page())).toEqual({ kind: 'next', path: '/', locale: 'sr-Latn', cookie: null })
+    expect(routeLocale(page({ pathname: '/login', search: '?error=link' }))).toEqual({
       kind: 'next',
-      path: '/',
+      path: '/login',
       locale: 'sr-Latn',
-      cookie: 'sr-Latn',
+      cookie: null,
     })
-    expect(routeLocale(page({ acceptLanguage: 'en-US', userAgent: 'facebookexternalhit/1.1' })).kind).toBe(
-      'next',
-    )
-    expect(routeLocale(page({ acceptLanguage: 'en-US', userAgent: 'Googlebot/2.1' })).kind).toBe('next')
+    expect(routeLocale(page({ pathname: '/register', cookie: 'nepoznat' })).kind).toBe('next')
   })
 
   it('RSC i drugi zahtevi se ne preusmeravaju', () => {
-    expect(routeLocale(page({ acceptLanguage: 'en-US', rsc: true })).kind).toBe('next')
-    expect(routeLocale(page({ acceptLanguage: 'en-US', method: 'POST' })).kind).toBe('next')
+    expect(routeLocale(page({ cookie: 'en', rsc: true })).kind).toBe('next')
+    expect(routeLocale(page({ cookie: 'en', method: 'POST' })).kind).toBe('next')
   })
 })

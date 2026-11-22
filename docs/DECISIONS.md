@@ -1735,3 +1735,17 @@ Vlasnik je tražio 20 tekstova za Sovu, u meniju, i prevod na engleski.
 - Tvrdnje o proizvodu prate stvarno stanje: osam mreža, odobrenje podrazumevano, TikTok, LinkedIn i Pinterest bez potpuno samostalne objave (D-182), bez obećanja AI slika (D-104); Instagram najviše pet hashtagova (od decembra 2025), uvodna cena 47 € navedena sa datumom (novembar 2026).
 
 Razlog: saobraćaj iz pretrage i odgovori AI asistenata na pitanja koja kupci Sove postavljaju; engleski za kupce van regiona.
+
+## D-187 · 22.11.2026 · usvojeno · Mejlove za nalog šalje Sova; sajt je podrazumevano na srpskom
+
+Problem na produkciji 22.11. (posle D-185): nov korisnik je kliknuo link za potvrdu 22 sekunde posle registracije, u istom pregledaču, i dobio „link je otvoren u drugom pregledaču” na engleskoj strani prijave. Mejl je i dalje slao Supabase (`noreply@mail.app.supabase.io`, podrazumevani PKCE šablon), jer custom SMTP i šabloni iz D-185 nisu uključeni u Supabase podešavanjima. Podrazumevani Supabase mejl uz to stiže samo članovima tima projekta, pa pravi korisnik ne bi ni dobio potvrdu.
+
+- Mejlove za potvrdu naloga, prijavu linkom, novu lozinku i ponovnu potvrdu šalje Sova (`src/lib/auth/email-links.ts`): `admin.generateLink` pravi token bez slanja, link vodi na `/auth/callback?token_hash=…&type=email|recovery&next=…`, a mejl ide preko Resend-a sa `EMAIL_FROM` (domen sovaai.rs je potvrđen u Resend-u), na jeziku naloga (šablon `src/emails/auth-link.tsx`). Ne zavisi od SMTP-a ni šablona u Supabase-u i radi u svakom pregledaču i na telefonu.
+- Postojanje naloga se ne otkriva: registracija za već potvrđen email ne šalje ništa i prikazuje isti ekran. `magiclink` se pravi samo za nalog koji postoji (inače bi ga generateLink napravio). Ponovna potvrda je `magiclink`: Supabase pri proveri potvrđuje adresu, lozinka ostaje ista. Novi limiti po adresi (registracija 3 na sat, prijava linkom i nova lozinka 3 na 15 minuta), uz postojeće po IP adresi.
+- Admin „Pošalji ponovo potvrdu” ide istim putem. Promenu email adrese i dalje šalje Supabase (šablon `email_change.html` iz D-185, kad se uključi custom SMTP).
+- Lokalno i u CI-ju, bez Resend ključa, mejlovi idu i u Mailpit lokalnog Supabase-a (`MAILPIT_URL` ili podrazumevano uz lokalni Supabase), pa E2E čita Sovin mejl.
+- Jezik: stranica bez `/en` je srpska za svakog ko engleski nije izabrao. Jezik pregledača se više ne gleda (do sada je pregledač na engleskom pri prvoj poseti vodio na `/en` i to pamtio). Kolačić izbora se sada zove `sova_jezik`, pa se svima kojima je engleski izabran automatski vraća srpski; prijavljenom korisniku jezik i dalje dolazi iz profila.
+- Zašto je PKCE pao u istom pregledaču, lokalno nije ponovljeno: registracija lokalno ostavlja verifier kolačić i on preživi do klika. Za Google prijavu (i dalje PKCE, u istom tabu) proveriti na produkciji kad se Google uključi.
+- Usput: pločica „TikTok” na početnoj (početna slova umesto logoa) nije prolazila proveru kontrasta kad je isključena (providnost 0,3); slova su sada crtež kao i logo.
+
+Razlog: registracija mora da radi odmah, bez koraka u Supabase podešavanjima koje vlasnik nije stigao da uradi, i za svakog korisnika, ne samo za članove tima. Vlasnik je tražio da sajt bude na srpskom dok korisnik sam ne izabere engleski.

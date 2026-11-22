@@ -7,6 +7,8 @@ vi.mock('@/lib/auth/viewer', () => ({
   getViewerFromRequest: vi.fn(async () => null),
 }))
 
+import { LOCALE_COOKIE } from '@/i18n/config'
+
 import { ApiError } from './errors'
 import { createHandler } from './handler'
 
@@ -137,7 +139,7 @@ describe('createHandler', () => {
       throw new ApiError('INSUFFICIENT_TOKENS')
     })
     const fail = (await (
-      await failing(req('/api/x', { headers: { cookie: 'sova_locale=en' } }), routeCtx)
+      await failing(req('/api/x', { headers: { cookie: `${LOCALE_COOKIE}=en` } }), routeCtx)
     ).json()) as { error: { message: string } }
     expect(fail.error.message).toBe(
       "You don't have enough tokens for this. Top up your tokens and try again.",
@@ -148,7 +150,7 @@ describe('createHandler', () => {
       items: [{ title: 'Termin je prošao.', error: 'Termin je prošao.' }],
     }))
     const body = (await (
-      await ok(req('/api/x', { headers: { cookie: 'sova_locale=en' } }), routeCtx)
+      await ok(req('/api/x', { headers: { cookie: `${LOCALE_COOKIE}=en` } }), routeCtx)
     ).json()) as { data: { notes: string[]; items: Array<{ title: string; error: string }> } }
     expect(body.data.notes).toEqual(['The time has passed.'])
     expect(body.data.items[0]).toEqual({ title: 'Termin je prošao.', error: 'The time has passed.' })

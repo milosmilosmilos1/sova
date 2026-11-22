@@ -1,8 +1,7 @@
 import type { MetadataRoute } from 'next'
-import { cookies, headers } from 'next/headers'
+import { cookies } from 'next/headers'
 
-import { isAppLocale, LOCALE_COOKIE, type AppLocale } from '@/i18n/config'
-import { detectLocale } from '@/i18n/paths'
+import { defaultLocale, isAppLocale, LOCALE_COOKIE, type AppLocale } from '@/i18n/config'
 
 const COPY: Record<
   AppLocale,
@@ -26,11 +25,11 @@ const COPY: Record<
 
 /**
  * Instalacija na telefon (D-118): Sova se otvara kao aplikacija, pravo na odobravanje nacrta. Jezik
- * (D-130) iz kolačića; pregledač manifest obično traži bez kolačića, pa tada iz jezika pregledača.
+ * (D-130) iz kolačića; bez kolačića srpski (D-187).
  */
 export default async function manifest(): Promise<MetadataRoute.Manifest> {
   const saved = (await cookies()).get(LOCALE_COOKIE)?.value
-  const locale = isAppLocale(saved) ? saved : detectLocale((await headers()).get('accept-language'))
+  const locale = isAppLocale(saved) ? saved : defaultLocale
   const copy = COPY[locale]
   return {
     id: '/app',

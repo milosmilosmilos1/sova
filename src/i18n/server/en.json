@@ -556,6 +556,8 @@
   "Previše registracija sa ove adrese. Pokušajte za sat vremena.": "Too many sign-ups from this address. Try again in an hour.",
   "Previše zahteva u kratkom roku. Sačekajte malo pa pokušajte ponovo.": "Too many requests in a short time. Wait a moment and try again.",
   "Previše zahteva. Sačekajte 15 minuta.": "Too many requests. Please wait 15 minutes.",
+  "Nismo uspeli da pošaljemo mejl za potvrdu. Pokušajte ponovo za minut.": "We couldn't send the confirmation email. Please try again in a minute.",
+  "Nismo uspeli da pošaljemo mejl. Pokušajte ponovo za minut.": "We couldn't send the email. Please try again in a minute.",
   "Primaoce mesečnog izveštaja menja vlasnik ili administrator.": "Only the owner or an admin can change who gets the monthly report.",
   "Priča ima najviše pet slajdova.": "A story has at most five slides.",
   "Priča ima od jedne do deset slika, ili jedan video.": "A story has one to ten images, or one video.",

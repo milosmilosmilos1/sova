@@ -1,7 +1,11 @@
 export const locales = ['sr-Latn', 'en'] as const
 export type AppLocale = (typeof locales)[number]
 export const defaultLocale: AppLocale = 'sr-Latn'
-export const LOCALE_COOKIE = 'sova_locale'
+/**
+ * Izabran jezik. Do D-187 se zvao `sova_locale` i upisivao ga je i jezik pregledača; novo ime
+ * vraća na srpski sve kojima je engleski izabran automatski.
+ */
+export const LOCALE_COOKIE = 'sova_jezik'
 
 export function isAppLocale(value: unknown): value is AppLocale {
   return typeof value === 'string' && (locales as readonly string[]).includes(value)

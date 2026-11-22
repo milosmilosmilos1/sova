@@ -1,14 +1,14 @@
 import { isAppLocale, type AppLocale } from './config'
-import { detectLocale, isPublicPath, localePath, splitLocalePath } from './paths'
+import { isPublicPath, localePath, splitLocalePath } from './paths'
 
 /**
  * Odluka proxy-ja o jeziku javnog sajta (D-130), bez Next-a da bi se testirala:
  * - `/en/...` se prepisuje na istu stranu, a kolačić pamti jezik; stare adrese `/uk/...` (ukrajinski je
  *   uklonjen, D-173) trajno vode na istu adresu pod `/en`;
  * - `?lang=` je izričit izbor (birač jezika): kolačić, pa adresa na tom jeziku;
- * - stranica bez prefiksa je srpska; posetilac koji je izabrao drugi jezik (kolačić) ili čiji
- *   pregledač pri prvoj poseti traži engleski ili jezik van regiona ide na englesku verziju. Botovi i servisi za
- *   pregled linkova ostaju na adresi koju su tražili, da deljen link ima pravi jezik.
+ * - stranica bez prefiksa je srpska. Na englesku verziju ide samo posetilac koji je engleski izabrao
+ *   (kolačić iz birača jezika ili sa strane pod `/en`). Jezik pregledača se ne gleda (D-187): Sova je
+ *   podrazumevano na srpskom, i kad je pregledač na engleskom.
  */
 export type LocaleRoute =
   | { kind: 'redirect'; location: string; cookie: AppLocale | null; permanent?: true }
@@ -22,14 +22,9 @@ export interface LocaleRequest {
   cookie: string | undefined
   method: string
   accept: string | null
-  acceptLanguage: string | null
-  userAgent: string | null
   /** zahtev za RSC (navigacija unutar aplikacije), ne cela strana */
   rsc: boolean
 }
-
-const BOT =
-  /bot|crawl|spider|slurp|facebookexternalhit|facebookcatalog|preview|embed|whatsapp|telegram|discord|linkedin|skype|vkshare|pinterest|headless/i
 
 /** Adrese uklonjene ukrajinske verzije sajta (D-173). */
 const LEGACY_UK = /^\/uk(\/.*)?$/
@@ -68,20 +63,11 @@ export function routeLocale(req: LocaleRequest): LocaleRoute {
 
   const remembered = isAppLocale(req.cookie) ? req.cookie : null
   const document = req.method === 'GET' && !req.rsc && (req.accept ?? '').includes('text/html')
-  if (document) {
-    const target =
-      remembered ?? (BOT.test(req.userAgent ?? '') ? 'sr-Latn' : detectLocale(req.acceptLanguage))
-    if (target !== 'sr-Latn')
-      return {
-        kind: 'redirect',
-        location: `${localePath(target, req.pathname)}${req.search}`,
-        cookie: remembered ? null : target,
-      }
-  }
-  return {
-    kind: 'next',
-    path: req.pathname,
-    locale: 'sr-Latn',
-    cookie: remembered || !document ? null : 'sr-Latn',
-  }
+  if (document && remembered && remembered !== 'sr-Latn')
+    return {
+      kind: 'redirect',
+      location: `${localePath(remembered, req.pathname)}${req.search}`,
+      cookie: null,
+    }
+  return { kind: 'next', path: req.pathname, locale: 'sr-Latn', cookie: null }
 }

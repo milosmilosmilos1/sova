@@ -9,6 +9,13 @@ import { getLocale } from 'next-intl/server'
 import { isDisposableEmail } from '@/config/disposable-domains'
 import { isApiError } from '@/lib/api/errors'
 import { formValues, parseForm, type FormState } from '@/lib/auth/form-state'
+import {
+  resendConfirmation,
+  sendLoginLink,
+  sendRecoveryLink,
+  startSignup,
+  type SignupResult,
+} from '@/lib/auth/email-links'
 import { authErrorMessage } from '@/lib/auth/messages'
 import { verifyTurnstile } from '@/lib/auth/turnstile'
 import { getRealViewer, getViewer, type Viewer } from '@/lib/auth/viewer'
@@ -133,21 +140,23 @@ export async function signUpAction(_prev: FormState, formData: FormData): Promis
     return fail('Provera da niste bot nije uspela. Osvežite stranicu pa pokušajte ponovo.', values)
   }
 
-  const supabase = await createSupabaseServerClient()
+  const emailRl = await rateLimit(`register-email:${email}`, { limit: 3, windowSec: 60 * 60 })
+  if (!emailRl.success)
+    return fail('Već smo poslali nekoliko poruka. Proverite i spam folder, pa pokušajte kasnije.', values)
+
   // jezik strane registracije postaje jezik naloga: aplikacija, mejlovi i obaveštenja (D-130)
   const locale = (await getLocale()) as AppLocale
-  const { data, error } = await supabase.auth.signUp({
-    email,
-    password,
-    options: {
-      data: { full_name: fullName, locale },
-      emailRedirectTo: callbackUrl(next ?? '/app/onboarding'),
-    },
-  })
-  if (error) return fail(authErrorMessage(error.message), values)
-  if (data.user) await createSupabaseAdminClient().from('profiles').update({ locale }).eq('id', data.user.id)
-  if (data.session) go(next ?? '/app/onboarding')
-  // Potvrda emaila je obavezna; i za već postojeći email vraćamo isti ekran (bez otkrivanja).
+  // mejl sa linkom šalje Sova (D-187); i za već potvrđen email isti ekran, bez otkrivanja
+  let result: SignupResult
+  try {
+    result = await startSignup({ email, password, fullName, locale, next: next ?? '/app/onboarding' })
+  } catch (error) {
+    logger.error('signup_email_failed', { error })
+    return fail('Nismo uspeli da pošaljemo mejl za potvrdu. Pokušajte ponovo za minut.', values)
+  }
+  if (result.status === 'rejected') return fail(authErrorMessage(result.message), values)
+  if (result.status === 'sent')
+    await createSupabaseAdminClient().from('profiles').update({ locale }).eq('id', result.userId)
   go(`/verify-email?email=${encodeURIComponent(email)}`)
 }
 
@@ -159,13 +168,14 @@ export async function magicLinkAction(_prev: FormState, formData: FormData): Pro
   const rl = await rateLimit(`magic:${ip}`, { limit: 5, windowSec: 15 * 60 })
   if (!rl.success) return fail('Previše zahteva. Sačekajte 15 minuta.', { email })
 
-  const supabase = await createSupabaseServerClient()
-  const { error } = await supabase.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: callbackUrl(next ?? '/app'), shouldCreateUser: false },
-  })
-  if (error && !error.message.toLowerCase().includes('signups not allowed')) {
-    return fail(authErrorMessage(error.message), { email })
+  const emailRl = await rateLimit(`magic-email:${email}`, { limit: 3, windowSec: 15 * 60 })
+  if (!emailRl.success) return fail('Previše zahteva. Sačekajte 15 minuta.', { email })
+
+  try {
+    await sendLoginLink({ email, next: next ?? '/app', locale: (await getLocale()) as AppLocale })
+  } catch (error) {
+    logger.error('magic_link_email_failed', { error })
+    return fail('Nismo uspeli da pošaljemo mejl. Pokušajte ponovo za minut.', { email })
   }
   return localized({
     ok: true,
@@ -200,12 +210,15 @@ export async function forgotPasswordAction(_prev: FormState, formData: FormData)
   const rl = await rateLimit(`forgot:${ip}`, { limit: 5, windowSec: 15 * 60 })
   if (!rl.success) return fail('Previše zahteva. Sačekajte 15 minuta.', { email })
 
-  const supabase = await createSupabaseServerClient()
-  const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: callbackUrl('/reset-password'),
-  })
-  if (error && error.message.toLowerCase().includes('rate limit'))
-    return fail(authErrorMessage(error.message), { email })
+  const emailRl = await rateLimit(`forgot-email:${email}`, { limit: 3, windowSec: 15 * 60 })
+  if (!emailRl.success) return fail('Previše zahteva. Sačekajte 15 minuta.', { email })
+
+  try {
+    await sendRecoveryLink({ email, locale: (await getLocale()) as AppLocale })
+  } catch (error) {
+    logger.error('recovery_email_failed', { error })
+    return fail('Nismo uspeli da pošaljemo mejl. Pokušajte ponovo za minut.', { email })
+  }
   return localized({
     ok: true,
     code: 'check_email',
@@ -235,14 +248,12 @@ export async function resendVerificationAction(_prev: FormState, formData: FormD
   const rl = await rateLimit(`resend:${ip}:${email}`, { limit: 3, windowSec: 60 * 60 })
   if (!rl.success)
     return fail('Već smo poslali nekoliko poruka. Proverite i spam folder, pa pokušajte kasnije.', { email })
-  const supabase = await createSupabaseServerClient()
-  const { error } = await supabase.auth.resend({
-    type: 'signup',
-    email,
-    options: { emailRedirectTo: callbackUrl('/app/onboarding') },
-  })
-  if (error && error.message.toLowerCase().includes('rate limit'))
-    return fail(authErrorMessage(error.message), { email })
+  try {
+    await resendConfirmation({ email, locale: (await getLocale()) as AppLocale })
+  } catch (error) {
+    logger.error('confirmation_resend_failed', { error })
+    return fail('Nismo uspeli da pošaljemo mejl. Pokušajte ponovo za minut.', { email })
+  }
   return localized({ ok: true, message: 'Poslali smo novu poruku za potvrdu.', values: { email } })
 }
 
