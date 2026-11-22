@@ -3,7 +3,9 @@ import 'server-only'
 import { inngest } from '@/inngest/client'
 import { events, targetScheduledEvent } from '@/inngest/events'
 import { AiError } from '@/lib/ai/errors'
+import { isFeatureEnabled, PUBLISH_CRON_FLAG } from '@/lib/flags'
 import { logger } from '@/lib/logger'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
 /**
  * Slanje pozadinskih poslova. Izdvojeno da bi testovi mogli da zamene slanje
@@ -112,6 +114,8 @@ export async function enqueueTargetScheduled(
   version: number,
   socialAccountId: string,
 ): Promise<void> {
+  // objave bez Inngest-a (D-193): termin je već u bazi, a prolaz pravi Netlify krug ili „Objavi sada”
+  if (await isFeatureEnabled(PUBLISH_CRON_FLAG)) return
   try {
     await inngest.send(targetScheduledEvent({ targetId, scheduledAt, version, socialAccountId }))
   } catch (error) {
@@ -128,6 +132,16 @@ export async function enqueueTargetScheduled(
 
 /** Otkazivanje zakazanog run-a (cancelOn u publisheru); greška se samo loguje, status u bazi je izvor istine. */
 export async function enqueueTargetUnscheduled(targetId: string): Promise<void> {
+  if (await isFeatureEnabled(PUBLISH_CRON_FLAG)) {
+    // zamena za Inngest `cancelOn` (D-193): prolaz koji čeka se više ne nastavlja
+    const { error } = await createSupabaseAdminClient()
+      .from('publish_runs')
+      .update({ status: 'cancelled', locked_until: null, updated_at: new Date().toISOString() })
+      .eq('target_id', targetId)
+      .eq('status', 'waiting')
+    if (error) logger.warn('publish_run_cancel_failed', { targetId, error })
+    return
+  }
   try {
     await inngest.send(events.postTargetUnscheduled.create({ targetId }))
   } catch (error) {

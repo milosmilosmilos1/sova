@@ -8,6 +8,8 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 export const AI_IMAGES_FLAG = 'ai_images'
 /** Inbox i DM automatizacija (D-117): dok Meta ne odobri dozvole za poruke i komentare. */
 export const INBOX_FLAG = 'inbox'
+/** Objave bez Inngest-a (D-193): Netlify na 2 min i „Objavi sada” odmah, umesto Inngest `publish-target`. */
+export const PUBLISH_CRON_FLAG = 'publish_cron'
 
 interface FlagState {
   enabled: boolean

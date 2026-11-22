@@ -1,5 +1,6 @@
 import { inngest } from '@/inngest/client'
 import { events, targetScheduledEvent } from '@/inngest/events'
+import { isFeatureEnabled, PUBLISH_CRON_FLAG } from '@/lib/flags'
 import { logger } from '@/lib/logger'
 import {
   handlePublishRunFailure,
@@ -45,6 +46,8 @@ export const publishTarget = inngest.createFunction(
     },
   },
   async ({ event, step, runId }) => {
+    // objave vodi Sova sama (D-193): Inngest prolaz ne radi ništa, bez koraka
+    if (await isFeatureEnabled(PUBLISH_CRON_FLAG)) return { outcome: 'skipped', reason: 'publish_cron' }
     const run = ((name, fn) => step.run(name, fn)) as StepRunner
     return runPublishTarget(event.data, {
       run,

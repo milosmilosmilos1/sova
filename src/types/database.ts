@@ -1401,6 +1401,26 @@ isOneToOne: false
       referencedColumns: ["id"]
     }
                   ]
+                },"publish_runs": {
+                  Row: {
+                    "created_at": string,"engine_retries": number,"error": string | null,"job": Json,"locked_until": string | null,"outcome": string | null,"run_id": string,"status": string,"steps": Json,"target_id": string,"updated_at": string,"wake_at": string
+                  }
+                  ComputedFields: never
+                  Insert: {
+                    "created_at"?: string,"engine_retries"?: number,"error"?: string | null,"job": Json,"locked_until"?: string | null,"outcome"?: string | null,"run_id": string,"status"?: string,"steps"?: Json,"target_id": string,"updated_at"?: string,"wake_at"?: string
+                  }
+                  Update: {
+                    "created_at"?: string,"engine_retries"?: number,"error"?: string | null,"job"?: Json,"locked_until"?: string | null,"outcome"?: string | null,"run_id"?: string,"status"?: string,"steps"?: Json,"target_id"?: string,"updated_at"?: string,"wake_at"?: string
+                  }
+                  Relationships: [
+                    {
+      foreignKeyName: "publish_runs_target_id_fkey"
+      columns: ["target_id"]
+isOneToOne: true
+      referencedRelation: "post_targets"
+      referencedColumns: ["id"]
+    }
+                  ]
                 },"push_subscriptions": {
                   Row: {
                     "auth": string,"created_at": string,"endpoint": string,"id": string,"last_sent_at": string | null,"p256dh": string,"user_agent": string | null,"user_id": string

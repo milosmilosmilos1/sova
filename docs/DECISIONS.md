@@ -1814,3 +1814,16 @@ Procena mesečno (30 dana; sadašnji obim oko 1.200 targeta mesečno, 8 brendova
 Granica rasta: najveći trošak posle izmene je objava (oko 6 izvršavanja po targetu). Sa oko 80 do 90 brendova koji objavljuju svaki dan na dve mreže Sova dolazi do 50.000; tada treba Pro ili sopstveni Inngest server. Inbox sa povlačenjem po nalogu ne može da pređe na sve kupce na besplatnom planu (svaki nalog je deo koraka svakog sata); za to treba Meta webhook umesto povlačenja.
 
 Razlog: Sova mora da objavljuje bez plaćenog plana; posle izmene isti posao troši oko tri puta manje izvršavanja, bez gubitka funkcija.
+
+## D-193 · 22.11.2026 · usvojeno · Objave bez Inngest-a (prekidač `publish_cron`)
+
+Inngest Hobby nalog je 22.11. potrošio 50.000 izvršavanja i do kraja ciklusa (9 dana) ne pokreće nove poslove, pa ni zakazane objave. Vlasnik ne želi plaćeni paket; sopstveni Inngest server (Oracle) čeka karticu.
+
+- Isti koraci objave (`runPublishTarget`, nepromenjen) pokreće Sova sama: `src/services/posts/publish-engine.ts` radi ono što je radio Inngest. Završeni koraci sa rezultatom (JSON, kao Inngest memo) i pauze pamte se u tabeli `publish_runs` (migracija 044, jedan red po targetu, RLS bez pristupa korisnicima). Svaki poziv ponavlja orkestraciju; završen korak vraća zapamćen rezultat, prvi nezavršen se izvršava, a pauza duža od 15 s prekida poziv i upisuje vreme buđenja.
+- Pokretanje: Netlify zakazana funkcija `netlify/functions/publish-tick.mts` na 2 minuta zove `POST /api/cron/publish` (CRON_SECRET), a „Objavi sada” odmah pokreće prolaz za targete te objave u istom zahtevu. Na 2 minuta, ne na 1, zbog besplatnog Netlify limita poziva.
+- Jedan prolaz po nalogu mreže u isto vreme (kao Inngest `concurrency`), preuzimanje prolaza uslovnim upisom `locked_until` (dva kruga ne objavljuju dvaput), otkazivanje kroz `enqueueTargetUnscheduled` (zamena za `cancelOn`), naše greške van pokušaja prema mreži do tri puta pa `handlePublishRunFailure`.
+- Dok je prekidač uključen: `enqueueTargetScheduled` ne šalje Inngest događaj, a Inngest `publish-target` se završava bez koraka, pa posle obnove Inngest kvote nema dvostrukih prolaza. Isključen prekidač vraća sve na Inngest.
+- Pokriva samo objavljivanje. Ostala automatika (AI planovi, Autopilot, Inbox, metrike, izveštaji) radi kroz Inngest i čeka obnovu kvote ili sopstveni server.
+- Testovi: `api.publish-engine` 6 (krug pre i posle termina bez ponavljanja, pauza posle privremene greške pa nastavak, otkazivanje, dva kruga u isto vreme, „Objavi sada” u istom zahtevu, ruta traži CRON_SECRET i isključen prekidač), `api.publisher`, `api.posts`, `api.linkedin-tiktok` 45 i dalje prolaze.
+
+Razlog: objave su osnovna funkcija Sove i ne smeju da zavise od jednog spoljnog limita; isti kod objave ostaje, menja se samo ko ga pokreće.
