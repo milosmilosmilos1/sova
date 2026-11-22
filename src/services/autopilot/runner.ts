@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { toContentLocale } from '@/config/locales'
-import type { SocialPlatform } from '@/config/platforms'
+import { isSocialPlatform, type SocialPlatform } from '@/config/platforms'
 import { formatFor, mediaNeed, mixedFormat, PLATFORM_FORMATS, type PostFormat } from '@/config/post-formats'
 import type { PostGoal } from '@/lib/ai/prompts/post-text'
 import {
@@ -152,7 +152,7 @@ async function activePlatforms(brandId: string): Promise<SocialPlatform[]> {
     .select('platform')
     .eq('brand_id', brandId)
     .eq('status', 'active')
-  return [...new Set((data ?? []).map((a) => a.platform))]
+  return [...new Set((data ?? []).map((a) => a.platform).filter(isSocialPlatform))]
 }
 
 /** Aktivira strategiju i arhivira samo aktivne strategije čiji se period preklapa (D-064). */
@@ -368,8 +368,10 @@ async function planWeek(runId: string, strategyId: string, weekStart: string): P
     .neq('platform', 'pinterest')
     .in('platform', platforms.length ? platforms : ['facebook'])
   const accountsByPlatform = new Map<SocialPlatform, string[]>()
-  for (const a of accounts ?? [])
+  for (const a of accounts ?? []) {
+    if (!isSocialPlatform(a.platform)) continue
     accountsByPlatform.set(a.platform, [...(accountsByPlatform.get(a.platform) ?? []), a.id])
+  }
 
   const fromIso = zonedToUtc(weekStart, '00:00', brand.timezone)
   const toIso = zonedToUtc(addDays(weekStart, 7), '00:00', brand.timezone)
@@ -604,16 +606,13 @@ async function completeDraft(input: {
     .select('social_account_id, platform')
     .eq('post_id', postId)
   const settings = autopilotSettings(brand)
-  // TikTok, LinkedIn i Pinterest uvek idu na odobrenje, X samo sa potvrdom oznake „Automated” (D-182)
+  // TikTok, LinkedIn i Pinterest uvek idu na odobrenje (D-182)
   const level3 =
     brand.autopilot_level === 3 &&
     brand.autopilot_level3_confirmed_at !== null &&
     (await isFeatureEnabled('autopilot_level3')) &&
     (targets ?? []).every((t) => (settings.level3AccountIds ?? []).includes(t.social_account_id)) &&
-    autoPublishAllowed(
-      (targets ?? []).map((t) => t.platform),
-      Boolean(settings.xAutomatedLabelConfirmedAt),
-    )
+    autoPublishAllowed((targets ?? []).map((t) => t.platform))
   // video u temi se ne zakazuje sam: MP4 pravi pregledač u Odobravanju (D-128)
   if (level3 && input.design?.format !== 'video') {
     await systemSchedule(postId, 'Autopilot (nivo 3): zakazano posle kontrole kvaliteta')
@@ -648,6 +647,8 @@ async function startDraft(runId: string, postId: string): Promise<DraftStart> {
     .eq('post_id', postId)
   const platform = targets?.[0]?.platform
   if (!platform) return done({ postId, outcome: 'skipped', tokens: 0, message: 'objava nema mrežu' })
+  if (!isSocialPlatform(platform))
+    return done({ postId, outcome: 'skipped', tokens: 0, message: `Sova više ne radi sa mrežom ${platform}` })
   // vrsta objave (D-107): dozvoljene u podešavanjima koje mreža prima, AI meša ili uvek prva
   const prefs = autopilotContentPrefs(brand)
   const allowed = PLATFORM_FORMATS[platform].filter((f) => prefs.formats.includes(f))

@@ -70,7 +70,7 @@ export async function runAutopilotDeadlines(now = new Date()): Promise<DeadlineS
     )
     .in('id', brandIds)
   const brandById = new Map((brands ?? []).map((b) => [b.id, b]))
-  // mreže objava: TikTok, LinkedIn i Pinterest se bez odobrenja ne objavljuju, X samo uz potvrdu (D-182)
+  // mreže objava: TikTok, LinkedIn i Pinterest se bez odobrenja ne objavljuju (D-182)
   const platformsByPost = new Map<string, string[]>()
   for (let i = 0; i < posts.length; i += 200) {
     const { data: targets } = await admin
@@ -108,11 +108,7 @@ export async function runAutopilotDeadlines(now = new Date()): Promise<DeadlineS
         }
         continue
       }
-      const xLabel = Boolean(
-        (b.settings as { autopilot?: { xAutomatedLabelConfirmedAt?: string | null } } | null)?.autopilot
-          ?.xAutomatedLabelConfirmedAt,
-      )
-      const mayPublish = autoPublishAllowed(platformsByPost.get(p.id) ?? [], xLabel)
+      const mayPublish = autoPublishAllowed(platformsByPost.get(p.id) ?? [])
       const action = deadlineAction({
         level: b.autopilot_level as AutopilotLevel,
         // objava koja traži lično odobrenje: podsetnik, a posle termina nazad u nacrt (kao nivo 1)

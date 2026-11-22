@@ -178,18 +178,11 @@ export function reviewQuoteBlock(t: Testimonial, locale: ContentLocale): string 
   return `${open}${t.text.trim()}${close}\n— ${reviewAttribution(t)}${stars}`
 }
 
-/** Kratak citat za X: početak utiska i ime autora, do 280 znakova. */
-export function reviewShortQuote(t: Testimonial, locale: ContentLocale): string {
-  const [open, close] = quoteMarks(locale)
-  const tail = ` — ${t.author}`
-  return `${open}${leadExcerpt(t.text, Math.max(40, 276 - tail.length))}${close}${tail}`
-}
-
 /**
  * Tekst dizajnirane objave sa utiskom: citat na naslovnom slajdu je doslovan, ispod je autor, a opis
  * počinje celim utiskom. Model piše samo uvod i poziv na akciju.
  */
-export function applyReviewCopy<T extends { slides: Slide[]; caption: string; shortCaption: string }>(
+export function applyReviewCopy<T extends { slides: Slide[]; caption: string }>(
   copy: T,
   t: Testimonial,
   locale: ContentLocale,
@@ -210,6 +203,5 @@ export function applyReviewCopy<T extends { slides: Slide[]; caption: string; sh
     ...copy,
     slides: [cover, ...rest],
     caption: `${reviewQuoteBlock(t, locale)}\n\n${copy.caption.trim()}`.trim(),
-    shortCaption: reviewShortQuote(t, locale),
   }
 }

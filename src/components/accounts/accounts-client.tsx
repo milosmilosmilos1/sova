@@ -83,7 +83,6 @@ const EMPTY_NOTICE_PROVIDERS = [
   'google_business',
   'youtube',
   'pinterest',
-  'x',
 ] as const
 type EmptyNoticeProvider = (typeof EMPTY_NOTICE_PROVIDERS)[number]
 
@@ -106,7 +105,6 @@ export const CONNECT_TILES: Array<{
   { platform: 'tiktok', provider: 'tiktok' },
   { platform: 'youtube', provider: 'youtube' },
   { platform: 'pinterest', provider: 'pinterest' },
-  { platform: 'x', provider: 'x' },
   { platform: 'google_business', provider: 'google_business' },
 ]
 

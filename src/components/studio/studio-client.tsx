@@ -1574,7 +1574,7 @@ function ComposePanel({
   const allowed = formatsForPlatforms(platforms).filter(
     (f) => !ownPhotos || KIND_FORMATS[content!.kind].includes(f),
   )
-  // anketa (D-151) samo kad su izabrani LinkedIn ili X, bez ostalih mreža
+  // anketa (D-151) samo kad je izabran LinkedIn, bez ostalih mreža
   const pollAllowed = !ownPhotos && platforms.length > 0 && platforms.every(isPollPlatform)
   // vrsta koja ne ide na novo izabrane mreže vraća se na „AI bira”
   const chosen: PostFormatChoice | 'poll' =

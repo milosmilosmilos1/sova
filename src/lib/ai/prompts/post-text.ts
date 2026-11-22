@@ -59,7 +59,7 @@ export interface PostTextInput {
   /** vrsta objave (D-107); `auto` = model bira među `allowedFormats`; bez nje nema uputstva o vrsti */
   format?: PostFormat | 'auto' | null
   allowedFormats?: readonly PostFormat[]
-  /** anketa za LinkedIn i X (D-151): model piše i pitanje sa odgovorima */
+  /** anketa za LinkedIn (D-151): model piše i pitanje sa odgovorima */
   poll?: boolean
   /** uputstvo i podaci za vrstu sadržaja (D-165), pre teme objave */
   extra?: string[]
@@ -115,12 +115,12 @@ const FORMAT_WRITING: Record<PostFormat, string> = {
   link: 'Objava sa linkom: tekst poziva da se otvori link, a sam link ne piši u tekst.',
 }
 
-/** Anketa za LinkedIn i X (D-151): pitanje i odgovori idu u polje poll, tekst je uvod. */
+/** Anketa za LinkedIn (D-151): pitanje i odgovori idu u polje poll, tekst je uvod. */
 function pollLines(input: PostTextInput): string[] {
   if (!input.poll) return []
   return [
-    'Objava je ANKETA za LinkedIn i X. U polje poll upiši: question (pitanje do 140 znakova, jasno i lako za odgovor), options (2 do 4 odgovora, svaki do 25 znakova, bez brojeva, emoji-ja i ponavljanja, međusobno jasno različiti, pokrivaju glavne odgovore) i duration_days (1, 3, 7 ili 14; najčešće 3).',
-    'Tekst varijanti je kratak uvod koji daje kontekst i poziva na glasanje i komentar. Za X tekst neka završi pitanjem i stane u 280 znakova; za LinkedIn ne ponavljaj pitanje doslovno. Bez slike i bez linka u anketi.',
+    'Objava je ANKETA za LinkedIn. U polje poll upiši: question (pitanje do 140 znakova, jasno i lako za odgovor), options (2 do 4 odgovora, svaki do 25 znakova, bez brojeva, emoji-ja i ponavljanja, međusobno jasno različiti, pokrivaju glavne odgovore) i duration_days (1, 3, 7 ili 14; najčešće 3).',
+    'Tekst varijanti je kratak uvod koji daje kontekst i poziva na glasanje i komentar; ne ponavljaj pitanje doslovno. Bez slike i bez linka u anketi.',
   ]
 }
 
@@ -257,8 +257,8 @@ export function buildPostTextPrompt(input: PostTextInput): string {
         ? `${c.hashtagsRecommended} hashtagova (najviše ${c.hashtagsMax})`
         : 'bez hashtagova'
     return `- ${c.label} (${p}): najviše ${c.textMax} karaktera za hook+body+cta zajedno, ${hashtags}.${
-      p === 'x' ? ' Kratko i udarno; URL se broji kao 23 karaktera.' : ''
-    }${p === 'linkedin' ? ' Profesionalan ton, dozvoljen duži tekst.' : ''}${
+      p === 'linkedin' ? ' Profesionalan ton, dozvoljen duži tekst.' : ''
+    }${
       p === 'instagram' ? ' Hook u prvom redu, emoji po pravilima brenda, hashtagovi na kraju.' : ''
     }${p === 'google_business' ? ' Lokalna objava sa jasnim pozivom na akciju, bez hashtagova.' : ''}`
   })

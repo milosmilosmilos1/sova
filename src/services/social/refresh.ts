@@ -1,6 +1,6 @@
 import 'server-only'
 
-import type { SocialPlatform } from '@/config/platforms'
+import { isSocialPlatform, type SocialPlatform } from '@/config/platforms'
 import { encryptSecret, toPgBytea } from '@/lib/crypto/tokens'
 import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
@@ -99,8 +99,8 @@ export async function refreshExpiringTokens(withinDays = 7): Promise<RefreshSumm
 /**
  * Kada cron osvežava token unapred; pri svakom pozivu mreže to radi i `accessTokenFor`. TikTok (24 h)
  * kad ističe za manje od 6 h; Pinterest (30 dana) kad ističe za manje od 3 dana, jer refresh token važi
- * 60 dana od poslednjeg osvežavanja; X i Google samo da refresh token ne istekne dok nalog miruje
- * (X oko 6 meseci, Google gasi token posle 6 meseci nekorišćenja).
+ * 60 dana od poslednjeg osvežavanja; Google samo da refresh token ne istekne dok nalog miruje
+ * (Google gasi token posle 6 meseci nekorišćenja).
  */
 export function cronShouldRefresh(platform: SocialPlatform, exp: number, now: number): boolean {
   switch (platform) {
@@ -108,8 +108,6 @@ export function cronShouldRefresh(platform: SocialPlatform, exp: number, now: nu
       return exp - now < 6 * 3_600_000
     case 'pinterest':
       return exp - now < 3 * 86_400_000
-    case 'x':
-      return now - exp > 30 * 86_400_000
     case 'youtube':
     case 'google_business':
       return now - exp > 60 * 86_400_000
@@ -119,7 +117,7 @@ export function cronShouldRefresh(platform: SocialPlatform, exp: number, now: nu
 }
 
 /**
- * LinkedIn, TikTok, Pinterest, X i Google (faze 8b–8d, D-076, D-083): osvežavanje po `cronShouldRefresh`.
+ * LinkedIn, TikTok, Pinterest i Google (faze 8b–8d, D-076): osvežavanje po `cronShouldRefresh`.
  * LinkedIn sa programskim refresh-om se osvežava kad ističe za manje od 7 dana; bez refresh tokena se
  * ne može produžiti: vlasnici dobijaju obaveštenje 7 dana pre isteka (jednom), a posle isteka nalog
  * prelazi u `needs_reauth` i publisher ga ne koristi dok se ne poveže ponovo.
@@ -129,30 +127,26 @@ export async function refreshOtherTokens(): Promise<RefreshSummary> {
   const now = Date.now()
   const base = () =>
     admin.from('social_accounts').select('*').eq('status', 'active').not('token_expires_at', 'is', null)
-  // odvojeni upiti: nalozi koji miruju (X, Google) ne smeju da istisnu TikTok i LinkedIn iz limita
-  const [soon, idleX, idleGoogle] = await Promise.all([
+  // odvojeni upiti: nalozi koji miruju (Google) ne smeju da istisnu TikTok i LinkedIn iz limita
+  const [soon, idleGoogle] = await Promise.all([
     base()
       .in('platform', ['linkedin', 'tiktok', 'pinterest'])
       .lt('token_expires_at', new Date(now + 7 * 86_400_000).toISOString())
       .limit(500),
     base()
-      .eq('platform', 'x')
-      .lt('token_expires_at', new Date(now - 30 * 86_400_000).toISOString())
-      .limit(200),
-    base()
       .in('platform', ['youtube', 'google_business'])
       .lt('token_expires_at', new Date(now - 60 * 86_400_000).toISOString())
       .limit(200),
   ])
-  for (const r of [soon, idleX, idleGoogle]) if (r.error) throw r.error
-  const rows = [...(soon.data ?? []), ...(idleX.data ?? []), ...(idleGoogle.data ?? [])]
+  for (const r of [soon, idleGoogle]) if (r.error) throw r.error
+  const rows = [...(soon.data ?? []), ...(idleGoogle.data ?? [])]
   const summary: RefreshSummary = { checked: rows.length, refreshed: 0, needsReauth: 0, errors: 0 }
   for (const r of rows) {
     const exp = new Date(r.token_expires_at!).getTime()
     const hasRefresh = Boolean(r.refresh_token_enc)
     try {
       if (r.platform !== 'linkedin') {
-        if (!hasRefresh || !cronShouldRefresh(r.platform, exp, now)) continue
+        if (!hasRefresh || !isSocialPlatform(r.platform) || !cronShouldRefresh(r.platform, exp, now)) continue
         await refreshAccountTokens(r)
         summary.refreshed++
         continue

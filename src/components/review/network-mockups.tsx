@@ -2,7 +2,6 @@
 
 import {
   Bookmark,
-  ChartNoAxesColumn,
   ChevronLeft,
   ChevronRight,
   Ellipsis,
@@ -29,11 +28,9 @@ import { linkedinAsDocument, linkedinDocumentTitle, readLinkedInOptions } from '
 import { readPoll, type PollOptions } from '@/config/poll'
 import { PINTEREST_CAROUSEL_MAX, pinterestTitle, readPinterestOptions } from '@/config/pinterest'
 import type { SocialPlatform } from '@/config/platforms'
-import { readXOptions, xThreadParts } from '@/config/x'
 import { readYouTubeOptions, youtubeTitle } from '@/config/youtube'
 import { CAPTION_RULES, captionParts, clipCaption, feedRatio, placementOf } from '@/lib/posts/preview'
 import { cn } from '@/lib/utils'
-import { X_TEXT_MAX, xWeightedLength } from '@/lib/x-text'
 
 /**
  * Izgled objave na mreži (D-138): feed, priča i vertikalni video, nacrtani po uzoru na aplikacije na
@@ -43,7 +40,7 @@ export interface MockTarget {
   platform: SocialPlatform
   /** ime naloga (stranica, kanal, lokacija) */
   name: string
-  /** korisničko ime; Instagram, TikTok i X ga pokazuju umesto imena */
+  /** korisničko ime; Instagram i TikTok ga pokazuju umesto imena */
   username: string | null
   avatarUrl: string | null
   text: string
@@ -82,8 +79,6 @@ export function NetworkMockup({ target, media }: Props) {
       return <FacebookFeed target={target} media={media} />
     case 'linkedin':
       return <LinkedInFeed target={target} media={media} />
-    case 'x':
-      return <XFeed target={target} media={media} />
     case 'pinterest':
       return <PinterestPin target={target} media={media} />
     case 'google_business':
@@ -298,9 +293,9 @@ function Slides({ media, ratio }: { media: MockMedia[]; ratio: number }) {
 }
 
 /** Anketa (D-151): pitanje (LinkedIn), odgovori kao dugmad i trajanje, kao pre glasanja. */
-function PollCard({ poll, variant }: { poll: PollOptions; variant: 'linkedin' | 'x' }) {
+function PollCard({ poll, variant }: { poll: PollOptions; variant: 'linkedin' }) {
   const t = useTranslations('review')
-  const days = variant === 'x' ? Math.min(poll.durationDays, 7) : poll.durationDays
+  const days = poll.durationDays
   return (
     <div
       className={cn(
@@ -349,7 +344,7 @@ function LinkedInDocument({ media, title }: { media: MockMedia[]; title: string 
   )
 }
 
-/** Više fotografija u mreži kao na Facebooku, LinkedInu i X-u; višak se broji na poslednjoj. */
+/** Više fotografija u mreži kao na Facebooku i LinkedInu; višak se broji na poslednjoj. */
 function Grid({ media, max, className }: { media: MockMedia[]; max: number; className?: string }) {
   const shown = media.slice(0, max)
   const extra = media.length - shown.length
@@ -670,64 +665,6 @@ function LinkedInFeed({ target, media }: Props) {
         className="mt-1 border-t border-zinc-200 dark:border-zinc-700"
       />
       <CommentBubble target={target} accent={accent} />
-    </div>
-  )
-}
-
-function XFeed({ target, media }: Props) {
-  const t = useTranslations('review')
-  // nit (D-150): prva objava ovde, ostali delovi kao odgovori ispod
-  const parts = xThreadParts(target.text, readXOptions(target.options))
-  const text = (parts.length > 1 ? parts[0] : target.text)?.trim() ?? ''
-  return (
-    <div className="flex gap-3 bg-white px-3 py-3 text-[15px] text-zinc-900 dark:bg-black dark:text-zinc-100">
-      <Avatar target={target} size={40} />
-      <div className="min-w-0 flex-1 space-y-2">
-        <p className="flex min-w-0 items-baseline gap-1 leading-tight">
-          <span className="truncate font-bold">{target.name}</span>
-          <span className={cn('shrink-0', MUTED)}>
-            {target.username ? `@${handleOf(target)} · ` : ''}
-            {t('netPreview.nowShort')}
-          </span>
-        </p>
-        {text ? (
-          <p className="break-words whitespace-pre-line">
-            <Rich text={text} accent="text-sky-700 dark:text-sky-400" />
-          </p>
-        ) : null}
-        {parts.length <= 1 && xWeightedLength(text) > X_TEXT_MAX ? (
-          <p className="text-xs font-medium text-red-700 dark:text-red-400">
-            {t('netPreview.xTooLong', { max: X_TEXT_MAX })}
-          </p>
-        ) : null}
-        {readPoll(target.options) ? (
-          <PollCard poll={readPoll(target.options)!} variant="x" />
-        ) : (
-          <FeedMedia
-            platform="x"
-            media={media}
-            max={4}
-            className="rounded-2xl border border-zinc-200 dark:border-zinc-800"
-          />
-        )}
-        <div className={cn('flex justify-between pt-1', MUTED)}>
-          {[MessageCircle, Repeat2, Heart, ChartNoAxesColumn, Bookmark].map((Icon, k) => (
-            <Icon key={k} className="size-[18px]" aria-hidden />
-          ))}
-        </div>
-        {parts.length > 1 ? (
-          <ol className="space-y-2 border-l-2 border-zinc-200 pl-3 dark:border-zinc-800">
-            {parts.slice(1, 4).map((p, i) => (
-              <li key={i} className="break-words whitespace-pre-line">
-                <Rich text={p} accent="text-sky-700 dark:text-sky-400" />
-              </li>
-            ))}
-            {parts.length > 4 ? (
-              <li className={cn('text-xs', MUTED)}>{t('netPreview.threadMore', { n: parts.length - 4 })}</li>
-            ) : null}
-          </ol>
-        ) : null}
-      </div>
     </div>
   )
 }

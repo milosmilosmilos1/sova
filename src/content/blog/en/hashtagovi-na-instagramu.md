@@ -70,11 +70,10 @@ The rules aren't the same everywhere. These are rough guidelines for each networ
 | LinkedIn | 2 to 3 | profession and field, at the end of the text |
 | TikTok | 3 to 5 | topic and niche, plus words in the caption |
 | YouTube Shorts | 1 to 2 | #Shorts and the topic |
-| X | 0 to 1 | only when it follows the topic of the day |
 | Pinterest | no hashtags | keywords in the pin title and description |
 | Google Business Profile | no hashtags | practical information |
 
-You can see how the same post looks once it's adapted for eight networks on the [home page, in the networks section](/#networks).
+You can see how the same post looks once it's adapted for seven networks on the [home page, in the networks section](/#networks).
 
 ## A branded hashtag: is it worth it?
 

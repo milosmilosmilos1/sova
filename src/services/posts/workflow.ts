@@ -1,9 +1,7 @@
 import 'server-only'
 
 import type { NotificationType } from '@/config/notifications'
-import { PLATFORMS, validateText, type SocialPlatform } from '@/config/platforms'
-import { readPoll } from '@/config/poll'
-import { readXOptions, xThreadParts } from '@/config/x'
+import { isSocialPlatform, platformLabel, validateText } from '@/config/platforms'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, requireMembership, type Membership } from '@/lib/auth/workspace'
@@ -33,7 +31,6 @@ import {
   type PostView,
 } from '@/services/posts/posts'
 import { loadAccountRow, refFor } from '@/services/social/account-rows'
-import { composeXText, X_THREAD_MAX_PARTS } from '@/lib/x-text'
 
 /**
  * Radnje nad objavom (brif 9, SCHEMA „Dozvoljeni prelazi”): sve idu kroz RPC `transition_post`
@@ -99,8 +96,8 @@ export interface ContentProblem {
 const DUPLICATE_WINDOW_MS = 30 * 86_400_000
 const normalizeText = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim()
 
-/** Mreže koje identičan tekst odbijaju greškom (Facebook #506, LinkedIn DUPLICATE_POST, X 187). */
-const DUPLICATE_REJECTING: ReadonlySet<string> = new Set(['facebook', 'linkedin', 'x'])
+/** Mreže koje identičan tekst odbijaju greškom (Facebook #506, LinkedIn DUPLICATE_POST). */
+const DUPLICATE_REJECTING: ReadonlySet<string> = new Set(['facebook', 'linkedin'])
 
 /**
  * Isti tekst na istom nalogu u poslednjih 30 dana ili već zakazan (EDGE_CASES K9). Proverava se samo
@@ -183,30 +180,26 @@ export async function validatePostContent(
   )
   for (const [index, t] of view.targets.entries()) {
     const list: string[] = []
+    // stari target na X-u (izbačen iz Sove, D-192): ne objavljuje se, pa se ni ne proverava dalje
+    if (!isSocialPlatform(t.platform)) {
+      problems.push({
+        socialAccountId: t.socialAccountId,
+        platform: t.platform,
+        problems: ['Sova više ne objavljuje na X-u; uklonite X iz objave.'],
+      })
+      continue
+    }
     const media = view.media.filter((m) => !m.socialAccountId || m.socialAccountId === t.socialAccountId)
     if (!t.text.trim() && !media.length) list.push('Objava nema ni tekst ni medij.')
     // priča nema opis (D-107): tekst se ne objavljuje, pa se ni ne proverava ni ne poredi
     const story = t.options?.format === 'story'
-    const thread =
-      t.platform === 'x' && !readPoll(t.options)
-        ? xThreadParts(composeXText({ text: t.text, link: view.linkUrl }), readXOptions(t.options))
-        : []
-    // nit na X-u (D-150): dug tekst ide u više objava, pa se ne proverava ukupna dužina
-    const text =
-      story || thread.length > 1
-        ? {
-            problems:
-              thread.length > X_THREAD_MAX_PARTS
-                ? [`Nit na X-u može imati najviše ${X_THREAD_MAX_PARTS} objava; skratite tekst.`]
-                : ([] as string[]),
-          }
-        : validateText(t.platform, t.text)
+    const text = story ? { problems: [] as string[] } : validateText(t.platform, t.text)
     list.push(...text.problems)
     if (t.accountStatus && t.accountStatus !== 'active')
       list.push(`Nalog nije aktivan (${t.accountStatus}); povežite ga ponovo pre objave.`)
     const { duplicate, account } = lookups[index]!
     if (duplicate) {
-      const label = PLATFORMS[t.platform as SocialPlatform]?.label ?? t.platform
+      const label = platformLabel(t.platform)
       const when = duplicate.at ? new Date(duplicate.at).toLocaleDateString('sr-Latn-RS') : ''
       list.push(
         `Isti tekst je ${duplicate.status === 'published' ? 'već objavljen' : 'već zakazan'} na ovom nalogu${when ? ` (${when})` : ''}; ${label} odbija identične objave. Izmenite tekst.`,
@@ -572,6 +565,20 @@ export async function schedulePost(viewer: Viewer, postId: string, input: Schedu
  * dozvoljeni uredniku). Sadržaj se proverava pre pauze, da neuspela provera ne ostavi objavu pauziranu.
  */
 export async function publishNow(viewer: Viewer, postId: string, version: number): Promise<PostView> {
+  const view = await publishNowSchedule(viewer, postId, version)
+  // objave bez Inngest-a (D-193): „Objavi sada” odmah pokreće prolaz za targete ove objave; ostatak
+  // (obrada videa na mreži, ponovni pokušaj) nastavlja Netlify krug na 2 minuta
+  try {
+    const { publishTick } = await import('@/services/posts/publish-engine')
+    const tick = await publishTick({ onlyTargetIds: view.targets.map((t) => t.id), budgetMs: 15_000 })
+    if (tick.enabled && tick.advanced > 0) return getPostView(viewer, postId)
+  } catch (error) {
+    logger.error('publish_now_engine_failed', { postId, error })
+  }
+  return view
+}
+
+async function publishNowSchedule(viewer: Viewer, postId: string, version: number): Promise<PostView> {
   // „Objavi sada” kreće za nekoliko sekundi, ne na sledeći pun minut (do 75 s čekanja, 22.11.)
   const at = new Date(Date.now() + 10_000).toISOString()
   const post = await loadPost(viewer, postId)

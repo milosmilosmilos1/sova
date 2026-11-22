@@ -29,7 +29,7 @@ const ORDER: ProfileField[] = ['name', 'short', 'long', 'keywords']
 const chars = (s: string) => Array.from(s).length
 
 /**
- * Opisi profila po mreži (D-143): jedno dugme piše opise za svih osam mreža, a svako polje ima brojač
+ * Opisi profila po mreži (D-143): jedno dugme piše opise za svih sedam mreža, a svako polje ima brojač
  * znakova u granici mreže i dugme za kopiranje. Opis se menja ručno (D-166); na Google poslovni profil
  * Sova ga upisuje sama, a za mreže koje to ne dozvoljavaju kopira tekst i otvara stranu za izmenu.
  */

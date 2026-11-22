@@ -16,7 +16,7 @@ export async function generateMetadata(): Promise<Metadata> {
 const ACCOUNT = ['age', 'password', 'free', 'team'] as const
 const CONTENT = ['yours', 'accuracy', 'responsibility', 'forbidden', 'thirdParty'] as const
 const PAYMENT = ['usage', 'allowance', 'renewal', 'prices', 'refunds', 'value'] as const
-const NETWORK_RULES = ['youtube', 'meta', 'linkedin', 'tiktok', 'x'] as const
+const NETWORK_RULES = ['youtube', 'meta', 'linkedin', 'tiktok'] as const
 
 /**
  * Uslovi korišćenja na jeziku strane (D-130). Srpska strana ima i kratak sažetak na engleskom
@@ -103,8 +103,8 @@ export default async function TermsPage() {
                   of {company.productName}. By creating an account you accept them.
                 </>,
                 'Sova is a social media management tool with AI assistance. You decide what gets published and you are responsible for the content you publish, including copyright, accuracy and compliance with each network’s rules.',
-                'By connecting a social account you authorise Sova to publish approved content on your behalf, import your past posts and read metrics. You can revoke this at any time. TikTok and LinkedIn posts go out only after you approve each one; automated posts on X require the account’s “Automated” label.',
-                'You must follow each network’s rules, including the YouTube Terms of Service and Google Privacy Policy, Meta’s terms and messaging rules, the LinkedIn User Agreement and Pages Terms, the TikTok Terms of Service and the X automation rules. Fake engagement, bulk unsolicited messages and automation a network forbids are prohibited.',
+                'By connecting a social account you authorise Sova to publish approved content on your behalf, import your past posts and read metrics. You can revoke this at any time. TikTok and LinkedIn posts go out only after you approve each one.',
+                'You must follow each network’s rules, including the YouTube Terms of Service and Google Privacy Policy, Meta’s terms and messaging rules, the LinkedIn User Agreement and Pages Terms, and the TikTok Terms of Service. Fake engagement, bulk unsolicited messages and automation a network forbids are prohibited.',
                 'AI-generated content may be inaccurate; review it before publishing.',
                 'AI actions consume tokens. Tokens are reserved before an action and charged only on success. Subscription tokens do not roll over; purchased top-up tokens do not expire. Subscriptions renew automatically until cancelled; cancellation takes effect at the end of the current period. Price changes are announced at least 30 days ahead.',
                 'The service is provided “as is”. Our total liability is limited to the amount you paid us in the 12 months before the event giving rise to the claim, to the extent permitted by law.',

@@ -99,7 +99,7 @@ Snimanje u seriji je najveća ušteda. Kad jednom postavite stalak i svetlo, **p
 
 Isti uspravni snimak može na Instagram Reels, Facebook Reels, TikTok i YouTube Shorts. Menja se opis: na TikToku kraći i opušteniji, na YouTube-u naslov do 100 znakova sa oznakom #Shorts, na Instagramu opis sa pozivom i do pet hashtagova. O TikToku posebno piše tekst o [TikToku za firme](@tiktok-za-firme), a o hashtagovima tekst o [hashtagovima na Instagramu](@hashtagovi-na-instagramu).
 
-Sova objavljuje video na sve te mreže iz jednog nacrta, sa opisom prilagođenim svakoj. Kad nemate svoj snimak, može da predloži video sa Pexels-a za temu objave, a od karusela može da napravi kratak video sa slajdovima. Ipak, vaš snimak iz radnje radi bolje od bilo kog stok videa. Kako izgleda ista objava na osam mreža, vidite na [početnoj strani](/#networks), a kako se video uklapa u nedeljni ritam, u tekstu [koliko često objavljivati](@koliko-cesto-objavljivati-na-drustvenim-mrezama).
+Sova objavljuje video na sve te mreže iz jednog nacrta, sa opisom prilagođenim svakoj. Kad nemate svoj snimak, može da predloži video sa Pexels-a za temu objave, a od karusela može da napravi kratak video sa slajdovima. Ipak, vaš snimak iz radnje radi bolje od bilo kog stok videa. Kako izgleda ista objava na sedam mreža, vidite na [početnoj strani](/#networks), a kako se video uklapa u nedeljni ritam, u tekstu [koliko često objavljivati](@koliko-cesto-objavljivati-na-drustvenim-mrezama).
 
 ## Česta pitanja
 

@@ -57,11 +57,6 @@ export const DEFAULT_BEST_TIMES: Record<SocialPlatform, Array<[weekday: number, 
     [4, 19],
     [0, 20],
   ],
-  x: [
-    [1, 12],
-    [3, 12],
-    [5, 12],
-  ],
   youtube: [
     [5, 17],
     [0, 11],

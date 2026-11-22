@@ -10,7 +10,7 @@ import { getBrand } from '@/services/brands'
 /** Sinhron poziv Gemini-ja sa rezervnim modelom. */
 export const maxDuration = 60
 
-/** Opisi profila za svih osam mreža iz profila brenda (D-143): 3 tokena, čuvaju se uz brend. */
+/** Opisi profila za svih sedam mreža iz profila brenda (D-143): 3 tokena, čuvaju se uz brend. */
 export const POST = createHandler(
   {
     auth: 'verified',

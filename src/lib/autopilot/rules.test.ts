@@ -79,13 +79,13 @@ describe('rok za odobrenje', () => {
 })
 
 describe('mreže koje traže lično odobrenje (D-182)', () => {
-  it('TikTok, LinkedIn i Pinterest nikad bez odobrenja; X samo sa potvrdom oznake „Automated”', () => {
-    expect(autoPublishAllowed(['facebook', 'instagram'], false)).toBe(true)
-    expect(autoPublishAllowed(['facebook', 'tiktok'], true)).toBe(false)
-    expect(autoPublishAllowed(['linkedin'], true)).toBe(false)
-    expect(autoPublishAllowed(['pinterest'], true)).toBe(false)
-    expect(autoPublishAllowed(['x'], false)).toBe(false)
-    expect(autoPublishAllowed(['x', 'facebook'], true)).toBe(true)
+  it('TikTok, LinkedIn i Pinterest nikad bez odobrenja', () => {
+    expect(autoPublishAllowed(['facebook', 'instagram'])).toBe(true)
+    expect(autoPublishAllowed(['facebook', 'tiktok'])).toBe(false)
+    expect(autoPublishAllowed(['linkedin'])).toBe(false)
+    expect(autoPublishAllowed(['pinterest'])).toBe(false)
+    // stari red sa X-om (izbačen iz Sove, D-192) se nikad ne objavljuje sam
+    expect(autoPublishAllowed(['x', 'facebook'])).toBe(false)
   })
 
   it('posle roka se ne objavljuje ni ne preskače, nego podseća pa vraća u nacrt', () => {

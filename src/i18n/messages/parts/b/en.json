@@ -1,8 +1,6 @@
 {
   "postEditor": {
     "loading": "Loading post…",
-    "xCost": "A post on X uses {cost, plural, one {# token} other {# tokens}} (1 without a link, 6 with one); you're charged only once it's published.",
-    "xCostLink": "A post on X uses {cost, plural, one {# token} other {# tokens}} because it has a link (1 without a link, 6 with one); you're charged only once it's published.",
     "actions": {
       "submit": "Send for approval",
       "withdraw": "Withdraw from approval",
@@ -254,26 +252,18 @@
       },
       "documentTitle": "Document title"
     },
-    "x": {
-      "thread": "Send as a thread ({parts, plural, one {# post} other {# posts}})",
-      "threadHint": "The text is longer than 280 characters. Sova splits it by paragraphs and sentences; the first post carries the image and the rest go as replies.",
-      "numbered": "Numbers at the end of each part (1/5)",
-      "threadCost": "A thread of {parts, plural, one {# post} other {# posts}} uses {cost, plural, one {# token} other {# tokens}} (1 per post, 6 for a post with a link); you’re charged only once the thread is published.",
-      "tooLong": "Without a thread the text can’t be longer than {max} characters, so X won’t accept it."
-    },
     "poll": {
-      "toggle": "Publish as a poll (LinkedIn and X)",
-      "hint": "The same poll goes to all selected LinkedIn and X accounts. On X the post text is the question; on LinkedIn the question sits below the intro.",
+      "toggle": "Publish as a poll (LinkedIn)",
+      "hint": "The same poll goes to all selected LinkedIn accounts. The question sits below the intro.",
       "question": "Question",
       "options": "Answers",
       "optionLabel": "Answer {n}",
       "remove": "Remove answer {n}",
       "add": "Add answer",
-      "optionHint": "2 to 4 answers. An answer can have up to 25 characters on X and 30 on LinkedIn.",
+      "optionHint": "2 to 4 answers, up to 30 characters each.",
       "duration": "Duration",
       "days": "{n, plural, one {# day} other {# days}}",
-      "xMax": "On X a poll lasts at most 7 days.",
-      "media": "LinkedIn and X publish the poll without an image; the image goes only to the other networks."
+      "media": "LinkedIn publishes the poll without an image; the image goes only to the other networks."
     }
   },
   "postsList": {
@@ -337,8 +327,7 @@
       "tiktok": "TikTok didn't return an account.",
       "google_business": "Google didn't return any locations. Check that you're an owner or manager of the Business Profile and that the profile is verified.",
       "youtube": "This Google account has no YouTube channel. Create a channel on YouTube, then connect again.",
-      "pinterest": "Pinterest didn't return an account.",
-      "x": "X didn't return an account."
+      "pinterest": "Pinterest didn't return an account."
     },
     "viaFacebook": "log in through Facebook",
     "status": {

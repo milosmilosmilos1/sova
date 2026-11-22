@@ -29,8 +29,6 @@ export function Faq({ costs }: { costs: PricingCosts }) {
       text: costs.text,
       image: costs.image,
       strategy: costs.strategy,
-      xPost: costs.xPost,
-      withLink: costs.xPostWithLink,
     }),
     autopilot: t('items.autopilot.a'),
     cancel: t('items.cancel.a'),

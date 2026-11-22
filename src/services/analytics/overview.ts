@@ -2,7 +2,7 @@ import 'server-only'
 
 import type { SupabaseClient } from '@supabase/supabase-js'
 
-import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
+import { isSocialPlatform, PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import {
   ANALYTICS_TARGET_STATUSES,
   dailySeries,
@@ -142,7 +142,10 @@ async function loadTargets(
     .order('published_at', { ascending: false })
     .limit(2000)
   if (error) throw mapDbError(error)
-  const rows = ((data ?? []) as unknown as TargetRow[]).filter((t) => t.published_at)
+  // stare objave na X-u (izbačen iz Sove, D-192) ne ulaze u analitiku
+  const rows = ((data ?? []) as unknown as TargetRow[]).filter(
+    (t) => t.published_at && isSocialPlatform(t.platform),
+  )
   const targets = rows.map((t): TargetLite => {
     const p = t.posts
     return {
@@ -201,11 +204,10 @@ export async function computeOverview(
   ])
   const targets = current.targets
   const prevTargets = prior.targets
-  const accounts: AccountLite[] = (accountsRes.data ?? []).map((a) => ({
-    id: a.id,
-    platform: a.platform,
-    name: a.name,
-  }))
+  // stari nalog sa X-a (izbačen iz Sove, D-192) se ne prikazuje
+  const accounts: AccountLite[] = (accountsRes.data ?? []).flatMap((a) =>
+    isSocialPlatform(a.platform) ? [{ id: a.id, platform: a.platform, name: a.name }] : [],
+  )
   const accountById = new Map(accounts.map((a) => [a.id, a]))
   const latest = latestSnapshots(current.snapshots)
   const prevLatest = latestSnapshots(prior.snapshots)

@@ -181,7 +181,7 @@
       "skip": "skip",
       "publish": "publish",
       "adminOnly": "Only the owner and admins can change these settings.",
-      "personalHint": "TikTok, LinkedIn and Pinterest posts always wait for your approval (their rules); X posts go out on their own only with the \"Automated\" label confirmed."
+      "personalHint": "TikTok, LinkedIn and Pinterest posts always wait for your approval (their rules)."
     },
     "saved": "Saved.",
     "saving": "Saving…",
@@ -217,8 +217,7 @@
       "mix": "AI mixes types",
       "mixHint": "The chosen types take turns through the week, with images and carousels more often. Off: always the first chosen type the network accepts.",
       "pickOne": "Choose at least one type."
-    },
-    "xLabel": "The \"Automated\" label is turned on for the X account (X requires it for automated posts; X account settings → Your account → Account information → Automation)."
+    }
   },
   "suggestions": {
     "embeddedTitle": "Content suggestions",
@@ -539,7 +538,7 @@
     "formats": {
       "text": {
         "label": "Text only",
-        "hint": "A post without an image, for Facebook, LinkedIn and X."
+        "hint": "A post without an image, for Facebook and LinkedIn."
       },
       "image": {
         "label": "Image",
@@ -562,7 +561,7 @@
         "hint": "Text with a link and a page preview."
       },
       "poll": {
-        "label": "Poll (LinkedIn and X)",
+        "label": "Poll (LinkedIn)",
         "hint": "A question with 2 to 4 answers, no image."
       }
     },

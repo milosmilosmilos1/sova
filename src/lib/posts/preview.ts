@@ -17,7 +17,6 @@ export const CAPTION_RULES: Record<SocialPlatform, CaptionRule> = {
   facebook: { chars: 250, lines: 5 },
   linkedin: { chars: 210, lines: 3 },
   tiktok: { chars: 80, lines: 2 },
-  x: { chars: 280, lines: 40 },
   youtube: { chars: 100, lines: 2 },
   pinterest: { chars: 100, lines: 2 },
   google_business: { chars: 150, lines: 3 },
@@ -86,6 +85,6 @@ export function placementOf(
 export function feedRatio(platform: SocialPlatform, media: PreviewMediaShape | undefined): number {
   if (platform === 'google_business') return 4 / 3
   const ratio = media?.width && media.height ? media.width / media.height : 0.8
-  const [min, max] = platform === 'pinterest' ? [0.5, 1.5] : platform === 'x' ? [0.75, 1.91] : [0.8, 1.91]
+  const [min, max] = platform === 'pinterest' ? [0.5, 1.5] : [0.8, 1.91]
   return Math.min(max, Math.max(min, ratio))
 }

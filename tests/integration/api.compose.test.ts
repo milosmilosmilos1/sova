@@ -276,8 +276,8 @@ describe('Nova objava (POST /api/ai/compose)', () => {
     expect(calls).toHaveLength(1)
   })
 
-  it('anketa za LinkedIn i X: Gemini piše uvod i pitanje sa odgovorima, bez slike; uz Instagram se odbija (D-151)', async () => {
-    const r0 = reply(null, null, ['linkedin', 'x'])
+  it('anketa za LinkedIn: Gemini piše uvod i pitanje sa odgovorima, bez slike; uz Instagram ili X se odbija (D-151, D-192)', async () => {
+    const r0 = reply(null, null, ['linkedin'])
     enqueueReply({
       ...r0,
       json: {
@@ -289,7 +289,7 @@ describe('Nova objava (POST /api/ai/compose)', () => {
         },
       },
     })
-    const r = await compose({ format: 'poll', platforms: ['linkedin', 'x'] })
+    const r = await compose({ format: 'poll', platforms: ['linkedin'] })
     expect(r.status).toBe(200)
     const data = r.json.data as ComposeView & {
       poll?: { question: string; options: string[]; durationDays: number }
@@ -306,6 +306,8 @@ describe('Nova objava (POST /api/ai/compose)', () => {
 
     const mixed = await compose({ format: 'poll', platforms: ['linkedin', 'instagram'] })
     expect(mixed.status).toBe(400)
+    const removed = await compose({ format: 'poll', platforms: ['linkedin', 'x'] })
+    expect(removed.status).toBe(400)
   })
 
   it('provere: bez ključa, vrsta koju mreža ne prima, mreže bez zajedničke vrste; ništa se ne naplaćuje', async () => {

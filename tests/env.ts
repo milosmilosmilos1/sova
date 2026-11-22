@@ -34,8 +34,6 @@ export const TEST_SECRETS: Record<string, string> = {
   GOOGLE_CLIENT_SECRET: 'test-google-secret-0123456789',
   PINTEREST_APP_ID: '1234567',
   PINTEREST_APP_SECRET: 'test-pinterest-secret-0123456789',
-  X_CLIENT_ID: 'test-x-client-id',
-  X_CLIENT_SECRET: 'test-x-client-secret-0123456789',
   // faza 12: Stripe kroz MSW (namerno bez sk_/whsec_ prefiksa, da ih skener tajni ne hvata)
   STRIPE_SECRET_KEY: 'test-stripe-secret-key-0123456789',
   STRIPE_WEBHOOK_SECRET: 'test-stripe-webhook-secret-0123456789',

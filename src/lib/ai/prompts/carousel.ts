@@ -42,8 +42,6 @@ export const carouselSlideSchema = z.object({
 export const carouselOutputSchema = z.object({
   slides: z.array(carouselSlideSchema).min(1).max(SLIDES_MAX),
   caption: z.string(),
-  /** kratak opis za X (do 250 znakova) */
-  short_caption: z.string(),
   hashtags: z.array(z.string()),
   first_comment: z.string().nullable(),
   visual_query: z.string().nullable(),
@@ -102,7 +100,7 @@ export function buildCarouselPrompt(input: CarouselPromptInput): string {
     0,
     ...input.platforms.map((p) => (input.includeHashtags ? PLATFORMS[p].hashtagsRecommended : 0)),
   )
-  const captionMax = Math.min(2000, ...input.platforms.map((p) => (p === 'x' ? 2000 : PLATFORMS[p].textMax)))
+  const captionMax = Math.min(2000, ...input.platforms.map((p) => PLATFORMS[p].textMax))
   return [
     WRITE_IN[input.brand.locale],
     ONE_LANGUAGE[input.brand.locale],
@@ -123,7 +121,6 @@ export function buildCarouselPrompt(input: CarouselPromptInput): string {
     input.format === 'story'
       ? 'Priča nema opis na mreži: caption ipak napiši, čuva se uz nacrt.'
       : 'Opis dopunjuje slajdove, ne ponavlja ih reč po reč.',
-    'short_caption: ista poruka do 250 znakova, za X.',
     hashtagCap > 0 ? `hashtags: ${hashtagCap} relevantnih heštegova sa #.` : 'hashtags: prazna lista.',
     'first_comment: predlog prvog komentara (pitanje za publiku ili link) ili null.',
     'visual_query: 2 do 5 reči na engleskom za pretragu fotografija. Počni glavnim predmetom teme, i to tačno onim o kom je objava (za ishranu pasa „dog eating kibble”, ne „pet food”; za kafić „coffee shop interior”), pa dodaj ono što se još vidi na fotografiji. Bez imena brenda i bez apstraktnih reči (quiz, tips, guide, ideas).',

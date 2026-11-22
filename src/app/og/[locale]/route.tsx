@@ -18,14 +18,14 @@ const COPY: Record<AppLocale, { first: string; accent: string; rest: string; sub
     first: 'Unesite sajt,',
     accent: 'Sova vodi',
     rest: 'vaše mreže.',
-    sub: 'Strategija, objave, vizuali, zakazivanje i analitika za osam mreža.',
+    sub: 'Strategija, objave, vizuali, zakazivanje i analitika za sedam mreža.',
     font: 76,
   },
   en: {
     first: 'Enter your website,',
     accent: 'Sova runs',
     rest: 'your social media.',
-    sub: 'Strategy, posts, visuals, scheduling and analytics for eight networks.',
+    sub: 'Strategy, posts, visuals, scheduling and analytics for seven networks.',
     font: 64,
   },
 }

@@ -6,7 +6,7 @@ import { formatFor, formatsForPlatforms, mediaNeed, type PostFormat } from '@/co
 import { variantToText } from '@/lib/ai/prompts/post-text'
 import { ApiError } from '@/lib/api/errors'
 import { findTarget, isDataKind, KIND_FORMATS, type KindTarget } from '@/lib/content-kinds'
-import { kindCopyLines, reviewQuoteBlock, reviewShortQuote } from '@/lib/content-kinds/copy'
+import { kindCopyLines, reviewQuoteBlock } from '@/lib/content-kinds/copy'
 import { storedContent } from '@/lib/schemas/brand-content'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
@@ -50,7 +50,7 @@ export interface ComposeResult {
   tokensCharged: number
   /** dizajnirana objava (D-108): stil i tekst slajdova */
   styleId?: string
-  /** anketa za LinkedIn i X (D-151) */
+  /** anketa za LinkedIn (D-151) */
   poll?: PollOptions
   slides?: Array<{ kind: string; title: string; body?: string | null }>
 }
@@ -154,15 +154,13 @@ export async function composePost(
       : request.format
   const query = (text.output.visual_query?.trim() || input.topic).slice(0, 100)
   const first = text.output.variants[0]!
-  // utisak klijenta (D-165) ide na početak tačno kako je napisan; X dobija početak utiska i ime
+  // utisak klijenta (D-165) ide na početak tačno kako je napisan
   const review = target?.kind === 'review' ? target.item : null
   const contentLocale = input.locale ?? toContentLocale(brand.content_locale)
   const textOf = (v: typeof first): string => {
     const body = variantToText(v).text
     if (!review) return body
-    return v.platform === 'x'
-      ? reviewShortQuote(review, contentLocale)
-      : `${reviewQuoteBlock(review, contentLocale)}\n\n${body}`
+    return `${reviewQuoteBlock(review, contentLocale)}\n\n${body}`
   }
 
   // vizual po vrsti i izvoru; kad izvor nema rezultat, prelazi se na sledeći uz napomenu
@@ -297,8 +295,8 @@ export async function composePost(
 }
 
 /**
- * Anketa za LinkedIn i X (D-151): Gemini piše uvod po mreži i pitanje sa 2 do 4 odgovora; anketa ide u
- * `options.poll` svakog targeta, bez slike (obe mreže ne dozvoljavaju anketu i medij zajedno).
+ * Anketa za LinkedIn (D-151): Gemini piše uvod i pitanje sa 2 do 4 odgovora; anketa ide u
+ * `options.poll` svakog targeta, bez slike (LinkedIn ne dozvoljava anketu i medij zajedno).
  */
 async function composePoll(
   viewer: Viewer,
@@ -308,7 +306,7 @@ async function composePoll(
 ): Promise<ComposeResult> {
   const platforms = input.platforms as SocialPlatform[]
   if (!platforms.every(isPollPlatform))
-    throw new ApiError('VALIDATION', 'Anketa ide samo na LinkedIn i X. Izaberite samo te mreže.')
+    throw new ApiError('VALIDATION', 'Anketa ide samo na LinkedIn. Izaberite samo LinkedIn naloge.')
   const notes: string[] = []
   const text = await generatePostText(
     viewer,

@@ -2,7 +2,7 @@ import 'server-only'
 
 import { randomBytes } from 'node:crypto'
 
-import type { SocialPlatform } from '@/config/platforms'
+import { isSocialPlatform, type SocialPlatform } from '@/config/platforms'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { ADMIN_ROLES, EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
@@ -46,8 +46,8 @@ export { loadAccountRow, markAccountStatus, refFor, tokensFor, type SocialAccoun
 /**
  * Nalozi mreža (docs/ARCHITECTURE.md 3.4): povezivanje kroz OAuth, izbor naloga, tokeni AES-256-GCM
  * u `social_accounts`, čitanje kroz `social_accounts_public` (bez tokena). Meta (FB + IG) od faze 8a,
- * LinkedIn i TikTok od faze 8b, Google (YouTube, poslovni profil), Pinterest i X od faze 8c–8d; ključ
- * toka i mreže dolaze iz registry-ja. Mreže koje traže PKCE (X) dobijaju šifrovan verifier uz state.
+ * LinkedIn i TikTok od faze 8b, Google (YouTube, poslovni profil) i Pinterest od faze 8c; ključ
+ * toka i mreže dolaze iz registry-ja. Mreže koje traže PKCE dobijaju šifrovan verifier uz state.
  */
 export type SocialAccountPublic = Database['public']['Views']['social_accounts_public']['Row']
 
@@ -293,7 +293,7 @@ function toView(r: SocialAccountPublic, historyCount: number): SocialAccountView
   const meta = (r.metadata as Record<string, Json> | null) ?? {}
   return {
     id: r.id!,
-    platform: r.platform!,
+    platform: r.platform as SocialPlatform,
     externalId: r.external_id!,
     parentExternalId: r.external_parent_id ?? null,
     name: r.name!,
@@ -337,7 +337,8 @@ export async function listSocialAccounts(
     connectAvailability(),
   ])
   if (error) throw mapDbError(error)
-  const rows = data ?? []
+  // stari nalog sa X-a (izbačen iz Sove, D-192) ostaje u bazi, ali se ne prikazuje
+  const rows = (data ?? []).filter((r) => isSocialPlatform(r.platform))
   const counts = new Map<string, number>()
   for (const h of hist ?? []) counts.set(h.social_account_id, (counts.get(h.social_account_id) ?? 0) + 1)
   const views = rows.map((r) => toView(r, counts.get(r.id!) ?? 0))

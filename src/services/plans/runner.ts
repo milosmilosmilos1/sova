@@ -25,7 +25,7 @@ import {
   type KindTarget,
   type SlotKind,
 } from '@/lib/content-kinds'
-import { applyReviewCopy, kindCopyLines, reviewQuoteBlock, reviewShortQuote } from '@/lib/content-kinds/copy'
+import { applyReviewCopy, kindCopyLines, reviewQuoteBlock } from '@/lib/content-kinds/copy'
 import { planKindData } from '@/lib/content-kinds/plan'
 import { logger } from '@/lib/logger'
 import { monthEnd, slotMonths, type PlanSlot } from '@/lib/plans/slots'
@@ -442,12 +442,6 @@ async function setItem(itemId: string, patch: Database['public']['Tables']['mont
     .eq('id', itemId)
 }
 
-/** X prima 280 znakova; duži tekst se skraćuje na kraju rečenice ili reči. */
-function fitText(platform: SocialPlatform, text: string): string {
-  if (platform !== 'x' || text.length <= 280) return text
-  return `${text.slice(0, 277).trimEnd()}…`
-}
-
 /** Nacrt kako ide u bazu, bez medija; dizajnirana stavka ga nosi između koraka. */
 interface PlanDraft {
   title: string
@@ -693,16 +687,14 @@ async function startPlanItem(itemId: string): Promise<StartedItem> {
       format,
       kindLines: target ? kindCopyLines(target, 'text') : undefined,
     })
-    // utisak klijenta ide na početak tačno kako je napisan; X dobija početak utiska i ime autora
+    // utisak klijenta ide na početak tačno kako je napisan
     const body = review ? `${reviewQuoteBlock(review, locale)}\n\n${text.text}` : text.text
     const draft: PlanDraft = {
       title: item.topic.slice(0, 200),
       master: body,
       firstComment: text.firstComment,
       link: format === 'link' ? brand.website_url : null,
-      texts: Object.fromEntries(
-        platforms.map((p) => [p, review && p === 'x' ? reviewShortQuote(review, locale) : fitText(p, body)]),
-      ),
+      texts: Object.fromEntries(platforms.map((p) => [p, body])),
       accounts,
       story: false,
       locale,

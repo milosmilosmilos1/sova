@@ -1,19 +1,12 @@
 import type { SocialPlatform } from '@/config/platforms'
 
 /**
- * Naslovne slike profila (D-145): Facebook, LinkedIn (stranica firme i lični profil), X, YouTube i
- * Pinterest, svaka u veličini koju mreža traži. Tekst stoji u delu koji se vidi na svakom uređaju
+ * Naslovne slike profila (D-145): Facebook, LinkedIn (stranica firme i lični profil), YouTube i
+ * Pinterest (X je izbačen, D-192), svaka u veličini koju mreža traži. Tekst stoji u delu koji se vidi na svakom uređaju
  * (`safe`), a ne ispod slike profila ili logoa koji prekrivaju donji levi ugao. Profilna slika (D-147) je
  * jedna za sve mreže: logo ili početna slova brenda u krugu koji svaka mreža iseca iz sredine.
  */
-export const COVER_KINDS = [
-  'facebook',
-  'linkedin_page',
-  'linkedin_profile',
-  'x',
-  'youtube',
-  'pinterest',
-] as const
+export const COVER_KINDS = ['facebook', 'linkedin_page', 'linkedin_profile', 'youtube', 'pinterest'] as const
 export const BANNER_KINDS = ['avatar', ...COVER_KINDS] as const
 export type BannerKind = (typeof BANNER_KINDS)[number]
 
@@ -58,14 +51,6 @@ export const PROFILE_BANNERS: Record<
     width: 1584,
     height: 396,
     safe: { x: 560, y: 48, width: 960, height: 300 },
-    align: 'end',
-  },
-  // slika profila je dole levo, a telefon seče traku gore i dole
-  x: {
-    platform: 'x',
-    width: 1500,
-    height: 500,
-    safe: { x: 520, y: 80, width: 920, height: 340 },
     align: 'end',
   },
   // na svakom uređaju se vidi samo traka 1546×423 u sredini

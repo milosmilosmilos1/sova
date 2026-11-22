@@ -57,7 +57,6 @@ describe('pregled objave na mreži (D-138)', () => {
     const tall = { video: false, width: 1080, height: 1920 }
     expect(feedRatio('instagram', tall)).toBe(0.8)
     expect(feedRatio('pinterest', { video: false, width: 1000, height: 1500 })).toBeCloseTo(2 / 3)
-    expect(feedRatio('x', tall)).toBe(0.75)
     expect(feedRatio('facebook', { video: false, width: 1200, height: 628 })).toBeCloseTo(1.91, 2)
     expect(feedRatio('google_business', tall)).toBeCloseTo(4 / 3)
     expect(feedRatio('linkedin', undefined)).toBe(0.8)

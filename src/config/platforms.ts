@@ -1,7 +1,14 @@
-import { xWeightedLength } from '@/lib/x-text'
 import type { Database } from '@/types/database'
 
-export type SocialPlatform = Database['public']['Enums']['social_platform']
+/** Mreža kako je zapisana u bazi; vrednost `x` je ostala u enumu iz vremena pre D-192. */
+export type DbPlatform = Database['public']['Enums']['social_platform']
+
+/** Mreže koje Sova podržava. X je izbačen iz Sove (D-192); stari redovi sa `x` se preskaču. */
+export type SocialPlatform = Exclude<DbPlatform, 'x'>
+
+export function isSocialPlatform(value: unknown): value is SocialPlatform {
+  return typeof value === 'string' && value !== 'x' && value in PLATFORMS
+}
 
 export interface PlatformConstraints {
   label: string
@@ -80,19 +87,6 @@ export const PLATFORMS: Record<SocialPlatform, PlatformConstraints> = {
     video: { maxSeconds: 600, maxBytes: 4 * 1024 ** 3 },
     aiLabel: true,
   },
-  x: {
-    label: 'X',
-    textMax: 280,
-    hashtagsRecommended: 2,
-    hashtagsMax: 5,
-    imageMime: ['image/jpeg', 'image/png', 'image/webp', 'image/gif'],
-    imageAspect: { min: 0.33, max: 3.0 },
-    imageMaxPerPost: 4,
-    // od 1.9.2026: 20 minuta i 8 GB (Premium više); 140 s važi još samo za DM
-    video: { maxSeconds: 1200, maxBytes: 8 * 1024 ** 3 },
-    aiLabel: false,
-    linkNote: 'Objava sa linkom košta više (pay-per-use); URL se broji kao 23 karaktera.',
-  },
   youtube: {
     label: 'YouTube Shorts',
     textMax: 5000,
@@ -130,9 +124,15 @@ export const PLATFORMS: Record<SocialPlatform, PlatformConstraints> = {
 
 export const PLATFORM_KEYS = Object.keys(PLATFORMS) as SocialPlatform[]
 
-/** X broji po težini (link 23, emoji i CJK 2, `src/lib/x-text.ts`); ostale mreže broje znakove. */
-export function countTextLength(platform: SocialPlatform, text: string): number {
-  return platform === 'x' ? xWeightedLength(text) : [...text].length
+/** Naziv mreže za prikaz, i za stari red iz baze sa mrežom koju Sova više ne podržava (X, D-192). */
+export function platformLabel(value: string): string {
+  if (isSocialPlatform(value)) return PLATFORMS[value].label
+  return value === 'x' ? 'X' : value
+}
+
+/** Dužina teksta u znakovima (emoji je jedan znak). */
+export function countTextLength(_platform: SocialPlatform, text: string): number {
+  return [...text].length
 }
 
 export interface TextValidation {

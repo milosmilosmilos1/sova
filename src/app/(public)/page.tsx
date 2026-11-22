@@ -106,8 +106,6 @@ export default async function LandingPage() {
     // bez AI slika (D-104) slika objave je vizual iz šablona ili uvoz iz Canve, oba po istoj ceni
     image: aiImages ? prices.image_standard : prices.visual_template,
     strategy: prices.strategy,
-    xPost: prices.x_post,
-    xPostWithLink: prices.x_post_with_link,
   }
   const pricing = pricingFromPlans(plans, costs)
   const freeTokens = pricing?.free.tokens ?? null

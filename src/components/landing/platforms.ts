@@ -4,7 +4,6 @@ import {
   faLinkedinIn,
   faPinterestP,
   faTiktok,
-  faXTwitter,
   faYoutube,
 } from '@fortawesome/free-brands-svg-icons'
 import type { IconDefinition } from '@fortawesome/free-solid-svg-icons'
@@ -23,7 +22,7 @@ export interface LandingPlatform {
   icon: IconDefinition | null
   /** pozadina pločice; `ig` je Instagram gradijent iz klase `.l-ig` */
   tile: string | 'ig'
-  /** tanak svetli okvir za crne pločice (TikTok, X) */
+  /** tanak svetli okvir za crne pločice (TikTok) */
   ring?: boolean
   /** boja znaka u zaglavlju kartice objave */
   brand: string
@@ -84,19 +83,6 @@ export const LANDING_PLATFORMS: LandingPlatform[] = [
     limit: RULES.tiktok.textMax,
     layout: 'video',
     image: '/landing/testo.jpg',
-  },
-  {
-    key: 'x',
-    icon: faXTwitter,
-    tile: '#000000',
-    ring: true,
-    brand: '#0F1419',
-    limit: RULES.x.textMax,
-    layout: 'feed',
-    image: '/landing/kafa.jpg',
-    imageHeight: 200,
-    imagePad: '0 16px',
-    imageRadius: 14,
   },
   {
     key: 'youtube',

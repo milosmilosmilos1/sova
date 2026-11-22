@@ -1,8 +1,6 @@
 import 'server-only'
 
-import type { SocialPlatform } from '@/config/platforms'
-import { readPoll } from '@/config/poll'
-import { readXOptions, xThreadParts } from '@/config/x'
+import { isSocialPlatform, type DbPlatform, type SocialPlatform } from '@/config/platforms'
 import type { NotificationType } from '@/config/notifications'
 import { providerFor } from '@/integrations/social/registry'
 import { pollHandleId, type NormalizedPost, type PollHandle } from '@/integrations/social/types'
@@ -39,9 +37,6 @@ import { getPostView, loadPost, type PostRow, type PostView, type TargetRow } fr
 import { markAccountStatus, refFor, type SocialAccountRow } from '@/services/social/account-rows'
 import { accessTokenFor } from '@/services/social/tokens'
 import { publicMediaUrl, type MediaVariant } from '@/lib/media/public-url'
-import { getTokenPrice } from '@/lib/tokens/prices'
-import { composeXText, containsUrl } from '@/lib/x-text'
-import { confirmReservation, releaseReservation, reserveTokens } from '@/lib/tokens/reservation'
 import type { Database, Json } from '@/types/database'
 
 /**
@@ -109,7 +104,8 @@ export function setDailyLimitsForTests(limits: Partial<Record<SocialPlatform, nu
   dailyLimitsOverride = limits
 }
 
-function dailyLimitFor(platform: SocialPlatform): number | null {
+function dailyLimitFor(platform: DbPlatform): number | null {
+  if (!isSocialPlatform(platform)) return null
   return (dailyLimitsOverride ?? DAILY_PUBLISH_LIMITS)[platform] ?? null
 }
 
@@ -203,7 +199,7 @@ export function withUtm(
   }
 }
 
-function publicVariant(platform: SocialPlatform, kind: string): MediaVariant {
+function publicVariant(platform: DbPlatform, kind: string): MediaVariant {
   if (kind !== 'image') return 'orig'
   if (platform === 'tiktok') return 'tiktok'
   return platform === 'pinterest' || platform === 'google_business' ? 'jpeg' : 'orig'
@@ -510,6 +506,26 @@ async function recheck(job: PublishJob, runId: string | null, now: Date): Promis
     return { action: 'paused', message }
   }
 
+  // X je izbačen iz Sove (D-192): stara zakazana objava na X-u se ne šalje, nego pada sa porukom
+  if (!isSocialPlatform(b.target.platform)) {
+    const failure: ClassifiedFailure = {
+      kind: 'permanent',
+      code: 'PLATFORM_REMOVED',
+      message: 'Sova više ne objavljuje na X-u, pa ova objava nije poslata.',
+      detail: `mreža ${b.target.platform} nije u Sovi (D-192)`,
+      httpStatus: null,
+    }
+    await moveTarget(b.target.id, 'scheduled', 'publishing', {
+      attempt_count: b.target.attempt_count + 1,
+      last_attempt_at: now.toISOString(),
+      inngest_run_id: runId,
+    })
+    if (b.post.status === 'scheduled')
+      await transitionPostService(b.post.id, 'publishing', ROLLUP_SUMMARY.publishing!)
+    await failTarget(b, b.target.attempt_count + 1, now, failure, runId)
+    return { action: 'failed', message: failure.message }
+  }
+
   if (b.account.status !== 'active') {
     const message =
       b.account.status === 'needs_reauth'
@@ -604,62 +620,6 @@ async function recheck(job: PublishJob, runId: string | null, now: Date): Promis
   return { action: 'go' }
 }
 
-/**
- * X je pay-per-use (D-013): objava troši 1 token, a sa linkom 6 (X naplaćuje objavu sa URL-om
- * $0.20). Rezervacija pre slanja, potvrda posle uspeha, oslobađanje pri grešci; rok rezervacije 60 min
- * pokriva i obradu videa.
- */
-/** Opis naplate za poruku o tokenima: nit, objava sa linkom ili objava. */
-function xChargeLabel(post: NormalizedPost): string {
-  const actions = xChargeActions(post)
-  // bez oblika reči uz broj: „nit (broj objava: 3)”
-  if (actions.length > 1) return `nit (broj objava: ${actions.length})`
-  return actions[0] === 'x_post_with_link' ? 'objava sa linkom' : 'objava'
-}
-
-export function xChargeAction(post: Pick<NormalizedPost, 'text' | 'link'>): 'x_post' | 'x_post_with_link' {
-  // X sam pretvara i domen bez https:// u link, pa i on menja cenu
-  return post.link || containsUrl(post.text) ? 'x_post_with_link' : 'x_post'
-}
-
-/** Nit (D-150): svaki deo je posebna objava na X-u; deo sa linkom po ceni objave sa linkom. */
-export function xChargeActions(
-  post: Pick<NormalizedPost, 'text' | 'link' | 'options'>,
-): Array<'x_post' | 'x_post_with_link'> {
-  // anketa (D-151) je jedna objava, bez niti
-  const parts = readPoll(post.options) ? [] : xThreadParts(composeXText(post), readXOptions(post.options))
-  if (parts.length <= 1) return [xChargeAction(post)]
-  return parts.map((p) => (containsUrl(p) ? 'x_post_with_link' : 'x_post'))
-}
-
-async function reservePublishCharge(b: Bundle, post: NormalizedPost): Promise<string | null> {
-  if (b.target.platform !== 'x') return null
-  const prices = await Promise.all(xChargeActions(post).map((a) => getTokenPrice(a)))
-  const amount = prices.reduce((sum, p) => sum + p, 0)
-  if (amount <= 0) return null
-  return reserveTokens({
-    workspaceId: b.post.workspace_id,
-    brandId: b.brand.id,
-    userId: b.post.created_by,
-    amount,
-    ttlMinutes: 60,
-  })
-}
-
-async function settleCharge(
-  charge: string | null,
-  outcome: 'confirm' | 'release',
-  reason = 'publish',
-): Promise<void> {
-  if (!charge) return
-  try {
-    if (outcome === 'confirm') await confirmReservation(charge)
-    else await releaseReservation(charge, reason)
-  } catch (error) {
-    logger.error('publish_charge_settle_failed', { charge, outcome, error })
-  }
-}
-
 type AttemptResult =
   | { kind: 'success'; externalId: string | null; socialAccountId: string; brandId: string }
   | {
@@ -667,8 +627,6 @@ type AttemptResult =
       handle: PollHandle
       socialAccountId: string
       brandId: string
-      /** rezervacija tokena (X) koja se potvrđuje ili oslobađa posle obrade */
-      charge: string | null
     }
   | { kind: 'retry'; delayMs: number; message: string }
   | { kind: 'reschedule'; at: string; socialAccountId: string; version: number; message: string }
@@ -742,11 +700,6 @@ async function attemptOnce(
     try {
       const existing = await provider.findExistingPost(normalized, ref, token)
       if (existing) {
-        try {
-          await settleCharge(await reservePublishCharge(b, normalized), 'confirm')
-        } catch (error) {
-          logger.warn('publish_charge_existing_failed', { targetId: b.target.id, error })
-        }
         await finalizeSuccess(
           b,
           attemptNo,
@@ -763,24 +716,6 @@ async function attemptOnce(
     }
   }
 
-  let charge: string | null = null
-  try {
-    charge = await reservePublishCharge(b, normalized)
-  } catch (error) {
-    const failure: ClassifiedFailure =
-      error instanceof ApiError && error.code === 'INSUFFICIENT_TOKENS'
-        ? {
-            kind: 'permanent',
-            code: 'INSUFFICIENT_TOKENS',
-            message: `Nema dovoljno tokena za objavu na X (${xChargeLabel(normalized)}). Dopunite tokene pa objavite ponovo.`,
-            detail: error.message,
-            httpStatus: null,
-          }
-        : classifyPublishError(error)
-    await failTarget(b, attemptNo, startedAt, failure, runId)
-    return { kind: 'failed', message: failure.message }
-  }
-
   try {
     const result = await provider.publish(normalized, ref, token)
     if (result.pending) {
@@ -793,14 +728,12 @@ async function attemptOnce(
         { pending: pollHandleId(result.pending) },
         runId,
       )
-      return { kind: 'pending', handle: result.pending, ...ids, charge }
+      return { kind: 'pending', handle: result.pending, ...ids }
     }
-    await settleCharge(charge, 'confirm')
     await finalizeSuccess(b, attemptNo, startedAt, result.externalId, result.permalink, runId, null)
     return { kind: 'success', externalId: result.externalId, ...ids }
   } catch (error) {
     const failure = classifyPublishError(error)
-    await settleCharge(charge, 'release', failure.code)
     switch (failure.kind) {
       case 'retry': {
         if (attemptNo >= MAX_PUBLISH_ATTEMPTS) {
@@ -889,11 +822,9 @@ async function pollOnce(
   attemptNo: number,
   pollNo: number,
   runId: string | null,
-  charge: string | null = null,
 ): Promise<PollResult> {
   const b = await loadBundle(job.targetId)
   if (!b || b.target.status !== 'publishing') {
-    await settleCharge(charge, 'release', 'target_changed')
     return { kind: 'failed', message: 'target više nije u objavljivanju' }
   }
   const provider = providerFor(b.target.platform)
@@ -910,14 +841,12 @@ async function pollOnce(
           detail: `obrada ${pollHandleId(handle)} i dalje traje posle ${pollNo} provera`,
           httpStatus: null,
         }
-        await settleCharge(charge, 'release', failure.code)
         await failTarget(b, attemptNo, startedAt, failure, runId)
         return { kind: 'failed', message: failure.message }
       }
       return { kind: 'pending', handle: status.next }
     }
     if (status.state === 'failed') {
-      await settleCharge(charge, 'release', 'MEDIA_REJECTED')
       const failure: ClassifiedFailure = {
         kind: 'permanent',
         code: 'MEDIA_REJECTED',
@@ -928,13 +857,11 @@ async function pollOnce(
       await failTarget(b, attemptNo, startedAt, failure, runId)
       return { kind: 'failed', message: status.message }
     }
-    await settleCharge(charge, 'confirm')
     await finalizeSuccess(b, attemptNo, startedAt, status.externalId, status.permalink, runId, null)
     return { kind: 'success', externalId: status.externalId }
   } catch (error) {
     const failure = classifyPublishError(error)
     if (failure.kind === 'retry' && pollNo < ASYNC_POLL_MAX) return { kind: 'pending' }
-    await settleCharge(charge, 'release', failure.code)
     await failTarget(b, attemptNo, startedAt, failure, runId)
     return { kind: 'failed', message: failure.message }
   }
@@ -1022,13 +949,13 @@ export async function runPublishTarget(job: PublishJob, ctx: PublishContext): Pr
       })
       return report('published', null, r.externalId, attemptNo)
     }
-    // pending: asinhrona mreža (IG kontejner, TikTok, YouTube obrada, Pinterest i X video)
+    // pending: asinhrona mreža (IG kontejner, TikTok, YouTube obrada, Pinterest video)
     let handle = r.handle
     for (let pollNo = 1; pollNo <= ASYNC_POLL_MAX; pollNo++) {
       await ctx.sleep(`poll-wait-${attemptNo}-${pollNo}`, ASYNC_POLL_INTERVAL_MS)
       const current = handle
       const p = await ctx.run(`poll-${attemptNo}-${pollNo}`, () =>
-        pollOnce(job, current, attemptNo, pollNo, ctx.runId, r.charge),
+        pollOnce(job, current, attemptNo, pollNo, ctx.runId),
       )
       if (p.kind === 'pending') {
         // sledeća faza obrade (npr. IG karusel posle obrade delova) zamenjuje ručku
@@ -1261,6 +1188,7 @@ export async function retryTarget(viewer: Viewer, postId: string, targetId: stri
   if (target.status !== 'failed' && target.status !== 'needs_reauth') {
     throw new ApiError('CONFLICT', 'Ponovni pokušaj je moguć samo za neuspele targete.')
   }
+  if (!isSocialPlatform(target.platform)) throw new ApiError('CONFLICT', 'Sova više ne objavljuje na X-u.')
   const admin = createSupabaseAdminClient()
   const { data: account } = await admin
     .from('social_accounts')

@@ -195,7 +195,7 @@ describe('izmena i primena tekstova za profile', () => {
     const view = (await get()).json.data!
     expect(view.live).toEqual(['google_business'])
     expect(view.editLinks.instagram).toBe('https://www.instagram.com/accounts/edit/')
-    expect(view.editLinks.x).toBe('https://x.com/settings/profile')
+    expect(view.editLinks).not.toHaveProperty('x')
     expect(view.applied).toEqual({})
 
     const r = await apply('google_business')

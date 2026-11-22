@@ -70,7 +70,7 @@ When you post on three or more networks, or run social media for clients, a mult
 
 ## How does scheduling work in Sova?
 
-Sova schedules and publishes to eight networks through each network's official connection: Facebook, Instagram, LinkedIn, TikTok, X, YouTube Shorts, Pinterest and Google Business Profile. You make a post once, and Sova adapts it to each network. It then goes into the Calendar, where you see it by day and by week.
+Sova schedules and publishes to seven networks through each network's official connection: Facebook, Instagram, LinkedIn, TikTok, YouTube Shorts, Pinterest and Google Business Profile. You make a post once, and Sova adapts it to each network. It then goes into the Calendar, where you see it by day and by week.
 
 The time is set in the **brand's time zone**, so a post goes out at 8:00 Belgrade time even when you're working while travelling or your laptop is set to a different zone. If a post doesn't go through the first time, for example because the network isn't responding, Sova tries again and lets you know if it still doesn't work. A client can get an approval link and leave a comment without having an account in the app. How agencies run several clients is covered in the article on [managing social media for multiple clients](@vodjenje-drustvenih-mreza-za-vise-klijenata).
 

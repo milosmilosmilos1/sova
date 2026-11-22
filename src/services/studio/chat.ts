@@ -321,11 +321,6 @@ async function recentHistory(brandId: string, userId: string): Promise<StudioHis
     .map((r) => ({ role: r.role as 'user' | 'assistant', body: r.body, result: resultLabel(r) }))
 }
 
-/** Tekst za X kad je nov opis duži od 280 znakova (ostale mreže uzimaju glavni tekst). */
-function xText(caption: string): string | undefined {
-  return caption.length <= 280 ? undefined : `${caption.slice(0, 277).trimEnd()}…`
-}
-
 /** Slajdovi (ili kadrovi videa) posle izmene iz Studija: menja se samo tekst navedenih. */
 function revisedSlides(copy: NonNullable<PostDesignContext['copy']>, revision: StudioRevision) {
   return copy.slides.map((s, i) => {
@@ -422,7 +417,6 @@ async function reviseStudioPost(
           masterText: caption,
           targets: view.targets.map((t) => ({
             socialAccountId: t.socialAccountId,
-            text: t.platform === 'x' ? xText(caption) : undefined,
             options: t.options,
           })),
         }

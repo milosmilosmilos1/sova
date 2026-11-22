@@ -207,15 +207,6 @@
         "note": "Udica u prvoj sekundi, kratak tekst preko vertikalnog videa.",
         "caption": "36 sati za jedan kroasan. Gledajte do kraja. #pekara #novisad #kroasan"
       },
-      "x": {
-        "name": "X",
-        "format": "16:9 · tekst i slika",
-        "tags": "bez hashtagova",
-        "handle": "@pekarazrno · 2 min",
-        "actions": "Odgovori · Repost · Sviđa mi se",
-        "note": "Skraćeno da stane u 280 znakova, sa malo humora.",
-        "caption": "Kroasani sa francuskim puterom, topli od 7:00. Ko stigne pre 8, kafa je na nama."
-      },
       "youtube": {
         "name": "YouTube Shorts",
         "format": "9:16 · video",
@@ -401,7 +392,7 @@
         },
         "connect": {
           "title": "Povežite mreže",
-          "text": "Facebook, Instagram, LinkedIn, TikTok, X, YouTube, Pinterest i Google poslovni profil."
+          "text": "Facebook, Instagram, LinkedIn, TikTok, YouTube, Pinterest i Google poslovni profil."
         },
         "approve": {
           "title": "Odobrite ili uključite Autopilot",
@@ -409,7 +400,7 @@
         }
       },
       "connect": {
-        "count": "{count} od 8 mreža povezano",
+        "count": "{count} od 7 mreža povezano",
         "hint": "Kliknite da povežete"
       },
       "approveDemo": {
@@ -482,7 +473,7 @@
       "topups": {
         "title": "Dopune koje ne ističu",
         "sub": "Kupite samo kad vam zatreba.",
-        "note": "Objavljivanje, kalendar i analitika ne troše tokene, osim objava na X ({xPost, plural, one {# token} few {# tokena} other {# tokena}}, sa linkom {withLink})."
+        "note": "Objavljivanje, kalendar i analitika ne troše tokene."
       }
     },
     "faq": {
@@ -491,7 +482,7 @@
       "items": {
         "tokens": {
           "q": "Šta su tokeni?",
-          "a": "Tokeni su jedinica rada AI-ja. Tekst objave košta {text, plural, one {# token} few {# tokena} other {# tokena}}, slika {image}, a mesečna strategija {strategy}. Objavljivanje, kalendar i analitika ne troše tokene, osim objava na X: {xPost, plural, one {# token} few {# tokena} other {# tokena}}, a sa linkom {withLink}."
+          "a": "Tokeni su jedinica rada AI-ja. Tekst objave košta {text, plural, one {# token} few {# tokena} other {# tokena}}, slika {image}, a mesečna strategija {strategy}. Objavljivanje, kalendar i analitika ne troše tokene."
         },
         "autopilot": {
           "q": "Da li Sova objavljuje bez mene?",
@@ -554,11 +545,11 @@
       },
       "s4": {
         "title": "4. Podaci sa platformi trećih strana",
-        "p1": "Kad povežete Facebook, Instagram, LinkedIn, TikTok, X, YouTube, Pinterest ili Google poslovni profil, Sova dobija pristup isključivo onim podacima koje ste odobrili u toku povezivanja. Te podatke koristimo samo za funkcije koje ste tražili: objavljivanje sadržaja u vaše ime, uvoz ranijih objava radi učenja o brendu, prikaz metrika i, kad uključite Inbox, prikaz komentara, poruka i recenzija i slanje vaših odgovora. Podatke sa platformi ne prodajemo, ne koristimo za oglašavanje i ne delimo sa trećim stranama osim obrađivača iz odeljka 5. Pristupni tokeni se čuvaju šifrovani (AES-256-GCM) i brišu se čim prekinete vezu sa nalogom.",
-        "p2": "Korišćenje podataka dobijenih preko Google API-ja (YouTube, Google poslovni profil, Google prijava) u skladu je sa <policy>Google API Services User Data Policy</policy>, uključujući zahteve o ograničenoj upotrebi (Limited Use). Korišćenje podataka sa Meta platformi u skladu je sa Meta Platform Terms, sa TikTok-a sa TikTok Developer Terms, sa LinkedIn-a sa LinkedIn API Terms of Use, a sa X-a sa X Developer Agreement.",
+        "p1": "Kad povežete Facebook, Instagram, LinkedIn, TikTok, YouTube, Pinterest ili Google poslovni profil, Sova dobija pristup isključivo onim podacima koje ste odobrili u toku povezivanja. Te podatke koristimo samo za funkcije koje ste tražili: objavljivanje sadržaja u vaše ime, uvoz ranijih objava radi učenja o brendu, prikaz metrika i, kad uključite Inbox, prikaz komentara, poruka i recenzija i slanje vaših odgovora. Podatke sa platformi ne prodajemo, ne koristimo za oglašavanje i ne delimo sa trećim stranama osim obrađivača iz odeljka 5. Pristupni tokeni se čuvaju šifrovani (AES-256-GCM) i brišu se čim prekinete vezu sa nalogom.",
+        "p2": "Korišćenje podataka dobijenih preko Google API-ja (YouTube, Google poslovni profil, Google prijava) u skladu je sa <policy>Google API Services User Data Policy</policy>, uključujući zahteve o ograničenoj upotrebi (Limited Use). Korišćenje podataka sa Meta platformi u skladu je sa Meta Platform Terms, sa TikTok-a sa TikTok Developer Terms, a sa LinkedIn-a sa LinkedIn API Terms of Use.",
         "p3": "Sova koristi YouTube API Services za objavljivanje videa i prikaz metrika vašeg kanala. Povezivanjem YouTube kanala prihvatate <yt>YouTube uslove korišćenja</yt>, a na obradu se primenjuje i <gpp>Google politika privatnosti</gpp>. Pristup Sove možete u svakom trenutku opozvati na <revoke>strani za bezbednost Google naloga</revoke>. Podatke dobijene sa YouTube-a i Google poslovnog profila čuvamo najviše 30 dana od poslednjeg osvežavanja.",
         "p4": "Kad Facebook ili Instagram pošalju zahtev za brisanje podataka (na primer kad uklonite Sovu u podešavanjima svog naloga), Sova briše povezane naloge, njihove tokene i sve podatke uvezene sa njih. Status zahteva proveravate na strani <deletion>Brisanje podataka</deletion>.",
-        "p5": "Na TikTok i LinkedIn Sova objavljuje tek posle vašeg odobrenja svake objave, a na X bez odobrenja samo kad potvrdite da je na nalogu uključena oznaka „Automated”. Sa ovih mreža koristimo osnovne podatke profila i metrike objava koje Sova objavi."
+        "p5": "Na TikTok i LinkedIn Sova objavljuje tek posle vašeg odobrenja svake objave. Sa ovih mreža koristimo osnovne podatke profila i metrike objava koje Sova objavi."
       },
       "s5": {
         "title": "5. Obrađivači kojima poveravamo podatke",
@@ -640,8 +631,7 @@
           "youtube": "YouTube: YouTube uslove korišćenja (youtube.com/t/terms) i Google politiku privatnosti (policies.google.com/privacy).",
           "meta": "Facebook i Instagram: Meta uslove i pravila zajednice; na privatne poruke odgovarate samo u roku koji Meta dozvoljava i ne šaljete neželjene promotivne poruke.",
           "linkedin": "LinkedIn: LinkedIn ugovor o korisniku, a za stranice firmi i LinkedIn Pages Terms; svaku objavu odobravate vi. Na LinkedIn se preko Sove ne objavljuje sadržaj o kockanju i igrama na sreću, sadržaj za odrasle, ni duvan i alkohol namenjen maloletnima.",
-          "tiktok": "TikTok: TikTok uslove korišćenja i smernice zajednice; svaku objavu, njenu vidljivost i oznake (na primer plaćenu saradnju) potvrđujete vi.",
-          "x": "X: X pravila i pravila o automatizaciji; za automatske objave na nalogu mora biti uključena oznaka „Automated”."
+          "tiktok": "TikTok: TikTok uslove korišćenja i smernice zajednice; svaku objavu, njenu vidljivost i oznake (na primer plaćenu saradnju) potvrđujete vi."
         },
         "after": "Ne odgovaramo za ograničenja, odbijanja ili suspenzije koje mreža primeni na vaš nalog."
       },
@@ -715,7 +705,7 @@
       "s2": {
         "title": "2. Prekid veze sa jednom mrežom",
         "p1": "Otvorite Mreže, pronađite nalog i kliknite „Prekini vezu”. Sova briše pristupni token, uvezene objave i metrike tog naloga. Već objavljen sadržaj ostaje na mreži; njega brišete direktno na mreži.",
-        "p2": "Vezu možete prekinuti i sa strane mreže: Facebook i Instagram (Podešavanja → Aplikacije i sajtovi), LinkedIn (Podešavanja → Dozvole aplikacija), TikTok (Podešavanja → Bezbednost → Aplikacije), X (Podešavanja → Povezane aplikacije), Google (myaccount.google.com → Bezbednost → Aplikacije trećih strana), Pinterest (Podešavanja → Bezbednost → Povezane aplikacije). Facebook i Instagram to javljaju Sovi odmah, pa Sova briše pristupne tokene tog naloga. Ostale mreže to ne javljaju: Sova to vidi kad sledeći put koristi nalog i traži da ga ponovo povežete. Tokene, uvezene objave i metrike odmah briše „Prekini vezu” u Mrežama."
+        "p2": "Vezu možete prekinuti i sa strane mreže: Facebook i Instagram (Podešavanja → Aplikacije i sajtovi), LinkedIn (Podešavanja → Dozvole aplikacija), TikTok (Podešavanja → Bezbednost → Aplikacije), Google (myaccount.google.com → Bezbednost → Aplikacije trećih strana), Pinterest (Podešavanja → Bezbednost → Povezane aplikacije). Facebook i Instagram to javljaju Sovi odmah, pa Sova briše pristupne tokene tog naloga. Ostale mreže to ne javljaju: Sova to vidi kad sledeći put koristi nalog i traži da ga ponovo povežete. Tokene, uvezene objave i metrike odmah briše „Prekini vezu” u Mrežama."
       },
       "s3": {
         "title": "3. Zahtev emailom",

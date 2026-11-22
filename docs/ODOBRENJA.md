@@ -25,7 +25,7 @@ Zajedničke prepreke iz odeljka 1 su rešene (domen, firma, pravni tekstovi, bri
 | Figma                    | nacrt                         | objava kao javne aplikacije                                                                                                                                                                                                                          | nema (D-184); prekidač `figma` za nalog recenzenta                                                                                              |
 | Unsplash                 | Demo                          | Apply for Production                                                                                                                                                                                                                                 | urađeno (D-190, 22.11.): hotlinking, potpis uz svaku fotografiju, bez automatskog izbora; čeka „dizi”, pa snimci i prijava                      |
 | Pinterest                | ne postoji                    | nalog za firmu „Sova” (podrska@sovaai.rs) i sovaai.rs potvrđen 22.11.; aplikacija „Sova Scheduler” (App ID 1642925) poslata 22.11., Trial access pending                                                                                             | nema (D-085)                                                                                                                                    |
-| X                        | ne postoji                    | odluka vlasnika (pay-per-use se plaća)                                                                                                                                                                                                               | nema (D-086)                                                                                                                                    |
+| X                        | uklonjeno iz Sove (D-192)     | ništa: X je izbačen iz Sove 22.11.2026 (odluka vlasnika), prijava se ne radi                                                                                                                                                                         | nema (D-086, D-192)                                                                                                                             |
 
 Za sve preglede treba probni nalog na engleskom sa gotovim brendom (bez njega su Posts i Studio zaključani). Adresa za prijavu propusta je u `/.well-known/security.txt` (D-188, čeka objavu).
 
@@ -157,10 +157,10 @@ Google poslovni profil: metrike se više ne sabiraju u jedan broj; svaka se čuv
 - **Stanje:** komercijalna upotreba je dozvoljena na podrazumevanim limitima (200 na sat, 20.000 mesečno). Novi ključevi i povećanja su trenutno pauzirani, pa je postojeći ključ sve što imamo; ne praviti dodatne.
 - **Šta fali:** autor i „Photos provided by Pexels” svuda gde se prikazuje, Pexels u pravnim tekstovima, brisanje kopija koje ne pripadaju objavi, i AI provera ljudi (odluka vlasnika).
 
-### Pinterest i X (isključeni, za kasnije)
+### Pinterest (za kasnije) i X (uklonjen iz Sove, D-192)
 
 - **Pinterest:** prvo Trial pristup (sandbox), pa Standard sa snimkom. Pinterest odbija zbog politike koja nije na domenu firme. Pinovi se ne smeju zakazivati na veliko: korisnik bira svaki pin. Podatke ne čuvati, nego čitati uživo.
-- **X:** nema pregleda, ali pay-per-use je po uslovima za mali broj korisnika; za mnogo kupaca treba Enterprise ugovor. Isti tekst ne sme na više X naloga, automatske objave nose oznaku „Automated”, a uvezene objave se brišu u roku od 24 h od zahteva.
+- **X:** uklonjen iz Sove 22.11.2026 (D-192), prijava se ne radi. Za istoriju: nema pregleda, ali pay-per-use je po uslovima za mali broj korisnika; za mnogo kupaca treba Enterprise ugovor. Isti tekst ne sme na više X naloga, automatske objave nose oznaku „Automated”, a uvezene objave se brišu u roku od 24 h od zahteva.
 
 ### Upis opisa profila iz Sove (D-166)
 
@@ -169,7 +169,6 @@ Sova sada sama upisuje opis samo na Google poslovni profil (`business.manage`, r
 - **Facebook stranica:** dozvola `pages_manage_metadata` kroz App Review kod Mete (polja `about` i `description` stranice).
 - **YouTube kanal:** opseg `https://www.googleapis.com/auth/youtube` (ili `youtube.force-ssl`) i provera aplikacije kod Google-a; sada Sova ima samo `youtube.upload` i `youtube.readonly`.
 - **LinkedIn stranica firme:** Community Management API (`rw_organization_admin`), isto odobrenje kao za objave na stranicama firmi.
-- **X:** `PUT /2/users/me` kad X bude uključen.
 - **Instagram, TikTok, Pinterest:** API ne dozvoljava izmenu opisa profila; ostaje „Kopiraj i otvori profil”.
 
 Nijedna od ovih dozvola se ne dodaje u prijavu pre odobrenja: neodobrena dozvola obara povezivanje mreže za sve korisnike.

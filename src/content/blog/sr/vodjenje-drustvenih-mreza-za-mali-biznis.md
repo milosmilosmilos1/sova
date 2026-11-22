@@ -9,7 +9,7 @@ naslovna: vodjenje-drustvenih-mreza-za-mali-biznis-naslovna
 datum: 2026-11-22
 redosled: 1
 ---
-Za mali biznis, vođenje društvenih mreža znači **dve do tri objave nedeljno na dve mreže na kojima su vaši kupci**, napisane vašim glasom, objavljene kad ih ljudi gledaju, uz jedan pogled u brojke mesečno. Ne treba vam svih osam mreža i ne treba vam objava svakog dana. Treba vam ritam koji možete da izdržite šest meseci.
+Za mali biznis, vođenje društvenih mreža znači **dve do tri objave nedeljno na dve mreže na kojima su vaši kupci**, napisane vašim glasom, objavljene kad ih ljudi gledaju, uz jedan pogled u brojke mesečno. Ne treba vam svih sedam mreža i ne treba vam objava svakog dana. Treba vam ritam koji možete da izdržite šest meseci.
 
 :::ukratko
 - Počnite sa dve mreže: tamo gde su vaši kupci, ne tamo gde je najveća gužva.

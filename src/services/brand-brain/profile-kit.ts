@@ -64,7 +64,7 @@ import { listSocialAccounts } from '@/services/social/accounts'
 import type { Json } from '@/types/database'
 
 /**
- * Profili na mrežama: opisi profila za svih osam mreža (D-143) i Instagram highlights (D-144), svaki
+ * Profili na mrežama: opisi profila za svih sedam mreža (D-143) i Instagram highlights (D-144), svaki
  * jednim Gemini pozivom iz profila brenda. Rezultat se čuva u `brands.settings.profileKit`, pa ostaje
  * dok se ne napravi nov; naslovne highlights-a, priče od njihovih kadrova i naslovne slike profila
  * (D-145) crtaju se bez tokena.
@@ -367,7 +367,7 @@ async function generateKit<T>(
   }
 }
 
-/** „Napravi opise”: jedan Gemini poziv za svih osam mreža (D-143). */
+/** „Napravi opise”: jedan Gemini poziv za svih sedam mreža (D-143). */
 export function generateProfileBios(
   viewer: Viewer,
   brandId: string,

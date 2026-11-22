@@ -181,7 +181,7 @@
       "skip": "preskoči",
       "publish": "objavi",
       "adminOnly": "Podešavanja menjaju vlasnik i administrator.",
-      "personalHint": "TikTok, LinkedIn i Pinterest objave uvek čekaju vaše odobrenje (pravila tih mreža); X se objavljuje sam samo uz potvrđenu oznaku „Automated”."
+      "personalHint": "TikTok, LinkedIn i Pinterest objave uvek čekaju vaše odobrenje (pravila tih mreža)."
     },
     "saved": "Sačuvano.",
     "saving": "Čuvam…",
@@ -217,8 +217,7 @@
       "mix": "AI meša vrste",
       "mixHint": "Kroz nedelju se smenjuju izabrane vrste, a slika i karusel dolaze češće. Isključeno: uvek prva izabrana vrsta koju mreža prima.",
       "pickOne": "Izaberite bar jednu vrstu."
-    },
-    "xLabel": "Na X nalogu je uključena oznaka „Automated” (X to traži za automatske objave; Podešavanja X naloga → Your account → Account information → Automation)."
+    }
   },
   "suggestions": {
     "embeddedTitle": "Predlozi sadržaja",
@@ -539,7 +538,7 @@
     "formats": {
       "text": {
         "label": "Samo tekst",
-        "hint": "Objava bez slike, za Facebook, LinkedIn i X."
+        "hint": "Objava bez slike, za Facebook i LinkedIn."
       },
       "image": {
         "label": "Slika",
@@ -562,7 +561,7 @@
         "hint": "Tekst sa linkom i pregledom stranice."
       },
       "poll": {
-        "label": "Anketa (LinkedIn i X)",
+        "label": "Anketa (LinkedIn)",
         "hint": "Pitanje sa 2 do 4 odgovora, bez slike."
       }
     },

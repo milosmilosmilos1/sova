@@ -340,7 +340,7 @@ export class MetaProvider implements SocialProvider {
   }
 
   validatePost(input: NormalizedPost, account: AccountRef): ValidationResult {
-    const platform = account.platform
+    const platform = account.platform === 'instagram' ? 'instagram' : 'facebook'
     const c = PLATFORMS[platform]
     if (isStory(input)) return this.storyProblems(input)
     const text = validateText(platform, input.text)

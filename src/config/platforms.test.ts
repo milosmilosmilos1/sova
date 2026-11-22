@@ -1,24 +1,29 @@
 import { describe, expect, it } from 'vitest'
 
-import { countTextLength, PLATFORM_KEYS, validateText } from './platforms'
+import { countTextLength, isSocialPlatform, PLATFORM_KEYS, validateText } from './platforms'
 
 describe('platforms', () => {
-  it('ima ograničenja za svih 8 mreža', () => {
-    expect(PLATFORM_KEYS).toHaveLength(8)
+  it('ima ograničenja za svih 7 mreža (bez X-a, D-192)', () => {
+    expect(PLATFORM_KEYS).toHaveLength(7)
+    expect(PLATFORM_KEYS).not.toContain('x')
   })
 
-  it('X broji URL kao 23 karaktera', () => {
-    expect(countTextLength('x', 'Pogledajte https://sovaai.rs/neki/dugacak/put/ovde')).toBe(
-      'Pogledajte '.length + 23,
-    )
+  it('broji znakove, ne bajtove', () => {
     expect(countTextLength('instagram', 'abc')).toBe(3)
+    expect(countTextLength('instagram', 'šđ🦉')).toBe(3)
+  })
+
+  it('stari red sa x nije mreža koju Sova podržava', () => {
+    expect(isSocialPlatform('x')).toBe(false)
+    expect(isSocialPlatform('linkedin')).toBe(true)
+    expect(isSocialPlatform(null)).toBe(false)
   })
 
   it('prijavljuje predug tekst i previše hashtagova', () => {
     const long = 'a'.repeat(300)
-    const r = validateText('x', long)
+    const r = validateText('google_business', long.repeat(6))
     expect(r.ok).toBe(false)
-    expect(r.problems[0]).toMatch(/280/)
+    expect(r.problems[0]).toMatch(/1500/)
     const tags = Array.from({ length: 31 }, (_, i) => `#t${i}`)
     const ig = validateText('instagram', 'ok', tags)
     expect(ig.ok).toBe(false)

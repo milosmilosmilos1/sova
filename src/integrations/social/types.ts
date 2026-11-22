@@ -1,9 +1,9 @@
-import type { SocialPlatform } from '@/config/platforms'
+import type { DbPlatform, SocialPlatform } from '@/config/platforms'
 import type { Json } from '@/types/database'
 
 /**
  * Zajednički ugovor za mreže (docs/INTEGRATIONS.md 1): Meta (Facebook + Instagram, faza 8a), LinkedIn i
- * TikTok (faza 8b), Google Business Profile, YouTube i Pinterest (8c), X (8d). Objavljivanje koristi
+ * TikTok (faza 8b), Google Business Profile, YouTube i Pinterest (8c); X je izbačen iz Sove (D-192). Objavljivanje koristi
  * publisher iz faze 9b.
  */
 export interface TokenSet {
@@ -124,16 +124,6 @@ export type PollHandle =
       firstComment: string | null
       accountExternalId: string
     }
-  /** X video: posle obrade medija objavljuje se tekst sa medijem */
-  | {
-      kind: 'x_media'
-      mediaId: string
-      text: string
-      /** ostali delovi niti (D-150), idu kao odgovori posle prve objave */
-      rest?: string[]
-      accountExternalId: string
-      username: string | null
-    }
 
 /** Oznaka ručke za logove i poruke. */
 export function pollHandleId(handle: PollHandle): string {
@@ -153,7 +143,6 @@ export function pollHandleId(handle: PollHandle): string {
     case 'fb_video':
       return handle.videoId
     case 'pinterest_media':
-    case 'x_media':
       return handle.mediaId
   }
 }
@@ -209,7 +198,8 @@ export interface AccountMetrics {
 /** Minimum koji provider zna o sačuvanom nalogu (bez tokena u čistom obliku). */
 export interface AccountRef {
   id: string
-  platform: SocialPlatform
+  /** iz baze; provider do njega stiže tek preko `providerFor`, koji odbija mrežu van Sove (X, D-192) */
+  platform: DbPlatform
   externalId: string
   parentExternalId: string | null
   accountType: string
@@ -218,7 +208,7 @@ export interface AccountRef {
 
 export interface SocialProvider {
   readonly platforms: readonly SocialPlatform[]
-  /** OAuth uz PKCE (X ga traži): tok čuva šifrovan `code_verifier` u `oauth_states` */
+  /** OAuth uz PKCE: tok čuva šifrovan `code_verifier` u `oauth_states` (trenutno ga nijedna mreža ne traži) */
   readonly usesPkce?: boolean
   getAuthUrl(ctx: {
     state: string

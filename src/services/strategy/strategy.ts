@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
+import { isSocialPlatform, PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { AiError, toApiError } from '@/lib/ai/errors'
 import { generateText } from '@/lib/ai/gemini'
 import { textModelChain } from '@/lib/ai/models'
@@ -182,7 +182,7 @@ async function activePlatforms(brandId: string): Promise<SocialPlatform[]> {
     .select('platform')
     .eq('brand_id', brandId)
     .eq('status', 'active')
-  return [...new Set((data ?? []).map((a) => a.platform))]
+  return [...new Set((data ?? []).map((a) => a.platform).filter(isSocialPlatform))]
 }
 
 export async function requestStrategy(
@@ -268,7 +268,7 @@ async function performanceFor(brandId: string, timeZone: string) {
   const platformByAccount = new Map<string, SocialPlatform>()
   if (accountIds.length) {
     const { data: accounts } = await admin.from('social_accounts').select('id, platform').in('id', accountIds)
-    for (const a of accounts ?? []) platformByAccount.set(a.id, a.platform)
+    for (const a of accounts ?? []) if (isSocialPlatform(a.platform)) platformByAccount.set(a.id, a.platform)
   }
   const points = rows
     .filter((r) => r.published_at && platformByAccount.has(r.social_account_id))
@@ -669,8 +669,10 @@ export async function generateCalendar(
     .eq('status', 'active')
     .in('platform', platforms.length ? platforms : ['facebook'])
   const accountsByPlatform = new Map<SocialPlatform, string[]>()
-  for (const a of accounts ?? [])
+  for (const a of accounts ?? []) {
+    if (!isSocialPlatform(a.platform)) continue
     accountsByPlatform.set(a.platform, [...(accountsByPlatform.get(a.platform) ?? []), a.id])
+  }
 
   const holidays = new Set(
     (await holidaysBetween(brand.content_locale, row.period_start, row.period_end))

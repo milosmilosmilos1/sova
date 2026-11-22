@@ -84,7 +84,7 @@ Business accounts have access to a limited library of music cleared for commerci
 
 A vertical video made for TikTok can also go on Instagram Reels, Facebook Reels and YouTube Shorts. Film it without a watermark and adapt the caption to each network. That way, one hour of filming a week covers four networks.
 
-Sova does that adapting for you: from one topic it writes captions for TikTok, Instagram, Facebook and YouTube according to each network's rules, and puts the posts into the same calendar. On TikTok, because of that network's rules, Sova doesn't publish entirely on its own, and you confirm the post yourself. You can see how the same post looks on eight networks on the [home page](/#networks), and you can start a trial [for free](/register).
+Sova does that adapting for you: from one topic it writes captions for TikTok, Instagram, Facebook and YouTube according to each network's rules, and puts the posts into the same calendar. On TikTok, because of that network's rules, Sova doesn't publish entirely on its own, and you confirm the post yourself. You can see how the same post looks on seven networks on the [home page](/#networks), and you can start a trial [for free](/register).
 
 For the bigger picture on which networks to choose, read the [guide to social media management for small businesses](@vodjenje-drustvenih-mreza-za-mali-biznis).
 

@@ -6,8 +6,6 @@ export interface PricingCosts {
   text: number
   image: number
   strategy: number
-  xPost: number
-  xPostWithLink: number
 }
 
 export interface PricingTopup {

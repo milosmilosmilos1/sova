@@ -39,7 +39,6 @@ Ovo su polazne vrednosti za mali biznis koji ima jednu osobu za mreže, nekoliko
 | TikTok | 3 do 5 | kratki video, više je bolje ako kvalitet ostaje |
 | YouTube Shorts | 2 do 3 | često isti video kao Reels, sa naslovom za YouTube |
 | Pinterest | 3 do 5 pinova | pin živi mesecima, pa se isplati i ređe |
-| X | 1 dnevno | kratke misli, odgovori, vesti |
 | Google poslovni profil | 1 | novost, ponuda ili događaj |
 
 Ne morate biti na svim mrežama. Za većinu malih firmi dve ili tri su dovoljne. Kako da izaberete prave, objašnjava [vodič za vođenje mreža za mali biznis](@vodjenje-drustvenih-mreza-za-mali-biznis).
@@ -80,7 +79,7 @@ Priče traju 24 sata, pa ih ljudi doživljavaju kao usputne. Za lokalni biznis s
 
 Napišite jednu ideju, a prilagodite je svakoj mreži. Ista vest o novoj usluzi na Instagramu ide sa fotografijom i dužim tekstom, na Facebooku sa kraćim tekstom i pozivom da pišete porukom, a na LinkedInu kao priča o tome zašto ste je uveli. To je jedna ideja i tri objave.
 
-Sova radi baš to: od jedne teme pravi tekst po pravilima svake mreže (dužina, hashtagovi, ton) i zakazuje objave u termine koji imaju smisla. Vi birate koliko objava nedeljno želite, a Sova pravi plan koji se tog broja drži. Kako izgleda jedna objava prilagođena za osam mreža, vidite na [početnoj strani, u delu o mrežama](/#networks).
+Sova radi baš to: od jedne teme pravi tekst po pravilima svake mreže (dužina, hashtagovi, ton) i zakazuje objave u termine koji imaju smisla. Vi birate koliko objava nedeljno želite, a Sova pravi plan koji se tog broja drži. Kako izgleda jedna objava prilagođena za sedam mreža, vidite na [početnoj strani, u delu o mrežama](/#networks).
 
 ## Kako da znate da li je broj pravi?
 

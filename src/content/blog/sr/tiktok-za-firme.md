@@ -86,7 +86,7 @@ Poslovni nalozi imaju pristup ograničenoj biblioteci muzike odobrene za komerci
 
 Uspravni snimak napravljen za TikTok može da ide i na Instagram Reels, Facebook Reels i YouTube Shorts. Snimite ga bez vodenog žiga, a opis prilagodite svakoj mreži. Tako jedan sat snimanja nedeljno pokriva četiri mreže.
 
-Sova radi to prilagođavanje: od jedne teme pravi opis za TikTok, Instagram, Facebook i YouTube po pravilima svake mreže i ubacuje objave u isti kalendar. Na TikToku, po pravilima te mreže, Sova ne objavljuje potpuno sama, nego objavu potvrđujete vi. Kako izgleda ista objava na osam mreža, vidite na [početnoj strani](/#networks), a probu počinjete [besplatno](/register).
+Sova radi to prilagođavanje: od jedne teme pravi opis za TikTok, Instagram, Facebook i YouTube po pravilima svake mreže i ubacuje objave u isti kalendar. Na TikToku, po pravilima te mreže, Sova ne objavljuje potpuno sama, nego objavu potvrđujete vi. Kako izgleda ista objava na sedam mreža, vidite na [početnoj strani](/#networks), a probu počinjete [besplatno](/register).
 
 Za širu sliku o tome koje mreže izabrati, pročitajte [vodič za vođenje mreža za mali biznis](@vodjenje-drustvenih-mreza-za-mali-biznis).
 

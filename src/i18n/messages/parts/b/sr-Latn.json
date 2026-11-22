@@ -1,8 +1,6 @@
 {
   "postEditor": {
     "loading": "Učitavam objavu…",
-    "xCost": "Objava na X troši {cost, plural, one {# token} few {# tokena} other {# tokena}} (bez linka 1, sa linkom 6); naplaćuje se tek kad objava prođe.",
-    "xCostLink": "Objava na X troši {cost, plural, one {# token} few {# tokena} other {# tokena}} jer ima link (bez linka 1, sa linkom 6); naplaćuje se tek kad objava prođe.",
     "actions": {
       "submit": "Pošalji na odobrenje",
       "withdraw": "Povuci sa odobravanja",
@@ -254,26 +252,18 @@
       },
       "documentTitle": "Naslov dokumenta"
     },
-    "x": {
-      "thread": "Pošalji kao nit ({parts, plural, one {# objava} few {# objave} other {# objava}})",
-      "threadHint": "Tekst je duži od 280 znakova. Sova ga deli po pasusima i rečenicama; prva objava nosi sliku, ostale idu kao odgovori.",
-      "numbered": "Brojevi na kraju delova (1/5)",
-      "threadCost": "Nit od {parts, plural, one {# objave} few {# objave} other {# objava}} troši {cost, plural, one {# token} few {# tokena} other {# tokena}} (svaka objava 1, objava sa linkom 6); naplaćuje se tek kad nit izađe.",
-      "tooLong": "Bez niti tekst ne sme biti duži od {max} znakova, pa ga X neće prihvatiti."
-    },
     "poll": {
-      "toggle": "Objavi kao anketu (LinkedIn i X)",
-      "hint": "Ista anketa ide na sve izabrane LinkedIn i X naloge. Na X-u je tekst objave pitanje, a na LinkedIn-u pitanje stoji ispod uvoda.",
+      "toggle": "Objavi kao anketu (LinkedIn)",
+      "hint": "Ista anketa ide na sve izabrane LinkedIn naloge. Pitanje stoji ispod uvoda.",
       "question": "Pitanje",
       "options": "Odgovori",
       "optionLabel": "Odgovor {n}",
       "remove": "Ukloni odgovor {n}",
       "add": "Dodaj odgovor",
-      "optionHint": "Od 2 do 4 odgovora. Na X-u odgovor ima najviše 25 znakova, na LinkedIn-u 30.",
+      "optionHint": "Od 2 do 4 odgovora, svaki do 30 znakova.",
       "duration": "Trajanje",
       "days": "{n, plural, one {# dan} few {# dana} other {# dana}}",
-      "xMax": "Na X-u anketa traje najviše 7 dana.",
-      "media": "LinkedIn i X objavljuju anketu bez slike; slika ide samo na ostale mreže."
+      "media": "LinkedIn objavljuje anketu bez slike; slika ide samo na ostale mreže."
     }
   },
   "postsList": {
@@ -337,8 +327,7 @@
       "tiktok": "TikTok nije vratio nalog.",
       "google_business": "Google nije vratio nijednu lokaciju. Proverite da ste vlasnik ili menadžer poslovnog profila i da je profil verifikovan.",
       "youtube": "Google nalog nema YouTube kanal. Napravite kanal na YouTube-u pa povežite ponovo.",
-      "pinterest": "Pinterest nije vratio nalog.",
-      "x": "X nije vratio nalog."
+      "pinterest": "Pinterest nije vratio nalog."
     },
     "viaFacebook": "prijava preko Facebook-a",
     "status": {

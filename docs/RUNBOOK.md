@@ -25,7 +25,7 @@ Mreže iz faze 8b: `LINKEDIN_CLIENT_ID/SECRET`, `LINKEDIN_PAGES` i `LINKEDIN_MEM
 
 Google poslovni profil i YouTube (faza 8c): isti `GOOGLE_CLIENT_ID/SECRET` kao Google prijava; u Google Cloud konzoli dodati redirect URI-je `{APP}/api/integrations/google_business/callback` i `{APP}/api/integrations/youtube/callback`. Flagovi `platform.google_business` i `platform.youtube` u admin panelu uključuju povezivanje. Dok je OAuth ekran u režimu „Testing”, Google refresh token ističe za 7 dana.
 
-X (faza 8d): `X_CLIENT_ID/SECRET` (OAuth 2.0, poverljiv klijent), redirect URI `{APP}/api/integrations/x/callback`, flag `platform.x`. X je pay-per-use: krediti i limit potrošnje u Developer Console; stanje kredita `GET /2/usage/credits`.
+X: izbačen iz Sove 22.11.2026 (D-192); `X_CLIENT_ID/SECRET` više nisu potrebni i mogu se obrisati iz Netlify-a.
 
 Pinterest (faza 8c): `PINTEREST_APP_ID/SECRET`, redirect URI `{APP}/api/integrations/pinterest/callback`, flag `platform.pinterest`. Dok app ima samo Trial pristup: `PINTEREST_SANDBOX=true` (pinovi vidljivi samo autoru); posle odobrenja Standard pristupa `false`.
 

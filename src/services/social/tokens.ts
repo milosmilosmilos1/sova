@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
+import { isSocialPlatform, platformLabel, type SocialPlatform } from '@/config/platforms'
 import { encryptSecret, toPgBytea } from '@/lib/crypto/tokens'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError } from '@/lib/supabase/errors'
@@ -11,13 +11,12 @@ import type { TokenSet } from '@/integrations/social/types'
 import { aadFor, loadAccountRow, tokensFor, type SocialAccountRow } from './account-rows'
 
 /**
- * Koliko pre isteka se pristupni token osvežava: TikTok 24 h, X 2 h, Google 1 h, Pinterest 30 dana.
+ * Koliko pre isteka se pristupni token osvežava: TikTok 24 h, Google 1 h, Pinterest 30 dana.
  * LinkedIn (60 dana) bez programskog refresh-a posle isteka traži ponovno povezivanje (D-076);
  * Meta Page tokeni nemaju fiksan istek.
  */
 const REFRESH_MARGIN_MS: Partial<Record<SocialPlatform, number>> = {
   tiktok: 10 * 60_000,
-  x: 5 * 60_000,
   youtube: 5 * 60_000,
   google_business: 5 * 60_000,
   pinterest: 24 * 3_600_000,
@@ -28,10 +27,11 @@ export async function accessTokenFor(row: SocialAccountRow): Promise<string> {
   const tokens = tokensFor(row)
   const exp = row.token_expires_at ? new Date(row.token_expires_at).getTime() : null
   if (exp === null || row.platform === 'facebook' || row.platform === 'instagram') return tokens.accessToken
-  if (exp - Date.now() > (REFRESH_MARGIN_MS[row.platform] ?? 0)) return tokens.accessToken
+  const margin = isSocialPlatform(row.platform) ? (REFRESH_MARGIN_MS[row.platform] ?? 0) : 0
+  if (exp - Date.now() > margin) return tokens.accessToken
   if (tokens.refreshToken) return (await refreshAccountTokens(row)).accessToken
   if (exp > Date.now()) return tokens.accessToken
-  const label = PLATFORMS[row.platform].label
+  const label = platformLabel(row.platform)
   throw new ProviderError('TOKEN_INVALID', {
     message: `${label} token je istekao.`,
     userMessage: `${label} veza je istekla. Povežite nalog ponovo.`,
@@ -39,7 +39,7 @@ export async function accessTokenFor(row: SocialAccountRow): Promise<string> {
 }
 
 /**
- * Osvežavanje i upis. TikTok, X i Pinterest pri osvežavanju vraćaju nov refresh token, a stari tada
+ * Osvežavanje i upis. TikTok i Pinterest pri osvežavanju vraćaju nov refresh token, a stari tada
  * više ne važi; ako je drugi proces upravo osvežio isti nalog, koristi se njegovo stanje iz baze.
  */
 export async function refreshAccountTokens(row: SocialAccountRow): Promise<TokenSet> {

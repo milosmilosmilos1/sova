@@ -59,7 +59,6 @@ function carouselReply(n: number) {
       })),
       caption:
         'Jedna rečenica otkriva zašto sajtovi posle migracije padnu na Google-u.\n\nTri stvari proverite pre selidbe.',
-      short_caption: 'Zašto sajtovi padaju posle migracije i šta da proverite.',
       hashtags: ['#seo', '#migracija'],
       first_comment: 'Koju grešku ste već videli?',
       visual_query: 'website migration laptop',

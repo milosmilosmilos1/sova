@@ -23,13 +23,13 @@ Veštačka inteligencija danas dobro radi **prve verzije tekstova, prilagođavan
 
 Neke poslove AI radi brže od čoveka i bez pada kvaliteta. To su poslovi gde je pravilo jasno, a sadržaj već postoji.
 
-Prvi je **prilagođavanje**. Imate jednu vest, na primer novo radno vreme. Za Instagram treba kraći tekst sa pozivom i hashtagovima, za Facebook razgovorniji, za LinkedIn ozbiljniji, za X do 280 znakova, za Google poslovni profil praktičan i bez hashtagova. Čoveku to traje dvadeset minuta, a AI-ju nekoliko sekundi, i uz to se drži pravila svake mreže.
+Prvi je **prilagođavanje**. Imate jednu vest, na primer novo radno vreme. Za Instagram treba kraći tekst sa pozivom i hashtagovima, za Facebook razgovorniji, za LinkedIn ozbiljniji, za Google poslovni profil praktičan i bez hashtagova. Čoveku to traje dvadeset minuta, a AI-ju nekoliko sekundi, i uz to se drži pravila svake mreže.
 
 Drugi su prve verzije. AI ne mora da napiše savršen tekst. Dovoljno je da vam da dobru polaznu tačku koju doterate za dva minuta, umesto da gledate u prazan ekran.
 
 Treći su ideje i plan. Kad zna šta prodajete i kome, AI predloži teme za ceo mesec, raspoređene po stubovima i danima. Vi izbacite pet koje vam se ne sviđaju i plan je gotov. Kako izgleda dobar plan, piše u tekstu o [planu objava](@plan-objava-za-drustvene-mreze).
 
-Četvrti su sitni, ponavljajući poslovi: hashtagovi, prevod na engleski, kraća verzija za X, opis fotografije za slabovide (alt tekst), pregled rezultata meseca u nekoliko rečenica.
+Četvrti su sitni, ponavljajući poslovi: hashtagovi, prevod na engleski, opis fotografije za slabovide (alt tekst), pregled rezultata meseca u nekoliko rečenica.
 
 !slika:vestacka-inteligencija-za-drustvene-mreze-info
 
@@ -61,7 +61,7 @@ Treća slabost su osetljive situacije. Ljut kupac, žalba na kvalitet, tragedija
 
 Opšti AI četovi su odlični za pojedinačne zadatke. Problem nastaje kad ih koristite za redovno vođenje mreža. Svaki put iznova objašnjavate ko ste, šta prodajete i kako zvučite. Tekst posle toga kopirate u svaku mrežu posebno, prilagođavate format slike i zakazujete ručno. Ušteda vremena se istopi.
 
-Specijalizovan alat pamti. Sova na početku pročita vaš sajt i napravi **Brand Brain**, profil sa uslugama, cenama, tonom, publikom, bojama i činjenicama. Možete dodati PDF o brendu i beleške. Svaka objava koju Sova napiše oslanja se na taj profil i na glas brenda koji ste odobrili. Tekst se prilagođava svakoj od osam mreža, vizual se pravi u stilu i bojama brenda, a objava ide u kalendar na odobrenje. Šta sve ulazi u to, vidite u delu [o funkcijama](/#features).
+Specijalizovan alat pamti. Sova na početku pročita vaš sajt i napravi **Brand Brain**, profil sa uslugama, cenama, tonom, publikom, bojama i činjenicama. Možete dodati PDF o brendu i beleške. Svaka objava koju Sova napiše oslanja se na taj profil i na glas brenda koji ste odobrili. Tekst se prilagođava svakoj od sedam mreža, vizual se pravi u stilu i bojama brenda, a objava ide u kalendar na odobrenje. Šta sve ulazi u to, vidite u delu [o funkcijama](/#features).
 
 ## Kako da AI ne izmišlja?
 

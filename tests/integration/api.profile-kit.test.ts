@@ -59,7 +59,6 @@ const reply = {
     keywords: ['Adaptacija stanova', 'Renoviranje', '#Enterijer'],
   },
   tiktok: { name: 'Adaptiko', short: 'Pre i posle adaptacije 🔨' },
-  x: { name: 'Adaptiko', short: 'Adaptacija stanova u Beogradu, po fiksnoj ceni.' },
   youtube: {
     long: 'Pre i posle adaptacija stanova i saveti za renoviranje.',
     keywords: ['adaptacija', 'renoviranje'],
@@ -425,7 +424,7 @@ describe('profili na mrežama: naslovne slike profila (D-145)', () => {
     expect(await balance()).toBe(before)
   })
 
-  it('ZIP ima profilnu i svih šest naslovnih; predug tekst i nepoznata mreža se odbijaju', async () => {
+  it('ZIP ima profilnu i svih pet naslovnih (bez X-a, D-192); predug tekst i nepoznata mreža se odbijaju', async () => {
     const zip = await raw(bannersGet, `${base()}?title=Adaptiko%20Beograd&logo=0`, { id: brandId })
     expect(zip.status).toBe(200)
     expect(zip.headers.get('content-disposition')).toContain('adaptiko-profile-covers.zip')
@@ -434,14 +433,19 @@ describe('profili na mrežama: naslovne slike profila (D-145)', () => {
       'adaptiko-facebook-1640x856.png',
       'adaptiko-linkedin-page-1128x191.png',
       'adaptiko-linkedin-profile-1584x396.png',
-      'adaptiko-x-1500x500.png',
       'adaptiko-youtube-2560x1440.png',
       'adaptiko-pinterest-1600x900.png',
     ])
       expect(zip.bytes.includes(Buffer.from(name)), name).toBe(true)
 
-    const long = await raw(bannerGet, `${base()}/x?title=${'a'.repeat(61)}`, { id: brandId, kind: 'x' })
+    expect(zip.bytes.includes(Buffer.from('adaptiko-x-'))).toBe(false)
+    const long = await raw(bannerGet, `${base()}/facebook?title=${'a'.repeat(61)}`, {
+      id: brandId,
+      kind: 'facebook',
+    })
     expect(long.status).toBe(400)
+    const removed = await raw(bannerGet, `${base()}/x`, { id: brandId, kind: 'x' })
+    expect(removed.status).toBe(400)
     const unknown = await raw(bannerGet, `${base()}/tiktok`, { id: brandId, kind: 'tiktok' })
     expect(unknown.status).toBe(400)
   })

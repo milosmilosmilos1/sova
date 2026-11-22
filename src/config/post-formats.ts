@@ -19,7 +19,7 @@ export const FORMAT_LABEL: Record<PostFormat, string> = {
 }
 
 export const FORMAT_HINT: Record<PostFormat, string> = {
-  text: 'Objava bez slike, za Facebook, LinkedIn i X.',
+  text: 'Objava bez slike, za Facebook i LinkedIn.',
   image: 'Jedna fotografija ili vizual sa tekstom ispod.',
   carousel: 'Više fotografija u jednoj objavi, prevlače se.',
   video: 'Kratak vertikalan video sa opisom.',
@@ -33,7 +33,6 @@ export const PLATFORM_FORMATS: Record<SocialPlatform, readonly PostFormat[]> = {
   instagram: ['image', 'carousel', 'video', 'story'],
   linkedin: ['text', 'image', 'carousel', 'video', 'link'],
   tiktok: ['video', 'carousel'],
-  x: ['text', 'image', 'carousel', 'video', 'link'],
   youtube: ['video'],
   // karusel pin do 5 slika (D-152)
   pinterest: ['image', 'carousel', 'video'],

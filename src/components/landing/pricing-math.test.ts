@@ -9,7 +9,7 @@ import {
   type PlanInput,
 } from './pricing-math'
 
-const COSTS = { text: 2, image: 8, strategy: 20, xPost: 1, xPostWithLink: 6 }
+const COSTS = { text: 2, image: 8, strategy: 20 }
 const TOPUPS = [
   { tokens: 100, priceCents: 1200 },
   { tokens: 300, priceCents: 3000 },

@@ -6,11 +6,10 @@ import {
   pollProblems,
   rawPoll,
   readPoll,
-  xPollMinutes,
   LINKEDIN_POLL_DURATION,
 } from './poll'
 
-describe('anketa za LinkedIn i X (D-151)', () => {
+describe('anketa za LinkedIn (D-151, D-192)', () => {
   it('čita anketu tek sa pitanjem i dva odgovora; nedovršena je greška, ne običan tekst', () => {
     expect(readPoll({})).toBeNull()
     expect(
@@ -39,25 +38,23 @@ describe('anketa za LinkedIn i X (D-151)', () => {
     })
   })
 
-  it('granice po mreži: X do 25 znakova po odgovoru, LinkedIn pitanje do 140 i odgovor do 30', () => {
+  it('granice LinkedIn-a: pitanje do 140 znakova, odgovor do 30', () => {
     const poll = {
       question: 'P'.repeat(150),
-      options: ['Dovoljno dugačak odgovor 1', 'B'],
+      options: ['Ovaj odgovor je duži od trideset znakova', 'B'],
       durationDays: 14 as const,
     }
     expect(pollProblems(poll, 'linkedin')).toEqual([
       'Pitanje ankete na LinkedIn-u može imati najviše 140 znakova.',
+      'Odgovor u anketi na LinkedIn-u može imati najviše 30 znakova.',
     ])
-    expect(pollProblems(poll, 'x')).toEqual(['Odgovor u anketi na X-u može imati najviše 25 znakova.'])
-    expect(pollProblems({ question: 'Q', options: ['Da', 'da'], durationDays: 1 }, 'x')).toEqual([
+    expect(pollProblems({ question: 'Q', options: ['Da', 'da'], durationDays: 1 }, 'linkedin')).toEqual([
       'Odgovori u anketi moraju biti različiti.',
     ])
-    expect(xPollMinutes(14)).toBe(10_080)
-    expect(xPollMinutes(1)).toBe(1440)
     expect(LINKEDIN_POLL_DURATION[14]).toBe('FOURTEEN_DAYS')
   })
 
-  it('odgovor modela: bez numeracije i ponavljanja, u granicama X-a, trajanje 1, 3, 7 ili 14', () => {
+  it('odgovor modela: bez numeracije i ponavljanja, u granicama LinkedIn-a, trajanje 1, 3, 7 ili 14', () => {
     expect(
       normalizePoll({
         question: 'Koliko često servisirate klimu?',
@@ -72,7 +69,7 @@ describe('anketa za LinkedIn i X (D-151)', () => {
       }),
     ).toEqual({
       question: 'Koliko često servisirate klimu?',
-      options: ['Svake godine', 'Na dve godine', 'Kad se pokvari', 'Nikad, a imam je deset go'],
+      options: ['Svake godine', 'Na dve godine', 'Kad se pokvari', 'Nikad, a imam je deset godina'],
       durationDays: 7,
     })
     expect(normalizePoll({ question: 'Samo jedan?', options: ['Da'] })).toBeNull()

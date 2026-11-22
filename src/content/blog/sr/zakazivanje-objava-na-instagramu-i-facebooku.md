@@ -72,7 +72,7 @@ Kad objavljujete na tri ili više mreža, ili vodite mreže za klijente, alat za
 
 ## Kako zakazivanje radi u Sovi?
 
-Sova zakazuje i objavljuje na osam mreža preko zvaničnih veza tih mreža: Facebook, Instagram, LinkedIn, TikTok, X, YouTube Shorts, Pinterest i Google poslovni profil. Objava se napravi jednom, a Sova je prilagodi svakoj mreži. Ide u kalendar, gde je vidite po danima i nedeljama.
+Sova zakazuje i objavljuje na sedam mreža preko zvaničnih veza tih mreža: Facebook, Instagram, LinkedIn, TikTok, YouTube Shorts, Pinterest i Google poslovni profil. Objava se napravi jednom, a Sova je prilagodi svakoj mreži. Ide u kalendar, gde je vidite po danima i nedeljama.
 
 Termin se zadaje u **vremenskoj zoni brenda**, pa objava izlazi u 8:00 po beogradskom vremenu i kad radite sa putovanja ili kad vam je laptop podešen na drugu zonu. Ako objava ne prođe iz prvog puta, na primer zato što mreža ne odgovara, Sova pokušava ponovo i javi vam ako ni tada ne uspe. Klijent može da dobije link za odobrenje i ostavi komentar, bez naloga u aplikaciji. O tome kako agencije vode više klijenata piše tekst o [vođenju mreža za više klijenata](@vodjenje-drustvenih-mreza-za-vise-klijenata).
 

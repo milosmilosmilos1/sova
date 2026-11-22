@@ -15,7 +15,7 @@ import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { POST_FORMATS, type PostFormat } from '@/config/post-formats'
 import { INTL_UI } from '@/i18n/config'
 import type { ApiResponse } from '@/lib/api/response'
-import { AUTOMATED_LABEL, PERSONAL_APPROVAL } from '@/lib/autopilot/rules'
+import { PERSONAL_APPROVAL } from '@/lib/autopilot/rules'
 
 /**
  * Autopilot (faza 10c): izbor nivoa 0–3 sa opisom, pun autopilot uz potvrdu imenom brenda i izbor
@@ -35,7 +35,6 @@ interface View {
   level3Available: boolean
   level3ConfirmedAt: string | null
   level3AccountIds: string[]
-  xAutomatedLabelConfirmedAt: string | null
   language: 'sr-Latn' | 'sr-Cyrl' | 'en'
   formats: PostFormat[]
   mix: boolean
@@ -319,8 +318,6 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
   const [accounts, setAccounts] = useState<string[]>(() =>
     v.level3AccountIds.filter((id) => !personal(v.accounts.find((a) => a.id === id)?.platform ?? '')),
   )
-  const hasX = v.accounts.some((a) => a.status === 'active' && AUTOMATED_LABEL.includes(a.platform))
-  const [xLabel, setXLabel] = useState(Boolean(v.xAutomatedLabelConfirmedAt))
   const [confirm, setConfirm] = useState('')
   const [saved, setSaved] = useState(false)
   const save = useMutation({
@@ -333,7 +330,6 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
           approvalDeadlineHours: Number(deadline),
           unapprovedAction: unapproved,
           ...(level === 3 ? { level3AccountIds: accounts, confirm } : {}),
-          ...(hasX && xLabel !== Boolean(v.xAutomatedLabelConfirmedAt) ? { xAutomatedLabel: xLabel } : {}),
         },
       }),
     onSuccess: () => {
@@ -426,19 +422,6 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
               />
             </div>
           </div>
-        ) : null}
-
-        {hasX ? (
-          <label className="flex items-start gap-2 text-sm">
-            <input
-              type="checkbox"
-              className="mt-1"
-              checked={xLabel}
-              disabled={disabled}
-              onChange={(e) => setXLabel(e.target.checked)}
-            />
-            <span>{t('xLabel')}</span>
-          </label>
         ) : null}
 
         <div className="grid gap-3 sm:grid-cols-3">

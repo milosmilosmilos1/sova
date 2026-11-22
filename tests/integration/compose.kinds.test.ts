@@ -42,7 +42,6 @@ const designedReply = (n: number): MockReply => ({
       items: null,
     })),
     caption: 'Hvala na poverenju.',
-    short_caption: 'Hvala.',
     hashtags: ['#adaptacija'],
     first_comment: null,
     visual_query: 'bathroom',

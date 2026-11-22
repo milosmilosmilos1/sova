@@ -3,7 +3,7 @@ import 'server-only'
 import { isProviderError } from '@/integrations/social/errors'
 import { providerFor } from '@/integrations/social/registry'
 import type { NormalizedMetrics } from '@/integrations/social/types'
-import type { SocialPlatform } from '@/config/platforms'
+import { isSocialPlatform, type SocialPlatform } from '@/config/platforms'
 import {
   ANALYTICS_TARGET_STATUSES,
   CAPTURE_HORIZONS,
@@ -40,8 +40,7 @@ export function isGoneError(error: unknown): boolean {
 
 /**
  * Koje mreže imaju metrike u Sovi. Objave: Google poslovni profil ih nema kroz API, Pinterest zabranjuje
- * čuvanje podataka iz API-ja (D-085), X naplaćuje svako čitanje pa se prate samo 24 h i 7 dana (D-083).
- * Dnevne metrike naloga: X se ne povlači svaki dan (pratioci se osvežavaju pri sinhronizaciji naloga).
+ * čuvanje podataka iz API-ja (D-085). Stari redovi sa X-a (izbačen iz Sove, D-192) se preskaču.
  */
 const POST_METRICS_PLATFORMS: readonly SocialPlatform[] = [
   'facebook',
@@ -49,7 +48,6 @@ const POST_METRICS_PLATFORMS: readonly SocialPlatform[] = [
   'linkedin',
   'tiktok',
   'youtube',
-  'x',
 ]
 const ACCOUNT_METRICS_PLATFORMS: readonly SocialPlatform[] = [
   'facebook',
@@ -59,10 +57,6 @@ const ACCOUNT_METRICS_PLATFORMS: readonly SocialPlatform[] = [
   'youtube',
   'google_business',
 ]
-export const POST_METRIC_HORIZONS: Partial<Record<SocialPlatform, readonly CaptureHorizon[]>> = {
-  x: ['24h', '7d'],
-}
-
 export interface DueCapture {
   targetId: string
   horizon: CaptureHorizon
@@ -81,7 +75,7 @@ export async function dueMetricCaptures(now = new Date(), limit = 200): Promise<
     const { from, to } = captureWindow(horizon, now)
     const { data: rows, error } = await admin
       .from('post_targets')
-      .select('id, platform')
+      .select('id')
       .in('status', [...ANALYTICS_TARGET_STATUSES])
       .in('platform', [...POST_METRICS_PLATFORMS])
       .not('external_post_id', 'is', null)
@@ -90,10 +84,7 @@ export async function dueMetricCaptures(now = new Date(), limit = 200): Promise<
       .order('published_at', { ascending: true })
       .limit(limit)
     if (error) throw error
-    const candidates = (rows ?? []).filter((r) => {
-      const only = POST_METRIC_HORIZONS[r.platform as SocialPlatform]
-      return !only || only.includes(horizon)
-    })
+    const candidates = rows ?? []
     if (!candidates.length) continue
     const { data: have, error: haveError } = await admin
       .from('post_metrics_snapshots')
@@ -154,12 +145,9 @@ export async function capturePostMetrics(targetId: string, horizon: Horizon): Pr
   if (!(ANALYTICS_TARGET_STATUSES as readonly string[]).includes(target.status) || !target.external_post_id) {
     return { status: 'skipped', reason: `target je ${target.status} bez ID-ja objave` }
   }
-  if (!POST_METRICS_PLATFORMS.includes(target.platform)) {
-    return { status: 'skipped', reason: `mreža ${target.platform} nema metrike objava` }
-  }
-  const horizons = POST_METRIC_HORIZONS[target.platform]
-  if (horizon !== 'adhoc' && horizons && !horizons.includes(horizon)) {
-    return { status: 'skipped', reason: `horizont ${horizon} se ne prati za mrežu ${target.platform}` }
+  const platform = target.platform
+  if (!isSocialPlatform(platform) || !POST_METRICS_PLATFORMS.includes(platform)) {
+    return { status: 'skipped', reason: `mreža ${platform} nema metrike objava` }
   }
   if (horizon !== 'adhoc') {
     const { count } = await admin
@@ -177,7 +165,7 @@ export async function capturePostMetrics(targetId: string, horizon: Horizon): Pr
   if (!account) return { status: 'skipped', reason: 'nalog ne postoji' }
   if (account.status !== 'active') return { status: 'skipped', reason: `nalog je ${account.status}` }
   try {
-    const provider = providerFor(target.platform)
+    const provider = providerFor(platform)
     const token = await accessTokenFor(account)
     let externalId = target.external_post_id
     // TikTok daje ID objave tek posle moderacije; do tada je u bazi `publish:<id>`
@@ -197,7 +185,7 @@ export async function capturePostMetrics(targetId: string, horizon: Horizon): Pr
       social_account_id: account.id,
       brand_id: target.brand_id,
       horizon,
-      ...toSnapshot(metrics, target.platform),
+      ...toSnapshot(metrics, platform),
     })
     if (error) {
       if (error.code === '23505') return { status: 'skipped', reason: 'snimak već postoji' }
@@ -235,11 +223,12 @@ export async function captureAccountMetrics(accountId: string, date: string): Pr
   const { data: account } = await admin.from('social_accounts').select('*').eq('id', accountId).maybeSingle()
   if (!account) return { status: 'skipped', reason: 'nalog ne postoji' }
   if (account.status !== 'active') return { status: 'skipped', reason: `nalog je ${account.status}` }
-  if (!ACCOUNT_METRICS_PLATFORMS.includes(account.platform)) {
-    return { status: 'skipped', reason: `mreža ${account.platform} nema dnevne metrike naloga` }
+  const platform = account.platform
+  if (!isSocialPlatform(platform) || !ACCOUNT_METRICS_PLATFORMS.includes(platform)) {
+    return { status: 'skipped', reason: `mreža ${platform} nema dnevne metrike naloga` }
   }
   try {
-    const m = await providerFor(account.platform).fetchAccountMetrics(
+    const m = await providerFor(platform).fetchAccountMetrics(
       refFor(account),
       await accessTokenFor(account),
       date,

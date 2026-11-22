@@ -1,4 +1,4 @@
-import { validateText, type SocialPlatform } from '@/config/platforms'
+import { isSocialPlatform, validateText, type SocialPlatform } from '@/config/platforms'
 import { CYRILLIC_LOCALES, type ContentLocale } from '@/config/locales'
 import { foreignSentences } from '@/lib/content-language'
 
@@ -36,19 +36,12 @@ export const BUDGET_WARNING_PERCENT = 80
  */
 export const PERSONAL_APPROVAL: readonly SocialPlatform[] = ['tiktok', 'linkedin', 'pinterest']
 
-/** X dozvoljava automatske objave samo kad je na nalogu uključena oznaka „Automated” (D-182). */
-export const AUTOMATED_LABEL: readonly SocialPlatform[] = ['x']
-
 /**
  * Da li objava na ovim mrežama sme da ide bez odobrenja (nivo 3, rok za odobrenje): ne sme kad je
- * bar jedna mreža iz `PERSONAL_APPROVAL`, ni na X-u dok korisnik ne potvrdi oznaku „Automated”.
+ * bar jedna mreža iz `PERSONAL_APPROVAL`, ni kad je mreža van Sove (stari red sa `x`, D-192).
  */
-export function autoPublishAllowed(platforms: readonly string[], xLabelConfirmed: boolean): boolean {
-  return platforms.every(
-    (p) =>
-      !PERSONAL_APPROVAL.includes(p as SocialPlatform) &&
-      (xLabelConfirmed || !AUTOMATED_LABEL.includes(p as SocialPlatform)),
-  )
+export function autoPublishAllowed(platforms: readonly string[]): boolean {
+  return platforms.every((p) => isSocialPlatform(p) && !PERSONAL_APPROVAL.includes(p))
 }
 
 /** mreže koje bez vizuala ne mogu da objave sliku-objavu */

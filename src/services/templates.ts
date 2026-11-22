@@ -216,12 +216,6 @@ export interface TemplatePostResult {
   notes: string[]
 }
 
-/** Opis za mrežu: X prima 280 znakova. */
-function captionFor(caption: string, platform: SocialPlatform): string {
-  if (platform !== 'x' || caption.length <= 280) return caption
-  return `${caption.slice(0, 277).trimEnd()}…`
-}
-
 /**
  * Nacrt iz šablona: slajdovi u stilu brenda kao mediji, opis (korisnikov ili predlog), izabrane
  * mreže. Nacrt se zakazuje kao svaki drugi, u editoru objave.
@@ -282,7 +276,7 @@ export async function createTemplatePost(
     const platform = a.platform as SocialPlatform
     return {
       socialAccountId: a.id,
-      text: captionFor(caption, platform),
+      text: caption,
       ...(formatFor(postFormat, platform) === 'story' ? { options: { format: 'story' } } : {}),
     }
   })

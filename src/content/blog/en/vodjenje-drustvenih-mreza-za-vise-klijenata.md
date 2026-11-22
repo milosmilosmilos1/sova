@@ -81,7 +81,7 @@ Tools that write first drafts, adapt posts for each network and schedule them ca
 
 Sova was built for agencies too. You have all your brands in one workspace, and each one has its own Brand Brain (services, prices, tone, audience), its own voice, its own networks and its own calendar. Sova writes each client's posts from that client's profile, so the tones don't get mixed up.
 
-Your team gets roles: owner, editor, client. A client gets an invitation or an approval link, sees the posts exactly as they will look, and approves them or leaves a comment, while you see what's waiting and how much of it there is. Posts go out to eight networks in each brand's time zone, and the monthly PDF report is ready to send. When you turn on Autopilot for a client, weekly drafts arrive on their own, with approval deadlines and the budget you set.
+Your team gets roles: owner, editor, client. A client gets an invitation or an approval link, sees the posts exactly as they will look, and approves them or leaves a comment, while you see what's waiting and how much of it there is. Posts go out to seven networks in each brand's time zone, and the monthly PDF report is ready to send. When you turn on Autopilot for a client, weekly drafts arrive on their own, with approval deadlines and the budget you set.
 
 You can see how many brands and networks come with each plan in the [pricing section](/#pricing). If you're curious how AI writes for different brands, read the article on [AI for social media](@vestacka-inteligencija-za-drustvene-mreze).
 

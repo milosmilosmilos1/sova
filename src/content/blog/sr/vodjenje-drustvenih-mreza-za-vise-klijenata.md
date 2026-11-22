@@ -83,7 +83,7 @@ Alati koji pišu prve verzije, prilagođavaju objave po mrežama i zakazuju mogu
 
 Sova je pravljena i za agencije. U jednom radnom prostoru imate sve brendove, a svaki ima svoj Brand Brain (usluge, cene, ton, publiku), svoj glas, svoje mreže i svoj kalendar. Sova piše objave za svakog klijenta iz njegovog profila, pa se tonovi ne mešaju.
 
-Tim dobija uloge: vlasnik, urednik, klijent. Klijent dobija pozivnicu ili link za odobrenje, vidi objave onako kako će izgledati, odobrava ih ili ostavlja komentar, a vi vidite šta čeka i koliko. Objave idu na osam mreža u vremenskoj zoni svakog brenda, a mesečni izveštaj u PDF-u je spreman za slanje. Kad uključite Autopilot za nekog klijenta, nedeljni nacrti stižu sami, sa rokovima za odobrenje i budžetom koji zadate.
+Tim dobija uloge: vlasnik, urednik, klijent. Klijent dobija pozivnicu ili link za odobrenje, vidi objave onako kako će izgledati, odobrava ih ili ostavlja komentar, a vi vidite šta čeka i koliko. Objave idu na sedam mreža u vremenskoj zoni svakog brenda, a mesečni izveštaj u PDF-u je spreman za slanje. Kad uključite Autopilot za nekog klijenta, nedeljni nacrti stižu sami, sa rokovima za odobrenje i budžetom koji zadate.
 
 Koliko brendova i mreža ulazi u koji plan, vidite u [cenovniku](/#pricing). Ako vas zanima kako AI piše za različite brendove, pročitajte tekst o [AI-ju za društvene mreže](@vestacka-inteligencija-za-drustvene-mreze).
 

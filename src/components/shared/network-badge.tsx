@@ -38,7 +38,7 @@ export function NetworkIcon({
         height: size,
         borderRadius: round ? 9999 : Math.max(3, Math.round(size * 0.28)),
         background: p.tile === 'ig' ? undefined : p.tile,
-        // crne (TikTok, X) i bela (Google) pločica dobijaju tanak okvir, da se vide na svakoj podlozi
+        // crna (TikTok) i bela (Google) pločica dobijaju tanak okvir, da se vide na svakoj podlozi
         boxShadow: p.ring || p.tile === '#FFFFFF' ? 'inset 0 0 0 1px rgb(128 128 128 / 0.35)' : undefined,
       }}
     >

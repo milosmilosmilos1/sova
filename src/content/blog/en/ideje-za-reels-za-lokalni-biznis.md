@@ -97,7 +97,7 @@ Shooting in batches saves the most time. Once you've set up the tripod and the l
 
 The same vertical video can go on Instagram Reels, Facebook Reels, TikTok and YouTube Shorts. What changes is the caption: shorter and more relaxed on TikTok, a title of up to 100 characters with the #Shorts tag on YouTube, and a caption with a call to action and up to five hashtags on Instagram. TikTok has its own article, [TikTok for business](@tiktok-za-firme), and hashtags are covered in the article on [Instagram hashtags](@hashtagovi-na-instagramu).
 
-Sova publishes a video to all of these networks from one draft, with a caption adapted to each. When you don't have your own footage, it can suggest a video from Pexels for the post's topic, and it can turn a carousel into a short video made of the slides. Still, your own footage from the shop works better than any stock video. You can see how the same post looks on eight networks on the [home page](/#networks), and how video fits into a weekly rhythm in the article on [how often to post](@koliko-cesto-objavljivati-na-drustvenim-mrezama).
+Sova publishes a video to all of these networks from one draft, with a caption adapted to each. When you don't have your own footage, it can suggest a video from Pexels for the post's topic, and it can turn a carousel into a short video made of the slides. Still, your own footage from the shop works better than any stock video. You can see how the same post looks on seven networks on the [home page](/#networks), and how video fits into a weekly rhythm in the article on [how often to post](@koliko-cesto-objavljivati-na-drustvenim-mrezama).
 
 ## Frequently asked questions
 

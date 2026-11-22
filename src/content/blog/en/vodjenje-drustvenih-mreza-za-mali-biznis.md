@@ -7,7 +7,7 @@ seo_opis: How to run social media for a small business without an agency: which 
 izvod: What you actually need to do on social media when you run a small business: choosing networks, planning, captions, images, publishing and measuring, with a realistic estimate of the time.
 naslovna: vodjenje-drustvenih-mreza-za-mali-biznis-naslovna
 ---
-For a small business, managing social media means **two to three posts a week on the two networks where your customers are**, written in your own voice, published when people are watching, with one look at the numbers each month. You don't need all eight networks and you don't need to post every day. You need a rhythm you can keep up for six months.
+For a small business, managing social media means **two to three posts a week on the two networks where your customers are**, written in your own voice, published when people are watching, with one look at the numbers each month. You don't need all seven networks and you don't need to post every day. You need a rhythm you can keep up for six months.
 
 :::ukratko
 - Start with two networks: where your customers are, not where the crowd is biggest.

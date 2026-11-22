@@ -36,7 +36,6 @@ function carouselReply(n: number): MockReply {
         items: null,
       })),
       caption: 'Vikend je blizu.\n\nRezervišite na vreme.',
-      short_caption: 'Vikend je blizu.',
       hashtags: ['#beograd'],
       first_comment: null,
       visual_query: 'night club',

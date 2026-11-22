@@ -119,7 +119,7 @@ U „Galerija” dodajete fotografije („Dodaj fotografije”), pravite kategor
 
 - „Opisi profila” (3 tokena): opis za svaku mrežu, u njenim granicama. „Kopiraj i otvori profil” kopira tekst i otvara stranu za izmenu profila na mreži. Sova sama upisuje opis samo na Google poslovni profil („Objavi na profilu”), kad je povezan.
 - „Instagram highlights” (3 tokena): teme, naslovne i priče („Napravi priču” šalje priču u Odobravanje). Na profil ih dodajete sami, jer Instagram to aplikacijama ne dozvoljava.
-- „Profilna i naslovne slike”: profilna slika za sve mreže i naslovne za Facebook, LinkedIn, X, YouTube i Pinterest, u njihovim veličinama, bez tokena.
+- „Profilna i naslovne slike”: profilna slika za sve mreže i naslovne za Facebook, LinkedIn, YouTube i Pinterest, u njihovim veličinama, bez tokena.
 - „Sadržaj za profile po mreži” (3 tokena): objave za vrh profila, Pinterest table, Google usluge, YouTube plejliste, pitanja za početak razgovora.
 
 ## 4. Povezivanje mreža
@@ -142,7 +142,8 @@ Svaka mreža mora da odobri Sovu za javnu upotrebu, a većina odobrenja je u tok
 - Facebook stranice i Instagram: još nisu dostupni svim korisnicima, čeka se odobrenje Mete. Pločica može da kaže „Poveži”, ali prijava za većinu naloga neće proći.
 - TikTok: još nije dostupno.
 - YouTube (Shorts) i Google poslovni profil: još nije dostupno, čeka se odobrenje Google-a.
-- Pinterest i X: još nije dostupno („Uskoro”).
+- Pinterest: još nije dostupno („Uskoro”).
+- X (Twitter): Sova ne radi sa X-om i to se ne planira. Ako korisnik pita, reci da Sova pokriva sedam mreža: Facebook, Instagram, LinkedIn, TikTok, YouTube, Pinterest i Google poslovni profil.
 
 Za nedostupnu mrežu reci da Sova čeka odobrenje i da datum nije poznat. Ako je hitno, korisnik piše podršci.
 
@@ -164,7 +165,7 @@ Status naloga je „aktivno”, „treba ponovo povezati”, „isključeno” i
 
 ### Vrste objava
 
-„Samo tekst”, „Slika”, „Karusel” (3 do 20 slajdova), „Video (Reels)”, „Priča (Story)”, „Link” i „Anketa” (samo LinkedIn i X, 2 do 4 odgovora). Priču primaju samo Instagram i Facebook, a Instagram ne prima objavu bez slike. „AI bira” bira vrstu koju primaju sve izabrane mreže. Facebook prima najviše 10 slika, pa duži karusel tamo ide sa prvih devet i poslednjim slajdom. Na LinkedIn-u slajdovi koje nacrta Sova idu kao PDF dokument koji se prevlači, a fotografije kao mreža slika.
+„Samo tekst”, „Slika”, „Karusel” (3 do 20 slajdova), „Video (Reels)”, „Priča (Story)”, „Link” i „Anketa” (samo LinkedIn, 2 do 4 odgovora). Priču primaju samo Instagram i Facebook, a Instagram ne prima objavu bez slike. „AI bira” bira vrstu koju primaju sve izabrane mreže. Facebook prima najviše 10 slika, pa duži karusel tamo ide sa prvih devet i poslednjim slajdom. Na LinkedIn-u slajdovi koje nacrta Sova idu kao PDF dokument koji se prevlači, a fotografije kao mreža slika.
 
 ### AI Studio
 
@@ -252,7 +253,7 @@ Nivo se bira po brendu, a menjaju ga vlasnik i administrator.
 - 2 „Autopilot sa odobrenjem”: Sova pravi i strategiju; neodobrene objave posle roka se preskaču ili objavljuju, po podešavanju.
 - 3 „Pun autopilot”: objavljuje bez odobrenja na izabranim nalozima. Ako piše „uskoro”, još nije dostupan.
 
-TikTok, LinkedIn i Pinterest po svojim pravilima traže da korisnik lično potvrdi svaku objavu, pa ih Autopilot priprema i zakazuje, a objava ide tek posle klika „Odobri” u Odobravanju; ne mogu na nivo 3, a ni podešavanje „objavi neodobrene” ih ne objavljuje (stiže podsetnik, a posle termina objava se vraća u nacrt). X se objavljuje sam samo kad korisnik u podešavanjima Autopilota potvrdi da je na X nalogu uključena oznaka „Automated”.
+TikTok, LinkedIn i Pinterest po svojim pravilima traže da korisnik lično potvrdi svaku objavu, pa ih Autopilot priprema i zakazuje, a objava ide tek posle klika „Odobri” u Odobravanju; ne mogu na nivo 3, a ni podešavanje „objavi neodobrene” ih ne objavljuje (stiže podsetnik, a posle termina objava se vraća u nacrt).
 
 Podešava se mesečni budžet tokena (upozorenje na 80 %, stop na 100 %), rok za odobrenje, šta sa neodobrenim, jezik i vrste. Najviše 21 nacrt nedeljno. „Pauziraj sve” zaustavlja Autopilot i sve zakazane objave brenda; „Nastavi” vraća one čiji termin nije prošao. Nacrt koji ne prođe kontrolu kvaliteta vraća se na doradu („Autopilot vratio objavu”).
 
@@ -290,7 +291,7 @@ U editoru objave, „Javni link za klijenta” (EN: Public link for the client),
 - Vreme je u zoni brenda. Zona se menja u Brend i nalog, kartica Nalog, deo Brendovi („Sačuvaj zonu”); zakazane objave mogu da zadrže isto lokalno vreme.
 - Termin ne može biti u prošlosti (tada „Objavi sada”) ni dalje od godinu dana.
 - Pre zakazivanja Sova proverava tekst, heštegove, medije i odnos stranica za svaku mrežu.
-- Facebook, LinkedIn i X odbijaju isti tekst na istom nalogu; Sova javlja ako je isti tekst tu objavljen ili zakazan u poslednjih 30 dana.
+- Facebook i LinkedIn odbijaju isti tekst na istom nalogu; Sova javlja ako je isti tekst tu objavljen ili zakazan u poslednjih 30 dana.
 - Zakazana objava se ne menja: „Otkaži zakazivanje” je vraća u nacrt. Postoje i „Pauziraj” i „Nastavi”. Vlasnik i administrator mogu da zamene sliku ili video bez otkazivanja termina.
 
 ### Šta se dešava u terminu
@@ -360,7 +361,7 @@ Agencija vodi svakog klijenta kao brend. Klijent odobrava preko javnog linka ili
 
 ### Tokeni
 
-Tokeni se troše kad AI nešto napravi. Kalendar, analitika i objavljivanje ne troše tokene, osim objava na X-u (1, sa linkom 6), kad X bude dostupan. Trenutne cene:
+Tokeni se troše kad AI nešto napravi. Kalendar, analitika i objavljivanje ne troše tokene. Trenutne cene:
 
 - tekst objave (Nova objava, nacrt toka ili plana, Generiši ponovo, Predloži iz izvora): 2
 - poruka u AI Studiju, opis fotografije, predlog odgovora u Inboxu: po 1

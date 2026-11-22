@@ -75,7 +75,6 @@ function reply(n: number, title: string) {
         items: null,
       })),
       caption: `${title}\n\nObjašnjenje i poziv na akciju.`,
-      short_caption: title,
       hashtags: ['#seo'],
       first_comment: null,
       visual_query: 'office',

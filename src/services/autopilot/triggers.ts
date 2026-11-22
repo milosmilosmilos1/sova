@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { PLATFORMS } from '@/config/platforms'
+import { platformLabel } from '@/config/platforms'
 import {
   ANALYTICS_TARGET_STATUSES,
   engagementOfSnapshot,
@@ -144,7 +144,7 @@ export async function checkOutlier(targetId: string): Promise<boolean> {
     brand_id: target.brand_id,
     source: 'analytics',
     kind: 'repeat_format',
-    title: `Ponovite format: ${PLATFORMS[target.platform].label} objava sa ${engagement} interakcija`,
+    title: `Ponovite format: ${platformLabel(target.platform)} objava sa ${engagement} interakcija`,
     body: `Objava „${excerpt}” ima ${engagement} interakcija, više od dvostrukog proseka (${avg}). Napravite sličnu objavu sa novom temom.`,
     payload: {
       postId: target.post_id,

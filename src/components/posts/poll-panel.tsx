@@ -9,8 +9,8 @@ import { Label } from '@/components/ui/label'
 import { POLL_DURATIONS, POLL_LIMITS, type PollOptions } from '@/config/poll'
 
 /**
- * Anketa za LinkedIn i X (D-151): pitanje, 2 do 4 odgovora i trajanje. Ista anketa ide na sve
- * izabrane LinkedIn i X naloge; objava sa anketom ide bez slike.
+ * Anketa za LinkedIn (D-151): pitanje, 2 do 4 odgovora i trajanje. Ista anketa ide na sve
+ * izabrane LinkedIn naloge; objava sa anketom ide bez slike.
  */
 export function PollPanel({
   value,
@@ -107,9 +107,6 @@ export function PollPanel({
                 </option>
               ))}
             </select>
-            {value.durationDays > 7 ? (
-              <p className="text-xs text-muted-foreground">{t('poll.xMax')}</p>
-            ) : null}
           </div>
           {hasMedia ? <p className="text-xs text-muted-foreground">{t('poll.media')}</p> : null}
         </div>

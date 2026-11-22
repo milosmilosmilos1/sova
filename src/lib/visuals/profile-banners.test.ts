@@ -32,7 +32,7 @@ const kids = (n: Node): Node[] => {
 const num = (v: string | number | undefined) => Number(String(v).replace('px', ''))
 
 describe('naslovne slike profila (D-145)', () => {
-  it('tekst je u delu koji se vidi: u sredini za Facebook i YouTube, desno od slike profila na X-u', () => {
+  it('tekst je u delu koji se vidi: u sredini za Facebook i YouTube, desno od slike profila na LinkedIn-u', () => {
     for (const kind of BANNER_KINDS) {
       const { width, height, safe, align } = PROFILE_BANNERS[kind]
       // deo koji se vidi je unutar slike
@@ -45,7 +45,7 @@ describe('naslovne slike profila (D-145)', () => {
       expect(num(s.top) + num(s.height), kind).toBeLessThanOrEqual(safe.y + safe.height)
       expect(s.alignItems, kind).toBe(align === 'end' ? 'flex-end' : 'center')
     }
-    expect(PROFILE_BANNERS.x.align).toBe('end')
+    expect(PROFILE_BANNERS.linkedin_page.align).toBe('end')
     expect(PROFILE_BANNERS.youtube.safe).toMatchObject({ width: 1546, height: 423 })
   })
 
@@ -57,7 +57,7 @@ describe('naslovne slike profila (D-145)', () => {
     const content = kids(tree).at(-1)!
     expect(kids(content)).toHaveLength(1)
     expect(kids(content)[0]!.props.style!.color).toBe('rgba(255, 255, 255, 0.9)')
-    const light = bannerTree(input('x', { colors: { ...colors, primary: '#FFD43B' } }), {
+    const light = bannerTree(input('youtube', { colors: { ...colors, primary: '#FFD43B' } }), {
       headings: 'Inter',
       body: 'Inter',
     })

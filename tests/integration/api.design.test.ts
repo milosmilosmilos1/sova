@@ -49,7 +49,6 @@ function carouselReply(n: number, extra: Record<string, unknown> = {}) {
     json: {
       slides,
       caption: 'Prvi red je hook.\n\nZatim kratko objašnjenje i poziv na akciju.',
-      short_caption: 'Tri greške koje koštaju klijente, i kako da ih izbegnete.',
       hashtags: ['#seo', '#marketing', 'sajt'],
       first_comment: null,
       visual_query: 'laptop office desk',
@@ -349,17 +348,18 @@ describe('Nova objava sa dizajnom (D-108)', () => {
     expect((targets![0]!.options as { format?: string }).format).toBe('story')
   })
 
-  it('X dobija kratak opis do 280 znakova; saldo pada samo za tekst', async () => {
+  it('Google poslovni profil dobija opis bez heštegova; saldo pada samo za tekst', async () => {
     const before = await call<{ balance: { available: number } }>(balanceGet, '/api/tokens/balance', {
       token: user.token,
       query: { workspaceId: wsId },
     })
     enqueueReply(carouselReply(1))
-    const r = await compose({ format: 'image', platforms: ['instagram', 'x'] })
+    const r = await compose({ format: 'image', platforms: ['instagram', 'google_business'] })
     expect(r.status).toBe(200)
-    const x = r.json.data!.variants.find((v) => v.platform === 'x')!
-    expect(x.text.length).toBeLessThanOrEqual(280)
-    expect(x.text).toContain('Tri greške koje koštaju klijente')
+    const gbp = r.json.data!.variants.find((v) => v.platform === 'google_business')!
+    expect(gbp.text).toBe('Prvi red je hook.\n\nZatim kratko objašnjenje i poziv na akciju.')
+    const ig = r.json.data!.variants.find((v) => v.platform === 'instagram')!
+    expect(ig.text).toContain('#seo')
     const after = await call<{ balance: { available: number } }>(balanceGet, '/api/tokens/balance', {
       token: user.token,
       query: { workspaceId: wsId },

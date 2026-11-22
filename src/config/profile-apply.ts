@@ -4,7 +4,7 @@ import type { SocialPlatform } from '@/config/platforms'
  * Primena opisa profila (D-166). Sova sama upisuje opis samo gde mreža to dozvoljava i gde Sova već
  * ima dozvolu: Google poslovni profil (Business Information API, `profile.description`, uz
  * `business.manage`). Facebook stranica (`pages_manage_metadata`), YouTube kanal (`youtube`),
- * LinkedIn stranica firme (Community Management API) i X (`PUT /2/users/me`) to dozvoljavaju tek uz
+ * LinkedIn stranica firme (Community Management API) to dozvoljavaju tek uz
  * dozvolu koju Sova još nema; Instagram, TikTok i Pinterest uopšte ne dozvoljavaju izmenu opisa preko
  * API-ja. Za njih „Kopiraj i otvori” kopira tekst i otvara stranu za izmenu profila na mreži.
  */
@@ -33,8 +33,6 @@ export function profileEditUrl(platform: SocialPlatform, account?: ProfileAccoun
       return account?.username
         ? `https://www.tiktok.com/@${encodeURIComponent(account.username.replace(/^@/, ''))}`
         : 'https://www.tiktok.com/'
-    case 'x':
-      return 'https://x.com/settings/profile'
     case 'youtube':
       return account
         ? `https://studio.youtube.com/channel/${encodeURIComponent(account.externalId)}/editing/details`

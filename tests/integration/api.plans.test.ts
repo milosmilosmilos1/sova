@@ -72,7 +72,6 @@ function carouselReply(n: number): MockReply {
         items: null,
       })),
       caption: 'Leto je blizu.\n\nOčistite klimu na vreme.',
-      short_caption: 'Leto je blizu.',
       hashtags: ['#klima'],
       first_comment: null,
       visual_query: 'air conditioner',

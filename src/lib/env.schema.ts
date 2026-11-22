@@ -92,8 +92,6 @@ export function buildServerEnvSchema(mode: EnvMode) {
     LINKEDIN_MEMBER_ANALYTICS: z.stringbool().default(false),
     TIKTOK_CLIENT_KEY: z.string().optional(),
     TIKTOK_CLIENT_SECRET: z.string().optional(),
-    X_CLIENT_ID: z.string().optional(),
-    X_CLIENT_SECRET: z.string().optional(),
     GOOGLE_CLIENT_ID: z.string().optional(),
     GOOGLE_CLIENT_SECRET: z.string().optional(),
     PINTEREST_APP_ID: z.string().optional(),

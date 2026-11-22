@@ -21,13 +21,13 @@ Artificial intelligence today does a good job of **first drafts, adapting one po
 
 AI does some jobs faster than a person, with no drop in quality. These are jobs where the rule is clear and the content already exists.
 
-The first is **adapting**. You have one piece of news, say new opening hours. Instagram needs a shorter text with a call to action and hashtags, Facebook a more conversational one, LinkedIn a more serious one, X no more than 280 characters, and Google Business Profile something practical with no hashtags. That takes a person twenty minutes and AI a few seconds, and it sticks to each network's rules as it goes.
+The first is **adapting**. You have one piece of news, say new opening hours. Instagram needs a shorter text with a call to action and hashtags, Facebook a more conversational one, LinkedIn a more serious one, and Google Business Profile something practical with no hashtags. That takes a person twenty minutes and AI a few seconds, and it sticks to each network's rules as it goes.
 
 The second is first drafts. AI doesn't have to write a perfect text. It's enough that it gives you a good starting point you can polish in two minutes, instead of staring at a blank screen.
 
 The third is ideas and planning. Once it knows what you sell and to whom, AI suggests topics for the whole month, spread across your pillars and days. You throw out the five you don't like and the plan is done. What a good plan looks like is covered in the article on [building a content calendar](@plan-objava-za-drustvene-mreze).
 
-The fourth is the small, repetitive jobs: hashtags, translation into English, a shorter version for X, a description of a photo for people with visual impairments (alt text), and a summary of the month's results in a few sentences.
+The fourth is the small, repetitive jobs: hashtags, translation into English, a description of a photo for people with visual impairments (alt text), and a summary of the month's results in a few sentences.
 
 !slika:vestacka-inteligencija-za-drustvene-mreze-info
 
@@ -59,7 +59,7 @@ The fourth is real photos. AI can make a picture of bread, but it isn't your bre
 
 General AI chatbots are excellent for one-off tasks. The problem starts when you use them to run your social media week after week. Every time, you explain all over again who you are, what you sell and how you sound. Then you copy the text into each network separately, adjust the image format and schedule everything by hand. The time you saved melts away.
 
-A specialised tool remembers. At the start, Sova reads your website and builds a **Brand Brain**, a profile with your services, prices, tone, audience, colours and facts. You can add a PDF about your brand and your own notes. Every post Sova writes relies on that profile and on the brand voice you approved. The text is adapted to each of the eight networks, the visual is made in your brand's style and colours, and the post goes into the calendar for approval. You can see everything that goes into this in the [features section](/#features).
+A specialised tool remembers. At the start, Sova reads your website and builds a **Brand Brain**, a profile with your services, prices, tone, audience, colours and facts. You can add a PDF about your brand and your own notes. Every post Sova writes relies on that profile and on the brand voice you approved. The text is adapted to each of the seven networks, the visual is made in your brand's style and colours, and the post goes into the calendar for approval. You can see everything that goes into this in the [features section](/#features).
 
 ## How do you stop AI making things up?
 

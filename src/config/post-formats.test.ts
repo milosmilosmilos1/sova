@@ -17,7 +17,7 @@ describe('vrste objave (D-107)', () => {
     expect(formatFor('story', 'linkedin')).toBe('image')
     expect(formatFor('link', 'instagram')).toBe('image')
     expect(formatFor('text', 'instagram')).toBe('image')
-    expect(formatFor('link', 'x')).toBe('link')
+    expect(formatFor('link', 'facebook')).toBe('link')
     expect(formatFor('image', 'youtube')).toBe('video')
     expect(formatFor('story', 'tiktok')).toBe('video')
     for (const [platform, formats] of Object.entries(PLATFORM_FORMATS))

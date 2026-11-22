@@ -18,13 +18,11 @@ import { LinkedInPanel } from '@/components/posts/linkedin-panel'
 import { PollPanel } from '@/components/posts/poll-panel'
 import { PinterestPanel } from '@/components/posts/pinterest-panel'
 import { TikTokPanel } from '@/components/posts/tiktok-panel'
-import { XPanel } from '@/components/posts/x-panel'
 import { YouTubePanel } from '@/components/posts/youtube-panel'
 import { NetworkBadge, NetworkName } from '@/components/shared/network-badge'
 import { readGbpOptions } from '@/config/google-business'
 import { readLinkedInOptions } from '@/config/linkedin'
 import { isPollPlatform, rawPoll, type PollOptions } from '@/config/poll'
-import { readXOptions } from '@/config/x'
 import { readPinterestOptions } from '@/config/pinterest'
 import { readYouTubeOptions } from '@/config/youtube'
 import { PLATFORMS } from '@/config/platforms'
@@ -172,7 +170,6 @@ function fromLocalInput(value: string, timeZone: string): string | null {
   return zonedToUtc(date!, time!.slice(0, 5), timeZone)
 }
 
-/** X je pay-per-use: objava sa linkom (i domenom bez https://) košta više (D-013, D-083). */
 /** Natpis odnosa po jeziku: `aspectLabel` piše decimalni zarez (1,91:1), a engleski traži tačku. */
 function ratioText(ratio: number, locale: AppLocale): string {
   const label = aspectLabel(ratio)
@@ -851,21 +848,6 @@ function EditorForm({
                       }
                     />
                   ) : null}
-                  {sel.on && a.platform === 'x' ? (
-                    <XPanel
-                      accountId={a.id}
-                      value={readXOptions({ x: sel.options.x })}
-                      text={sel.text.trim() || form.masterText}
-                      link={form.linkUrl.trim() || null}
-                      disabled={!editable}
-                      onChange={(x) =>
-                        set('selected', {
-                          ...form.selected,
-                          [a.id]: { ...sel, options: { ...sel.options, x } },
-                        })
-                      }
-                    />
-                  ) : null}
                   {sel.on && a.platform === 'pinterest' ? (
                     <PinterestPanel
                       accountId={a.id}
@@ -919,7 +901,7 @@ function EditorForm({
               )
             })}
             {(() => {
-              // anketa (D-151): ista na svim izabranim LinkedIn i X nalozima
+              // anketa (D-151): ista na svim izabranim LinkedIn nalozima
               const pollIds = (accounts.data?.accounts ?? [])
                 .filter((a) => form.selected[a.id]?.on && isPollPlatform(a.platform))
                 .map((a) => a.id)

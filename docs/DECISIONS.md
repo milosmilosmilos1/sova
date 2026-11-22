@@ -1815,6 +1815,17 @@ Granica rasta: najveći trošak posle izmene je objava (oko 6 izvršavanja po ta
 
 Razlog: Sova mora da objavljuje bez plaćenog plana; posle izmene isti posao troši oko tri puta manje izvršavanja, bez gubitka funkcija.
 
+## D-192 · 22.11.2026 · usvojeno · X potpuno izbačen iz Sove
+
+Vlasnik je 22.11. odlučio da Sova ne radi sa X-om: X naplaćuje svaku objavu i svako čitanje (pay-per-use), a za mnogo kupaca traži Enterprise ugovor. Sova sada pokriva sedam mreža: Facebook, Instagram, LinkedIn, TikTok, YouTube, Pinterest i Google poslovni profil.
+
+- **Kod integracije obrisan:** `src/integrations/social/x/`, `src/config/x.ts`, `src/lib/x-text.ts`, X panel u editoru, niti (D-150), X naplata objave (`x_post`, `x_post_with_link`, rezervacija tokena u publisheru), X oznaka „Automated” u Autopilotu (D-182), `X_CLIENT_ID/SECRET` iz env šeme, X pregled u maketama, X naslovna slika profila, X u opisima profila, kratak opis za X u dizajniranim objavama i planovima. Anketa (D-151) ostaje samo za LinkedIn.
+- **Baza bez izmena:** vrednost `x` ostaje u enumu `social_platform`, stari redovi ostaju, a prekidač `platform.x` ne dira kod (vlasnik). U kodu `SocialPlatform` je mreža koju Sova podržava (bez `x`), a `DbPlatform` je vrednost iz baze; `isSocialPlatform` razdvaja ta dva.
+- **Stari red sa `x` ne obara ništa:** nalog sa X-a se ne prikazuje u Mrežama ni u analitici; zakazana objava na X-u pada sa porukom „Sova više ne objavljuje na X-u” (kod `PLATFORM_REMOVED`) i ne može ponovo; provera objave traži da se X ukloni; Autopilot, strategija, metrike i osvežavanje tokena ga preskaču; `providerFor('x')` baca `NOT_SUPPORTED`. Opoziv X tokena pri brisanju naloga više nije moguć (beleži se upozorenje). Cene `x_post` koje su ostale u `platform_settings.token_prices` se ignorišu.
+- **Sajt i tekstovi:** „osam mreža” je „sedam mreža” na oba jezika (početna, meta opis, OG slika, cene, česta pitanja, blog), X je skinut sa pločica, iz uslova korišćenja, politike privatnosti, brisanja podataka, cena tokena i iz znanja chatbota podrške. Blog: X redovi u tabelama i rečenice o X-u uklonjeni na oba jezika; infografike X ne prikazuju, pa se ne crtaju ponovo.
+
+Razlog: odluka vlasnika; X troši novac po objavi i ne isplati se za kupce kojima Sova služi.
+
 ## D-193 · 22.11.2026 · usvojeno · Objave bez Inngest-a (prekidač `publish_cron`)
 
 Inngest Hobby nalog je 22.11. potrošio 50.000 izvršavanja i do kraja ciklusa (9 dana) ne pokreće nove poslove, pa ni zakazane objave. Vlasnik ne želi plaćeni paket; sopstveni Inngest server (Oracle) čeka karticu.

@@ -1,21 +1,21 @@
 import type { SocialPlatform } from '@/config/platforms'
 
 /**
- * Anketa (D-151): LinkedIn i X objavljuju pitanje sa 2 do 4 odgovora; Facebook i Instagram ankete
- * nemaju u API-ju. Čuva se u `post_targets.options.poll` svakog LinkedIn i X targeta (ista vrednost),
- * a tekst objave je uvod. Anketa ide bez slika: obe mreže ne dozvoljavaju anketu i medij zajedno.
+ * Anketa (D-151): LinkedIn objavljuje pitanje sa 2 do 4 odgovora; Facebook i Instagram ankete nemaju u
+ * API-ju (X je izbačen iz Sove, D-192). Čuva se u `post_targets.options.poll` LinkedIn targeta, a
+ * tekst objave je uvod. Anketa ide bez slika: LinkedIn ne dozvoljava anketu i medij zajedno.
  * Sme u klijentski kod.
  */
-export const POLL_PLATFORMS = ['linkedin', 'x'] as const satisfies readonly SocialPlatform[]
+export const POLL_PLATFORMS = ['linkedin'] as const satisfies readonly SocialPlatform[]
 export type PollPlatform = (typeof POLL_PLATFORMS)[number]
 
-/** Trajanje u danima; X dozvoljava najviše 7, pa duža anketa tamo traje 7 dana. */
+/** Trajanje u danima. */
 export const POLL_DURATIONS = [1, 3, 7, 14] as const
 export type PollDuration = (typeof POLL_DURATIONS)[number]
 
 export const POLL_LIMITS = {
   question: 140,
-  option: { linkedin: 30, x: 25 },
+  option: { linkedin: 30 },
   minOptions: 2,
   maxOptions: 4,
 } as const
@@ -55,18 +55,11 @@ export function pollProblems(poll: PollOptions, platform: PollPlatform): string[
     problems.push('Pitanje ankete na LinkedIn-u može imati najviše 140 znakova.')
   const max = POLL_LIMITS.option[platform]
   if (poll.options.some((o) => Array.from(o).length > max))
-    problems.push(
-      platform === 'x'
-        ? 'Odgovor u anketi na X-u može imati najviše 25 znakova.'
-        : 'Odgovor u anketi na LinkedIn-u može imati najviše 30 znakova.',
-    )
+    problems.push('Odgovor u anketi na LinkedIn-u može imati najviše 30 znakova.')
   if (new Set(poll.options.map((o) => o.toLocaleLowerCase())).size !== poll.options.length)
     problems.push('Odgovori u anketi moraju biti različiti.')
   return problems
 }
-
-/** X traži trajanje u minutima (5 do 10.080). */
-export const xPollMinutes = (days: PollDuration) => Math.min(days, 7) * 24 * 60
 
 export const LINKEDIN_POLL_DURATION: Record<PollDuration, string> = {
   1: 'ONE_DAY',
@@ -75,7 +68,7 @@ export const LINKEDIN_POLL_DURATION: Record<PollDuration, string> = {
   14: 'FOURTEEN_DAYS',
 }
 
-/** Odgovor modela u anketu: granice najstrože mreže (X), bez ponavljanja i numeracije. */
+/** Odgovor modela u anketu: granice LinkedIn-a, bez ponavljanja i numeracije. */
 export function normalizePoll(
   raw: { question?: unknown; options?: unknown; duration_days?: unknown } | null | undefined,
 ): PollOptions | null {
@@ -86,7 +79,7 @@ export function normalizePoll(
   const seen = new Set<string>()
   const options = (Array.isArray(raw.options) ? raw.options : [])
     .filter((x): x is string => typeof x === 'string')
-    .map((x) => clip(x.replace(/^\s*(?:\d+[.)]|[-•*])\s*/, ''), POLL_LIMITS.option.x))
+    .map((x) => clip(x.replace(/^\s*(?:\d+[.)]|[-•*])\s*/, ''), POLL_LIMITS.option.linkedin))
     .filter((x) => {
       const k = x.toLocaleLowerCase()
       if (!x || seen.has(k)) return false

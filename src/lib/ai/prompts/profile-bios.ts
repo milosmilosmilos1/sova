@@ -6,7 +6,7 @@ import type { SocialPlatform } from '@/config/platforms'
 /**
  * Opisi profila po mreži (D-143): ime, kratak i duži opis i ključne reči, u granicama svake mreže
  * (pomoć mreža, novembar 2026). Sajt brenda stoji u dužem opisu gde ga mreža prikazuje; Instagram,
- * TikTok i X imaju posebno polje za link, a Google poslovni profil ne dozvoljava linkove u opisu.
+ * TikTok i Google poslovni profil imaju posebno polje za link, a Google ne dozvoljava linkove u opisu.
  */
 export type ProfileField = 'name' | 'short' | 'long' | 'keywords'
 
@@ -15,7 +15,6 @@ export const PROFILE_FIELDS: Record<SocialPlatform, Partial<Record<ProfileField,
   facebook: { short: 101, long: 255 },
   linkedin: { short: 120, long: 2000, keywords: 20 },
   tiktok: { name: 30, short: 80 },
-  x: { name: 50, short: 160 },
   youtube: { long: 1000, keywords: 15 },
   pinterest: { name: 65, long: 500 },
   google_business: { long: 750 },
@@ -26,7 +25,7 @@ export const PROFILE_PLATFORMS = Object.keys(PROFILE_FIELDS) as SocialPlatform[]
 /** Mreže gde sajt stoji u dužem opisu; ostale imaju posebno polje za sajt. */
 export const WEBSITE_IN_LONG: SocialPlatform[] = ['facebook', 'linkedin', 'youtube', 'pinterest']
 /** Mreže sa posebnim poljem za link u profilu. */
-export const WEBSITE_FIELD: SocialPlatform[] = ['instagram', 'tiktok', 'x', 'google_business']
+export const WEBSITE_FIELD: SocialPlatform[] = ['instagram', 'tiktok', 'google_business']
 
 const networkSchema = z.object({
   name: z.string().optional(),
@@ -41,7 +40,6 @@ export const profileBiosOutputSchema = z.object({
   facebook: networkSchema,
   linkedin: networkSchema,
   tiktok: networkSchema,
-  x: networkSchema,
   youtube: networkSchema,
   pinterest: networkSchema,
   google_business: networkSchema,
@@ -85,7 +83,7 @@ export function buildProfileBiosPrompt(input: ProfileBiosInput): string {
     site ? `Sajt: ${site}` : 'Sajt: nema',
     `Obraćanje publici: ${input.address === 'ti' ? 'ti (neformalno)' : 'vi (persiranje)'}`,
     input.emoji
-      ? 'Emoji: samo u kratkim opisima Instagrama, TikToka i X-a, najviše 2 do 3 i gde imaju smisla; duži opisi, LinkedIn, YouTube i Google bez emoji-ja.'
+      ? 'Emoji: samo u kratkim opisima Instagrama i TikToka, najviše 2 do 3 i gde imaju smisla; duži opisi, LinkedIn, YouTube i Google bez emoji-ja.'
       : 'Emoji: bez emoji-ja (izbor brenda).',
     '',
     'PODACI O BRENDU',
@@ -98,7 +96,6 @@ export function buildProfileBiosPrompt(input: ProfileBiosInput): string {
     `- facebook: short (Intro) do 101 znak, jedna rečenica šta brend radi; long (opis stranice) do 255 znakova${site ? ', sa sajtom na kraju' : ''}.`,
     `- linkedin: short (slogan) do 120 znakova; long („O nama”) 600 do 1200 znakova: ko ste, šta radite, za koga, kako radite, poziv na akciju${site ? ' i sajt' : ''}; keywords: 8 do 15 specijalnosti, svaka 1 do 4 reči.`,
     '- tiktok: name do 30 znakova; short do 80 znakova, lagan i kratak.',
-    `- x: name do 50 znakova; short do 160 znakova${site ? ', sajt ide u posebno polje, ne u opis' : ''}.`,
     `- youtube: long (opis kanala) do 1000 znakova, prvih 150 znakova sažimaju šta gledalac dobija (vide se u pretrazi), zatim teme kanala i poziv da se pretplate${site ? ', pa sajt' : ''}; keywords: 8 do 12 ključnih reči kanala.`,
     `- pinterest: name do 65 znakova (ime i ključna reč); long (o profilu) do 500 znakova sa rečima koje ljudi traže${site ? ', i sajt' : ''}.`,
     '- google_business: long (opis firme) do 750 znakova: šta radite, gde i za koga, šta vas izdvaja iz podataka; bez linkova, bez akcija i cena.',

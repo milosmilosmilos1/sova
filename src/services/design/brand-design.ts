@@ -83,9 +83,9 @@ async function defaultHandle(brandId: string): Promise<string | null> {
     .from('social_accounts')
     .select('platform, username, status')
     .eq('brand_id', brandId)
-    .in('platform', ['instagram', 'facebook', 'tiktok', 'x'])
+    .in('platform', ['instagram', 'facebook', 'tiktok'])
     .eq('status', 'active')
-  const order = ['instagram', 'tiktok', 'x', 'facebook']
+  const order = ['instagram', 'tiktok', 'facebook']
   const best = (data ?? [])
     .filter((a) => a.username)
     .sort((a, b) => order.indexOf(a.platform) - order.indexOf(b.platform))[0]

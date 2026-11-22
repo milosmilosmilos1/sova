@@ -98,7 +98,6 @@ function designedReply(n: number): MockReply {
         items: null,
       })),
       caption: 'Hvala na poverenju.\n\nZakažite procenu.',
-      short_caption: 'Hvala na poverenju.',
       hashtags: ['#adaptacija'],
       first_comment: null,
       visual_query: 'bathroom renovation',

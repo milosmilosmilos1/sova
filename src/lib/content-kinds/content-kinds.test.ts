@@ -3,14 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { PostFormat } from '@/config/post-formats'
 import { storedContentSchema, type StoredContent, type Testimonial } from '@/lib/schemas/brand-content'
 
-import {
-  applyReviewCopy,
-  kindCopyLines,
-  leadExcerpt,
-  reviewQuoteBlock,
-  reviewShortQuote,
-  verbatimExcerpt,
-} from './copy'
+import { applyReviewCopy, kindCopyLines, leadExcerpt, reviewQuoteBlock, verbatimExcerpt } from './copy'
 import {
   assignKinds,
   confirmKinds,
@@ -270,7 +263,6 @@ describe('utisak klijenta: citat bez izmena (D-165)', () => {
           { kind: 'cta' as const, title: 'Zakažite procenu', body: null },
         ],
         caption: 'Hvala Mariji na poverenju. Zakažite procenu.',
-        shortCaption: 'Izmišljen citat',
       },
       t,
       'sr-Latn',
@@ -286,9 +278,6 @@ describe('utisak klijenta: citat bez izmena (D-165)', () => {
     expect(copy.caption.startsWith(reviewQuoteBlock(t, 'sr-Latn'))).toBe(true)
     expect(copy.caption).toContain(`„${text}”\n— Marija P., vlasnica stana na Vračaru · ★★★★★`)
     expect(copy.caption.endsWith('Hvala Mariji na poverenju. Zakažite procenu.')).toBe(true)
-    expect(copy.shortCaption).toBe(reviewShortQuote(t, 'sr-Latn'))
-    expect(copy.shortCaption.length).toBeLessThanOrEqual(280)
-    expect(copy.shortCaption.endsWith('” — Marija P.')).toBe(true)
     expect(reviewQuoteBlock(t, 'en').startsWith('“Majstori')).toBe(true)
   })
 

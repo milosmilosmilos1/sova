@@ -19,7 +19,7 @@ type Fields = { title: string; subtitle: string; footer: string }
 const FIELDS = ['title', 'subtitle', 'footer'] as const
 
 /**
- * Naslovne slike profila (D-145): Facebook, LinkedIn, X, YouTube i Pinterest u bojama, fontu i logou
+ * Naslovne slike profila (D-145): Facebook, LinkedIn, YouTube i Pinterest u bojama, fontu i logou
  * brenda. Tekst je zajednički za sve, a pregled se crta pola sekunde posle poslednje izmene.
  */
 export function BannersCard({ brandId, initial }: { brandId: string; initial: ProfileKitView }) {

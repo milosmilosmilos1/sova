@@ -70,11 +70,10 @@ Pravila nisu ista svuda. Ovo su okvirne mere za svaku mrežu, za lokalni biznis:
 | LinkedIn | 2 do 3 | struka i oblast, na kraju teksta |
 | TikTok | 3 do 5 | tema i niša, uz reči u opisu |
 | YouTube Shorts | 1 do 2 | #Shorts i tema |
-| X | 0 do 1 | samo kad prati temu dana |
 | Pinterest | bez hashtagova | ključne reči u naslovu i opisu pina |
 | Google poslovni profil | bez hashtagova | praktične informacije |
 
-Kako ista objava izgleda prilagođena za osam mreža, vidite na [početnoj strani, u delu o mrežama](/#networks).
+Kako ista objava izgleda prilagođena za sedam mreža, vidite na [početnoj strani, u delu o mrežama](/#networks).
 
 ## Brendirani hashtag: vredi li?
 

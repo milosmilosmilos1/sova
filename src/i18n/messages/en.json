@@ -59,14 +59,14 @@
     "breadcrumb": "Breadcrumb",
     "cta": {
       "title": "Let Sova run your social media",
-      "text": "Enter your website. Sova learns your brand, builds a plan and writes posts for eight networks, and you approve them.",
+      "text": "Enter your website. Sova learns your brand, builds a plan and writes posts for seven networks, and you approve them.",
       "button": "Try it free",
       "closed": "See pricing"
     }
   },
   "landing": {
     "metaTitle": "Sova · AI that runs your social media",
-    "metaDescription": "Enter your website and Sova learns your brand, builds a strategy, writes posts and visuals, schedules them on eight networks and learns from the results."
+    "metaDescription": "Enter your website and Sova learns your brand, builds a strategy, writes posts and visuals, schedules them on seven networks and learns from the results."
   },
   "errors": {
     "notFoundTitle": "Page not found",
@@ -568,9 +568,7 @@
       "noMedia": "This network needs an image or a video.",
       "noVideo": "YouTube only publishes videos.",
       "videoPending": "The video is still being made, so its cover is shown.",
-      "xTooLong": "The text is longer than {max} characters, so X will not accept it.",
       "pages": "{n, plural, one {# page} other {# pages}}",
-      "threadMore": "and {n, plural, one {# more part} other {# more parts}} of the thread",
       "pollLeft": "{n, plural, one {# day} other {# days}} left to vote"
     },
     "title": "Approvals",
@@ -1082,10 +1080,6 @@
         "name": "Name",
         "short": "Bio"
       },
-      "x": {
-        "name": "Name",
-        "short": "Bio"
-      },
       "youtube": {
         "long": "Channel description",
         "keywords": "Channel keywords"
@@ -1127,7 +1121,7 @@
     },
     "banners": {
       "title": "Profile picture and covers",
-      "subtitle": "A profile picture for every network and covers for Facebook, LinkedIn, X, YouTube and Pinterest, in the brand’s colors, font and logo and at the size each network asks for. The text sits in the part that’s visible on phones too. No tokens.",
+      "subtitle": "A profile picture for every network and covers for Facebook, LinkedIn, YouTube and Pinterest, in the brand’s colors, font and logo and at the size each network asks for. The text sits in the part that’s visible on phones too. No tokens.",
       "fields": {
         "title": "Title",
         "subtitle": "Subtitle",
@@ -1146,16 +1140,14 @@
         "facebook": "Facebook Page",
         "linkedin_page": "LinkedIn company page",
         "linkedin_profile": "LinkedIn personal profile",
-        "x": "X profile",
         "youtube": "YouTube channel",
         "pinterest": "Pinterest profile"
       },
       "notes": {
-        "avatar": "Each network crops a circle from the middle, so the logo sits inside it. The same image works on Instagram, Facebook, LinkedIn, X, TikTok, YouTube, Pinterest and Google. Without a logo, Sova uses the brand’s initials.",
+        "avatar": "Each network crops a circle from the middle, so the logo sits inside it. The same image works on Instagram, Facebook, LinkedIn, TikTok, YouTube, Pinterest and Google. Without a logo, Sova uses the brand’s initials.",
         "facebook": "Computers crop the top and bottom and phones crop the sides, so the text is in the middle.",
         "linkedin_page": "The company logo covers the bottom left corner, so the text is on the right.",
         "linkedin_profile": "The profile photo covers the left side, so the text is on the right.",
-        "x": "The profile photo covers the bottom left corner, so the text is on the right.",
         "youtube": "Phones and computers show only the middle strip; only TVs show the whole image.",
         "pinterest": "The profile photo sits at the bottom center, so the text is in the upper part."
       },
@@ -1179,7 +1171,7 @@
         "iceBreakers": "Instagram and Messenger: conversation starters"
       },
       "hints": {
-        "pinned": "Three posts that come first on Instagram, TikTok and X, or featured on Facebook and LinkedIn. Create a draft, add an image and pin the post once it’s published.",
+        "pinned": "Three posts that come first on Instagram and TikTok, or featured on Facebook and LinkedIn. Create a draft, add an image and pin the post once it’s published.",
         "boards": "Board name and description with the words people search for on Pinterest.",
         "services": "In the Google Business Profile: Services, then Add service. No links in the description.",
         "playlists": "Playlists on the channel page, so visitors find videos by topic.",

@@ -324,7 +324,7 @@ export function Pricing({ data, registrationOpen }: { data: PricingData; registr
         </ul>
         <div className="mt-auto flex gap-2 pt-4 text-[12.5px] leading-normal text-l-dim">
           <Fa icon={faCircleInfo} className="mt-0.5" style={{ fontSize: 12 }} />
-          <span>{t('topups.note', { xPost: costs.xPost, withLink: costs.xPostWithLink })}</span>
+          <span>{t('topups.note')}</span>
         </div>
       </div>
     </div>

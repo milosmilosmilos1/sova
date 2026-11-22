@@ -37,7 +37,6 @@ These are starting values for a small business with one person handling social m
 | TikTok | 3 to 5 | short video, more is better as long as quality holds |
 | YouTube Shorts | 2 to 3 | often the same video as the Reel, with a title for YouTube |
 | Pinterest | 3 to 5 pins | a pin lives for months, so posting less often still pays off |
-| X | 1 a day | short thoughts, replies, news |
 | Google Business Profile | 1 | an update, an offer or an event |
 
 You don't have to be on every network. For most small businesses, two or three are enough. How to pick the right ones is explained in the [guide to social media management for small businesses](@vodjenje-drustvenih-mreza-za-mali-biznis).
@@ -78,7 +77,7 @@ Stories last 24 hours, so people see them as something casual. For a local busin
 
 Write one idea and adapt it for each network. The same news about a new service goes on Instagram with a photo and a longer caption, on Facebook with shorter text and an invitation to send you a message, and on LinkedIn as a story about why you introduced it. That's one idea and three posts.
 
-Sova does exactly that. From one topic it writes text that follows each network's rules (length, hashtags, tone) and schedules the posts for slots that make sense. You choose how many posts a week you want, and Sova makes a plan that sticks to that number. You can see what one post adapted for eight networks looks like on the [home page, in the networks section](/#networks).
+Sova does exactly that. From one topic it writes text that follows each network's rules (length, hashtags, tone) and schedules the posts for slots that make sense. You choose how many posts a week you want, and Sova makes a plan that sticks to that number. You can see what one post adapted for seven networks looks like on the [home page, in the networks section](/#networks).
 
 ## How do you know if the number is right?
 

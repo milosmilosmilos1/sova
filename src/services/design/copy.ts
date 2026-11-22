@@ -33,7 +33,6 @@ import type { Json } from '@/types/database'
 export interface DesignedCopy {
   slides: Slide[]
   caption: string
-  shortCaption: string
   hashtags: string[]
   firstComment: string | null
   visualQuery: string | null
@@ -48,7 +47,6 @@ export function mixedLanguage(output: CarouselOutput, locale: ContentLocale): st
   const texts = [
     ...output.slides.flatMap((s) => [s.kicker, s.title, s.body, ...(s.items ?? [])]),
     output.caption,
-    output.short_caption,
     output.first_comment,
   ].filter((t): t is string => Boolean(t))
   return [...new Set(texts.flatMap((t) => foreignSentences(t, locale)))]
@@ -212,7 +210,6 @@ export async function generateDesignedCopy(input: {
         items: s.items?.map((i) => i.trim()).filter(Boolean) ?? null,
       })),
       caption: output.caption.trim(),
-      shortCaption: output.short_caption.trim(),
       hashtags,
       firstComment: output.first_comment?.trim() || null,
       visualQuery: output.visual_query?.trim() || null,
@@ -228,17 +225,11 @@ export async function generateDesignedCopy(input: {
   }
 }
 
-/** Opis objave za mrežu: opis i heštegovi; X dobija kratku verziju sa najviše dva heštega. */
+/** Opis objave za mrežu: opis i heštegovi; Google poslovni profil bez heštegova. */
 export function captionFor(
-  copy: Pick<DesignedCopy, 'caption' | 'shortCaption' | 'hashtags'>,
+  copy: Pick<DesignedCopy, 'caption' | 'hashtags'>,
   platform: SocialPlatform,
 ): string {
-  if (platform === 'x') {
-    const tags = copy.hashtags.slice(0, 2).join(' ')
-    const base = copy.shortCaption || copy.caption
-    const text = tags ? `${base}\n\n${tags}` : base
-    return text.length <= 280 ? text : base.slice(0, 277).trimEnd() + '…'
-  }
   if (platform === 'google_business') return copy.caption
   return copy.hashtags.length ? `${copy.caption}\n\n${copy.hashtags.join(' ')}` : copy.caption
 }

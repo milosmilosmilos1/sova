@@ -6,7 +6,7 @@ import { swrCache, type SwrCache } from '@/lib/cache/swr'
 import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
-/** Akcije koje troše Sova tokene (brif 15.2, X sa linkom 6 po D-013). */
+/** Akcije koje troše Sova tokene (brif 15.2; objave na X-u su izbačene sa X-om, D-192). */
 export const tokenActionSchema = z.enum([
   'text',
   'rewrite',
@@ -23,8 +23,6 @@ export const tokenActionSchema = z.enum([
   'insights',
   'brand_analyze_first',
   'brand_analyze_again',
-  'x_post',
-  'x_post_with_link',
   'other_post',
   'photo_describe',
   'studio_chat',
@@ -52,8 +50,6 @@ export const DEFAULT_TOKEN_PRICES: Record<TokenAction, number> = {
   insights: 0,
   brand_analyze_first: 0,
   brand_analyze_again: 10,
-  x_post: 1,
-  x_post_with_link: 6,
   other_post: 0,
   /** opis fotografije iz galerije (D-114) */
   photo_describe: 1,
@@ -63,7 +59,7 @@ export const DEFAULT_TOKEN_PRICES: Record<TokenAction, number> = {
   inbox_reply: 1,
   /** mesečni plan: teme za sve termine meseca (D-119); svaka objava posle se plaća kao tekst */
   month_plan: 3,
-  /** opisi profila za svih osam mreža u jednom pozivu (D-143) */
+  /** opisi profila za svih sedam mreža u jednom pozivu (D-143) */
   profile_bios: 3,
   /** Instagram highlights: naslovi, ikonice i kadrovi priča (D-144); naslovne i priče se crtaju bez tokena */
   profile_highlights: 3,
@@ -150,7 +146,9 @@ export function clearSettingsCache(): void {
 
 export async function getTokenPrices(): Promise<Record<TokenAction, number>> {
   const partial = await readSetting('token_prices', z.record(z.string(), z.number().int().min(0)), {})
-  return { ...DEFAULT_TOKEN_PRICES, ...(partial as Partial<Record<TokenAction, number>>) }
+  // u bazi mogu ostati cene akcija kojih više nema (x_post, D-192); one se ne vraćaju
+  const known = Object.entries(partial).filter(([action]) => action in DEFAULT_TOKEN_PRICES)
+  return { ...DEFAULT_TOKEN_PRICES, ...(Object.fromEntries(known) as Partial<Record<TokenAction, number>>) }
 }
 
 export async function getTokenPrice(action: TokenAction): Promise<number> {

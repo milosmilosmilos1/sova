@@ -170,7 +170,8 @@ test('profili mreža: naslovne slike profila, izmena teksta i preuzimanje (D-145
   await expect(title).toHaveValue('E2E brend profilekit')
   await expect(page.getByLabel('Podnaslov')).toHaveValue('Adaptacija stanova')
   await expect(page.getByLabel('Sajt ili nalog')).toHaveValue('adaptiko.rs')
-  await expect(page.getByRole('img', { name: /^Naslovna slika za / })).toHaveCount(6)
+  // pet naslovnih: Facebook, LinkedIn stranica i profil, YouTube, Pinterest (X izbačen, D-192)
+  await expect(page.getByRole('img', { name: /^Naslovna slika za / })).toHaveCount(5)
 
   // pregled je PNG širok 960 px
   const facebook = page.getByRole('img', { name: 'Naslovna slika za Facebook stranica' })
