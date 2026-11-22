@@ -11,11 +11,11 @@ import { GraphClient } from './graph'
  * do sedam dana posle komentara). Dozvole: instagram_manage_comments, pages_read_user_content,
  * pages_manage_engagement, instagram_manage_messages, pages_messaging.
  */
-export const META_INBOX_SCOPES = [
-  'pages_manage_engagement',
-  'pages_messaging',
-  'instagram_manage_messages',
-] as const
+export const META_INBOX_SCOPES: readonly string[] = [
+  // Komentari rade sa osnovnim dozvolama (pages_manage_engagement je u META_SCOPES od D-189).
+  // Poruke (pages_messaging, instagram_manage_messages) se traže tek posle posebnog Meta pregleda:
+  // dozvola koja nije dodata u aplikaciji obara Facebook prijavu („Invalid Scopes”).
+]
 
 export interface InboxEntry {
   id: string
