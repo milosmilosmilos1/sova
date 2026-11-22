@@ -8,6 +8,29 @@ Stanje 13.11.2026. Pravila su čitana sa zvaničnih stranica platformi istog dan
 - Zajedničke prepreke su domen sovaai.rs (ne postoji u DNS-u), adresa firme i email na domenu, netačni pravni tekstovi i brisanje podataka koje ne briše. Treba ih rešiti pre svih prijava.
 - LinkedIn lični profil i Pexels su već dozvoljeni za komercijalnu upotrebu, uz ispravke. Sve ostalo traži pregled kod platforme.
 
+## Stanje 22.11.2026: šta je spremno za slanje
+
+Zajedničke prepreke iz odeljka 1 su rešene (domen, firma, pravni tekstovi, brisanje kod Mete, Autopilot, stok bez AI-ja, logoi). Tekstovi za formulare, scenariji snimaka i redosled su pripremljeni van repoa, u materijalu za mreže (po jedan fajl za svaku prijavu).
+
+| Platforma                | Aplikacija                    | Sledeći korak                                                                | Kod pre slanja                                                                        |
+| ------------------------ | ----------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| Meta                     | postoji (razvojni režim)      | Business Verification, pa App Review (11 dozvola, prva prijava)              | `pages_manage_engagement` u prijavi (prvi komentar na Facebook-u danas tiho pada)     |
+| Google (YouTube, profil) | postoji (Testing)             | Search Console Domain property, formular za Business Profile API, pa provera | YouTube rečenica i link na ekranu otpremanja i pri povezivanju; bez izvedenih metrika |
+| Google prijava           | ne postoji                    | poseban projekat „Sova prijava” (DEPLOY.md 10, 2b)                           | nema                                                                                  |
+| Google „Sova Dev”        | ne postoji                    | projekat za localhost, pa localhost van produkcionog klijenta                | nema                                                                                  |
+| TikTok                   | Sandbox                       | App review sa demo videom, pa Direct Post audit                              | webhook za uklanjanje aplikacije, ručni prekidač za AI sadržaj, provera dužine videa  |
+| LinkedIn lični profil    | postoji, radi za sve          | nema                                                                         | nema                                                                                  |
+| LinkedIn stranice        | ne postoji                    | nova aplikacija samo sa Community Management API                             | drugi par ključeva (`LINKEDIN_PAGES_CLIENT_ID/SECRET`) posle odobrenja                |
+| Canva                    | postoji (javna, nije poslata) | slanje na pregled                                                            | nema (D-184)                                                                          |
+| Figma                    | nacrt                         | objava kao javne aplikacije                                                  | nema (D-184); prekidač `figma` za nalog recenzenta                                    |
+| Unsplash                 | Demo                          | Apply for Production                                                         | hotlinking, potpis uz svaku fotografiju, bez automatskog izbora (odluka vlasnika)     |
+| Pinterest                | ne postoji                    | nalog za firmu, aplikacija, Trial pristup                                    | nema (D-085)                                                                          |
+| X                        | ne postoji                    | odluka vlasnika (pay-per-use se plaća)                                       | nema (D-086)                                                                          |
+
+Za sve preglede treba probni nalog na engleskom sa gotovim brendom (bez njega su Posts i Studio zaključani) i adresa za prijavu propusta u `/.well-known/security.txt`.
+
+Google poslovni profil: metrike se i dalje sabiraju za period, a pravila to ne dozvoljavaju (odeljak 2, Google). Ispravka ide pre Google provere.
+
 ## 1. Šta blokira sve platforme
 
 1. **Domen.** Pravne strane i `src/config/company.ts` kažu da je Sova na sovaai.rs, a taj domen se ne otvara. Aplikacija radi na sovaai.netlify.app. Google ne prihvata netlify.app za početnu stranu i politiku, jer domen mora biti „tvoj”, a netlify.app je javni sufiks. Rešenje: sovaai.rs usmeriti na Netlify kao glavni domen, pa promeniti adrese u Supabase-u, u env-u (`NEXT_PUBLIC_APP_URL`) i redirect adrese kod svih mreža. Promena domena posle odobrenja traži novi pregled, zato ide prva. **22.11.2026:** domen je kupljen, DNS zona i sandučići `podrska@` i `info@sovaai.rs` su podešeni (D-179); ostaje promena nameservera kod registra, domen u Netlify-ju, Supabase i adrese kod mreža (DEPLOY.md 10, korak 8). **Isto veče sve urađeno:** Sova radi na https://sovaai.rs (deploy 6b023cd9), adrese kod Mete, Google-a, LinkedIn-a, TikTok-a i Canve dopunjene, domen potvrđen na TikTok-u. Za Google ostaje Domain property u Search Console-u.
