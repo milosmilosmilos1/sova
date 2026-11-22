@@ -1764,3 +1764,13 @@ Deo 2 plana prijava (materijal van repoa), stavke bez odluke vlasnika. Meta `pag
 - Ostaje otvoreno: zbirno „angažovanje” brenda u Analitici i dalje sabira i YouTube lajkove i komentare sa ostalim mrežama, a najbolja vremena i glas brenda koriste YouTube podatke (odeljak 2 u ODOBRENJA.md). To traži odluku o prikazu.
 
 Razlog: bez ovoga Google i TikTok odbijaju prijave; security.txt traži više pregleda.
+
+## D-189 · 22.11.2026 · usvojeno · Meta: pages_manage_engagement u prijavi, dozvole za poruke tek posle posebnog pregleda
+
+Vlasnik je odobrio („da”) dodavanje dozvole za prvi komentar.
+
+- `pages_manage_engagement` je u `META_SCOPES`: prvi komentar ispod objave na Facebook stranici i odgovor na komentar u Inbox-u. Do sada je prvi komentar na Facebook-u tiho padao (`meta_first_comment_failed`), a Meta traži da svaku dozvolu iz prijave pokažemo na snimku.
+- `META_INBOX_SCOPES` je prazan: prekidač `inbox` više ne dodaje `pages_messaging` i `instagram_manage_messages`. Dozvola koja nije dodata u slučaju upotrebe aplikacije obara Facebook prijavu („Invalid Scopes”), a poruke su posebna Meta prijava. Inbox bez tih dozvola prikazuje samo komentare (vrsta bez dozvole se preskače, `canRead`).
+- Ako je u Netlify-ju podešen `META_LOGIN_CONFIG_ID`, dozvole dolaze iz konfiguracije u Meta panelu i tamo treba štiklirati i `pages_manage_engagement`.
+
+Razlog: prva Meta prijava (11 dozvola) mora da radi na snimku, a Facebook prijava ne sme da padne zbog dozvola koje još nisu u aplikaciji.
