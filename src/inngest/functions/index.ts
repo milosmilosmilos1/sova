@@ -18,7 +18,7 @@ import { supportMessagesCleanup } from './support-cleanup'
 import { mediaIncomingCleanup } from './media-incoming-cleanup'
 import { monthPlanCreate, monthPlanGenerate } from './month-plan'
 import { ping } from './ping'
-import { postMetrics } from './post-metrics'
+import { postMetricsSweep } from './post-metrics'
 import { publishTarget } from './publish-target'
 import { publishWatchdog } from './publish-watchdog'
 import { reportMonthlyBrand, reportsMonthly } from './reports-monthly'
@@ -40,7 +40,7 @@ export const functions = [
   socialTokenRefresh,
   publishTarget,
   publishWatchdog,
-  postMetrics,
+  postMetricsSweep,
   socialAccountMetrics,
   analyticsInsightsWeekly,
   autopilotWeekly,

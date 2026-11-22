@@ -1,36 +1,43 @@
+import { cron } from 'inngest'
+
 import { inngest } from '@/inngest/client'
-import { events } from '@/inngest/events'
-import { CAPTURE_HORIZONS, horizonDue } from '@/lib/analytics/aggregate'
-import { capturePostMetrics, publishedAtOf, type CaptureStatus } from '@/services/analytics/metrics'
+import { logger } from '@/lib/logger'
+import { capturePostMetrics, dueMetricCaptures, type DueCapture } from '@/services/analytics/metrics'
 import { checkOutlier } from '@/services/autopilot/triggers'
 
+/** Snimaka u jednom koraku: mreže odgovaraju za 1 do 2 s, pa grupa staje u jedan zahtev. */
+const CHUNK = 8
+
 /**
- * Metrike objave (ARCHITECTURE 6, `post-metrics`): posle objavljivanja spava do +1 h, +24 h, +7 d i
- * +30 d i svaki put povlači snimak (poseban step). Prestaje ako je objava obrisana na mreži (N6)
- * ili target više nije objavljen.
+ * Metrike objava (D-191): jednom na sat snimci +1 h, +24 h, +7 d i +30 d za sve objave kojima su
+ * dospeli. Ranije je svaka objava imala svoj run koji je spavao do svakog horizonta (oko 9
+ * izvršavanja po objavi). Prolaz bez posla je jedno izvršavanje (provera pre prvog koraka); spisak
+ * se zatim pamti u koraku `due`, a snimci idu u grupama. Greška jedne objave ne prekida grupu:
+ * snimak bez zapisa ostaje dospeo i hvata ga sledeći prolaz.
  */
-export const postMetrics = inngest.createFunction(
-  {
-    id: 'post-metrics',
-    retries: 3,
-    concurrency: [{ key: 'event.data.socialAccountId', limit: 2 }],
-    triggers: [events.postTargetPublished],
-  },
-  async ({ event, step }) => {
-    const publishedAt = await step.run('load', () => publishedAtOf(event.data.targetId))
-    if (!publishedAt) return { status: 'skipped' as const }
-    const results: Partial<Record<(typeof CAPTURE_HORIZONS)[number], CaptureStatus>> = {}
-    for (const horizon of CAPTURE_HORIZONS) {
-      const due = horizonDue(publishedAt, horizon)
-      if (due.getTime() > Date.now()) await step.sleepUntil(`wait-${horizon}`, due)
-      const r = await step.run(`capture-${horizon}`, () => capturePostMetrics(event.data.targetId, horizon))
-      results[horizon] = r.status
-      if (horizon === '24h' && r.status === 'captured')
-        await step.run('outlier', () => checkOutlier(event.data.targetId))
-      if (r.status === 'deleted') break
-      // target ili nalog više ne važe, ili mreža nema metrike objava (Google poslovni profil, Pinterest)
-      if (r.status === 'skipped' && /target|nalog|nema metrike objava/.test(r.reason ?? '')) break
+export const postMetricsSweep = inngest.createFunction(
+  { id: 'post-metrics-sweep', retries: 1, concurrency: { limit: 1 }, triggers: [cron('7 * * * *')] },
+  async ({ step }) => {
+    if (!(await dueMetricCaptures(new Date(), 1)).length) return { due: 0, captured: 0 }
+    const due = await step.run('due', () => dueMetricCaptures(new Date(), 200))
+    let captured = 0
+    for (let i = 0; i < due.length; i += CHUNK) {
+      const chunk: DueCapture[] = due.slice(i, i + CHUNK)
+      captured += await step.run(`capture-${i / CHUNK}`, async () => {
+        let n = 0
+        for (const d of chunk) {
+          try {
+            const r = await capturePostMetrics(d.targetId, d.horizon)
+            if (r.status !== 'captured') continue
+            n += 1
+            if (d.horizon === '24h') await checkOutlier(d.targetId)
+          } catch (error) {
+            logger.warn('post_metrics_sweep_failed', { targetId: d.targetId, horizon: d.horizon, error })
+          }
+        }
+        return n
+      })
     }
-    return { status: 'done' as const, results }
+    return { due: due.length, captured }
   },
 )

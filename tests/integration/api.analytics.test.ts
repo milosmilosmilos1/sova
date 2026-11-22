@@ -13,6 +13,7 @@ import { generateInsights } from '@/services/analytics/insights'
 import {
   captureAccountMetrics,
   capturePostMetrics,
+  dueMetricCaptures,
   runAccountMetricsSweep,
 } from '@/services/analytics/metrics'
 
@@ -230,6 +231,21 @@ describe('Metrike objava', () => {
     expect(data).toMatchObject({ status: 'deleted_externally', last_error_code: 'DELETED_EXTERNALLY' })
     expect(await snapshots(goneTarget)).toHaveLength(0)
     expect((await capturePostMetrics(goneTarget, '24h')).status).toBe('skipped')
+  })
+
+  it('prolaz na sat (D-191): dospeli snimci su objave u prozoru horizonta bez snimka', async () => {
+    const due = await dueMetricCaptures(new Date(), 500)
+    const has = (id: string, h: string) => due.some((d) => d.targetId === id && d.horizon === h)
+    // objava od pre 2 dana ima samo 1h i adhoc, pa joj je dospeo 24h
+    expect(has(fbTarget, '24h')).toBe(true)
+    // 24h već postoji; 1h posle roka od 6 h se preskače; obrisana na mreži se ne snima
+    expect(has(igTarget, '24h')).toBe(false)
+    expect(has(fbTarget, '1h')).toBe(false)
+    expect(due.some((d) => d.targetId === goneTarget)).toBe(false)
+    // pet dana kasnije ista objava ulazi u prozor 7d
+    const later = await dueMetricCaptures(new Date(Date.now() + 5 * 86_400_000), 500)
+    expect(later.some((d) => d.targetId === fbTarget && d.horizon === '7d')).toBe(true)
+    expect((await dueMetricCaptures(new Date(), 1)).length).toBeLessThanOrEqual(1)
   })
 
   it('metrike naloga: upsert po (nalog, dan); dnevni prolaz obrađuje sve aktivne naloge', async () => {

@@ -1201,6 +1201,20 @@ async function markResent(items: LateTarget[], now: Date): Promise<{ alarms: num
   return { alarms, unstuck }
 }
 
+/**
+ * Jeftina provera pre koraka watchdog-a (D-191): postoji li uopšte target koji kasni. Prolaz bez
+ * posla tako troši jedno Inngest izvršavanje umesto dva.
+ */
+export async function hasLateTargets(now: Date): Promise<boolean> {
+  const { count, error } = await createSupabaseAdminClient()
+    .from('post_targets')
+    .select('id', { count: 'exact', head: true })
+    .in('status', ['scheduled', 'publishing'])
+    .lt('scheduled_at', new Date(now.getTime() - WATCHDOG_LATE_MS).toISOString())
+  if (error) throw error
+  return Boolean(count)
+}
+
 export async function runWatchdog(ctx: WatchdogContext): Promise<WatchdogReport> {
   const now = ctx.now ?? (() => new Date())
   const items = await ctx.run('scan', () => scanLate(now()))

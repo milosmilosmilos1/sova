@@ -4,7 +4,13 @@ import { isProviderError } from '@/integrations/social/errors'
 import { providerFor } from '@/integrations/social/registry'
 import type { NormalizedMetrics } from '@/integrations/social/types'
 import type { SocialPlatform } from '@/config/platforms'
-import { ANALYTICS_TARGET_STATUSES, type CaptureHorizon, type Horizon } from '@/lib/analytics/aggregate'
+import {
+  ANALYTICS_TARGET_STATUSES,
+  CAPTURE_HORIZONS,
+  captureWindow,
+  type CaptureHorizon,
+  type Horizon,
+} from '@/lib/analytics/aggregate'
 import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { markAccountStatus, refFor } from '@/services/social/account-rows'
@@ -55,6 +61,53 @@ const ACCOUNT_METRICS_PLATFORMS: readonly SocialPlatform[] = [
 ]
 export const POST_METRIC_HORIZONS: Partial<Record<SocialPlatform, readonly CaptureHorizon[]>> = {
   x: ['24h', '7d'],
+}
+
+export interface DueCapture {
+  targetId: string
+  horizon: CaptureHorizon
+}
+
+/**
+ * Snimci metrika kojima je došao red (D-191): objavljeni targeti u prozoru svakog horizonta
+ * (`captureWindow`) bez snimka za taj horizont. Zamenjuje Inngest run po objavi koji je spavao do
+ * +1 h, +24 h, +7 d i +30 d: jedan prolaz na sat troši višestruko manje izvršavanja.
+ */
+export async function dueMetricCaptures(now = new Date(), limit = 200): Promise<DueCapture[]> {
+  const admin = createSupabaseAdminClient()
+  const out: DueCapture[] = []
+  for (const horizon of CAPTURE_HORIZONS) {
+    if (out.length >= limit) break
+    const { from, to } = captureWindow(horizon, now)
+    const { data: rows, error } = await admin
+      .from('post_targets')
+      .select('id, platform')
+      .in('status', [...ANALYTICS_TARGET_STATUSES])
+      .in('platform', [...POST_METRICS_PLATFORMS])
+      .not('external_post_id', 'is', null)
+      .gte('published_at', from.toISOString())
+      .lte('published_at', to.toISOString())
+      .order('published_at', { ascending: true })
+      .limit(limit)
+    if (error) throw error
+    const candidates = (rows ?? []).filter((r) => {
+      const only = POST_METRIC_HORIZONS[r.platform as SocialPlatform]
+      return !only || only.includes(horizon)
+    })
+    if (!candidates.length) continue
+    const { data: have, error: haveError } = await admin
+      .from('post_metrics_snapshots')
+      .select('target_id')
+      .eq('horizon', horizon)
+      .in(
+        'target_id',
+        candidates.map((c) => c.id),
+      )
+    if (haveError) throw haveError
+    const done = new Set((have ?? []).map((h) => h.target_id))
+    for (const c of candidates) if (!done.has(c.id)) out.push({ targetId: c.id, horizon })
+  }
+  return out.slice(0, limit)
 }
 
 export async function publishedAtOf(targetId: string): Promise<string | null> {

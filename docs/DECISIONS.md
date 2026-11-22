@@ -1785,3 +1785,32 @@ Vlasnik je odobrio („da”) da Autopilot i mesečni plan više ne biraju Unspl
 - Bez migracije.
 
 Razlog: Unsplash API traži hotlinking, potpis uz svaku prikazanu fotografiju i da aplikacija ne bira fotografije umesto korisnika; bez toga prijava za produkciju (više od 50 zahteva na sat) bi bila odbijena.
+
+## D-191 · 22.11.2026 · usvojeno · Manje Inngest izvršavanja: provere bez koraka, metrike na sat
+
+Problem 22.11. oko 18:05: Inngest Hobby nalog je potrošio 50.000 izvršavanja ovog meseca (run i svaki `step.*` se broje) i pauzirao nove poslove. Vlasnik ne želi Pro (100 $ mesečno). Najviše su trošile provere koje se vrte i kad nema posla, i metrike objava (svaka objava je imala svoj run koji je spavao do +1 h, +24 h, +7 d i +30 d).
+
+- **Provera pre prvog koraka.** Prolaz bez posla završava se pre `step.*`, pa je jedno izvršavanje umesto dva ili više: watchdog (`hasLateTargets`), tokovi (`hasDueFlows`), nedeljni Autopilot (`dueWeeklyBrands`, samo čitanje), Inbox (spisak naloga), metrike (`dueMetricCaptures` sa granicom 1). Posao koji piše (označavanje, upis prolaza toka) i dalje ide u korak, da ponovljeni poziv ne ponovi upis.
+- **Ređe provere:** watchdog na 15 min umesto 5 (objava ima svoj `sleepUntil`; watchdog hvata samo izgubljen događaj), Inbox na sat umesto na 10 min (dugme „Osveži Inbox” radi odmah, bez Inngest-a), tokovi na 30 min umesto 15 (prave nacrt za odobravanje). Rokovi Autopilota ostaju na 15 min, jer se odobrena objava zakazuje pre svog termina.
+- **Bez suvišnih koraka:** rokovi Autopilota i osvežavanje tokena rade bez `step.run` (jedan posao, idempotentan; korak bi samo dodao izvršavanje). Inbox nalozi idu u grupama po četiri (sortirani, pa je grupa ista pri ponovljenom pozivu), greška jednog naloga ne prekida grupu.
+- **Metrike objava** (`post-metrics-sweep`, na sat u :07): snimci +1 h, +24 h, +7 d i +30 d za sve objave kojima su dospeli, u grupama po osam. Snimak horizonta se pravi samo do roka kašnjenja (`CAPTURE_CATCH_UP_MS`: 6 h, 2 d, 3 d, 5 d), da snimak „1 h” ne nastane dan kasnije. Neuspeli snimak ostaje dospeo i hvata ga sledeći prolaz. Provera izuzetaka (`checkOutlier`) ide posle snimka 24 h, kao i ranije. Funkcija `post-metrics` po objavi je uklonjena, a publisher više ne šalje `post/target.published` (nema slušaoca); runovi koji su spavali u Inngest-u se gase, a njihove snimke hvata prolaz.
+- `publish-target` ostaje isti: korak `load` mora da ostane korak, jer bi ponovljeni poziv posle zaključavanja (`recheck`) video target kao „publishing” i preskočio objavu.
+
+Procena mesečno (30 dana; sadašnji obim oko 1.200 targeta mesečno, 8 brendova):
+
+| Posao                    | Pre                                          | Posle                                                |
+| ------------------------ | -------------------------------------------- | ---------------------------------------------------- |
+| publish-watchdog         | 17.280 (*/5, 2 po prolazu)                   | 2.880 (*/15, 1)                                      |
+| inbox-sync               | 8.640 bez naloga; oko 77.000 sa 16 naloga    | 720 bez naloga; 3.600 sa 16                          |
+| autopilot-weekly         | 1.440                                        | 720                                                  |
+| autopilot-deadlines      | 5.760                                        | 2.880                                                |
+| flows-tick               | 5.760                                        | 1.440                                                |
+| social-token-refresh     | 360                                          | 120                                                  |
+| metrike objava           | oko 12.000 (oko 10 po targetu)               | oko 1.900 (prolaz na sat, grupe po 8)                |
+| publish-target           | oko 8.400 (oko 7 po targetu)                 | oko 7.200 (bez koraka za događaj „objavljeno”)       |
+| ostali dnevni i nedeljni | oko 700                                      | oko 700                                              |
+| **Ukupno**               | **oko 60.000** (sa Inbox-om i preko 100.000) | **oko 20.000** (sa Inbox-om za 16 naloga oko 23.000) |
+
+Granica rasta: najveći trošak posle izmene je objava (oko 6 izvršavanja po targetu). Sa oko 80 do 90 brendova koji objavljuju svaki dan na dve mreže Sova dolazi do 50.000; tada treba Pro ili sopstveni Inngest server. Inbox sa povlačenjem po nalogu ne može da pređe na sve kupce na besplatnom planu (svaki nalog je deo koraka svakog sata); za to treba Meta webhook umesto povlačenja.
+
+Razlog: Sova mora da objavljuje bez plaćenog plana; posle izmene isti posao troši oko tri puta manje izvršavanja, bez gubitka funkcija.

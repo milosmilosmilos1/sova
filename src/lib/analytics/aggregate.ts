@@ -25,6 +25,24 @@ export function horizonDue(publishedAt: string, horizon: CaptureHorizon): Date {
   return new Date(new Date(publishedAt).getTime() + HORIZON_MS[horizon])
 }
 
+/**
+ * Koliko kasnije snimak horizonta još ima smisla (D-191): metrike skuplja prolaz na sat, pa snimak
+ * „1 h” nastaje između 1 i 2 h posle objave. Posle ovog roka (npr. dok Sova nije radila) se preskače,
+ * jer snimak „1 h” napravljen dan kasnije bi lagao.
+ */
+export const CAPTURE_CATCH_UP_MS: Record<CaptureHorizon, number> = {
+  '1h': 6 * 3600_000,
+  '24h': 2 * 86_400_000,
+  '7d': 3 * 86_400_000,
+  '30d': 5 * 86_400_000,
+}
+
+/** Objave kojima je u trenutku `now` dospeo snimak horizonta: objavljene u ovom intervalu. */
+export function captureWindow(horizon: CaptureHorizon, now: Date): { from: Date; to: Date } {
+  const to = new Date(now.getTime() - HORIZON_MS[horizon])
+  return { from: new Date(to.getTime() - CAPTURE_CATCH_UP_MS[horizon]), to }
+}
+
 export interface SnapshotLite {
   targetId: string
   horizon: Horizon

@@ -52,6 +52,8 @@ export const publishTarget = inngest.createFunction(
       sleepUntil: (name, at) => step.sleepUntil(name, at),
       sleep: (name, ms) => step.sleep(name, ms),
       sendEvent: async (name, ev) => {
+        // „objavljeno” nema slušaoca otkad metrike skuplja prolaz na sat (D-191): bez koraka
+        if (ev.kind === 'published') return
         await step.sendEvent(name, toInngestEvent(ev))
       },
     })

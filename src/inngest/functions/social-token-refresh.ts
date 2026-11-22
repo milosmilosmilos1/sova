@@ -9,9 +9,10 @@ import { refreshExpiringTokens, refreshOtherTokens } from '@/services/social/ref
  */
 export const socialTokenRefresh = inngest.createFunction(
   { id: 'social-token-refresh', retries: 1, triggers: [cron('0 */6 * * *')] },
-  async ({ step }) => {
-    const meta = await step.run('refresh-meta', () => refreshExpiringTokens(7))
-    const other = await step.run('refresh-linkedin-tiktok', () => refreshOtherTokens())
+  // bez koraka (D-191): osvežavanje je idempotentno, pa ponovljen pokušaj posle greške ne smeta
+  async () => {
+    const meta = await refreshExpiringTokens(7)
+    const other = await refreshOtherTokens()
     return { meta, other }
   },
 )

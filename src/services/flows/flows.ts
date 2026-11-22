@@ -348,6 +348,18 @@ export async function getRun(viewer: Viewer, runId: string): Promise<FlowRunView
  * Tokovi kojima je došao termin: za svaki se upisuje prolaz (jedan po toku i terminu, pa ponovljen
  * cron ne pravi duplikat) i računa sledeći termin od sada, da posle zastoja ne krene zaostatak.
  */
+/** Jeftina provera pre koraka (D-191): ima li aktivan tok kome je došao termin. */
+export async function hasDueFlows(now = new Date()): Promise<boolean> {
+  const { count, error } = await createSupabaseAdminClient()
+    .from('content_flows')
+    .select('id', { count: 'exact', head: true })
+    .eq('active', true)
+    .is('deleted_at', null)
+    .lte('next_run_at', now.toISOString())
+  if (error) throw error
+  return Boolean(count)
+}
+
 export async function claimDueRuns(
   now = new Date(),
   limit = 100,

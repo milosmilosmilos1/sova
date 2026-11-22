@@ -17,12 +17,14 @@ import { expireSuggestions, holidaySuggestions } from '@/services/autopilot/trig
  * Autopilot (ARCHITECTURE 6, brif 9.3):
  * - `autopilot-weekly`: cron na sat; brendovima kojima je ponedeljak 06:00+ po njihovoj zoni šalje događaj;
  * - `autopilot-brand-week`: jedan brend, jedan run u isto vreme; svaki nacrt je poseban step;
- * - `autopilot-deadlines`: na 15 min, rokovi za odobrenje i zakazivanje odobrenih;
+ * - `autopilot-deadlines`: na 15 min, rokovi za odobrenje i zakazivanje odobrenih (jedno izvršavanje);
  * - `autopilot-daily`: 05:00 UTC, istek predloga, praznici, mesečna strategija od 25. u mesecu.
  */
 export const autopilotWeekly = inngest.createFunction(
   { id: 'autopilot-weekly', retries: 1, triggers: [cron('0 * * * *')] },
   async ({ step }) => {
+    // samo čitanje: bez brenda na redu prolaz je jedno izvršavanje, bez koraka (D-191)
+    if (!(await dueWeeklyBrands(new Date())).length) return { brands: 0 }
     const due = await step.run('due', () => dueWeeklyBrands(new Date()))
     if (due.length) {
       await step.sendEvent(
@@ -53,9 +55,11 @@ export const autopilotBrandWeek = inngest.createFunction(
   },
 )
 
+// jedan posao bez koraka: korak ne štiti ništa (nema drugih koraka), a troši još jedno izvršavanje (D-191);
+// na 15 min ostaje, jer odobrena objava mora da se zakaže pre svog termina
 export const autopilotDeadlines = inngest.createFunction(
   { id: 'autopilot-deadlines', retries: 1, triggers: [cron('*/15 * * * *')] },
-  async ({ step }) => step.run('deadlines', () => runAutopilotDeadlines()),
+  async () => runAutopilotDeadlines(),
 )
 
 export const autopilotDaily = inngest.createFunction(

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  captureWindow,
   dailySeries,
   followersSeries,
   groupTotals,
@@ -103,6 +104,16 @@ describe('zbirovi', () => {
     expect(s).toHaveLength(1)
     expect(s[0]).toMatchObject({ accountId: 'a', first: 100, last: 110, delta: 10 })
     expect(horizonDue('2026-10-19T12:00:00Z', '24h').toISOString()).toBe('2026-10-20T12:00:00.000Z')
+  })
+
+  it('captureWindow: objave kojima je dospeo horizont, uz rok za kašnjenje (D-191)', () => {
+    const now = new Date('2026-11-22T12:00:00Z')
+    expect(captureWindow('1h', now)).toEqual({
+      from: new Date('2026-11-22T05:00:00Z'),
+      to: new Date('2026-11-22T11:00:00Z'),
+    })
+    expect(captureWindow('24h', now).from.toISOString()).toBe('2026-11-19T12:00:00.000Z')
+    expect(captureWindow('30d', now).to.toISOString()).toBe('2026-10-23T12:00:00.000Z')
   })
 })
 
