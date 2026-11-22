@@ -1656,3 +1656,15 @@ Vlasnik je 22.11. kupio sovaai.rs kod SuperHosting-a (samo domen, bez hostinga) 
 - Redosled prelaska: DNS, pa domen u Netlify-ju i sertifikat, pa adrese u Supabase Auth-u i kod mreža (nova se dodaje, stara ostaje dok traje prelazak), pa tek onda `NEXT_PUBLIC_APP_URL=https://sovaai.rs` i nov deploy. Obrnut redosled bi pokvario povezivanje mreža, jer aplikacija šalje adresu za povratak iz `NEXT_PUBLIC_APP_URL`.
 
 Razlog: zahtev vlasnika; domen je i prvi uslov za odobrenja mreža (ODOBRENJA.md, odeljak 1).
+
+## D-180 · 22.11.2026 · usvojeno · Stok fotografije bez AI obrade, izgled ljudi se ne procenjuje
+
+Odluka vlasnika (22.11., ODOBRENJA.md odeljak 4, tačka 4): provera ljudi samo na fotografijama koje je korisnik sam postavio, a Unsplash i Pexels bez AI obrade njihovih fotografija. Unsplash zabranjuje „data mining” i AI obradu, Pexels automatsku obradu za mašinsko učenje, a procena porekla je posebna kategorija podataka po GDPR-u (čl. 9).
+
+- Unsplash i Pexels (fotografije, snimci, fotografija za šablon): slika se više ne šalje Gemini-ju. Automatski izbor uzima samo ono čiji opis (alt, opis, ime iz adrese) deli reč sa upitom i ne pominje ljude ni drugi izgled. Upit koji pominje ljude i dalje traži evropske ljude (D-136), ali fotografiju sa ljudima korisnik bira ručno. Fokus isečka je sredina, a za slajd se čuva ceo kadar kao i ranije (D-169); pretraga i dalje traži oblik okvira.
+- Rangiranje Unsplash fotografija za šablon preko Gemini-ja je uklonjeno (redosled je Unsplash-ov), sa uputstvom `prompts/unsplash-rank.ts`.
+- Galerija brenda: Gemini i dalje gleda temu, upotrebljivost i okvir predmeta (D-167), ali uputstvo više ne traži ocenu ljudi i izričito kaže da se izgled, poreklo i uzrast ne procenjuju. Ranije je model ocenjivao ljude i na fotografijama brenda, a odgovor se odbacivao; to je bila procena stvarnih ljudi iz biznisa, pa nije dodata ni „provera samo na vašim slikama” u tom smislu.
+- Stok fotografija izabrana po opisu pamti `pick: 'text'`; nacrt sa takvim fotografijama ne traži nove (D-170), kao ni onaj sa okvirom predmeta.
+- Posledica: za teme gde su ljudi važni (noćni život, događaji, usluge) automatski izbor češće ostavlja slajd u bojama brenda. Preporuka korisniku (pomoć): svoje fotografije u Galeriju.
+
+Razlog: uslovi Unsplash-a i Pexels-a i GDPR; preduslov za prijave mreža, jer se na pitanje o AI obradi mora odgovoriti istinito.

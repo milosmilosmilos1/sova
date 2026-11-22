@@ -1,8 +1,8 @@
 /**
- * Ljudi na fotografijama i snimcima (D-136, D-154): tržište je Balkan, pa automatski izbor
- * fotografija i snimaka za svaki brend prikazuje samo ljude evropskog izgleda. Upit koji pominje
- * ljude traži evropske ljude, opis koji pominje drugi izgled odbija kandidata, a sličice i kadrovi
- * se pre preuzimanja proveravaju na slici (`services/visuals/people-check.ts`).
+ * Ljudi na fotografijama i snimcima (D-136, D-180): tržište je Balkan, pa upit koji pominje ljude
+ * traži evropske ljude, a opis koji pominje drugi izgled odbija kandidata. Sa Unsplash-a i Pexels-a
+ * automatski izbor ne uzima ni fotografiju čiji opis pominje ljude, jer slike tih servisa ne idu
+ * modelu (ne dozvoljavaju AI obradu), pa se izgled ne može proveriti (`services/visuals/photo-check.ts`).
  */
 
 /** Reči za ljude i scene sa ljudima u upitu (engleski, kako ga piše Gemini). */

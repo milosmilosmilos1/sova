@@ -10,7 +10,6 @@ import { callWithFallback } from '@/lib/ai/orchestrator'
 import {
   buildPhotoCheckPrompt,
   buildPhotoCheckSystemPrompt,
-  peopleAllowed,
   photoCheckItemSchema,
   photoCheckJsonSchema,
   subjectBoxOf as toBox,
@@ -26,12 +25,11 @@ import { foreignPeopleText, mentionsPeople } from '@/lib/visuals/people'
 import { textMatchesQuery } from '@/lib/visuals/relevance'
 
 /**
- * Provera kandidata pre automatskog izbora (D-154, D-167, D-169). Sa Unsplash-a i Pexels-a Sova uzima
- * samo fotografiju ili snimak koji prikazuje glavni predmet objave (prvo u situaciji iz objave, pa sam
- * predmet), lepo stoji u objavi brenda, na kom su ljudi samo evropskog izgleda i u kom predmet može
- * ceo da stane u okvir slajda. Iz galerije brenda (njegove fotografije, ljudi se ne gledaju) uzima i
- * fotografiju iz iste oblasti, ali ne ono što temi ne pripada. Uz prihvaćen kandidat idu okvir i
- * sredina glavnog predmeta, da isečak ne odseče ono zbog čega je slika izabrana.
+ * Provera kandidata pre automatskog izbora (D-167, D-169, D-180). Sa Unsplash-a i Pexels-a Sova uzima
+ * samo fotografiju ili snimak čiji opis odgovara upitu i ne pominje ljude, bez slanja slike modelu.
+ * Iz galerije brenda Gemini gleda da li fotografija pripada temi (i iz iste oblasti), da li lepo stoji
+ * u objavi i gde je glavni predmet, da isečak ne odseče ono zbog čega je slika izabrana; izgled ljudi
+ * se nigde ne procenjuje.
  */
 export interface PhotoCandidate<T> {
   item: T
@@ -69,14 +67,14 @@ export interface PhotoCheckOptions {
   until?: number
   subject: PhotoSubject
   /**
-   * `stock` (Unsplash, Pexels): glavni predmet na slici, upotrebljiva slika i ljudi evropskog izgleda.
-   * `gallery` (fotografije brenda): sve osim onoga što temi ne pripada.
-   * U oba slučaja bolje poklapanje ide napred, a upotrebljiva slika pre neupotrebljive.
+   * `stock` (Unsplash, Pexels, D-180): samo po opisu, bez slanja slike modelu.
+   * `gallery` (fotografije brenda): Gemini, sve osim onoga što temi ne pripada; bolje poklapanje
+   * ide napred, a upotrebljiva slika pre neupotrebljive.
    */
   mode?: 'stock' | 'gallery'
   /**
-   * okvir slajda za fotografiju (širina / visina, D-169): sa stoka se ne uzima slika u kojoj predmet
-   * koji mora ostati ceo ne može da stane u njega; iz galerije takva ide posle onih koje staju
+   * okvir slajda za fotografiju (širina / visina, D-169): iz galerije slika u kojoj predmet koji mora
+   * ostati ceo ne staje u okvir ide posle onih koje staju
    */
   frame?: { aspect: number } | null
 }
@@ -148,34 +146,44 @@ const MATCH_RANK: Record<MatchLevel, number> = { exact: 0, subject: 1, area: 2, 
 
 /**
  * Kandidati koje Sova sme da uzme, sa fokusom: bolje poklapanje napred, a pri istom poklapanju
- * redom kao na ulazu (redosled pretrage). Bez ključa, posle greške modela ili kad do roka nema
- * vremena za Gemini: stok prolazi samo kad opis ne pominje ljude i deli reč sa upitom, a galerija
- * ostaje u redosledu kakav je dobila.
+ * redom kao na ulazu (redosled pretrage).
+ *
+ * Stok (Unsplash, Pexels, D-180): ti servisi ne dozvoljavaju AI obradu svojih fotografija, pa se ne
+ * šalju modelu. Prolazi samo fotografija čiji opis deli reč sa upitom i ne pominje ljude: izgled ljudi
+ * se bez gledanja ne zna, a publika je Balkan i Evropa (D-136). Fotografiju sa ljudima korisnik bira
+ * ručno. Fokus ostaje na sredini, a stil seče za okvir slajda.
+ *
+ * Galerija brenda: Gemini gleda temu, upotrebljivost i gde je glavni predmet, bez procene ljudi.
+ * Bez ključa, posle greške modela ili kad do roka nema vremena za Gemini, galerija ostaje u
+ * redosledu kakav je dobila.
  */
 export async function checkPhotos<T>(
   candidates: PhotoCandidate<T>[],
   options: PhotoCheckOptions,
 ): Promise<CheckedPhoto<T>[]> {
-  const mode = options.mode ?? 'stock'
-  const stock = mode === 'stock'
-  // fotografije brenda su njegove: ljudi na njima se ne proveravaju
-  const clean = stock ? candidates.filter((c) => !foreignPeopleText(c.text)) : candidates
-  if (!clean.length) return []
-  const byText = (): CheckedPhoto<T>[] =>
-    (stock
-      ? clean.filter((c) => !mentionsPeople(c.text) && textMatchesQuery(c.text, options.subject.query))
-      : clean
-    ).map((c) => ({ item: c.item, focus: null }))
+  if ((options.mode ?? 'stock') === 'stock')
+    return candidates
+      .filter(
+        (c) =>
+          !foreignPeopleText(c.text) &&
+          !mentionsPeople(c.text) &&
+          textMatchesQuery(c.text, options.subject.query),
+      )
+      .map((c) => ({ item: c.item, focus: null }))
+  if (!candidates.length) return []
+  const inOrder = (): CheckedPhoto<T>[] => candidates.map((c) => ({ item: c.item, focus: null }))
   const until = options.until ?? Date.now() + DEFAULT_CHECK_MS
-  if (!env.GEMINI_API_KEY || until - Date.now() < MIN_CHECK_MS) return byText()
+  if (!env.GEMINI_API_KEY || until - Date.now() < MIN_CHECK_MS) return inOrder()
 
-  const sheets = await mapLimit(clean, 6, (c) =>
+  const sheets = await mapLimit(candidates, 6, (c) =>
     frameSheet(c.frames, Math.max(1_000, Math.min(6_000, until - Date.now() - 1_000))),
   )
-  // kandidat čija sličica ne stigne se ne uzima: nije proveren
-  const shown = clean.flatMap((c, i) => (sheets[i] ? [{ item: c.item, image: sheets[i], size: c.size }] : []))
-  if (!shown.length) return byText()
-  if (until - Date.now() < MIN_CHECK_MS / 2) return byText()
+  // kandidat čija slika ne stigne se ne uzima: nije proveren
+  const shown = candidates.flatMap((c, i) =>
+    sheets[i] ? [{ item: c.item, image: sheets[i], size: c.size }] : [],
+  )
+  if (!shown.length) return inOrder()
+  if (until - Date.now() < MIN_CHECK_MS / 2) return inOrder()
   try {
     const outcome = await callWithFallback(
       await textModelChain(),
@@ -206,21 +214,17 @@ export async function checkPhotos<T>(
       if (item.success && item.data.index < shown.length && !verdicts.has(item.data.index))
         verdicts.set(item.data.index, item.data)
     }
-    const reasons = { people: 0, off: 0, area: 0, unusable: 0, fit: 0, missing: 0 }
+    const reasons = { off: 0, missing: 0 }
     const taken: Array<CheckedPhoto<T> & { rank: number }> = []
     shown.forEach((s, i) => {
       const v = verdicts.get(i)
       if (!v) return void reasons.missing++
-      if (stock && !peopleAllowed(v.people)) return void reasons.people++
+      // iz galerije i slika iz iste oblasti, ali ne ono što temi ne pripada
       if (v.match === 'off') return void reasons.off++
-      // sa stoka samo slika sa glavnim predmetom; iz galerije i slika iz iste oblasti
-      if (stock && v.match === 'area') return void reasons.area++
-      if (stock && !v.usable) return void reasons.unusable++
       const box = toBox(v)
-      // predmet koji mora ostati ceo staje u okvir slajda (D-169); prizor sme da se iseče
+      // predmet koji mora ostati ceo staje u okvir slajda (D-169); takva slika ide posle onih koje staju
       const fits =
         !options.frame || !s.size || !v.whole || !box || subjectFits(s.size, box, options.frame.aspect)
-      if (stock && !fits) return void reasons.fit++
       taken.push({
         item: s.item,
         focus: box ? boxCenter(box) : CENTER,
@@ -233,12 +237,12 @@ export async function checkPhotos<T>(
       checked: shown.length,
       taken: taken.length,
       exact: taken.filter((t) => t.rank < 4).length,
-      rejected: { ...reasons, text: candidates.length - clean.length, frames: clean.length - shown.length },
+      rejected: { ...reasons, frames: candidates.length - shown.length },
     })
     // stabilno: pri istom poklapanju ostaje redosled pretrage
     return [...taken].sort((a, b) => a.rank - b.rank).map(({ item, focus, box }) => ({ item, focus, box }))
   } catch (error) {
     logger.warn('photo_check_failed', { label: options.label, code: classifyProviderError(error).code })
-    return byText()
+    return inOrder()
   }
 }

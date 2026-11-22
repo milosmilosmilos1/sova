@@ -32,6 +32,12 @@ export const visualsState = {
   pexelsEmpty: false,
   /** ime snimka u adresi stranice po ID-ju, kao „a-woman-vacuuming-the-floor” (D-154) */
   pexelsVideoSlugs: {} as Record<number, string>,
+  /**
+   * opis fotografije u pretrazi po ID-ju (D-180: stok se bira samo po opisu); bez zadatog opisa
+   * pretraga opisuje fotografiju rečima upita, kao pravi servis
+   */
+  unsplashAlts: {} as Record<string, string>,
+  pexelsAlts: {} as Record<number, string>,
 }
 
 export function resetVisualsState(): void {
@@ -51,6 +57,8 @@ export function resetVisualsState(): void {
   visualsState.pexelsSearches = []
   visualsState.pexelsEmpty = false
   visualsState.pexelsVideoSlugs = {}
+  visualsState.unsplashAlts = {}
+  visualsState.pexelsAlts = {}
 }
 
 /** Dizajn kao u `GET /designs`; sličica nosi odnos stranica prve strane. */
@@ -146,7 +154,9 @@ export const unsplashHandlers = [
       ['i9', 'j10', 'k11', 'l12'],
     ]
     const page = Math.min(3, Math.max(1, Number(url.searchParams.get('page') ?? 1)))
-    const results = pages[page - 1]!.map((id) => unsplashPhoto(id))
+    const results = pages[page - 1]!.map((id) =>
+      unsplashPhoto(id, { alt_description: visualsState.unsplashAlts[id] ?? `${q} ${id}` }),
+    )
     return HttpResponse.json(
       { total: 12, total_pages: 3, results },
       { headers: { 'x-ratelimit-remaining': '47', 'x-ratelimit-limit': '50' } },
@@ -299,14 +309,21 @@ export const canvaHandlers = [
 ]
 
 /** Pexels snimak kao u API-ju; prvi je uspravan i kratak (Reels, priča), drugi vodoravan i dug. */
-export function pexelsVideo(id: number, overrides: Record<string, unknown> = {}) {
+export function pexelsVideo(id: number, overrides: Record<string, unknown> = {}, query = '') {
   const portrait = id % 2 === 1
+  // ime snimka u adresi: zadato u testu, inače reči upita, kao pravi servis (D-180: bira se po imenu)
+  const slug =
+    visualsState.pexelsVideoSlugs[id] ??
+    query
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
   return {
     id,
     width: portrait ? 1080 : 1920,
     height: portrait ? 1920 : 1080,
     duration: portrait ? 12 : 95,
-    url: `https://www.pexels.com/video/${visualsState.pexelsVideoSlugs[id] ? `${visualsState.pexelsVideoSlugs[id]}-` : ''}${id}/`,
+    url: `https://www.pexels.com/video/${slug ? `${slug}-` : ''}${id}/`,
     image: `https://images.pexels.com/videos/${id}/thumb.jpeg`,
     // kadrovi za proveru ljudi (D-154), kao 15 malih slika u API-ju
     video_pictures: Array.from({ length: 15 }, (_, nr) => ({
@@ -348,12 +365,12 @@ export function pexelsVideo(id: number, overrides: Record<string, unknown> = {})
   }
 }
 
-export function pexelsPhoto(id: number) {
+export function pexelsPhoto(id: number, alt = `fotografija ${id}`) {
   return {
     id,
     width: 4000,
     height: 3000,
-    alt: `fotografija ${id}`,
+    alt,
     url: `https://www.pexels.com/photo/${id}/`,
     photographer: `Fotograf ${id}`,
     photographer_url: `https://www.pexels.com/@fotograf${id}`,
@@ -379,7 +396,7 @@ export const pexelsHandlers = [
     if (visualsState.pexelsEmpty) return HttpResponse.json({ videos: [] })
     // neparni su uspravni i kratki (Reels, priča), parni vodoravni i dugi
     return HttpResponse.json({
-      videos: [pexelsVideo(101), pexelsVideo(202), pexelsVideo(303), pexelsVideo(505), pexelsVideo(707)],
+      videos: [101, 202, 303, 505, 707].map((id) => pexelsVideo(id, {}, url.searchParams.get('query') ?? '')),
     })
   }),
   http.get('https://api.pexels.com/videos/videos/:id', ({ params }) =>
@@ -391,7 +408,10 @@ export const pexelsHandlers = [
       `photo:${url.searchParams.get('query')}:${url.searchParams.get('orientation') ?? ''}`,
     )
     if (visualsState.pexelsEmpty) return HttpResponse.json({ photos: [] })
-    return HttpResponse.json({ photos: [pexelsPhoto(301), pexelsPhoto(302), pexelsPhoto(303)] })
+    const q = url.searchParams.get('query') ?? ''
+    return HttpResponse.json({
+      photos: [301, 302, 303].map((id) => pexelsPhoto(id, visualsState.pexelsAlts[id] ?? `${q} ${id}`)),
+    })
   }),
   http.get('https://api.pexels.com/v1/photos/:id', ({ params }) =>
     HttpResponse.json(pexelsPhoto(Number(params.id))),
@@ -419,12 +439,3 @@ export const pexelsHandlers = [
     return new HttpResponse(new Uint8Array(jpg), { headers: { 'content-type': 'image/jpeg' } })
   }),
 ]
-
-export const rankReply = {
-  ranking: [
-    { index: 2, score: 9.2, reason: 'Mirna površina, uklapa se u stil.' },
-    { index: 0, score: 7.5, reason: 'Relevantno, malo zauzeto.' },
-    { index: 1, score: 5, reason: 'Previše teksta.' },
-    { index: 3, score: 3, reason: 'Neprirodne boje.' },
-  ],
-}

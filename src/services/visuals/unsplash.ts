@@ -1,19 +1,8 @@
 import 'server-only'
 
-import { classifyProviderError } from '@/lib/ai/errors'
-import { generateText, type ImageInput } from '@/lib/ai/gemini'
-import { textModelChain } from '@/lib/ai/models'
-import { callWithFallback } from '@/lib/ai/orchestrator'
-import {
-  buildRankPrompt,
-  buildRankSystemPrompt,
-  rankJsonSchema,
-  rankOutputSchema,
-} from '@/lib/ai/prompts/unsplash-rank'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
-import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
 import { mapLimit } from '@/lib/map-limit'
 import type { UnsplashSearchInput, UnsplashSelectInput } from '@/lib/schemas/visuals'
@@ -172,14 +161,6 @@ export async function selectUnsplashPhoto(
   return { asset, attribution, reused: false }
 }
 
-/**
- * Fotografije u jednoj proveri (D-154, D-167): koliko treba i još nekoliko, za odbijene. Provera
- * teme odbija više nego provera ljudi, pa je rezerva veća.
- */
-const PHOTO_CHECK_BATCH = 12
-const PHOTO_CHECK_SPARE = 5
-/** Za okvir slajda (D-169) odbija se i predmet koji ne staje ceo, pa se gleda više kandidata. */
-const FRAME_CHECK_SPARE = 9
 /** Zajednički rok svih provera u jednom izboru i najviše provera po izboru. */
 const PHOTO_CHECKS_MS = 12_000
 const MAX_PHOTO_CHECKS = 3
@@ -240,9 +221,8 @@ export async function pickUnsplashPhotos(input: {
   if (spent() || late()) return []
   const used = await usedStockIds(input.brandId, 'unsplash')
   const chosen: Array<CheckedPhoto<UnsplashPhoto>> = []
-  // ljudi samo evropskog izgleda (D-136, D-154): upit koji pominje ljude traži evropske ljude, a
-  // fotografije se pre preuzimanja proveravaju po opisu i sličici, sa zajedničkim rokom; tema se
-  // proverava prema prvobitnom upitu, i kad pretraga ide kraćim oblikom (D-167)
+  // upit koji pominje ljude traži evropske ljude (D-136); fotografije se pre preuzimanja proveravaju
+  // samo po opisu (D-180), prema prvobitnom upitu i kad pretraga ide kraćim oblikom (D-167)
   const variants = queryVariants(input.query).map(localPeopleQuery)
   const subject = { topic: input.topic, query: input.query }
   const until = Math.min(Date.now() + PHOTO_CHECKS_MS, input.deadline ?? Number.POSITIVE_INFINITY)
@@ -260,10 +240,9 @@ export async function pickUnsplashPhotos(input: {
       const fresh = r.results.filter((p) => !used.has(p.id))
       for (let i = 0; i < fresh.length && chosen.length < input.count;) {
         if (late() || checks++ >= MAX_PHOTO_CHECKS) break search
-        const spare = input.frame ? FRAME_CHECK_SPARE : PHOTO_CHECK_SPARE
-        const size = Math.min(PHOTO_CHECK_BATCH, input.count - chosen.length + spare)
-        const batch = fresh.slice(i, i + size)
-        i += size
+        // stok se proverava samo po opisu, bez modela (D-180): cela strana odjednom
+        const batch = fresh.slice(i)
+        i = fresh.length
         for (const photo of batch) used.add(photo.id)
         const allowed = await checkPhotos(batch.map(photoCandidate), {
           label: 'unsplash',
@@ -340,6 +319,8 @@ async function storePickedPhoto(
       photographer: photo.user,
       ...(cropped.focus ? { focus: cropped.focus } : {}),
       ...(cropped.box ? { subject: cropped.box } : {}),
+      // automatski izbor po opisu (D-180): nacrt ne traži nove fotografije (D-170)
+      pick: 'text',
     } as unknown as Record<string, string>,
     uploadedBy: input.uploadedBy,
   })
@@ -361,12 +342,12 @@ export interface RankResult {
 
 const ZERO = { inputTokens: 0, outputTokens: 0, thoughtTokens: 0 }
 
-/** Gemini vision rangira do 8 kandidata; bez ključa ostaje Unsplash redosled relevantnosti. */
-export async function rankCandidates(
-  candidates: UnsplashPhoto[],
-  context: { headline: string; topic?: string | null; brandName: string; photoStyle?: string | null },
-): Promise<RankResult> {
-  const fallback: RankResult = {
+/**
+ * Redosled kandidata za šablon: redosled relevantnosti Unsplash-a. Ranije je Gemini rangirao po
+ * sličicama; Unsplash ne dozvoljava AI obradu svojih fotografija (D-180), pa model slike ne gleda.
+ */
+export function rankCandidates(candidates: UnsplashPhoto[]): RankResult {
+  return {
     ordered: candidates.map((photo, i) => ({
       photo,
       score: 10 - i,
@@ -375,76 +356,6 @@ export async function rankCandidates(
     model: null,
     usage: ZERO,
     skipped: null,
-  }
-  if (!env.GEMINI_API_KEY) return { ...fallback, skipped: 'AI servis nije podešen (nedostaje ključ).' }
-  if (candidates.length < 2) return fallback
-
-  const images: ImageInput[] = []
-  const used: UnsplashPhoto[] = []
-  for (const photo of candidates.slice(0, 8)) {
-    try {
-      const res = await safeFetch(resizedUrl(photo.urls.raw, { w: 512, q: 60 }), {
-        timeoutMs: 8_000,
-        maxBytes: 2 * 1024 * 1024,
-        headers: { accept: 'image/*' },
-      })
-      if (!res.ok) continue
-      images.push({
-        data: res.body.toString('base64'),
-        mimeType: res.contentType.includes('png') ? 'image/png' : 'image/jpeg',
-      })
-      used.push(photo)
-    } catch {
-      continue
-    }
-  }
-  if (images.length < 2)
-    return { ...fallback, skipped: 'Fotografije nisu mogle da se preuzmu za rangiranje.' }
-
-  try {
-    const outcome = await callWithFallback(
-      await textModelChain(),
-      (model) =>
-        generateText({
-          model,
-          system: buildRankSystemPrompt(),
-          prompt: buildRankPrompt({ ...context, count: images.length }),
-          images,
-          jsonSchema: rankJsonSchema(),
-          maxOutputTokens: 1024,
-          temperature: 0.2,
-          thinking: 'minimal',
-          timeoutMs: 45_000,
-        }),
-      { label: 'unsplash-rank' },
-    )
-    const parsed = rankOutputSchema.safeParse(outcome.result.json)
-    if (!parsed.success) throw new Error('Rang lista nije po šemi.')
-    const seen = new Set<number>()
-    const ordered: RankedCandidate[] = []
-    for (const r of [...parsed.data.ranking].sort((a, b) => b.score - a.score)) {
-      const photo = used[r.index]
-      if (!photo || seen.has(r.index)) continue
-      seen.add(r.index)
-      ordered.push({ photo, score: r.score, reason: r.reason })
-    }
-    used.forEach((photo, i) => {
-      if (!seen.has(i)) ordered.push({ photo, score: 0, reason: 'Nije ocenjeno' })
-    })
-    return {
-      ordered,
-      model: outcome.model,
-      usage: {
-        inputTokens: outcome.result.usage.inputTokens,
-        outputTokens: outcome.result.usage.outputTokens,
-        thoughtTokens: outcome.result.usage.thoughtTokens,
-      },
-      skipped: null,
-    }
-  } catch (error) {
-    const e = classifyProviderError(error)
-    logger.warn('unsplash_rank_failed', { code: e.code })
-    return { ...fallback, skipped: `Rangiranje preskočeno: ${e.message}` }
   }
 }
 
@@ -484,7 +395,7 @@ export async function pickPhotoForTemplate(input: {
       orientation: orientationFor(input.aspect),
       contentFilter: 'high',
     })
-    // ljudi samo evropskog izgleda (D-154) i fotografija koja prikazuje temu (D-167) pre rangiranja
+    // samo fotografija čiji opis odgovara temi i ne pominje ljude (D-180), bez slanja slika modelu
     const allowed = (
       await checkPhotos(search.results.map(photoCandidate), {
         label: 'unsplash-template',
@@ -492,12 +403,7 @@ export async function pickPhotoForTemplate(input: {
       })
     ).map((c) => c.item)
     if (!allowed.length) return null
-    rank = await rankCandidates(allowed, {
-      headline: input.headline,
-      topic: query,
-      brandName: input.brandName,
-      photoStyle: input.photoStyle,
-    })
+    rank = rankCandidates(allowed)
     photo = rank.ordered[0]?.photo ?? allowed[0]!
   }
   await trackDownload(photo.downloadLocation)

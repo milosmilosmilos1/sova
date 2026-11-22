@@ -188,10 +188,15 @@ describe('Unsplash limit (D-122)', () => {
     const searchWithRemaining = (remaining: string) =>
       http.get(
         'https://api.unsplash.com/search/photos',
-        () => {
+        ({ request }) => {
           visualsState.unsplashSearches++
+          // opis rečima upita, kao pravi servis (D-180: stok se bira po opisu)
+          const q = new URL(request.url).searchParams.get('query') ?? ''
+          const results = ['a1', 'b2', 'c3', 'd4'].map((id) =>
+            unsplashPhoto(id, { alt_description: `${q} ${id}` }),
+          )
           return HttpResponse.json(
-            { total: 4, total_pages: 1, results: ['a1', 'b2', 'c3', 'd4'].map((id) => unsplashPhoto(id)) },
+            { total: 4, total_pages: 1, results },
             { headers: { 'x-ratelimit-remaining': remaining } },
           )
         },

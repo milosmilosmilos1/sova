@@ -417,7 +417,7 @@ export async function refreshBrandPhotos(
 /**
  * Nacrti brenda koji mogu da dobiju nove fotografije (D-170): čekaju, imaju tekst slajdova, nisu
  * video, fotografije nije dao korisnik, a bar jedna fotografija je izabrana pre provere oblika (nema
- * zapamćen okvir predmeta) ili ih nema nijedne.
+ * zapamćen okvir predmeta ni oznaku izbora po opisu, D-180) ili ih nema nijedne.
  */
 export async function photoRefreshDraftIds(brandId: string): Promise<string[]> {
   const admin = createSupabaseAdminClient()
@@ -446,8 +446,8 @@ export async function photoRefreshDraftIds(brandId: string): Promise<string[]> {
       .select('id, source_data')
       .in('id', ids.slice(i, i + 100))
     for (const row of rows ?? []) {
-      const data = row.source_data as { subject?: unknown } | null
-      if (data && typeof data === 'object' && data.subject) shaped.add(row.id)
+      const data = row.source_data as { subject?: unknown; pick?: unknown } | null
+      if (data && typeof data === 'object' && (data.subject || data.pick === 'text')) shaped.add(row.id)
     }
   }
   return drafts

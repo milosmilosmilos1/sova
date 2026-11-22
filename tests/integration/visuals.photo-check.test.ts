@@ -15,9 +15,9 @@ import { admin, call, createTestUser, deleteTestUser, type TestUser } from './he
 import { pexelsHandlers, resetVisualsState, unsplashHandlers, visualsState } from './visuals-mock'
 
 /**
- * Fotografija mora da prikazuje ono o čemu je objava (D-167): automatski izbor sa Unsplash-a i
- * Pexels-a uzima samo ono što provera oceni kao jasno poklapanje sa temom i upotrebljivo za objavu,
- * a isečak ide oko glavnog predmeta. Iz galerije brenda ne uzima ono što temi ne pripada.
+ * Fotografija mora da prikazuje ono o čemu je objava (D-167). Sa Unsplash-a i Pexels-a automatski
+ * izbor uzima samo ono čiji opis odgovara upitu i ne pominje ljude, bez slanja slika modelu (D-180).
+ * Iz galerije brenda Gemini ne uzima ono što temi ne pripada, a isečak ide oko glavnog predmeta.
  */
 let user: TestUser
 let wsId = ''
@@ -58,68 +58,53 @@ const unsplash = (query: string, count = 1) =>
 const sourceData = (asset: MediaAssetRow) =>
   asset.source_data as { photoId?: string; pexelsId?: number; focus?: { x: number; y: number } }
 
-describe('fotografija prikazuje ono o čemu je objava (D-167)', () => {
-  it('Unsplash: slika koja temi ne pripada se preskače; tema i upit idu u proveru; isečak ide oko psa', async () => {
-    enqueuePhotoChecks([{ match: 'off' }, { match: 'exact', box: [10, 40, 30, 60] }])
+describe('stok se bira po opisu, bez slanja slika modelu (D-167, D-180)', () => {
+  it('Unsplash: fotografija čiji opis ne odgovara upitu se preskače; slika ne ide modelu; isečak po sredini', async () => {
+    visualsState.unsplashAlts = { a1: 'cat sleeping on a sofa' }
     const picked = await unsplash(`dog eating kibble ${tag()}`)
     expect(picked.map((p) => sourceData(p.asset).photoId)).toEqual(['b2'])
-    expect(photoCalls).toHaveLength(1)
-    expect(photoCalls[0]!.text).toContain(topic)
-    expect(photoCalls[0]!.text).toContain('dog eating kibble')
-
-    // ceo kadar 1080×713 iz lažnog CDN-a, kvadrat oko psa: pas je levo od sredine, ali u kadru
-    const focus = sourceData(picked[0]!.asset).focus!
-    expect(focus.x).toBeCloseTo(216 / 713, 2)
-    expect(focus.y).toBeCloseTo(0.5, 2)
+    expect(photoCalls).toHaveLength(0)
+    expect(sourceData(picked[0]!.asset).focus).toBeUndefined()
     const meta = await sharp(await downloadAsset(picked[0]!.asset)).metadata()
     expect([meta.width, meta.height]).toEqual([1600, 1600])
   })
 
-  it('slika bez glavnog predmeta, slika sa tekstom i ljudi drugog izgleda se ne uzimaju sa stoka', async () => {
-    enqueuePhotoChecks([{ match: 'area' }, { usable: false }, { people: 'other' }, { match: 'exact' }])
+  it('fotografija čiji opis pominje ljude ili drugi izgled se ne uzima sa stoka', async () => {
+    visualsState.unsplashAlts = {
+      a1: 'woman feeding her dog kibble',
+      b2: 'black man with a dog eating kibble',
+    }
     const picked = await unsplash(`dog eating kibble ${tag()}`)
-    expect(picked.map((p) => sourceData(p.asset).photoId)).toEqual(['d4'])
+    expect(picked.map((p) => sourceData(p.asset).photoId)).toEqual(['c3'])
   })
 
-  it('pas koji jede ide pre psa koji samo pozira, a pas bez hrane je bolji od prazne slajd-boje', async () => {
-    enqueuePhotoChecks([{ match: 'subject' }, { match: 'off' }, { match: 'exact' }, { match: 'subject' }])
-    const two = await unsplash(`dog eating kibble ${tag()}`, 2)
-    expect(two.map((p) => sourceData(p.asset).photoId)).toEqual(['c3', 'a1'])
-
-    resetGeminiMock()
-    enqueuePhotoChecks([{ match: 'subject' }, { match: 'area' }, { match: 'off' }, { match: 'off' }])
-    const one = await unsplash(`dog eating kibble ${tag()}`)
-    // a1 i c3 su već uzeti (D-121), pa je prvi kandidat sada b2
-    expect(one.map((p) => sourceData(p.asset).photoId)).toEqual(['b2'])
-  })
-
-  it('kad prva strana nema ništa za temu, traži se sledeća; posle tri provere bez pogotka nema fotografije', async () => {
-    const off = [
-      { match: 'off' as const },
-      { match: 'off' as const },
-      { match: 'off' as const },
-      { match: 'off' as const },
-    ]
-    enqueuePhotoChecks(off, [{ match: 'exact' }])
+  it('kad prva strana nema ništa za temu, traži se sledeća; bez poklapanja nema fotografije', async () => {
+    const offTopic = (ids: string[]) =>
+      Object.fromEntries(ids.map((id) => [id, `city skyline at night ${id}`]))
+    visualsState.unsplashAlts = offTopic(['a1', 'b2', 'c3', 'd4'])
     const next = await unsplash(`dog eating kibble ${tag()}`)
     expect(next.map((p) => sourceData(p.asset).photoId)).toEqual(['e5'])
-    expect(photoCalls).toHaveLength(2)
 
-    resetGeminiMock()
-    enqueuePhotoChecks(off, off, off, off)
-    const none = await unsplash(`dog eating kibble ${tag()}`)
-    expect(none).toEqual([])
-    expect(photoCalls.length).toBeLessThanOrEqual(3)
-  })
-
-  it('kad provera ne uspe, sa stoka ne prolazi slika čiji opis ne deli reč sa upitom', async () => {
-    // lažni Unsplash opisuje slike kao „fotografija a1”: ništa od toga nije pas
-    enqueuePhotoChecks('fail', 'fail', 'fail', 'fail', 'fail', 'fail')
+    visualsState.unsplashAlts = offTopic([
+      'a1',
+      'b2',
+      'c3',
+      'd4',
+      'e5',
+      'f6',
+      'g7',
+      'h8',
+      'i9',
+      'j10',
+      'k11',
+      'l12',
+    ])
     expect(await unsplash(`dog eating kibble ${tag()}`)).toEqual([])
+    expect(photoCalls).toHaveLength(0)
   })
 
-  it('Pexels: isečak oko glavnog predmeta i fokus uz fotografiju', async () => {
-    enqueuePhotoChecks([{ match: 'off' }, { match: 'exact', box: [5, 40, 15, 60] }])
+  it('Pexels: po opisu, isečak po sredini, bez slanja slike modelu', async () => {
+    visualsState.pexelsAlts = { 301: 'tea leaves in a cup' }
     const picked = await pickPexelsPhotos({
       workspaceId: wsId,
       brandId,
@@ -130,23 +115,15 @@ describe('fotografija prikazuje ono o čemu je objava (D-167)', () => {
       topic: 'Kafa iz Etiopije',
     })
     expect(picked.map((p) => sourceData(p.asset).pexelsId)).toEqual([302])
-    expect(photoCalls[0]!.text).toContain('Kafa iz Etiopije')
-    // lažni Pexels daje uspravan kadar 1200×1600: kvadrat se seče po visini, predmet ostaje levo
-    const focus = sourceData(picked[0]!.asset).focus!
-    expect(focus.x).toBeCloseTo(0.1, 6)
-    expect(focus.y).toBeCloseTo(0.5, 6)
+    expect(photoCalls).toHaveLength(0)
     const meta = await sharp(await downloadAsset(picked[0]!.asset)).metadata()
     expect([meta.width, meta.height]).toEqual([1600, 1600])
   })
 })
 
 describe('oblik fotografije prati okvir slajda (D-169)', () => {
-  it('traži se u obliku okvira, predmet koji ne staje ceo se ne uzima, a čuva se ceo kadar', async () => {
-    // okvir 2,3:1 (traka u „aurora” stilu): uspravan pas preko cele visine ne staje, pas u sredini staje
-    enqueuePhotoChecks([
-      { match: 'exact', whole: true, box: [10, 0, 60, 100] },
-      { match: 'exact', whole: true, box: [20, 30, 80, 70] },
-    ])
+  it('traži se u obliku okvira, a čuva se ceo kadar', async () => {
+    // okvir 2,3:1 (traka u „aurora” stilu): pretraga traži vodoravne fotografije
     const picked = await pickUnsplashPhotos({
       workspaceId: wsId,
       brandId,
@@ -158,10 +135,9 @@ describe('oblik fotografije prati okvir slajda (D-169)', () => {
       frame: { aspect: 2.31 },
     })
     expect(visualsState.unsplashOrientations[0]).toBe('landscape')
-    expect(picked.map((p) => sourceData(p.asset).photoId)).toEqual(['b2'])
-    const saved = picked[0]!.asset.source_data as { crop: string; subject: Record<string, number> }
+    expect(picked.map((p) => sourceData(p.asset).photoId)).toEqual(['a1'])
+    const saved = picked[0]!.asset.source_data as { crop: string }
     expect(saved.crop).toBe('full')
-    expect(saved.subject).toEqual({ left: 0.2, top: 0.3, right: 0.8, bottom: 0.7 })
     // ceo kadar, vodoravan kao original
     const meta = await sharp(await downloadAsset(picked[0]!.asset)).metadata()
     expect(meta.width! > meta.height!).toBe(true)
@@ -197,7 +173,7 @@ describe('oblik fotografije prati okvir slajda (D-169)', () => {
       ...base,
       styleId: 'magazine',
       format: 'story',
-      query: `dog portrait ${tag()}`,
+      query: `dog on the beach ${tag()}`,
     })
     expect(story.photoIds).toHaveLength(2)
     expect(visualsState.unsplashOrientations).toEqual(['portrait'])
@@ -284,11 +260,7 @@ describe('galerija brenda (D-167)', () => {
     const bowl = await upload('b', '2026-11-01T11:00:00Z')
     const cat = await upload('c', '2026-11-01T12:00:00Z')
     // bez poklapanja opisa redosled je od najnovije: mačka, činija, pas
-    enqueuePhotoChecks([
-      { match: 'off' },
-      { match: 'area' },
-      { match: 'exact', people: 'other', box: [20, 30, 40, 50] },
-    ])
+    enqueuePhotoChecks([{ match: 'off' }, { match: 'area' }, { match: 'exact', box: [20, 30, 40, 50] }])
     const picked = await pickGalleryPhotos(brandId, 'dog eating kibble', 2, { topic })
     expect(picked.map((p) => p.id)).toEqual([dog, bowl])
     expect(photoCalls[0]!.images).toBe(3)

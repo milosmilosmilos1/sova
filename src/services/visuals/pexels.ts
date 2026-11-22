@@ -166,6 +166,8 @@ export async function storePexelsMedia(input: {
   uploadedBy: string | null
   /** već dobijeno pretragom (automatski izbor): bez još jednog poziva Pexels-u (D-122) */
   photo?: PexelsPhoto
+  /** automatski izbor po opisu (D-180): pamti se, da nacrt ne traži nove fotografije (D-170) */
+  autoPick?: boolean
   video?: PexelsVideo
   /** najveća kraća strana snimka koja se prvo traži (video u temi: 720, D-128) */
   preferShortSide?: number
@@ -250,6 +252,7 @@ export async function storePexelsMedia(input: {
       crop,
       ...(cropped?.focus ? { focus: cropped.focus } : {}),
       ...(cropped?.box ? { subject: cropped.box } : {}),
+      ...(input.autoPick ? { pick: 'text' } : {}),
     } as unknown as Json,
     uploadedBy: input.uploadedBy,
   })
@@ -269,18 +272,10 @@ export async function selectPexelsMedia(viewer: Viewer, input: PexelsSelectInput
   })
 }
 
-/** Snimci koje provera (D-154, D-167) gleda u jednom pozivu. */
-const VIDEO_CHECK_BATCH = 5
+/** Snimci u jednoj proveri; provera je po imenu snimka, bez modela (D-180). */
+const VIDEO_CHECK_BATCH = 30
 /** Najduža provera jedne grupe snimaka. */
 const VIDEO_CHECK_MS = 8_000
-/**
- * Fotografije u jednom pozivu: koliko treba i još nekoliko, za odbijene. Provera teme (D-167)
- * odbija više nego provera ljudi, pa je rezerva veća.
- */
-const PHOTO_CHECK_BATCH = 12
-const PHOTO_CHECK_SPARE = 5
-/** Za okvir slajda (D-169) odbija se i predmet koji ne staje ceo, pa se gleda više kandidata. */
-const FRAME_CHECK_SPARE = 9
 /** Zajednički rok svih provera fotografija u jednom izboru. */
 const PHOTO_CHECKS_MS = 12_000
 /** Najviše provera po izboru; posle toga izbor vraća ono što je našao. */
@@ -347,8 +342,8 @@ export async function pickPexelsVideo(input: {
   if (!isPexelsConfigured()) return null
   const { deadline, maxSeconds = 60, maxBytes, topic, ...store } = input
   const used = await usedStockIds(input.brandId, 'pexels-video')
-  // ljudi samo evropskog izgleda (D-136, D-154): upit koji pominje ljude traži evropske ljude, a
-  // snimci se pre preuzimanja proveravaju po imenu i kadrovima, i za temu prema prvobitnom upitu
+  // upit koji pominje ljude traži evropske ljude (D-136); snimci se pre preuzimanja proveravaju
+  // samo po imenu (D-180), za temu prema prvobitnom upitu
   const variants = queryVariants(input.query).map(localPeopleQuery)
   const subject = { topic, query: input.query }
   let checks = 0
@@ -429,8 +424,8 @@ export async function pickPexelsPhotos(input: {
   if (late()) return []
   const used = await usedStockIds(input.brandId, 'pexels-photo')
   const chosen: Array<CheckedPhoto<PexelsPhoto>> = []
-  // ljudi samo evropskog izgleda (D-154) i tema prema prvobitnom upitu (D-167): provere imaju
-  // zajednički rok, da izbor stane u korak od 30 s
+  // tema prema prvobitnom upitu (D-167), samo po opisu (D-180); izbor ima zajednički rok, da stane
+  // u korak od 30 s
   const variants = queryVariants(input.query).map(localPeopleQuery)
   const subject = { topic: input.topic, query: input.query }
   const until = Math.min(Date.now() + PHOTO_CHECKS_MS, input.deadline ?? Number.POSITIVE_INFINITY)
@@ -447,10 +442,9 @@ export async function pickPexelsPhotos(input: {
       const fresh = photos.filter((p) => !used.has(String(p.id)))
       for (let i = 0; i < fresh.length && chosen.length < input.count;) {
         if (late() || checks++ >= MAX_PHOTO_CHECKS) break search
-        const spare = input.frame ? FRAME_CHECK_SPARE : PHOTO_CHECK_SPARE
-        const size = Math.min(PHOTO_CHECK_BATCH, input.count - chosen.length + spare)
-        const batch = fresh.slice(i, i + size)
-        i += size
+        // stok se proverava samo po opisu, bez modela (D-180): cela strana odjednom
+        const batch = fresh.slice(i)
+        i = fresh.length
         for (const photo of batch) used.add(String(photo.id))
         const allowed = await checkPhotos(batch.map(photoCandidate), {
           label: 'pexels-photo',
@@ -474,6 +468,7 @@ export async function pickPexelsPhotos(input: {
         crop: input.frame ? 'full' : input.crop,
         uploadedBy: input.uploadedBy,
         photo,
+        autoPick: true,
         focus,
         box: box ?? null,
         downloadTimeoutMs: input.deadline ? STORE_TIMEOUT_MS : undefined,

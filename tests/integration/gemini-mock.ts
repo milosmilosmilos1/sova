@@ -1,7 +1,7 @@
 import { http, HttpResponse } from 'msw'
 import { setupServer } from 'msw/node'
 
-import { PHOTO_CHECK_TAG, type MatchLevel, type PeopleVerdict } from '@/lib/ai/prompts/photo-check'
+import { PHOTO_CHECK_TAG, type MatchLevel } from '@/lib/ai/prompts/photo-check'
 import { PHOTO_QUERY_TAG } from '@/lib/ai/prompts/photo-query'
 
 /**
@@ -23,13 +23,11 @@ export function enqueueReply(...replies: MockReply[]): void {
 }
 
 /**
- * Provera fotografija (D-154, D-167, D-169) ima svoj red: ne troši odgovore ostalih poziva i ne ulazi
- * u `calls`. Bez odgovora u redu svaka slika je bez ljudi, odgovara temi, upotrebljiva, prizor (sme da
- * se iseče) preko celog kadra; `fail` vraća grešku 500. Stavka može biti samo ocena ljudi („other”)
- * ili cela ocena.
+ * Provera fotografija iz galerije (D-167, D-169, D-180) ima svoj red: ne troši odgovore ostalih
+ * poziva i ne ulazi u `calls`. Bez odgovora u redu svaka slika odgovara temi, upotrebljiva je i prizor
+ * (sme da se iseče) preko celog kadra; `fail` vraća grešku 500. Izgled ljudi se ne ocenjuje.
  */
 export interface PhotoCheckReply {
-  people?: PeopleVerdict
   match?: MatchLevel
   usable?: boolean
   /** predmet mora ostati ceo */
@@ -37,13 +35,9 @@ export interface PhotoCheckReply {
   /** okvir glavnog predmeta [levo, gore, desno, dole], u procentima */
   box?: [number, number, number, number]
 }
-const photoQueue: Array<Array<PeopleVerdict | PhotoCheckReply> | 'fail'> = []
+const photoQueue: Array<PhotoCheckReply[] | 'fail'> = []
 /** svaki poziv provere: model, broj slika i tekst zahteva (tema i upit) */
 export const photoCalls: Array<{ model: string; images: number; text: string }> = []
-
-export function enqueuePeopleVerdicts(...replies: Array<PeopleVerdict[] | 'fail'>): void {
-  photoQueue.push(...replies)
-}
 
 export function enqueuePhotoChecks(...replies: Array<PhotoCheckReply[] | 'fail'>): void {
   photoQueue.push(...replies)
@@ -158,11 +152,10 @@ export const geminiServer = setupServer(
           return HttpResponse.json(buildBody({ kind: 'status', status: 500 }), { status: 500 })
         const items = Array.from({ length: images }, (_, index) => {
           const r = replies?.[index]
-          const reply: PhotoCheckReply = typeof r === 'string' ? { people: r } : (r ?? {})
+          const reply: PhotoCheckReply = r ?? {}
           const [left, top, right, bottom] = reply.box ?? [0, 0, 100, 100]
           return {
             index,
-            people: reply.people ?? 'none',
             match: reply.match ?? 'exact',
             usable: reply.usable ?? true,
             whole: reply.whole ?? false,

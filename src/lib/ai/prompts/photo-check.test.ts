@@ -3,7 +3,6 @@ import { describe, expect, it } from 'vitest'
 import {
   buildPhotoCheckPrompt,
   buildPhotoCheckSystemPrompt,
-  peopleAllowed,
   photoCheckJsonSchema,
   photoCheckSchema,
   PHOTO_CHECK_TAG,
@@ -16,11 +15,13 @@ import {
   PHOTO_QUERY_TAG,
 } from './photo-query'
 
-describe('provera fotografija (D-154, D-167)', () => {
-  it('uputstvo traži ljude, poklapanje sa temom, upotrebljivost i sredinu predmeta', () => {
+describe('provera fotografija iz galerije (D-167, D-180)', () => {
+  it('uputstvo traži poklapanje sa temom, upotrebljivost i sredinu predmeta, bez procene ljudi', () => {
     const system = buildPhotoCheckSystemPrompt()
     expect(system.startsWith(`${PHOTO_CHECK_TAG}.`)).toBe(true)
-    expect(system).toContain('evropskog izgleda')
+    // izgled ljudi se ne procenjuje (D-180)
+    expect(system).toContain('Ne procenjuj izgled, poreklo')
+    expect(system).not.toMatch(/evropsk|people:/)
     // četiri nivoa, od najboljeg: situacija iz objave, sam predmet, ista oblast, ne pripada
     for (const level of ['"exact"', '"subject"', '"area"', '"off"']) expect(system).toContain(level)
     expect(system).toContain('pas koji jede')
@@ -56,7 +57,6 @@ describe('provera fotografija (D-154, D-167)', () => {
     }
     expect(schema.properties.items.items.required).toEqual([
       'index',
-      'people',
       'match',
       'usable',
       'whole',
@@ -67,7 +67,6 @@ describe('provera fotografija (D-154, D-167)', () => {
     ])
     const item = {
       index: 0,
-      people: 'none',
       match: 'exact',
       usable: true,
       whole: true,
@@ -95,13 +94,6 @@ describe('provera fotografija (D-154, D-167)', () => {
     })
     expect(subjectBoxOf({ box_left: 60, box_top: 10, box_right: 20, box_bottom: 90 })).toBeNull()
     expect(subjectBoxOf({ box_left: 0, box_top: 0, box_right: 0, box_bottom: 0 })).toBeNull()
-  })
-
-  it('ljudi drugog izgleda se ne uzimaju; bez ljudi ili nejasno se uzima', () => {
-    expect(peopleAllowed('other')).toBe(false)
-    expect(peopleAllowed('none')).toBe(true)
-    expect(peopleAllowed('european')).toBe(true)
-    expect(peopleAllowed('unclear')).toBe(true)
   })
 })
 

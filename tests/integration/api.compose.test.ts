@@ -208,7 +208,7 @@ describe('Nova objava (POST /api/ai/compose)', () => {
 
   it('Reels: uspravan snimak sa Pexels-a; bez snimka nacrt ostaje bez videa uz napomenu', async () => {
     enqueueReply(
-      reply('video', 'barista coffee', ['instagram']),
+      reply('video', 'coffee beans pouring', ['instagram']),
       reply('video', 'empty street', ['instagram']),
     )
     const r = await compose({ format: 'video', platforms: ['instagram'] })
@@ -217,8 +217,8 @@ describe('Nova objava (POST /api/ai/compose)', () => {
     expect(r.json.data!.media).toEqual([
       expect.objectContaining({ kind: 'video', attribution: 'Video by Autor 101 on Pexels' }),
     ])
-    // upit sa ljudima traži evropske ljude (D-136)
-    expect(visualsState.pexelsSearches).toEqual(['video:european barista coffee:portrait'])
+    // snimak se bira po imenu, bez slanja kadrova modelu (D-180)
+    expect(visualsState.pexelsSearches).toEqual(['video:coffee beans pouring:portrait'])
     visualsState.pexelsEmpty = true
     const none = await compose({ format: 'video', platforms: ['instagram'] })
     expect(none.status).toBe(200)

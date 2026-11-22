@@ -36,12 +36,11 @@ import { attributionFor, resetUnsplashCacheForTests } from '@/integrations/unspl
 import { collectCanvaVideoExport, failCanvaVideoExport, startCanvaVideoExport } from '@/services/canva/video'
 import { runVisualTemplate } from '@/services/visuals/template'
 
-import { calls, enqueueReply, geminiServer, resetGeminiMock } from './gemini-mock'
+import { calls, geminiServer, resetGeminiMock } from './gemini-mock'
 import { admin, call, createTestUser, deleteTestUser, type TestUser } from './helpers'
 import {
   canvaHandlers,
   pexelsHandlers,
-  rankReply,
   resetVisualsState,
   unsplashHandlers,
   visualsState,
@@ -200,7 +199,7 @@ describe('Unsplash', () => {
 })
 
 describe('Vizual iz šablona', () => {
-  it('Unsplash pretraga + vision rangiranje + render → 2 tokena, atribucija i izabrana fotografija', async () => {
+  it('Unsplash pretraga + render → 2 tokena, atribucija i prva fotografija čiji opis odgovara upitu (D-180)', async () => {
     const start = await balance()
     const r = await call<{ generationId: string; tokensReserved: number }>(
       templatePost,
@@ -221,18 +220,17 @@ describe('Vizual iz šablona', () => {
     expect(r.status).toBe(202)
     expect(r.json.data!.tokensReserved).toBe(2)
     expect(await balance()).toBe(start - 2)
-    enqueueReply({ kind: 'text', json: rankReply })
     expect((await runVisualTemplate(r.json.data!.generationId)).status).toBe('succeeded')
     const j = await job(r.json.data!.generationId)
     expect(j.status).toBe('succeeded')
     expect(j.tokensCharged).toBe(2)
     expect(j.assetUrl).toMatch(/^http/)
-    expect(j.output?.image?.photoId).toBe('c3') // index 2 iz rangiranja
-    expect(j.output?.attribution).toBe('Photo by Fotograf c3 on Unsplash')
+    // Unsplash fotografije ne idu modelu (D-180): redosled je Unsplash-ov
+    expect(j.output?.image?.photoId).toBe('a1')
+    expect(j.output?.attribution).toBe('Photo by Fotograf a1 on Unsplash')
     expect(j.output?.template).toBe('photo-overlay')
-    expect(j.model).toBe(process.env.GEMINI_TEXT_MODEL ?? 'gemini-3.6-flash')
-    expect(calls).toHaveLength(1)
-    expect(visualsState.unsplashDownloads).toEqual(['c3'])
+    expect(calls).toHaveLength(0)
+    expect(visualsState.unsplashDownloads).toEqual(['a1'])
     const { data: asset } = await admin
       .from('media_assets')
       .select('source, bucket, width, height, mime_type')
@@ -248,7 +246,7 @@ describe('Vizual iz šablona', () => {
     expect(await balance()).toBe(start - 2)
   })
 
-  it('šablon bez slike i sa otpremljenom fotografijom; rangiranje preskočeno kad model padne', async () => {
+  it('šablon bez slike, sa otpremljenom fotografijom i sa Unsplash-a bez modela (D-180)', async () => {
     const start = await balance()
     const solid = await call<{ generationId: string }>(templatePost, '/api/ai/visual/template', {
       token: user.token,
@@ -286,15 +284,7 @@ describe('Vizual iz šablona', () => {
     expect(ja.output?.image?.kind).toBe('asset')
     expect(['photo-overlay', 'split']).toContain(ja.output?.template)
 
-    // rangiranje pada (500 pa 500 pa 500 → fallback model takođe) → prvi rezultat pretrage, posao uspeva
-    enqueueReply(
-      { kind: 'status', status: 500 },
-      { kind: 'status', status: 500 },
-      { kind: 'status', status: 500 },
-      { kind: 'status', status: 500 },
-      { kind: 'status', status: 500 },
-      { kind: 'status', status: 500 },
-    )
+    // Unsplash bez rangiranja modelom: prvi rezultat čiji opis odgovara upitu, bez napomene
     const degraded = await call<{ generationId: string }>(templatePost, '/api/ai/visual/template', {
       token: user.token,
       headers: { 'idempotency-key': crypto.randomUUID() },
@@ -307,7 +297,7 @@ describe('Vizual iz šablona', () => {
     expect((await runVisualTemplate(degraded.json.data!.generationId)).status).toBe('succeeded')
     const jd = await job(degraded.json.data!.generationId)
     expect(jd.output?.image?.photoId).toBe('a1')
-    expect(jd.output?.notes?.join(' ')).toMatch(/Rangiranje preskočeno/)
+    expect(jd.output?.notes?.join(' ') ?? '').not.toMatch(/Rangiranje/)
     expect(await balance()).toBe(start - 6)
   }, 60_000)
 
@@ -677,7 +667,10 @@ describe('Pexels (D-107)', () => {
     expect(r.json.data!.results[0]).toMatchObject({
       kind: 'video',
       durationSec: 12,
-      attribution: { text: 'Video by Autor 101 on Pexels', pageUrl: 'https://www.pexels.com/video/101/' },
+      attribution: {
+        text: 'Video by Autor 101 on Pexels',
+        pageUrl: expect.stringMatching(/^https:\/\/www\.pexels\.com\/video\/[a-z0-9-]*101\/$/),
+      },
     })
     await call(pexelsSearchGet, '/api/pexels/search', { token: user.token, query: q })
     expect(visualsState.pexelsSearches).toEqual(['video:kafić noću:portrait'])

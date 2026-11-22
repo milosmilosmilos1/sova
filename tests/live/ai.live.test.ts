@@ -29,7 +29,6 @@ import { insightsJsonSchema, insightsOutputSchema } from '@/lib/ai/prompts/insig
 import { photoStyleJsonSchema, photoStyleOutputSchema } from '@/lib/ai/prompts/photo-style'
 import { postTextJsonSchema, postTextOutputSchema } from '@/lib/ai/prompts/post-text'
 import { strategyJsonSchema, strategyOutputSchema } from '@/lib/ai/prompts/strategy'
-import { rankJsonSchema, rankOutputSchema } from '@/lib/ai/prompts/unsplash-rank'
 import { runImageGeneration } from '@/services/ai/image'
 import { runAnalysisPipeline } from '@/services/brand-brain/pipeline'
 import { runStrategyGeneration } from '@/services/strategy/strategy'
@@ -46,7 +45,6 @@ const SCHEMAS: Array<[string, () => Record<string, unknown>, ZodType]> = [
   ['stil fotografija', photoStyleJsonSchema, photoStyleOutputSchema],
   ['strategija', strategyJsonSchema, strategyOutputSchema],
   ['uvidi', insightsJsonSchema, insightsOutputSchema],
-  ['rangiranje fotografija', rankJsonSchema, rankOutputSchema],
 ]
 
 const CYRILLIC = /[Ѐ-ӿ]/

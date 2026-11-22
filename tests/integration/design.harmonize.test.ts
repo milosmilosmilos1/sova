@@ -338,8 +338,8 @@ describe('jedna tema za sve objave (D-125)', () => {
     const english = visualsState.unsplashQueries[0]!
     expect(english.startsWith('night club neon lights ')).toBe(true)
     expect(visualsState.unsplashQueries.every((q) => !q.includes('Beogradu'))).toBe(true)
-    // provera fotografija dobija temu objave
-    expect(photoCalls[0]!.text).toContain('Noć u Beogradu: gde za vikend')
+    // stok fotografije ne idu modelu (D-180)
+    expect(photoCalls).toHaveLength(0)
     const { data: after } = await admin.from('posts').select('design').eq('id', id).single()
     const design = after!.design as { photoQuery?: string; copy: { photoAssetIds: string[] } }
     expect(design.photoQuery).toBe(english)
@@ -351,7 +351,7 @@ describe('jedna tema za sve objave (D-125)', () => {
 async function forgetSubjects(ids: string[]): Promise<void> {
   const { data } = await admin.from('media_assets').select('id, source_data').in('id', ids)
   for (const row of data ?? []) {
-    const { subject: _subject, ...rest } = (row.source_data ?? {}) as Record<string, unknown>
+    const { subject: _subject, pick: _pick, ...rest } = (row.source_data ?? {}) as Record<string, unknown>
     await admin
       .from('media_assets')
       .update({ source_data: rest as Json })
@@ -427,7 +427,7 @@ describe('nove fotografije za nacrte koji čekaju (D-170)', () => {
     // Pola-pola traži fotografiju na svakom slajdu: sve su nove, nijedna od ranijih
     expect(design.copy.photoAssetIds).toHaveLength(slides.length)
     expect(design.copy.photoAssetIds.some((p) => oldDesign.copy.photoAssetIds.includes(p))).toBe(false)
-    // pretraga u obliku okvira, a izabrane pamte okvir predmeta
+    // pretraga u obliku okvira, a izabrane pamte da su izabrane po opisu (D-180)
     expect((after!.design as { photoQuery?: string }).photoQuery).toBe(query)
     expect(visualsState.unsplashQueries.every((q) => q === query)).toBe(true)
     expect(visualsState.unsplashOrientations.length).toBeGreaterThan(0)
@@ -436,7 +436,7 @@ describe('nove fotografije za nacrte koji čekaju (D-170)', () => {
       .from('media_assets')
       .select('source_data')
       .in('id', design.copy.photoAssetIds)
-    expect(photos!.every((p) => (p.source_data as { subject?: unknown }).subject)).toBe(true)
+    expect(photos!.every((p) => (p.source_data as { pick?: unknown }).pick === 'text')).toBe(true)
     const media = after!.post_media as Array<{ sort_order: number; media_asset_id: string }>
     expect(media).toHaveLength(slides.length)
     expect(media.some((m) => oldMedia.includes(m.media_asset_id))).toBe(false)

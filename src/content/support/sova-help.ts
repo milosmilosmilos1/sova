@@ -212,7 +212,7 @@ Ako slika nema odnos stranica koji mreža prima, editor nudi „Iseci na …”;
 
 ### Fotografije
 
-Kad bira sama, Sova uzima fotografije sa Unsplash-a pa Pexels-a, a video sa Pexels-a. Proverava da fotografija prikazuje temu i staje u okvir slajda i ne ponavlja fotografije brenda. Ako u kratkom roku ne nađe dovoljno, objava ide sa onim što je našla, a slajd bez fotografije ostaje kao preliv u bojama brenda.
+Kad bira sama, Sova uzima fotografije sa Unsplash-a pa Pexels-a, a video sa Pexels-a. Fotografiju sa Unsplash-a i Pexels-a bira po opisu koji odgovara temi, jer ti servisi ne dozvoljavaju AI obradu svojih fotografija, i ne uzima sama fotografije sa ljudima (izgled ljudi bez gledanja ne može da proveri); takvu fotografiju korisnik bira ručno. Iz galerije brenda Sova gleda da li fotografija prikazuje temu i gde je glavni predmet, a izgled ljudi ne procenjuje nigde. Ne ponavlja fotografije brenda. Ako u kratkom roku ne nađe dovoljno, objava ide sa onim što je našla, a slajd bez fotografije ostaje kao preliv u bojama brenda. Za brendove gde su ljudi važni (noćni život, događaji, usluge) najbolje je dodati svoje fotografije u Galeriju.
 
 Svoje fotografije dodajte u Galeriju i izaberite „Moja galerija”, ili ih priložite u Studiju. Slika može imati do 20 MB (JPG, PNG, WebP), video do 50 MB. HEIC i GIF se ne primaju.
 

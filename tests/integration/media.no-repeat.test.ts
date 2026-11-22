@@ -115,15 +115,17 @@ describe('fotografije i snimci bez ponavljanja', () => {
   it('snimak se ne ponavlja: dva različita kratka snimka, pa nijedan umesto starog', async () => {
     // dva kratka uspravna snimka (101 i 303) i jedan predug (202)
     geminiServer.use(
-      http.get('https://api.pexels.com/videos/search', () =>
-        HttpResponse.json({ videos: [pexelsVideo(101), pexelsVideo(202), pexelsVideo(303)] }),
-      ),
+      http.get('https://api.pexels.com/videos/search', ({ request }) => {
+        // ime snimka rečima upita, kao pravi servis (D-180: snimak se bira po imenu)
+        const q = new URL(request.url).searchParams.get('query') ?? ''
+        return HttpResponse.json({ videos: [101, 202, 303].map((id) => pexelsVideo(id, {}, q)) })
+      }),
     )
-    const first = await pickPexelsVideo({ ...ctx(), query: 'barista', orientation: 'portrait' })
-    const second = await pickPexelsVideo({ ...ctx(), query: 'barista latte', orientation: 'portrait' })
+    const first = await pickPexelsVideo({ ...ctx(), query: 'latte art', orientation: 'portrait' })
+    const second = await pickPexelsVideo({ ...ctx(), query: 'latte art cup', orientation: 'portrait' })
     const id = (v: typeof first) => (v!.asset.source_data as { pexelsId: number }).pexelsId
     expect(id(first)).toBe(101)
     expect(id(second)).toBe(303)
-    expect(await pickPexelsVideo({ ...ctx(), query: 'barista', orientation: 'portrait' })).toBeNull()
+    expect(await pickPexelsVideo({ ...ctx(), query: 'latte art', orientation: 'portrait' })).toBeNull()
   })
 })
