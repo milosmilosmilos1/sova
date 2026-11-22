@@ -29,7 +29,39 @@
     "sections": "Sections",
     "legal": "Legal information",
     "language": "Language",
-    "menu": "Menu"
+    "menu": "Menu",
+    "blog": "Blog"
+  },
+  "blog": {
+    "metaTitle": "Social media blog",
+    "metaDescription": "Social media advice for small businesses and agencies: content calendars, captions, Instagram, TikTok, LinkedIn, analytics and AI, with examples.",
+    "title": "Social media blog",
+    "intro": "Practical guides for small business owners, marketing teams and agencies. What to post, when, how often and how to measure it, without empty advice.",
+    "all": "All topics",
+    "categories": {
+      "strategija": "Strategy",
+      "sadrzaj": "Content",
+      "ai-i-automatizacija": "AI and automation",
+      "mreze": "Platforms"
+    },
+    "count": "{count, plural, one {# article} other {# articles}}",
+    "empty": "No articles in this topic yet.",
+    "readingTime": "{minutes} min read",
+    "published": "Published {date}",
+    "updated": "Updated {date}",
+    "toc": "Contents",
+    "summary": "Key points",
+    "related": "Read next",
+    "back": "All articles",
+    "photo": "Photo",
+    "home": "Home",
+    "breadcrumb": "Breadcrumb",
+    "cta": {
+      "title": "Let Sova run your social media",
+      "text": "Enter your website. Sova learns your brand, builds a plan and writes posts for eight networks, and you approve them.",
+      "button": "Try it free",
+      "closed": "See pricing"
+    }
   },
   "landing": {
     "metaTitle": "Sova · AI that runs your social media",

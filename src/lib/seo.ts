@@ -32,6 +32,7 @@ export const SITEMAP_PATHS: Array<{ path: string; priority: number; legal?: bool
   { path: '/data-deletion', priority: 0.2, legal: true },
   { path: '/kontakt', priority: 0.3 },
   { path: '/bot', priority: 0.2 },
+  { path: '/blog', priority: 0.7 },
 ]
 
 /** Privatne javne strane (linkovi iz mejla i za klijenta): na svakom jeziku (D-130). */

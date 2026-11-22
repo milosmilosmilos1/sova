@@ -29,7 +29,39 @@
     "sections": "Sekcije",
     "legal": "Pravne informacije",
     "language": "Jezik",
-    "menu": "Meni"
+    "menu": "Meni",
+    "blog": "Blog"
+  },
+  "blog": {
+    "metaTitle": "Blog o društvenim mrežama",
+    "metaDescription": "Saveti za vođenje društvenih mreža za male biznise i agencije: plan objava, tekstovi, Instagram, TikTok, LinkedIn, analitika i AI, sa primerima.",
+    "title": "Blog o društvenim mrežama",
+    "intro": "Praktični vodiči za vlasnike malih biznisa, marketing timove i agencije. Šta objaviti, kada, koliko često i kako to meriti, bez praznih saveta.",
+    "all": "Sve teme",
+    "categories": {
+      "strategija": "Strategija",
+      "sadrzaj": "Sadržaj",
+      "ai-i-automatizacija": "AI i automatizacija",
+      "mreze": "Mreže"
+    },
+    "count": "{count, plural, one {# tekst} few {# teksta} other {# tekstova}}",
+    "empty": "U ovoj temi još nema tekstova.",
+    "readingTime": "{minutes} min čitanja",
+    "published": "Objavljeno {date}",
+    "updated": "Ažurirano {date}",
+    "toc": "Sadržaj",
+    "summary": "Ukratko",
+    "related": "Pročitajte još",
+    "back": "Svi tekstovi",
+    "photo": "Foto",
+    "home": "Početna",
+    "breadcrumb": "Putanja",
+    "cta": {
+      "title": "Neka Sova vodi vaše mreže",
+      "text": "Unesite sajt. Sova nauči vaš brend, napravi plan i piše objave za osam mreža, a vi ih odobravate.",
+      "button": "Probajte besplatno",
+      "closed": "Pogledajte cene"
+    }
   },
   "landing": {
     "metaTitle": "Sova · AI koji vodi vaše društvene mreže",

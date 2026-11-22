@@ -1,3 +1,5 @@
+import blogSlugs from '@/content/blog/generated/slugs.json'
+
 import { isAppLocale, locales, type AppLocale } from './config'
 
 /**
@@ -28,17 +30,27 @@ const PUBLIC_EXACT = new Set([
   '/terms',
   '/data-deletion',
   '/bot',
+  '/blog',
 ])
-const PUBLIC_PREFIXES = ['/invite/', '/approve/']
+const PUBLIC_PREFIXES = ['/invite/', '/approve/', '/blog/']
 
 /** Strane javnog sajta, koje postoje na svakom jeziku (interna, srpska putanja). */
 export function isPublicPath(path: string): boolean {
   return PUBLIC_EXACT.has(path) || PUBLIC_PREFIXES.some((p) => path.startsWith(p))
 }
 
-/** Putanja u adresi koja se razlikuje od interne (engleska reč umesto srpske). */
+/**
+ * Putanja u adresi koja se razlikuje od interne (engleska reč umesto srpske). Članci bloga (D-186):
+ * interna adresa je srpski slug, a engleska verzija ima svoj (`scripts/blog-build.mjs`).
+ */
 const SLUGS: Record<string, Partial<Record<AppLocale, string>>> = {
   '/kontakt': { en: '/contact' },
+  ...Object.fromEntries(
+    Object.entries(blogSlugs as Record<string, string>).map(([sr, en]) => [
+      `/blog/${sr}`,
+      { en: `/blog/${en}` },
+    ]),
+  ),
 }
 
 /** Sidra sekcija početne strane, na jeziku strane. */

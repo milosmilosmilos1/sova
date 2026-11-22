@@ -44,6 +44,12 @@ export function routeLocale(req: LocaleRequest): LocaleRoute {
     // /en/app i slično: aplikacija nema prefiks, a jezik se pamti
     if (!isPublicPath(prefixed.path))
       return { kind: 'redirect', location: `${prefixed.path}${req.search}`, cookie }
+    // članak bloga sa srpskim slugom pod /en: trajno na adresu sa engleskim slugom (D-186)
+    if (prefixed.path.startsWith('/blog/')) {
+      const canonical = localePath(prefixed.locale, prefixed.path)
+      if (canonical !== req.pathname.replace(/\/+$/, ''))
+        return { kind: 'redirect', location: `${canonical}${req.search}`, cookie, permanent: true }
+    }
     return { kind: 'rewrite', path: prefixed.path, locale: prefixed.locale, cookie }
   }
   if (!isPublicPath(req.pathname)) return { kind: 'next', path: req.pathname, locale: null, cookie: null }

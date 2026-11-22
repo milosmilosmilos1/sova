@@ -1722,3 +1722,16 @@ Problem na produkciji 22.11.: link za potvrdu iz mejla vodio je na `/login?error
 - Testovi: `tests/e2e/auth-links.spec.ts` (token_hash u novom pregledaču vodi na `next` i potvrđuje adresu, nevažeći token, PKCE bez verifier-a).
 
 Razlog: registracija mora da radi bez obzira gde korisnik otvori mejl; dugme koje vodi na grešku je gore od dugmeta kog nema.
+
+## D-186 · 22.11.2026 · usvojeno · Blog na sajtu, na srpskom i engleskom
+
+Vlasnik je tražio 20 tekstova za Sovu, u meniju, i prevod na engleski.
+
+- Tekstovi su markdown u `src/content/blog/sr/` i `src/content/blog/en/` (engleski ima `izvor: <srpski slug>` i svoj slug). `npm run blog` (`scripts/blog-build.mjs`) ih proverava i piše `src/content/blog/generated/{posts,slugs}.json`: najmanje 1000 reči na srpskom i 900 na engleskom, dve slike u tekstu uz naslovnu, 6 internih linkova na 4 adrese, 6 podebljanih delova, 3 pitanja u poslednjem odeljku, okvir „Ukratko”; bez crta, ćirilice, šablonskih fraza i lista „**Reč:** objašnjenje”; linkovi samo na postojeće članke i strane. Test `src/lib/blog/blog.test.ts` pada kad podaci nisu ažurni.
+- Bez nove zavisnosti: parser `src/lib/blog/markdown.ts` (naslovi sa sidrima, pasusi, liste, tabele, `:::ukratko`, citat, `!slika:<ključ>`, podebljano i link). Strane `/blog` (lista, izbor teme `?tema=`, kanonska adresa je uvek `/blog`) i `/blog/[slug]` (sadržaj, slike sa potpisom autora, poziv na probu, srodni tekstovi; JSON-LD BlogPosting, BreadcrumbList i FAQPage).
+- Adrese (D-130): interna putanja je srpski slug. `localePath('en', '/blog/<srpski>')` daje `/en/blog/<engleski>` (SLUGS iz `slugs.json`), proxy prepisuje nazad, a `/en/blog/<srpski slug>` trajno (308) vodi na engleski slug. Birač jezika, hreflang i sitemap zato rade bez posebnog koda; sitemap ima `/blog` i svih 40 članaka sa datumom izmene.
+- Meni: „Blog” posle „Pitanja” u zaglavlju i u mobilnom meniju (`nav.blog`); tekstovi strana u imenskom prostoru `blog` osnovnih fajlova poruka.
+- Slike: 40 fotografija sa Unsplash-a (bez lica i bez logoa mreža; autor i Unsplash u potpisu, po pravilima Unsplash-a) i 20 infografika u bojama sajta, svaka na oba jezika (`<ključ>-en.webp`). Fajlovi u `public/blog/`, opisi u `src/content/blog/images.json`, slika za deljenje JPG 1200×630 u `public/blog/og/`. Brifovi i alati su van repoa, u `seo/blog/sovaai.rs/` (`grafike_izvor.py`, `prenesi.py`).
+- Tvrdnje o proizvodu prate stvarno stanje: osam mreža, odobrenje podrazumevano, TikTok, LinkedIn i Pinterest bez potpuno samostalne objave (D-182), bez obećanja AI slika (D-104); Instagram najviše pet hashtagova (od decembra 2025), uvodna cena 47 € navedena sa datumom (novembar 2026).
+
+Razlog: saobraćaj iz pretrage i odgovori AI asistenata na pitanja koja kupci Sove postavljaju; engleski za kupce van regiona.

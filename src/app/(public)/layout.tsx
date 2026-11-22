@@ -40,6 +40,8 @@ export default async function PublicLayout({ children }: LayoutProps<'/'>) {
     { href: href(`/#${ids.how}`), label: t('how') },
     { href: href(`/#${ids.pricing}`), label: t('pricing') },
     { href: href(`/#${ids.faq}`), label: t('faq') },
+    // blog (D-186): na srpskom /blog, na engleskom /en/blog
+    { href: href('/blog'), label: t('blog') },
   ]
   const footerLinks = [
     { href: href('/privacy'), label: t('privacy') },

@@ -5,3 +5,5 @@ coverage
 supabase/.temp
 src/types/database.ts
 package-lock.json
+# blog (D-186): tekstove i podatke proverava i piše scripts/blog-build.mjs (npm run blog)
+src/content/blog/
