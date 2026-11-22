@@ -19,6 +19,7 @@ import {
   type PostStatus,
 } from '@/lib/posts/state-machine'
 import type { CreatePostInput, ListPostsQuery, UpdatePostInput } from '@/lib/schemas/posts'
+import { accountAvatarUrl } from '@/lib/social/avatar'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
 import { getBrand, type BrandRow } from '@/services/brands'
@@ -142,7 +143,7 @@ async function loadPost(viewer: Viewer, postId: string): Promise<PostRow> {
 async function accountMap(viewer: Viewer, brandId: string) {
   const { data } = await viewer.supabase
     .from('social_accounts_public')
-    .select('id, platform, name, username, avatar_url, status, assisted_only')
+    .select('id, platform, external_id, name, username, avatar_url, status, assisted_only')
     .eq('brand_id', brandId)
   return new Map((data ?? []).map((a) => [a.id!, a]))
 }
@@ -203,7 +204,9 @@ export async function getPostView(viewer: Viewer, postId: string): Promise<PostV
       platform: t.platform,
       accountName: acc?.name ?? null,
       accountUsername: acc?.username ?? null,
-      accountAvatarUrl: acc?.avatar_url ?? null,
+      accountAvatarUrl: acc
+        ? accountAvatarUrl({ platform: acc.platform, externalId: acc.external_id, avatarUrl: acc.avatar_url })
+        : null,
       accountStatus: acc?.status ?? null,
       assistedOnly: Boolean(acc?.assisted_only),
       text: t.text_content || post.master_text,

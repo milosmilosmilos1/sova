@@ -15,6 +15,8 @@ const IMG_HOSTS = [
   'https://images.pexels.com',
   'https://*.canva.com',
   'https://*.fbcdn.net',
+  // stalna adresa slike Facebook stranice; vodi na *.fbcdn.net (lib/social/avatar.ts)
+  'https://graph.facebook.com',
   'https://*.cdninstagram.com',
   'https://*.licdn.com',
   'https://*.ytimg.com',

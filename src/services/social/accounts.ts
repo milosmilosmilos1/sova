@@ -14,6 +14,7 @@ import { META_INBOX_SCOPES } from '@/integrations/social/meta/inbox'
 import { enqueueHistoryImport } from '@/lib/jobs/enqueue'
 import { logger } from '@/lib/logger'
 import type { ActivateAccountsInput } from '@/lib/schemas/social'
+import { accountAvatarUrl } from '@/lib/social/avatar'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
 import { providerToApiError } from '@/integrations/social/errors'
@@ -297,7 +298,7 @@ function toView(r: SocialAccountPublic, historyCount: number): SocialAccountView
     parentExternalId: r.external_parent_id ?? null,
     name: r.name!,
     username: r.username ?? null,
-    avatarUrl: r.avatar_url ?? null,
+    avatarUrl: accountAvatarUrl({ platform: r.platform, externalId: r.external_id, avatarUrl: r.avatar_url }),
     accountType: r.account_type!,
     status: r.status!,
     statusReason: r.status_reason ?? null,

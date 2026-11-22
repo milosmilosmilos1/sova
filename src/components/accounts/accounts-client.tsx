@@ -475,10 +475,17 @@ export function AccountsClient({
 }
 
 function AccountAvatar({ account }: { account: AccountView }) {
-  if (account.avatarUrl) {
+  // adresa slike sa mreže može da istekne: tada se prikazuju početna slova, a ne pokvarena slika
+  const [broken, setBroken] = useState(false)
+  if (account.avatarUrl && !broken) {
     return (
       // eslint-disable-next-line @next/next/no-img-element
-      <img src={account.avatarUrl} alt="" className="size-10 shrink-0 rounded-full border object-cover" />
+      <img
+        src={account.avatarUrl}
+        alt=""
+        onError={() => setBroken(true)}
+        className="size-10 shrink-0 rounded-full border object-cover"
+      />
     )
   }
   return (
