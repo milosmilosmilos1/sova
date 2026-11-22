@@ -7,6 +7,7 @@ import type { PostGoal } from '@/lib/ai/prompts/post-text'
 import {
   MAX_WEEKLY_DRAFTS,
   MEDIA_REQUIRED,
+  autoPublishAllowed,
   canSpend,
   firstMondayNextMonth,
   nextWeekRange,
@@ -598,13 +599,21 @@ async function completeDraft(input: {
     })
     return { postId, outcome: 'returned', tokens, message: failed.join(' ') }
   }
-  const { data: targets } = await admin.from('post_targets').select('social_account_id').eq('post_id', postId)
+  const { data: targets } = await admin
+    .from('post_targets')
+    .select('social_account_id, platform')
+    .eq('post_id', postId)
   const settings = autopilotSettings(brand)
+  // TikTok, LinkedIn i Pinterest uvek idu na odobrenje, X samo sa potvrdom oznake „Automated” (D-182)
   const level3 =
     brand.autopilot_level === 3 &&
     brand.autopilot_level3_confirmed_at !== null &&
     (await isFeatureEnabled('autopilot_level3')) &&
-    (targets ?? []).every((t) => (settings.level3AccountIds ?? []).includes(t.social_account_id))
+    (targets ?? []).every((t) => (settings.level3AccountIds ?? []).includes(t.social_account_id)) &&
+    autoPublishAllowed(
+      (targets ?? []).map((t) => t.platform),
+      Boolean(settings.xAutomatedLabelConfirmedAt),
+    )
   // video u temi se ne zakazuje sam: MP4 pravi pregledač u Odobravanju (D-128)
   if (level3 && input.design?.format !== 'video') {
     await systemSchedule(postId, 'Autopilot (nivo 3): zakazano posle kontrole kvaliteta')

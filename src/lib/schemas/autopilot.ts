@@ -19,6 +19,8 @@ export const updateAutopilotSchema = z
     formats: z.array(z.enum(POST_FORMATS)).min(1, { error: 'Izaberite bar jednu vrstu objave.' }).optional(),
     mix: z.boolean().optional(),
     level3AccountIds: z.array(uuid).max(16).optional(),
+    /** potvrda da je na X nalogu uključena oznaka „Automated” (D-182); false povlači potvrdu */
+    xAutomatedLabel: z.boolean().optional(),
     /** za nivo 3: tačan naziv brenda */
     confirm: z.string().trim().max(120).optional(),
   })

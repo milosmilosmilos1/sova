@@ -163,7 +163,8 @@
       "unapproved": "Neodobrene posle roka (nivo 2+)",
       "skip": "preskoči",
       "publish": "objavi",
-      "adminOnly": "Podešavanja menjaju vlasnik i administrator."
+      "adminOnly": "Podešavanja menjaju vlasnik i administrator.",
+      "personalHint": "TikTok, LinkedIn i Pinterest objave uvek čekaju vaše odobrenje (pravila tih mreža); X se objavljuje sam samo uz potvrđenu oznaku „Automated”."
     },
     "saved": "Sačuvano.",
     "saving": "Čuvam…",
@@ -189,7 +190,8 @@
       "warning": "Pun autopilot objavljuje bez odobrenja.",
       "text": "Izaberite naloge na kojima Sova sme da objavljuje sama; ostali nalozi i dalje idu na odobrenje. Isključuje se jednim klikom (izbor drugog nivoa ili „Pauziraj sve”).",
       "accounts": "Nalozi",
-      "confirm": "Za potvrdu upišite naziv brenda „{brand}”"
+      "confirm": "Za potvrdu upišite naziv brenda „{brand}”",
+      "personal": "(objave na ovoj mreži uvek odobravate vi)"
     },
     "content": {
       "title": "Sadržaj",
@@ -198,7 +200,8 @@
       "mix": "AI meša vrste",
       "mixHint": "Kroz nedelju se smenjuju izabrane vrste, a slika i karusel dolaze češće. Isključeno: uvek prva izabrana vrsta koju mreža prima.",
       "pickOne": "Izaberite bar jednu vrstu."
-    }
+    },
+    "xLabel": "Na X nalogu je uključena oznaka „Automated” (X to traži za automatske objave; Podešavanja X naloga → Your account → Account information → Automation)."
   },
   "suggestions": {
     "embeddedTitle": "Predlozi sadržaja",

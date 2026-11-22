@@ -252,6 +252,8 @@ Nivo se bira po brendu, a menjaju ga vlasnik i administrator.
 - 2 „Autopilot sa odobrenjem”: Sova pravi i strategiju; neodobrene objave posle roka se preskaču ili objavljuju, po podešavanju.
 - 3 „Pun autopilot”: objavljuje bez odobrenja na izabranim nalozima. Ako piše „uskoro”, još nije dostupan.
 
+TikTok, LinkedIn i Pinterest po svojim pravilima traže da korisnik lično potvrdi svaku objavu, pa ih Autopilot priprema i zakazuje, a objava ide tek posle klika „Odobri” u Odobravanju; ne mogu na nivo 3, a ni podešavanje „objavi neodobrene” ih ne objavljuje (stiže podsetnik, a posle termina objava se vraća u nacrt). X se objavljuje sam samo kad korisnik u podešavanjima Autopilota potvrdi da je na X nalogu uključena oznaka „Automated”.
+
 Podešava se mesečni budžet tokena (upozorenje na 80 %, stop na 100 %), rok za odobrenje, šta sa neodobrenim, jezik i vrste. Najviše 21 nacrt nedeljno. „Pauziraj sve” zaustavlja Autopilot i sve zakazane objave brenda; „Nastavi” vraća one čiji termin nije prošao. Nacrt koji ne prođe kontrolu kvaliteta vraća se na doradu („Autopilot vratio objavu”).
 
 ### Dorada nacrta

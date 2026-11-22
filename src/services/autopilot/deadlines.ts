@@ -1,6 +1,6 @@
 import 'server-only'
 
-import { deadlineAction, type AutopilotLevel } from '@/lib/autopilot/rules'
+import { autoPublishAllowed, deadlineAction, type AutopilotLevel } from '@/lib/autopilot/rules'
 import { logger } from '@/lib/logger'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { notifyUsers, usersWithRoles } from '@/services/notifications'
@@ -65,9 +65,24 @@ export async function runAutopilotDeadlines(now = new Date()): Promise<DeadlineS
   const brandIds = [...new Set(posts.map((p) => p.brand_id))]
   const { data: brands } = await admin
     .from('brands')
-    .select('id, status, autopilot_level, autopilot_approval_deadline_hours, autopilot_unapproved_action')
+    .select(
+      'id, status, settings, autopilot_level, autopilot_approval_deadline_hours, autopilot_unapproved_action',
+    )
     .in('id', brandIds)
   const brandById = new Map((brands ?? []).map((b) => [b.id, b]))
+  // mreže objava: TikTok, LinkedIn i Pinterest se bez odobrenja ne objavljuju, X samo uz potvrdu (D-182)
+  const platformsByPost = new Map<string, string[]>()
+  for (let i = 0; i < posts.length; i += 200) {
+    const { data: targets } = await admin
+      .from('post_targets')
+      .select('post_id, platform')
+      .in(
+        'post_id',
+        posts.slice(i, i + 200).map((p) => p.id),
+      )
+    for (const t of targets ?? [])
+      platformsByPost.set(t.post_id, [...(platformsByPost.get(t.post_id) ?? []), t.platform])
+  }
 
   for (const p of posts) {
     const b = brandById.get(p.brand_id)
@@ -93,12 +108,19 @@ export async function runAutopilotDeadlines(now = new Date()): Promise<DeadlineS
         }
         continue
       }
+      const xLabel = Boolean(
+        (b.settings as { autopilot?: { xAutomatedLabelConfirmedAt?: string | null } } | null)?.autopilot
+          ?.xAutomatedLabelConfirmedAt,
+      )
+      const mayPublish = autoPublishAllowed(platformsByPost.get(p.id) ?? [], xLabel)
       const action = deadlineAction({
         level: b.autopilot_level as AutopilotLevel,
-        unapprovedAction: b.autopilot_unapproved_action as 'skip' | 'publish',
+        // objava koja traži lično odobrenje: podsetnik, a posle termina nazad u nacrt (kao nivo 1)
+        unapprovedAction: mayPublish ? (b.autopilot_unapproved_action as 'skip' | 'publish') : 'skip',
         scheduledFor: p.scheduled_for!,
         deadlineHours: b.autopilot_approval_deadline_hours,
         now,
+        personalApproval: !mayPublish,
       })
       if (action === 'wait') continue
       if (action === 'publish') {

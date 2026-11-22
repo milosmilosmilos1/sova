@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import {
+  autoPublishAllowed,
   budgetState,
   canSpend,
   deadlineAction,
@@ -74,6 +75,29 @@ describe('rok za odobrenje', () => {
     ).toBe('skip')
     expect(deadlineAction({ ...base, level: 1, now: new Date('2026-11-02T18:00:00Z') })).toBe('remind')
     expect(deadlineAction({ ...base, level: 1, now: new Date('2026-11-03T17:01:00Z') })).toBe('expire')
+  })
+})
+
+describe('mreže koje traže lično odobrenje (D-182)', () => {
+  it('TikTok, LinkedIn i Pinterest nikad bez odobrenja; X samo sa potvrdom oznake „Automated”', () => {
+    expect(autoPublishAllowed(['facebook', 'instagram'], false)).toBe(true)
+    expect(autoPublishAllowed(['facebook', 'tiktok'], true)).toBe(false)
+    expect(autoPublishAllowed(['linkedin'], true)).toBe(false)
+    expect(autoPublishAllowed(['pinterest'], true)).toBe(false)
+    expect(autoPublishAllowed(['x'], false)).toBe(false)
+    expect(autoPublishAllowed(['x', 'facebook'], true)).toBe(true)
+  })
+
+  it('posle roka se ne objavljuje ni ne preskače, nego podseća pa vraća u nacrt', () => {
+    const base = {
+      scheduledFor: '2026-11-03T17:00:00Z',
+      deadlineHours: 24,
+      unapprovedAction: 'publish' as const,
+      level: 2 as const,
+      personalApproval: true,
+    }
+    expect(deadlineAction({ ...base, now: new Date('2026-11-02T18:00:00Z') })).toBe('remind')
+    expect(deadlineAction({ ...base, now: new Date('2026-11-03T17:01:00Z') })).toBe('expire')
   })
 })
 

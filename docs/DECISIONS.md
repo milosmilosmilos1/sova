@@ -1678,3 +1678,14 @@ Odluka vlasnika (22.11., ODOBRENJA.md odeljak 4, tačka 2).
 - Noćni Inngest posao `data-retention` u 05:30 UTC (`services/data-retention.ts`). Ostale mreže zasad nemaju rok osim brisanja naloga; politika privatnosti navodi rokove.
 
 Razlog: odluka vlasnika i uslov Google-a za YouTube i Business Profile API.
+
+## D-182 · 22.11.2026 · usvojeno · TikTok, LinkedIn i X u Autopilotu po pravilima mreža
+
+Odluka vlasnika (22.11., ODOBRENJA.md odeljak 4, tačka 3): TikTok, LinkedIn i X ostaju u automatskom objavljivanju, uz napomene i ono što mreža traži od korisnika.
+
+- TikTok (Content Posting API: saglasnost za svaku objavu), LinkedIn (API Terms) i Pinterest (D-085) traže da korisnik lično potvrdi svaku objavu: Autopilot za njih priprema i zakazuje nacrte, a objava ide posle klika „Odobri” u Odobravanju (sa obaveštenjem). Ne mogu na spisak za nivo 3; podešavanje „objavi neodobrene posle roka” ih ne objavljuje, nego šalje podsetnik, a posle termina vraća objavu u nacrt (kao nivo 1).
+- X: automatske objave samo kad korisnik potvrdi da je na X nalogu uključena oznaka „Automated” (`settings.autopilot.xAutomatedLabelConfirmedAt`, potvrda se može povući). Bez potvrde X ne može na nivo 3 i rok ga ne objavljuje.
+- Provera važi i pri izvršavanju (`autoPublishAllowed` u `lib/autopilot/rules.ts`, runner i rokovi), pa i brend koji je ranije stavio TikTok ili LinkedIn na spisak za nivo 3 dobija odobravanje.
+- Ekran Autopilota: te mreže su na spisku za nivo 3 isključene uz objašnjenje, potvrda za X se pojavljuje kad je X povezan, a ispod izbora za neodobrene objave stoji napomena. Pomoć dopunjena.
+
+Razlog: odluka vlasnika i pravila TikTok-a, LinkedIn-a i X-a, bez kojih prijave za odobrenje ne prolaze.

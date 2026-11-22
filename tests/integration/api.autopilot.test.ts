@@ -48,6 +48,7 @@ const week0 = addDays(nextWeekRange(new Date(), 'Europe/Belgrade').start, 7)
 
 interface View {
   level: number
+  xAutomatedLabelConfirmedAt: string | null
   tokenBudget: number | null
   approvalDeadlineHours: number
   unapprovedAction: string
@@ -826,4 +827,59 @@ describe('Autopilot: jezik i vrste objava (D-107)', () => {
     // ponovo isto podešavanje kao pre ovog bloka
     await patch({ formats: ['text', 'image'], mix: false })
   }, 120_000) // pregledač pravi MP4: na sporijem računaru i pod opterećenjem traje duže od 30 s
+})
+
+describe('Autopilot: mreže koje traže lično odobrenje (D-182)', () => {
+  async function addAccount(platform: 'tiktok' | 'x'): Promise<string> {
+    const { data, error } = await admin
+      .from('social_accounts')
+      .insert({
+        brand_id: brandId,
+        workspace_id: wsId,
+        platform,
+        external_id: `${platform}-ap-${crypto.randomUUID().slice(0, 8)}`,
+        name: platform,
+        account_type: platform === 'tiktok' ? 'tiktok_user' : 'x_user',
+        status: 'active',
+        capabilities: { publish: true },
+        metadata: {},
+        assisted_only: false,
+      })
+      .select('id')
+      .single()
+    if (error) throw new Error(error.message)
+    return data.id
+  }
+
+  it('TikTok ne ide na nivo 3; X tek uz potvrdu oznake „Automated”', async () => {
+    setFeatureFlagForTests('autopilot_level3', true)
+    const { data: b } = await admin.from('brands').select('name').eq('id', brandId).single()
+    const tiktok = await addAccount('tiktok')
+    const x = await addAccount('x')
+    const tk = await patch({ level: 3, confirm: b!.name, level3AccountIds: [fbId, tiktok] })
+    expect(tk.status).toBe(400)
+    expect(tk.json.error?.message).toContain('TikTok, LinkedIn i Pinterest')
+    const noLabel = await patch({ level: 3, confirm: b!.name, level3AccountIds: [x] })
+    expect(noLabel.status).toBe(400)
+    expect(noLabel.json.error?.message).toContain('„Automated”')
+    const ok = await patch({ level: 3, confirm: b!.name, level3AccountIds: [x], xAutomatedLabel: true })
+    expect(ok.status).toBe(200)
+    expect(ok.json.data!.xAutomatedLabelConfirmedAt).not.toBeNull()
+    await patch({ level: 2, unapprovedAction: 'publish', approvalDeadlineHours: 24, xAutomatedLabel: false })
+    await admin.from('social_accounts').delete().in('id', [tiktok, x])
+  })
+
+  it('posle roka objava ka TikTok-u se ne objavljuje sama: podsetnik, a ne zakazivanje', async () => {
+    await patch({ level: 2, unapprovedAction: 'publish', approvalDeadlineHours: 24 })
+    const tiktok = await addAccount('tiktok')
+    const id = await autopilotPost('in_review', 140, 'Rok TikTok')
+    await admin
+      .from('post_targets')
+      .insert({ post_id: id, brand_id: brandId, social_account_id: tiktok, platform: 'tiktok' })
+    const s = await runAutopilotDeadlines()
+    expect(s.reminded).toBeGreaterThanOrEqual(1)
+    expect((await postRow(id)).status).toBe('in_review')
+    await admin.from('posts').delete().eq('id', id)
+    await admin.from('social_accounts').delete().eq('id', tiktok)
+  })
 })

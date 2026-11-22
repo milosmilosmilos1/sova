@@ -28,6 +28,29 @@ export const AUTOPILOT_LEVELS: Record<AutopilotLevel, { label: string; descripti
 }
 
 export const BUDGET_WARNING_PERCENT = 80
+/**
+ * Mreže čija pravila traže da korisnik lično potvrdi svaku objavu (D-085, D-182): Autopilot za njih
+ * priprema i zakazuje objave, ali ih ne objavljuje sam; ne idu na nivo 3 i rok za odobrenje ih ne
+ * objavljuje. TikTok (Content Posting API: saglasnost za svaku objavu), LinkedIn (API Terms) i
+ * Pinterest (korisnik bira svaki pin).
+ */
+export const PERSONAL_APPROVAL: readonly SocialPlatform[] = ['tiktok', 'linkedin', 'pinterest']
+
+/** X dozvoljava automatske objave samo kad je na nalogu uključena oznaka „Automated” (D-182). */
+export const AUTOMATED_LABEL: readonly SocialPlatform[] = ['x']
+
+/**
+ * Da li objava na ovim mrežama sme da ide bez odobrenja (nivo 3, rok za odobrenje): ne sme kad je
+ * bar jedna mreža iz `PERSONAL_APPROVAL`, ni na X-u dok korisnik ne potvrdi oznaku „Automated”.
+ */
+export function autoPublishAllowed(platforms: readonly string[], xLabelConfirmed: boolean): boolean {
+  return platforms.every(
+    (p) =>
+      !PERSONAL_APPROVAL.includes(p as SocialPlatform) &&
+      (xLabelConfirmed || !AUTOMATED_LABEL.includes(p as SocialPlatform)),
+  )
+}
+
 /** mreže koje bez vizuala ne mogu da objave sliku-objavu */
 export const MEDIA_REQUIRED: readonly SocialPlatform[] = ['instagram', 'pinterest']
 /** najviše nacrta po nedeljnom prolazu (zaštita budžeta i kvota) */
@@ -139,12 +162,17 @@ export function deadlineAction(input: {
   scheduledFor: string
   deadlineHours: number
   now: Date
+  /**
+   * objava ide na mrežu koja traži lično odobrenje (D-182): ne objavljuje se i ne preskače sama, nego
+   * kao na nivou 1 stiže podsetnik, a posle termina objava se vraća u nacrt
+   */
+  personalApproval?: boolean
 }): DeadlineAction {
   const at = new Date(input.scheduledFor).getTime()
   const deadline = at - input.deadlineHours * 3600_000
   const now = input.now.getTime()
   if (now < deadline) return 'wait'
-  if (input.level >= 2) {
+  if (input.level >= 2 && !input.personalApproval) {
     if (input.unapprovedAction === 'publish' && at - now > 60_000) return 'publish'
     return 'skip'
   }

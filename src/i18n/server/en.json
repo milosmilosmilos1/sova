@@ -485,7 +485,6 @@
   "Pinterest karusel ima najviše 5 slika.": "A Pinterest carousel has at most 5 images.",
   "Pinterest nalog ne postoji.": "The Pinterest account doesn't exist.",
   "Pinterest nalog nije aktivan; povežite ga ponovo.": "The Pinterest account isn't active; connect it again.",
-  "Pinterest ne dozvoljava objave bez izbora korisnika, pa ne može na nivo 3 Autopilota.": "Pinterest doesn't allow posts without the user's choice, so it can't be on Autopilot level 3.",
   "Pismo odgovara brendu.": "The alphabet matches the brand.",
   "Pitanje ankete na LinkedIn-u može imati najviše 140 znakova.": "A LinkedIn poll question can have at most 140 characters.",
   "Pišem strategiju…": "Writing the strategy…",
@@ -916,5 +915,7 @@
   "Fotografija mora biti iz galerije ovog brenda.": "The photo must be from this brand’s gallery.",
   "Brend nije kompletno podešen.": "The brand isn’t fully set up.",
   "Tekst je na jeziku objave.": "The text is in the post language.",
-  "Rečenice na drugom jeziku: {0}.": "Sentences in another language: {0}."
+  "Rečenice na drugom jeziku: {0}.": "Sentences in another language: {0}.",
+  "TikTok, LinkedIn i Pinterest traže da lično potvrdite svaku objavu, pa ne mogu na nivo 3 Autopilota. Za njih Autopilot priprema i zakazuje objave, a vi ih odobravate jednim klikom.": "TikTok, LinkedIn and Pinterest require you to personally confirm every post, so they can't be on Autopilot level 3. For them, Autopilot prepares and schedules posts, and you approve each one with a single click.",
+  "X dozvoljava automatske objave samo kada je na nalogu uključena oznaka „Automated”. Uključite je u podešavanjima X naloga i potvrdite.": "X allows automated posts only when the \"Automated\" label is turned on for the account. Turn it on in your X account settings and confirm."
 }

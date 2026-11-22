@@ -11,10 +11,11 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { PLATFORMS } from '@/config/platforms'
+import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
 import { POST_FORMATS, type PostFormat } from '@/config/post-formats'
 import { INTL_UI } from '@/i18n/config'
 import type { ApiResponse } from '@/lib/api/response'
+import { AUTOMATED_LABEL, PERSONAL_APPROVAL } from '@/lib/autopilot/rules'
 
 /**
  * Autopilot (faza 10c): izbor nivoa 0–3 sa opisom, pun autopilot uz potvrdu imenom brenda i izbor
@@ -34,6 +35,7 @@ interface View {
   level3Available: boolean
   level3ConfirmedAt: string | null
   level3AccountIds: string[]
+  xAutomatedLabelConfirmedAt: string | null
   language: 'sr-Latn' | 'sr-Cyrl' | 'en'
   formats: PostFormat[]
   mix: boolean
@@ -312,7 +314,13 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
   const [budget, setBudget] = useState(v.tokenBudget === null ? '' : String(v.tokenBudget))
   const [deadline, setDeadline] = useState(String(v.approvalDeadlineHours))
   const [unapproved, setUnapproved] = useState(v.unapprovedAction)
-  const [accounts, setAccounts] = useState<string[]>(v.level3AccountIds)
+  // TikTok, LinkedIn i Pinterest ne mogu na nivo 3 (D-182), ni kad su ranije bili izabrani
+  const personal = (platform: string) => PERSONAL_APPROVAL.includes(platform as SocialPlatform)
+  const [accounts, setAccounts] = useState<string[]>(() =>
+    v.level3AccountIds.filter((id) => !personal(v.accounts.find((a) => a.id === id)?.platform ?? '')),
+  )
+  const hasX = v.accounts.some((a) => a.status === 'active' && AUTOMATED_LABEL.includes(a.platform))
+  const [xLabel, setXLabel] = useState(Boolean(v.xAutomatedLabelConfirmedAt))
   const [confirm, setConfirm] = useState('')
   const [saved, setSaved] = useState(false)
   const save = useMutation({
@@ -325,6 +333,7 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
           approvalDeadlineHours: Number(deadline),
           unapprovedAction: unapproved,
           ...(level === 3 ? { level3AccountIds: accounts, confirm } : {}),
+          ...(hasX && xLabel !== Boolean(v.xAutomatedLabelConfirmedAt) ? { xAutomatedLabel: xLabel } : {}),
         },
       }),
     onSuccess: () => {
@@ -383,11 +392,11 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
               {v.accounts
                 .filter((a) => a.status === 'active')
                 .map((a) => (
-                  <label key={a.id} className="flex items-center gap-2">
+                  <label key={a.id} className="flex flex-wrap items-center gap-2">
                     <input
                       type="checkbox"
                       checked={accounts.includes(a.id)}
-                      disabled={disabled}
+                      disabled={disabled || personal(a.platform)}
                       onChange={(e) =>
                         setAccounts((list) =>
                           e.target.checked ? [...list, a.id] : list.filter((x) => x !== a.id),
@@ -400,6 +409,9 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
                       size={12}
                       className="align-middle text-muted-foreground"
                     />
+                    {personal(a.platform) ? (
+                      <span className="text-xs text-muted-foreground">{t('level3.personal')}</span>
+                    ) : null}
                   </label>
                 ))}
             </fieldset>
@@ -414,6 +426,19 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
               />
             </div>
           </div>
+        ) : null}
+
+        {hasX ? (
+          <label className="flex items-start gap-2 text-sm">
+            <input
+              type="checkbox"
+              className="mt-1"
+              checked={xLabel}
+              disabled={disabled}
+              onChange={(e) => setXLabel(e.target.checked)}
+            />
+            <span>{t('xLabel')}</span>
+          </label>
         ) : null}
 
         <div className="grid gap-3 sm:grid-cols-3">
@@ -453,6 +478,7 @@ function SettingsCard({ v, canAdmin, onSaved }: { v: View; canAdmin: boolean; on
               <option value="skip">{t('settings.skip')}</option>
               <option value="publish">{t('settings.publish')}</option>
             </select>
+            <p className="text-xs text-muted-foreground">{t('settings.personalHint')}</p>
           </div>
         </div>
         <ErrorBox error={save.error} />

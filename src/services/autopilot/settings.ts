@@ -3,10 +3,12 @@ import 'server-only'
 import type { SocialPlatform } from '@/config/platforms'
 import { POST_FORMATS, type PostFormat } from '@/config/post-formats'
 import {
+  AUTOMATED_LABEL,
   AUTOPILOT_LEVELS,
   budgetState,
   monthStartUtc,
   nextWeekRange,
+  PERSONAL_APPROVAL,
   type AutopilotLevel,
   type BudgetState,
 } from '@/lib/autopilot/rules'
@@ -41,6 +43,8 @@ export interface AutopilotSettingsJson {
   mix?: boolean
   level3AccountIds?: string[]
   level3ConfirmedBy?: string | null
+  /** kada je korisnik potvrdio oznaku „Automated” na X nalogu (D-182) */
+  xAutomatedLabelConfirmedAt?: string | null
   pausedPostIds?: string[]
   pausedBy?: string | null
 }
@@ -118,6 +122,8 @@ export interface AutopilotView {
   level3Available: boolean
   level3ConfirmedAt: string | null
   level3AccountIds: string[]
+  /** potvrda oznake „Automated” na X nalogu (D-182) */
+  xAutomatedLabelConfirmedAt: string | null
   /** D-107 */
   language: ContentLocale
   formats: PostFormat[]
@@ -181,6 +187,7 @@ export async function getAutopilot(
     level3Available,
     level3ConfirmedAt: brand.autopilot_level3_confirmed_at,
     level3AccountIds: settings.level3AccountIds ?? [],
+    xAutomatedLabelConfirmedAt: settings.xAutomatedLabelConfirmedAt ?? null,
     ...autopilotContentPrefs(brand),
     paused: brand.status === 'paused',
     pausedAt: brand.paused_at,
@@ -227,6 +234,8 @@ export async function updateAutopilot(
   if (input.language !== undefined) nextSettings.language = input.language
   if (input.formats !== undefined) nextSettings.formats = input.formats
   if (input.mix !== undefined) nextSettings.mix = input.mix
+  if (input.xAutomatedLabel !== undefined)
+    nextSettings.xAutomatedLabelConfirmedAt = input.xAutomatedLabel ? new Date().toISOString() : null
 
   const level = input.level ?? (brand.autopilot_level as AutopilotLevel)
   if (level === 3) {
@@ -256,14 +265,24 @@ export async function updateAutopilot(
       if ((accounts?.length ?? 0) !== ids.length) {
         throw new ApiError('VALIDATION', 'Neki od izabranih naloga ne pripadaju brendu ili nisu aktivni.')
       }
-      // pravila Pinterest-a: svaki pin bira korisnik, pa Pinterest ne može na nivo 3 (D-085)
-      if ((accounts ?? []).some((a) => a.platform === 'pinterest')) {
+      // TikTok, LinkedIn i Pinterest traže da korisnik lično potvrdi svaku objavu (D-085, D-182)
+      const personal = (accounts ?? []).filter((a) => PERSONAL_APPROVAL.includes(a.platform))
+      if (personal.length) {
         throw new ApiError(
           'VALIDATION',
-          'Pinterest ne dozvoljava objave bez izbora korisnika, pa ne može na nivo 3 Autopilota.',
-          {
-            fields: { level3AccountIds: ['pinterest'] },
-          },
+          'TikTok, LinkedIn i Pinterest traže da lično potvrdite svaku objavu, pa ne mogu na nivo 3 Autopilota. Za njih Autopilot priprema i zakazuje objave, a vi ih odobravate jednim klikom.',
+          { fields: { level3AccountIds: personal.map((a) => a.platform) } },
+        )
+      }
+      // X dozvoljava automatske objave samo sa oznakom „Automated” na nalogu (D-182)
+      if (
+        (accounts ?? []).some((a) => AUTOMATED_LABEL.includes(a.platform)) &&
+        !nextSettings.xAutomatedLabelConfirmedAt
+      ) {
+        throw new ApiError(
+          'VALIDATION',
+          'X dozvoljava automatske objave samo kada je na nalogu uključena oznaka „Automated”. Uključite je u podešavanjima X naloga i potvrdite.',
+          { fields: { xAutomatedLabel: ['obavezno'] } },
         )
       }
       update.autopilot_level3_confirmed_at = new Date().toISOString()

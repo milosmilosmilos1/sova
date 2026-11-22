@@ -163,7 +163,8 @@
       "unapproved": "Unapproved after the deadline (level 2+)",
       "skip": "skip",
       "publish": "publish",
-      "adminOnly": "Only the owner and admins can change these settings."
+      "adminOnly": "Only the owner and admins can change these settings.",
+      "personalHint": "TikTok, LinkedIn and Pinterest posts always wait for your approval (their rules); X posts go out on their own only with the \"Automated\" label confirmed."
     },
     "saved": "Saved.",
     "saving": "Saving…",
@@ -189,7 +190,8 @@
       "warning": "Full autopilot publishes without approval.",
       "text": "Choose the accounts where Sova may publish on its own; other accounts still go for approval. It switches off with one click (choose another level or “Pause everything”).",
       "accounts": "Accounts",
-      "confirm": "To confirm, type the brand name “{brand}”"
+      "confirm": "To confirm, type the brand name “{brand}”",
+      "personal": "(you always approve posts on this network)"
     },
     "content": {
       "title": "Content",
@@ -198,7 +200,8 @@
       "mix": "AI mixes types",
       "mixHint": "The chosen types take turns through the week, with images and carousels more often. Off: always the first chosen type the network accepts.",
       "pickOne": "Choose at least one type."
-    }
+    },
+    "xLabel": "The \"Automated\" label is turned on for the X account (X requires it for automated posts; X account settings → Your account → Account information → Automation)."
   },
   "suggestions": {
     "embeddedTitle": "Content suggestions",
