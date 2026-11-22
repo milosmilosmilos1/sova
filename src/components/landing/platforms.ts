@@ -37,6 +37,11 @@ export interface LandingPlatform {
   captionAfter?: boolean
   /** Google: dugme „Pozovite” */
   cta?: boolean
+  /**
+   * bez logoa mreže, sa početnim slovima na neutralnoj pločici: TikTok i LinkedIn ne dozvoljavaju svoje
+   * logoe u marketingu bez pisane dozvole (ODOBRENJA.md odeljak 1, tačka 7); u aplikaciji logo ostaje
+   */
+  plain?: boolean
 }
 
 export const LANDING_PLATFORMS: LandingPlatform[] = [
@@ -129,3 +134,13 @@ export const LANDING_PLATFORMS: LandingPlatform[] = [
 ]
 
 export const byKey = (key: SocialPlatform): LandingPlatform => LANDING_PLATFORMS.find((p) => p.key === key)!
+
+/** Mreže čije logoe javni sajt ne prikazuje bez pisane dozvole (u aplikaciji su dozvoljeni). */
+const NO_MARKETING_LOGO: readonly SocialPlatform[] = ['tiktok', 'linkedin']
+const PLAIN_TILE = '#334155'
+
+/** Mreže za javni sajt: isto kao u aplikaciji, ali TikTok i LinkedIn bez logoa. */
+export const SITE_PLATFORMS: LandingPlatform[] = LANDING_PLATFORMS.map((p) =>
+  NO_MARKETING_LOGO.includes(p.key) ? { ...p, plain: true, tile: PLAIN_TILE, brand: PLAIN_TILE } : p,
+)
+export const siteByKey = (key: SocialPlatform): LandingPlatform => SITE_PLATFORMS.find((p) => p.key === key)!

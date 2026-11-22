@@ -10,7 +10,7 @@ import { UrlForm } from './demo-context'
 import { HeroDemo } from './hero-demo'
 import { Fa } from './icons'
 import { PlatformTile } from './platform-tile'
-import { LANDING_PLATFORMS } from './platforms'
+import { SITE_PLATFORMS } from './platforms'
 
 /**
  * Pilula iznad naslova prati flag `registration_open` (admin): zatvoreno je tekst iz dizajna
@@ -83,7 +83,7 @@ export function Hero({
           <div className="mt-11 flex flex-wrap items-center gap-3.5">
             <span className="text-[12.5px] text-l-dim">{t('publishesTo')}</span>
             <div className="flex flex-wrap gap-1.5">
-              {LANDING_PLATFORMS.map((p) => (
+              {SITE_PLATFORMS.map((p) => (
                 <PlatformTile key={p.key} p={p} size={28} radius={8} glyph={13} />
               ))}
             </div>

@@ -18,7 +18,7 @@ import { cn } from 'cn'
 import { useDemo } from './demo-context'
 import { Fa } from './icons'
 import { PlatformTile } from './platform-tile'
-import { byKey } from './platforms'
+import { siteByKey } from './platforms'
 
 /**
  * Demo rada Sove u hero delu (D-098): šest koraka sa automatskim napredovanjem. Traka ispod
@@ -306,7 +306,7 @@ type PublishRow = 'ig' | 'fb' | 'tiktok' | 'cakes' | 'hours' | 'why'
 function PublishPanel() {
   const t = useTranslations('site.heroDemo')
   const demo = useTranslations('site.demo')
-  const rows: Array<[PublishRow, Parameters<typeof byKey>[0], keyof typeof STATUS]> = [
+  const rows: Array<[PublishRow, Parameters<typeof siteByKey>[0], keyof typeof STATUS]> = [
     ['ig', 'instagram', 'published'],
     ['fb', 'facebook', 'published'],
     ['tiktok', 'tiktok', 'scheduled'],
@@ -333,7 +333,7 @@ function PublishPanel() {
               {t(`publish.rows.${row}.when`)}
             </span>
             <PlatformTile
-              p={byKey(key)}
+              p={siteByKey(key)}
               size={24}
               radius={7}
               glyph={key === 'tiktok' ? 11 : 12}

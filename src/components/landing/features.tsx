@@ -8,7 +8,7 @@ import { cn } from 'cn'
 import { AutopilotDemo, ReachDemo, ScriptDemo } from './feature-demos'
 import { Fa } from './icons'
 import { PlatformTile } from './platform-tile'
-import { byKey } from './platforms'
+import { siteByKey } from './platforms'
 import { Accent, DemoCard, Section, SectionHeading } from './section'
 
 /**
@@ -95,7 +95,7 @@ function BrandBrainVisual() {
   )
 }
 
-type Chip = Parameters<typeof byKey>[0]
+type Chip = Parameters<typeof siteByKey>[0]
 type Day = 'mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun'
 const WEEK: Array<{ d: Day; n: number; chips: Chip[]; today?: boolean; dim?: boolean }> = [
   { d: 'mon', n: 2, chips: ['instagram', 'facebook'] },
@@ -152,7 +152,7 @@ function CalendarVisual() {
             {day.chips.map((key, i) => (
               <PlatformTile
                 key={key}
-                p={byKey(key)}
+                p={siteByKey(key)}
                 size="100%"
                 radius={6}
                 glyph={10}

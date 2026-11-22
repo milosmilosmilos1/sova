@@ -9,7 +9,7 @@ import { cn } from 'cn'
 
 import { Fa } from './icons'
 import { PlatformTile } from './platform-tile'
-import { LANDING_PLATFORMS } from './platforms'
+import { SITE_PLATFORMS } from './platforms'
 
 /** Interaktivni delovi sekcije „Kako radi” (D-098): povezivanje mreža i odobravanje objave. */
 export function ConnectDemo() {
@@ -17,13 +17,13 @@ export function ConnectDemo() {
   const tp = useTranslations('site.platforms')
   // podrazumevano povezani: Instagram, Facebook, LinkedIn i Google
   const [connected, setConnected] = useState(() =>
-    LANDING_PLATFORMS.map((p) => ['instagram', 'facebook', 'linkedin', 'google_business'].includes(p.key)),
+    SITE_PLATFORMS.map((p) => ['instagram', 'facebook', 'linkedin', 'google_business'].includes(p.key)),
   )
   const count = connected.filter(Boolean).length
   return (
     <div className="flex h-full flex-col justify-center gap-3.5 p-6">
       <div className="grid grid-cols-4 justify-items-center gap-2.5">
-        {LANDING_PLATFORMS.map((p, i) => (
+        {SITE_PLATFORMS.map((p, i) => (
           <button
             key={p.key}
             type="button"

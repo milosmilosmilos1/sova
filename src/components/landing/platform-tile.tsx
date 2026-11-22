@@ -54,7 +54,11 @@ export function PlatformTile({
         ...style,
       }}
     >
-      {p.icon ? (
+      {p.plain ? (
+        <span aria-hidden className="font-semibold text-white" style={{ fontSize: Math.round(glyph * 0.8) }}>
+          {t(`${p.key}.name`).slice(0, 2)}
+        </span>
+      ) : p.icon ? (
         <Fa
           icon={p.icon}
           style={{

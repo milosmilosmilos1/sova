@@ -17,7 +17,7 @@ import { cn } from 'cn'
 
 import { Fa, GoogleG } from './icons'
 import { PlatformTile } from './platform-tile'
-import { LANDING_PLATFORMS, type LandingPlatform } from './platforms'
+import { SITE_PLATFORMS, type LandingPlatform } from './platforms'
 
 /**
  * Izbor mreže i pregled iste objave prilagođene toj mreži (sekcija „Mreže”, D-098). Tekst objave,
@@ -41,7 +41,11 @@ function FeedCard({ p }: { p: LandingPlatform }) {
           <div className="text-sm font-semibold">{demo('brand')}</div>
           <div className="truncate text-[12.5px] text-l-social-meta">{tp(`${p.key}.handle`)}</div>
         </div>
-        {p.icon ? <Fa icon={p.icon} style={{ fontSize: 19, color: p.brand }} /> : <GoogleG size={19} />}
+        {p.plain ? null : p.icon ? (
+          <Fa icon={p.icon} style={{ fontSize: 19, color: p.brand }} />
+        ) : (
+          <GoogleG size={19} />
+        )}
       </div>
       <div
         className="text-sm leading-normal whitespace-pre-line"
@@ -86,7 +90,7 @@ function VideoCard({ p }: { p: LandingPlatform }) {
       <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(0,0,0,0.35),rgba(0,0,0,0)_22%,rgba(0,0,0,0)_50%,rgba(0,0,0,0.8))]" />
       <div className="absolute inset-x-3.5 top-3.5 flex items-center justify-between text-white">
         <span className="text-[13px] font-semibold">{tp(`${p.key}.videoTop` as 'tiktok.videoTop')}</span>
-        {p.icon ? <Fa icon={p.icon} style={{ fontSize: 16 }} /> : null}
+        {p.icon && !p.plain ? <Fa icon={p.icon} style={{ fontSize: 16 }} /> : null}
       </div>
       <div className="absolute right-2.5 bottom-24 flex flex-col items-center gap-4 text-[11px] text-white">
         {(
@@ -119,13 +123,13 @@ export function PlatformShowcase() {
   const locale = useLocale()
   const num = useMemo(() => new Intl.NumberFormat(INTL_UI[locale]), [locale])
   const [index, setIndex] = useState(0)
-  const p = LANDING_PLATFORMS[index]!
+  const p = SITE_PLATFORMS[index]!
   const count = tp(`${p.key}.caption`).length
   const pct = Math.max(1.5, Math.min(100, (count / p.limit) * 100))
   return (
     <div className="flex flex-wrap items-stretch gap-5">
       <div className="flex min-w-0 flex-[1_1_340px] flex-col gap-2">
-        {LANDING_PLATFORMS.map((item, i) => {
+        {SITE_PLATFORMS.map((item, i) => {
           const active = i === index
           return (
             <button
