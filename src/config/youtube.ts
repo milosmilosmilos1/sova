@@ -12,6 +12,11 @@ export const YOUTUBE_PRIVACY_LABELS: Record<YouTubePrivacy, string> = {
   private: 'Privatno',
 }
 
+/** Linkovi koje YouTube API pravila traže na ekranu otpremanja i pri povezivanju kanala (D-188). */
+export const YOUTUBE_TERMS_URL = 'https://www.youtube.com/t/terms'
+export const GOOGLE_PRIVACY_URL = 'https://policies.google.com/privacy'
+export const GOOGLE_PERMISSIONS_URL = 'https://security.google.com/settings/security/permissions'
+
 /** Short: vertikalan ili kvadratan video do 3 minuta (YouTube od 15.10.2024). */
 export const SHORTS_MAX_MS = 180_000
 

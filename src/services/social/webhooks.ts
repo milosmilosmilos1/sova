@@ -1,5 +1,7 @@
 import 'server-only'
 
+import { createHmac, timingSafeEqual } from 'node:crypto'
+
 import { ApiError } from '@/lib/api/errors'
 import { env } from '@/lib/env'
 import { logger } from '@/lib/logger'
@@ -91,4 +93,87 @@ export async function handleMetaDataDeletion(
     url: `${env.NEXT_PUBLIC_APP_URL}/data-deletion?code=${encodeURIComponent(code)}`,
     confirmation_code: code,
   }
+}
+
+/** Koliko star sme biti TikTok potpis (sekunde); TikTok ponavlja slanje, pa stari zahtev odbijamo. */
+const TIKTOK_SIGNATURE_TOLERANCE_SEC = 300
+
+/**
+ * Potpis TikTok webhook-a (developers.tiktok.com/doc/webhooks-verification): zaglavlje
+ * `TikTok-Signature: t=<sekunde>,s=<hex>`, a potpis je HMAC-SHA256 nad `${t}.${telo}` sa client
+ * secret-om kao ključem. Stariji od 5 minuta ne prolazi.
+ */
+export function verifyTikTokSignature(
+  rawBody: string,
+  header: string | null,
+  secret: string,
+  nowMs = Date.now(),
+): boolean {
+  if (!header) return false
+  const parts = new Map(
+    header.split(',').map((part) => {
+      const i = part.indexOf('=')
+      return [part.slice(0, i).trim(), part.slice(i + 1).trim()] as const
+    }),
+  )
+  const t = parts.get('t')
+  const sig = parts.get('s')
+  if (!t || !sig || !/^\d+$/.test(t) || !/^[0-9a-f]+$/i.test(sig)) return false
+  if (Math.abs(nowMs / 1000 - Number(t)) > TIKTOK_SIGNATURE_TOLERANCE_SEC) return false
+  const expected = createHmac('sha256', secret).update(`${t}.${rawBody}`).digest()
+  const given = Buffer.from(sig, 'hex')
+  return given.length === expected.length && timingSafeEqual(given, expected)
+}
+
+interface TikTokEvent {
+  client_key?: string
+  event?: string
+  create_time?: number
+  user_openid?: string
+  content?: string
+}
+
+/**
+ * TikTok webhook (D-188). `authorization.removed`: korisnik je uklonio Sovu na TikTok-u (ili je nalog
+ * obrisan, zabranjen, ili je TikTok opozvao pristup), a token je već opozvan. Nalozi tog TikTok
+ * korisnika se brišu kao kod „Prekini vezu”: kaskadno odlaze tokeni, uvezene objave i metrike, a
+ * TikTok stavke objava koje još nisu objavljene. Ostali događaji se samo potvrđuju.
+ */
+export async function handleTikTokWebhook(
+  rawBody: string,
+  signature: string | null,
+): Promise<{ event: string; removed: number }> {
+  if (!env.TIKTOK_CLIENT_SECRET || !env.TIKTOK_CLIENT_KEY)
+    throw new ApiError('AI_UNAVAILABLE', 'TikTok integracija nije podešena.')
+  if (!verifyTikTokSignature(rawBody, signature, env.TIKTOK_CLIENT_SECRET))
+    throw new ApiError('FORBIDDEN', 'Potpis zahteva nije ispravan.')
+  let body: TikTokEvent
+  try {
+    body = JSON.parse(rawBody) as TikTokEvent
+  } catch {
+    throw new ApiError('VALIDATION', 'Telo zahteva nije ispravan JSON.')
+  }
+  if (body.client_key !== env.TIKTOK_CLIENT_KEY)
+    throw new ApiError('FORBIDDEN', 'Potpis zahteva nije ispravan.')
+  const event = body.event ?? 'nepoznato'
+  if (event !== 'authorization.removed' || !body.user_openid) {
+    logger.info('tiktok_webhook_ignored', { event })
+    return { event, removed: 0 }
+  }
+  let reason: unknown = null
+  try {
+    reason = (JSON.parse(body.content ?? '{}') as { reason?: unknown }).reason ?? null
+  } catch {
+    reason = null
+  }
+  const { data, error } = await createSupabaseAdminClient()
+    .from('social_accounts')
+    .delete()
+    .eq('platform', 'tiktok')
+    .eq('external_id', body.user_openid)
+    .select('id')
+  if (error) throw error
+  const removed = data?.length ?? 0
+  logger.info('tiktok_authorization_removed', { removed, reason })
+  return { event, removed }
 }

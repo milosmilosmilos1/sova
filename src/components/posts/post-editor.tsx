@@ -814,6 +814,11 @@ function EditorForm({
                       isVideo={form.mediaIds.some((id) =>
                         library.data?.find((m) => m.id === id)?.mimeType?.startsWith('video/'),
                       )}
+                      videoDurationMs={
+                        form.mediaIds
+                          .map((id) => library.data?.find((m) => m.id === id))
+                          .find((m) => m?.mimeType?.startsWith('video/'))?.durationMs ?? null
+                      }
                       onChange={(tiktok) =>
                         set('selected', {
                           ...form.selected,

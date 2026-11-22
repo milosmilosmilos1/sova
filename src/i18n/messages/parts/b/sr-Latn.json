@@ -171,8 +171,11 @@
         "privacy": "izaberite ko može da vidi objavu.",
         "commercialType": "uz komercijalni sadržaj označite „Vaš brend”, „Brendirani sadržaj” ili oba.",
         "brandedPrivate": "brendirani sadržaj ne može biti vidljiv samo vama.",
-        "consent": "potvrdite saglasnost sa TikTok pravilima o korišćenju muzike."
-      }
+        "consent": "potvrdite saglasnost sa TikTok pravilima o korišćenju muzike.",
+        "tooLong": "video traje {seconds} s, a ovaj nalog dozvoljava najviše {max} s. Skratite video ili izaberite drugi."
+      },
+      "aiGenerated": "Sadržaj napravljen uz pomoć AI-ja",
+      "aiGeneratedHint": "TikTok uz objavu prikazuje oznaku „AI-generated”. Uključite kad je slika, video ili glas napravljen ili značajno izmenjen AI alatom."
     },
     "pinterest": {
       "board": "Tabla",
@@ -203,7 +206,8 @@
         "angleBrackets": "YouTube ne dozvoljava znake < i > u naslovu i opisu.",
         "descriptionTooLong": "Opis YouTube videa može imati najviše 5.000 bajtova.",
         "madeForKids": "Izaberite da li je video namenjen deci (obavezna izjava za YouTube)."
-      }
+      },
+      "terms": "Otpremanjem videa na YouTube prihvatate <tos>YouTube uslove korišćenja</tos>. Podatke sa YouTube-a obrađujemo i prema <gpp>Google politici privatnosti</gpp>."
     },
     "gbp": {
       "topic": "Vrsta objave",
@@ -393,6 +397,14 @@
       "renew": "LinkedIn traži novo povezivanje na 60 dana; tada vas pitamo ponovo.",
       "cancel": "Odustani",
       "agree": "Slažem se, poveži LinkedIn"
+    },
+    "youtubeConsent": {
+      "title": "Povezivanje YouTube kanala",
+      "intro": "Sova koristi YouTube API usluge da otpremi videe koje odobrite i prikaže njihove rezultate.",
+      "terms": "Povezivanjem kanala prihvatate <tos>YouTube uslove korišćenja</tos>. Google podatke obrađujemo prema <gpp>Google politici privatnosti</gpp> i našoj <privacy>politici privatnosti</privacy>.",
+      "revoke": "Pristup opozivate u Sovi (Mreže → Prekini vezu) ili na strani <google>Google bezbednosnih podešavanja</google>.",
+      "cancel": "Odustani",
+      "agree": "Slažem se, poveži YouTube"
     }
   }
 }

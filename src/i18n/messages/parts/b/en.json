@@ -171,8 +171,11 @@
         "privacy": "choose who can see the post.",
         "commercialType": "with commercial content, tick “Your brand”, “Branded content” or both.",
         "brandedPrivate": "branded content can't be visible only to you.",
-        "consent": "confirm that you agree to TikTok's music usage rules."
-      }
+        "consent": "confirm that you agree to TikTok's music usage rules.",
+        "tooLong": "the video is {seconds} s long, and this account allows at most {max} s. Shorten the video or pick another one."
+      },
+      "aiGenerated": "Content made with AI",
+      "aiGeneratedHint": "TikTok shows an “AI-generated” label on the post. Turn this on when an image, video or voice was created or significantly changed with an AI tool."
     },
     "pinterest": {
       "board": "Board",
@@ -203,7 +206,8 @@
         "angleBrackets": "YouTube doesn't allow the characters < and > in the title or description.",
         "descriptionTooLong": "A YouTube video description can be at most 5,000 bytes.",
         "madeForKids": "Choose whether the video is made for kids (a required declaration for YouTube)."
-      }
+      },
+      "terms": "By uploading to YouTube, you agree to the <tos>YouTube Terms of Service</tos>. YouTube data is also handled under the <gpp>Google Privacy Policy</gpp>."
     },
     "gbp": {
       "topic": "Post type",
@@ -393,6 +397,14 @@
       "renew": "LinkedIn asks for a new connection every 60 days; we will ask you again then.",
       "cancel": "Cancel",
       "agree": "I agree, connect LinkedIn"
+    },
+    "youtubeConsent": {
+      "title": "Connecting a YouTube channel",
+      "intro": "Sova uses YouTube API Services to upload the videos you approve and show their results.",
+      "terms": "By connecting your channel, you agree to the <tos>YouTube Terms of Service</tos>. We handle Google data under the <gpp>Google Privacy Policy</gpp> and our <privacy>privacy policy</privacy>.",
+      "revoke": "You can revoke access in Sova (Networks → Disconnect) or on the <google>Google security settings page</google>.",
+      "cancel": "Cancel",
+      "agree": "I agree, connect YouTube"
     }
   }
 }

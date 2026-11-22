@@ -304,10 +304,18 @@ describe('Metrike i istorija', () => {
     expect((await capturePostMetrics(published!.id, '24h')).status).toBe('captured')
     const { data: snap } = await admin
       .from('post_metrics_snapshots')
-      .select('impressions, reactions, comments, video_views')
+      .select('impressions, reactions, comments, video_views, engagement_rate, raw')
       .eq('target_id', published!.id)
       .single()
-    expect(snap).toEqual({ impressions: 1200, reactions: 80, comments: 7, video_views: 1200 })
+    // samo brojevi koje YouTube daje: bez „impresije = pregledi” i bez izvedenog angažovanja (D-188)
+    expect(snap).toMatchObject({
+      impressions: null,
+      reactions: 80,
+      comments: 7,
+      video_views: 1200,
+      engagement_rate: null,
+      raw: { engagement: null },
+    })
 
     expect((await captureAccountMetrics(channelId, '2026-10-22')).status).toBe('captured')
     const { data: acc } = await admin

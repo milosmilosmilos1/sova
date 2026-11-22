@@ -21,6 +21,7 @@ import {
   type TargetLite,
   type Totals,
 } from '@/lib/analytics/aggregate'
+import { gbpLocationTotals, type GbpLocationTotals } from '@/lib/analytics/gbp'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { mapDbError } from '@/lib/supabase/errors'
@@ -78,6 +79,8 @@ export interface OverviewData {
   topPosts: TopPost[]
   weakPosts: TopPost[]
   followers: Array<FollowerSeries & { platform: SocialPlatform | null; name: string | null }>
+  /** Google poslovni profil: svaka metrika lokacije posebno za period (D-188) */
+  locations: GbpLocationTotals[]
   accounts: AccountLite[]
   notes: string[]
 }
@@ -190,7 +193,7 @@ export async function computeOverview(
     client.from('social_accounts').select('id, platform, name').eq('brand_id', brandId),
     client
       .from('account_metrics_daily')
-      .select('social_account_id, date, followers')
+      .select('social_account_id, date, followers, raw')
       .eq('brand_id', brandId)
       .gte('date', from.slice(0, 10))
       .lte('date', to.slice(0, 10))
@@ -221,6 +224,13 @@ export async function computeOverview(
     platform: accountById.get(f.accountId)?.platform ?? null,
     name: accountById.get(f.accountId)?.name ?? null,
   }))
+
+  const locations = gbpLocationTotals(
+    (followerRows ?? [])
+      .filter((r) => accountById.get(r.social_account_id)?.platform === 'google_business')
+      .map((r) => ({ accountId: r.social_account_id, raw: r.raw })),
+    new Map(accounts.map((a) => [a.id, a.name])),
+  )
 
   const notes: string[] = []
   if (totals.posts && totals.withMetrics < totals.posts) {
@@ -280,6 +290,7 @@ export async function computeOverview(
     topPosts: ranked.slice(0, 5),
     weakPosts: ranked.length > 5 ? ranked.slice(-3).reverse() : [],
     followers,
+    locations,
     accounts,
     notes,
   }

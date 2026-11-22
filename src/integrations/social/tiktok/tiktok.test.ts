@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest'
 
-import { readTikTokOptions, tiktokOptionProblems } from '@/config/tiktok'
+import { readTikTokOptions, tiktokDurationProblem, tiktokOptionProblems } from '@/config/tiktok'
 
 import { mapTikTokError, planChunks, quoteBigInts } from './client'
-import { cutUtf16, tiktokPermalink } from './provider'
+import { cutUtf16, tiktokPermalink, TikTokProvider } from './provider'
 
 const MB = 1024 * 1024
 
@@ -78,6 +78,62 @@ describe('TikTok podešavanja objave', () => {
   it('oznake brenda važe samo uz uključen komercijalni sadržaj', () => {
     const o = readTikTokOptions({ privacyLevel: 'PUBLIC_TO_EVERYONE', consent: true, brandedContent: true })
     expect(o.brandedContent).toBe(false)
+  })
+})
+
+describe('TikTok AI oznaka i dužina videa (D-188)', () => {
+  it('AI prekidač je isključen dok ga korisnik sam ne uključi', () => {
+    expect(readTikTokOptions({}).aiGenerated).toBe(false)
+    expect(readTikTokOptions({ aiGenerated: 'da' }).aiGenerated).toBe(false)
+    expect(readTikTokOptions({ aiGenerated: true }).aiGenerated).toBe(true)
+  })
+
+  it('video duži od granice naloga je problem; bez dužine ili granice nema provere', () => {
+    expect(tiktokDurationProblem(61_000, 60)).toBe(
+      'TikTok: video traje 61 s, a ovaj nalog dozvoljava najviše 60 s.',
+    )
+    expect(tiktokDurationProblem(60_400, 60)).toContain('61 s')
+    expect(tiktokDurationProblem(60_000, 60)).toBeNull()
+    expect(tiktokDurationProblem(null, 60)).toBeNull()
+    expect(tiktokDurationProblem(90_000, null)).toBeNull()
+    expect(tiktokDurationProblem(90_000, '60')).toBeNull()
+  })
+
+  it('provera objave pre zakazivanja čita granicu sačuvanu uz nalog', () => {
+    const post = {
+      text: 'Video',
+      link: null,
+      media: [
+        {
+          url: 'https://x.test/v.mp4',
+          mimeType: 'video/mp4',
+          width: 1080,
+          height: 1920,
+          alt: null,
+          durationMs: 700_000,
+        },
+      ],
+      firstComment: null,
+      isAiGenerated: false,
+      clientKey: 'k',
+      options: {},
+    }
+    const ref = (metadata: Record<string, number>) => ({
+      id: 'acc',
+      platform: 'tiktok' as const,
+      externalId: 'open-1',
+      parentExternalId: null,
+      accountType: 'tiktok_account',
+      metadata,
+    })
+    const provider = new TikTokProvider()
+    expect(provider.validatePost(post, ref({ max_video_post_duration_sec: 600 })).problems).toContain(
+      'TikTok: video traje 700 s, a ovaj nalog dozvoljava najviše 600 s.',
+    )
+    expect(
+      provider.validatePost(post, ref({ max_video_post_duration_sec: 900 })).problems.join(' '),
+    ).not.toContain('traje')
+    expect(provider.validatePost(post, ref({})).problems.join(' ')).not.toContain('traje')
   })
 })
 

@@ -12,24 +12,24 @@ Stanje 13.11.2026. Pravila su čitana sa zvaničnih stranica platformi istog dan
 
 Zajedničke prepreke iz odeljka 1 su rešene (domen, firma, pravni tekstovi, brisanje kod Mete, Autopilot, stok bez AI-ja, logoi). Tekstovi za formulare, scenariji snimaka i redosled su pripremljeni van repoa, u materijalu za mreže (po jedan fajl za svaku prijavu).
 
-| Platforma                | Aplikacija                    | Sledeći korak                                                                | Kod pre slanja                                                                        |
-| ------------------------ | ----------------------------- | ---------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| Meta                     | postoji (razvojni režim)      | Business Verification, pa App Review (11 dozvola, prva prijava)              | `pages_manage_engagement` u prijavi (prvi komentar na Facebook-u danas tiho pada)     |
-| Google (YouTube, profil) | postoji (Testing)             | Search Console Domain property, formular za Business Profile API, pa provera | YouTube rečenica i link na ekranu otpremanja i pri povezivanju; bez izvedenih metrika |
-| Google prijava           | ne postoji                    | poseban projekat „Sova prijava” (DEPLOY.md 10, 2b)                           | nema                                                                                  |
-| Google „Sova Dev”        | ne postoji                    | projekat za localhost, pa localhost van produkcionog klijenta                | nema                                                                                  |
-| TikTok                   | Sandbox                       | App review sa demo videom, pa Direct Post audit                              | webhook za uklanjanje aplikacije, ručni prekidač za AI sadržaj, provera dužine videa  |
-| LinkedIn lični profil    | postoji, radi za sve          | nema                                                                         | nema                                                                                  |
-| LinkedIn stranice        | ne postoji                    | nova aplikacija samo sa Community Management API                             | drugi par ključeva (`LINKEDIN_PAGES_CLIENT_ID/SECRET`) posle odobrenja                |
-| Canva                    | postoji (javna, nije poslata) | slanje na pregled                                                            | nema (D-184)                                                                          |
-| Figma                    | nacrt                         | objava kao javne aplikacije                                                  | nema (D-184); prekidač `figma` za nalog recenzenta                                    |
-| Unsplash                 | Demo                          | Apply for Production                                                         | hotlinking, potpis uz svaku fotografiju, bez automatskog izbora (odluka vlasnika)     |
-| Pinterest                | ne postoji                    | nalog za firmu, aplikacija, Trial pristup                                    | nema (D-085)                                                                          |
-| X                        | ne postoji                    | odluka vlasnika (pay-per-use se plaća)                                       | nema (D-086)                                                                          |
+| Platforma                | Aplikacija                    | Sledeći korak                                                                | Kod pre slanja                                                                                                         |
+| ------------------------ | ----------------------------- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| Meta                     | postoji (razvojni režim)      | Business Verification, pa App Review (11 dozvola, prva prijava)              | `pages_manage_engagement` u prijavi (prvi komentar na Facebook-u danas tiho pada)                                      |
+| Google (YouTube, profil) | postoji (Testing)             | Search Console Domain property, formular za Business Profile API, pa provera | urađeno (D-188, čeka objavu): YouTube rečenica i linkovi, bez izvedenih metrika, metrike profila posebno               |
+| Google prijava           | ne postoji                    | poseban projekat „Sova prijava” (DEPLOY.md 10, 2b)                           | nema                                                                                                                   |
+| Google „Sova Dev”        | ne postoji                    | projekat za localhost, pa localhost van produkcionog klijenta                | nema                                                                                                                   |
+| TikTok                   | Sandbox                       | App review sa demo videom, pa Direct Post audit                              | urađeno (D-188, čeka objavu): webhook, prekidač za AI sadržaj, provera dužine videa; adresu webhook-a upisati u portal |
+| LinkedIn lični profil    | postoji, radi za sve          | nema                                                                         | nema                                                                                                                   |
+| LinkedIn stranice        | ne postoji                    | nova aplikacija samo sa Community Management API                             | drugi par ključeva (`LINKEDIN_PAGES_CLIENT_ID/SECRET`) posle odobrenja                                                 |
+| Canva                    | postoji (javna, nije poslata) | slanje na pregled                                                            | nema (D-184)                                                                                                           |
+| Figma                    | nacrt                         | objava kao javne aplikacije                                                  | nema (D-184); prekidač `figma` za nalog recenzenta                                                                     |
+| Unsplash                 | Demo                          | Apply for Production                                                         | hotlinking, potpis uz svaku fotografiju, bez automatskog izbora (odluka vlasnika)                                      |
+| Pinterest                | ne postoji                    | nalog za firmu, aplikacija, Trial pristup                                    | nema (D-085)                                                                                                           |
+| X                        | ne postoji                    | odluka vlasnika (pay-per-use se plaća)                                       | nema (D-086)                                                                                                           |
 
-Za sve preglede treba probni nalog na engleskom sa gotovim brendom (bez njega su Posts i Studio zaključani) i adresa za prijavu propusta u `/.well-known/security.txt`.
+Za sve preglede treba probni nalog na engleskom sa gotovim brendom (bez njega su Posts i Studio zaključani). Adresa za prijavu propusta je u `/.well-known/security.txt` (D-188, čeka objavu).
 
-Google poslovni profil: metrike se i dalje sabiraju za period, a pravila to ne dozvoljavaju (odeljak 2, Google). Ispravka ide pre Google provere.
+Google poslovni profil: metrike se više ne sabiraju u jedan broj; svaka se čuva i prikazuje posebno (D-188, čeka objavu). Rok čuvanja od 30 dana je i dalje otvoren (odeljak 2, Google).
 
 ## 1. Šta blokira sve platforme
 

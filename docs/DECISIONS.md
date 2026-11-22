@@ -1749,3 +1749,18 @@ Problem na produkciji 22.11. (posle D-185): nov korisnik je kliknuo link za potv
 - Usput: pločica „TikTok” na početnoj (početna slova umesto logoa) nije prolazila proveru kontrasta kad je isključena (providnost 0,3); slova su sada crtež kao i logo.
 
 Razlog: registracija mora da radi odmah, bez koraka u Supabase podešavanjima koje vlasnik nije stigao da uradi, i za svakog korisnika, ne samo za članove tima. Vlasnik je tražio da sajt bude na srpskom dok korisnik sam ne izabere engleski.
+
+## D-188 · 22.11.2026 · usvojeno · Kod pre slanja prijava: security.txt, YouTube, TikTok, Google poslovni profil
+
+Deo 2 plana prijava (materijal van repoa), stavke bez odluke vlasnika. Meta `pages_manage_engagement`, probni nalog za recenzente i Unsplash čekaju vlasnikovo „da”.
+
+- `/.well-known/security.txt` (statičan fajl u `public/`): kontakt podrska@sovaai.rs, rok važenja godinu dana (obnoviti do 22.11.2027), jezici sr i en, kanonska adresa, link na politiku.
+- YouTube: na ekranu otpremanja (YouTube panel u editoru) rečenica da otpremanjem korisnik prihvata YouTube uslove, sa linkovima na uslove i Google politiku privatnosti; pre povezivanja kanala dijalog sa istom izjavom, linkom na našu politiku i na Google stranu za opoziv pristupa. Metrike objave samo iz YouTube brojeva: impresije su prazne (do sada „impresije = pregledi”), a angažovanje se za YouTube ne izvodi iz lajkova i komentara.
+- Google poslovni profil: dnevne metrike lokacije se ne sabiraju u „prikaze” i „radnje”; svaka od osam metrika se čuva posebno (`account_metrics_daily.raw`), a Analitika ima karticu po lokaciji sa svakom metrikom za period (zbir dnevnih vrednosti iste metrike). Bez migracije: kolone `impressions` i `raw.engagement` za lokaciju ostaju prazne.
+- TikTok:
+  - webhook `POST /api/webhooks/tiktok`: potpis `TikTok-Signature` (HMAC-SHA256 nad `t.telo` sa client secret-om, najviše 5 minuta star) i `client_key`; `authorization.removed` briše naloge tog TikTok korisnika kao „Prekini vezu” (tokeni, uvoz i metrike kaskadno); ostali događaji se samo potvrđuju. Adresa se upisuje u TikTok portal (DEPLOY.md 6);
+  - ručni prekidač „Sadržaj napravljen uz pomoć AI-ja” u TikTok panelu (`options.tiktok.aiGenerated`), šalje `is_aigc` uz video i fotografije;
+  - provera dužine videa pre zakazivanja: panel čuva `max_video_post_duration_sec` iz creator_info uz nalog, provera objave odbija duži video, a panel to pokazuje odmah. Pri objavi se proverava ponovo sa svežim creator_info.
+- Ostaje otvoreno: zbirno „angažovanje” brenda u Analitici i dalje sabira i YouTube lajkove i komentare sa ostalim mrežama, a najbolja vremena i glas brenda koriste YouTube podatke (odeljak 2 u ODOBRENJA.md). To traži odluku o prikazu.
+
+Razlog: bez ovoga Google i TikTok odbijaju prijave; security.txt traži više pregleda.

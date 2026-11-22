@@ -10,6 +10,8 @@ vi.mock('@/lib/jobs/enqueue', async (importOriginal) => {
   }
 })
 
+import { createHmac } from 'node:crypto'
+
 import { NextRequest } from 'next/server'
 import sharp from 'sharp'
 
@@ -25,6 +27,7 @@ import { DELETE as accountDelete } from '@/app/api/social-accounts/[id]/route'
 import { GET as creatorGet } from '@/app/api/social-accounts/[id]/tiktok-creator/route'
 import { POST as activatePost } from '@/app/api/social-accounts/activate/route'
 import { GET as accountsGet } from '@/app/api/social-accounts/route'
+import { POST as tiktokWebhookPost } from '@/app/api/webhooks/tiktok/route'
 import { POST as workspacesPost } from '@/app/api/workspaces/route'
 import { setFeatureFlagForTests } from '@/lib/flags'
 import { resetMemoryRateLimit } from '@/lib/ratelimit'
@@ -669,6 +672,8 @@ describe('TikTok', () => {
     expect(info.status).toBe(200)
     expect(info.json.data).toMatchObject({ nickname: 'Klima Servis', stitchDisabled: true })
     expect(info.json.data!.privacyLevelOptions).toContain('FOLLOWER_OF_CREATOR')
+    // granica dužine videa ide uz nalog, za proveru pre zakazivanja (D-188)
+    expect((await loadAccountRow(ttId))!.metadata).toMatchObject({ max_video_post_duration_sec: 600 })
 
     const img = await uploadJpeg({ r: 30, g: 30, b: 30 })
     const created = await call<PostView>(postsPost, '/api/posts', {
@@ -870,6 +875,36 @@ describe('TikTok', () => {
     ])
   })
 
+  it('ručni prekidač „AI sadržaj” šalje is_aigc; bez njega i bez AI medija oznake nema (D-188)', async () => {
+    const row = (await loadAccountRow(ttId))!
+    const video = {
+      url: 'https://storage.tiktok-fixture.test/v.mp4',
+      mimeType: 'video/mp4',
+      width: 1080,
+      height: 1920,
+      alt: null,
+      durationMs: 15_000,
+    }
+    for (const aiGenerated of [true, false]) {
+      resetLinkedInTikTokState()
+      await new TikTokProvider().publish(
+        {
+          text: 'Video sa prekidačem',
+          link: null,
+          media: [video],
+          firstComment: null,
+          isAiGenerated: false,
+          clientKey: `ai-${aiGenerated}`,
+          options: { tiktok: { ...validTikTok, aiGenerated } },
+        },
+        refFor(row),
+        tokensFor(row).accessToken,
+      )
+      const init = ttState.videoInits[0] as { post_info: Record<string, unknown> }
+      expect(init.post_info.is_aigc).toBe(aiGenerated ? true : undefined)
+    }
+  })
+
   it('istorija i metrike naloga; prekid veze opoziva token na TikTok-u', async () => {
     const imported = await importAccountHistory(ttId)
     expect(imported).toMatchObject({ status: 'imported', imported: 2 })
@@ -890,5 +925,68 @@ describe('TikTok', () => {
     expect(del.status).toBe(200)
     expect(ttState.revokes).toEqual([current])
     expect(await loadAccountRow(ttId)).toBeNull()
+  })
+
+  it('webhook authorization.removed: potpis se proverava, nalozi tog TikTok korisnika se brišu (D-188)', async () => {
+    const openId = `act.webhook-${Date.now()}`
+    const { data: inserted, error } = await admin
+      .from('social_accounts')
+      .insert({
+        brand_id: brandId,
+        workspace_id: wsId,
+        platform: 'tiktok',
+        external_id: openId,
+        name: 'TikTok za webhook',
+        account_type: 'tiktok_account',
+        status: 'active',
+        capabilities: { publish: true },
+        metadata: { providerUserId: openId },
+      })
+      .select('id')
+      .single()
+    if (error) throw error
+    const secret = process.env.TIKTOK_CLIENT_SECRET!
+    const body = JSON.stringify({
+      client_key: process.env.TIKTOK_CLIENT_KEY,
+      event: 'authorization.removed',
+      create_time: Math.floor(Date.now() / 1000),
+      user_openid: openId,
+      content: '{"reason": 1}',
+    })
+    const signed = (payload: string, t = Math.floor(Date.now() / 1000), key = secret) =>
+      `t=${t},s=${createHmac('sha256', key).update(`${t}.${payload}`).digest('hex')}`
+    const send = (payload: string, signature: string | null) =>
+      tiktokWebhookPost(
+        new NextRequest(new URL('/api/webhooks/tiktok', APP), {
+          method: 'POST',
+          headers: {
+            'content-type': 'application/json',
+            ...(signature ? { 'tiktok-signature': signature } : {}),
+          },
+          body: payload,
+        }),
+        { params: Promise.resolve({}) },
+      )
+
+    expect((await send(body, null)).status).toBe(403)
+    expect((await send(body, signed(body, undefined, 'pogresan-kljuc-0123456789'))).status).toBe(403)
+    // star potpis (pre 10 minuta) ne prolazi, i kad je ispravan
+    expect((await send(body, signed(body, Math.floor(Date.now() / 1000) - 600))).status).toBe(403)
+    expect((await send(body.replace('reason', 'razlog'), signed(body))).status).toBe(403)
+    expect(await loadAccountRow(inserted!.id)).not.toBeNull()
+
+    const other = JSON.stringify({ ...JSON.parse(body), event: 'video.publish.completed' })
+    const ignored = await send(other, signed(other))
+    expect(ignored.status).toBe(200)
+    expect(((await ignored.json()) as { data: { removed: number } }).data.removed).toBe(0)
+    expect(await loadAccountRow(inserted!.id)).not.toBeNull()
+
+    const ok = await send(body, signed(body))
+    expect(ok.status).toBe(200)
+    expect(((await ok.json()) as { data: { removed: number } }).data).toEqual({
+      event: 'authorization.removed',
+      removed: 1,
+    })
+    expect(await loadAccountRow(inserted!.id)).toBeNull()
   })
 })

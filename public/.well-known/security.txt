@@ -1,0 +1,5 @@
+Contact: mailto:podrska@sovaai.rs
+Expires: 2027-11-22T00:00:00.000Z
+Preferred-Languages: sr, en
+Canonical: https://sovaai.rs/.well-known/security.txt
+Policy: https://sovaai.rs/en/privacy

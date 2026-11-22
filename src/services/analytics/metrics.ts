@@ -69,8 +69,14 @@ export async function publishedAtOf(targetId: string): Promise<string | null> {
   return data.published_at
 }
 
-function toSnapshot(m: NormalizedMetrics) {
-  const engagement = m.engagement ?? (m.likes ?? 0) + (m.comments ?? 0) + (m.shares ?? 0) + (m.saves ?? 0)
+/**
+ * Snimak metrika objave. Kad mreža ne da angažovanje, Sova ga računa iz lajkova, komentara, deljenja i
+ * čuvanja; za YouTube ne, jer YouTube pravila zabranjuju izvedene metrike (D-188).
+ */
+function toSnapshot(m: NormalizedMetrics, platform: string) {
+  const engagement =
+    m.engagement ??
+    (platform === 'youtube' ? null : (m.likes ?? 0) + (m.comments ?? 0) + (m.shares ?? 0) + (m.saves ?? 0))
   return {
     impressions: m.impressions,
     reach: m.reach,
@@ -80,7 +86,10 @@ function toSnapshot(m: NormalizedMetrics) {
     saves: m.saves,
     link_clicks: m.clicks,
     video_views: m.videoViews ?? null,
-    engagement_rate: m.reach && m.reach > 0 ? Math.round((engagement / m.reach) * 100000) / 100000 : null,
+    engagement_rate:
+      engagement !== null && m.reach && m.reach > 0
+        ? Math.round((engagement / m.reach) * 100000) / 100000
+        : null,
     raw: { ...m.raw, engagement } as unknown as NonNullable<Json>,
   }
 }
@@ -135,7 +144,7 @@ export async function capturePostMetrics(targetId: string, horizon: Horizon): Pr
       social_account_id: account.id,
       brand_id: target.brand_id,
       horizon,
-      ...toSnapshot(metrics),
+      ...toSnapshot(metrics, target.platform),
     })
     if (error) {
       if (error.code === '23505') return { status: 'skipped', reason: 'snimak već postoji' }

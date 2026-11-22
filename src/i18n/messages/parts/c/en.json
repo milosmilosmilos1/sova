@@ -72,7 +72,24 @@
     },
     "postsEmpty": "No posts with metrics in this period.",
     "onNetwork": "on the network",
-    "refresh": "Refresh"
+    "refresh": "Refresh",
+    "locations": {
+      "title": "Google Business Profile",
+      "hint": "Numbers Google reports for the location in the selected period, each one separately.",
+      "days": "{count, plural, one {# day with data} other {# days with data}}",
+      "metric": "Metric",
+      "value": "Total for the period",
+      "metrics": {
+        "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH": "Views on Google Search, desktop",
+        "BUSINESS_IMPRESSIONS_MOBILE_SEARCH": "Views on Google Search, mobile",
+        "BUSINESS_IMPRESSIONS_DESKTOP_MAPS": "Views on Google Maps, desktop",
+        "BUSINESS_IMPRESSIONS_MOBILE_MAPS": "Views on Google Maps, mobile",
+        "WEBSITE_CLICKS": "Website clicks",
+        "CALL_CLICKS": "Call clicks",
+        "BUSINESS_DIRECTION_REQUESTS": "Direction requests",
+        "MESSAGING_CLICKS": "Message clicks"
+      }
+    }
   },
   "reports": {
     "title": "Monthly report (PDF)",

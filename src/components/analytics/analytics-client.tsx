@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PLATFORMS } from '@/config/platforms'
 import { INTL_UI } from '@/i18n/config'
+import { GBP_METRICS, type GbpLocationTotals } from '@/lib/analytics/gbp'
 import type { ApiResponse } from '@/lib/api/response'
 
 /**
@@ -82,6 +83,8 @@ interface Overview {
     delta: number | null
     points: Array<{ date: string; followers: number }>
   }>
+  /** Google poslovni profil: svaka metrika posebno (D-188) */
+  locations?: GbpLocationTotals[]
   daily: Array<{ date: string; posts: number; reach: number; engagement: number }>
   notes: string[]
 }
@@ -472,6 +475,41 @@ export function AnalyticsClient({
               )}
             </CardContent>
           </Card>
+
+          {o.locations?.length ? (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">{t('locations.title')}</CardTitle>
+                <CardDescription>{t('locations.hint')}</CardDescription>
+              </CardHeader>
+              <CardContent className="grid gap-6 md:grid-cols-2">
+                {o.locations.map((loc) => (
+                  <table key={loc.accountId} className="w-full text-sm">
+                    <caption className="pb-1 text-left font-medium">
+                      {loc.name ?? loc.accountId}
+                      <span className="ml-2 text-xs font-normal text-muted-foreground">
+                        {t('locations.days', { count: loc.days })}
+                      </span>
+                    </caption>
+                    <thead className="text-left text-xs text-muted-foreground">
+                      <tr>
+                        <th className="py-1 pr-2">{t('locations.metric')}</th>
+                        <th className="py-1 text-right">{t('locations.value')}</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {GBP_METRICS.map((m) => (
+                        <tr key={m} className="border-t">
+                          <td className="py-1 pr-2">{t(`locations.metrics.${m}`)}</td>
+                          <td className="py-1 text-right tabular-nums">{fmtN(loc.metrics[m])}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ))}
+              </CardContent>
+            </Card>
+          ) : null}
         </>
       ) : overview.isPending ? (
         <p className="text-sm text-muted-foreground">{t('loading')}</p>

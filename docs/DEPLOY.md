@@ -78,6 +78,7 @@ Vaš email je u admin listi iz seed-a; posle registracije na produkciji imate ad
 | LinkedIn                       | Authorized redirect URL                           | `https://sovaai.rs/api/integrations/linkedin/callback`        |
 | TikTok                         | Redirect URI                                      | `https://sovaai.rs/api/integrations/tiktok/callback`          |
 | TikTok                         | URL properties (domen za preuzimanje fotografija) | `sovaai.rs` ili domen iz `PUBLIC_MEDIA_BASE_URL`              |
+| TikTok                         | Webhooks → Callback URL (D-188)                   | `https://sovaai.rs/api/webhooks/tiktok`                       |
 | Google Cloud (YouTube)         | Authorized redirect URI                           | `https://sovaai.rs/api/integrations/youtube/callback`         |
 | Google Cloud (poslovni profil) | Authorized redirect URI                           | `https://sovaai.rs/api/integrations/google_business/callback` |
 | Pinterest                      | Redirect URI                                      | `https://sovaai.rs/api/integrations/pinterest/callback`       |

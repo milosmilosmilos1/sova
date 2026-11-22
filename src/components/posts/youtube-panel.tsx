@@ -4,7 +4,14 @@ import { useTranslations } from 'next-intl'
 
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { YOUTUBE_PRIVACY, youtubeOptionProblems, youtubeTitle, type YouTubeOptions } from '@/config/youtube'
+import {
+  GOOGLE_PRIVACY_URL,
+  YOUTUBE_PRIVACY,
+  YOUTUBE_TERMS_URL,
+  youtubeOptionProblems,
+  youtubeTitle,
+  type YouTubeOptions,
+} from '@/config/youtube'
 
 /**
  * Poruke iz `youtubeOptionProblems` (deljene sa serverom, u kodu ostaju srpske, D-130) → ključ prevoda.
@@ -108,6 +115,21 @@ export function YouTubePanel({
           })}
         </ul>
       ) : null}
+      {/* YouTube API pravila: na ekranu otpremanja rečenica o YouTube uslovima i link (D-188) */}
+      <p className="text-xs text-muted-foreground">
+        {t.rich('youtube.terms', {
+          tos: (chunks) => (
+            <a href={YOUTUBE_TERMS_URL} target="_blank" rel="noreferrer" className="underline">
+              {chunks}
+            </a>
+          ),
+          gpp: (chunks) => (
+            <a href={GOOGLE_PRIVACY_URL} target="_blank" rel="noreferrer" className="underline">
+              {chunks}
+            </a>
+          ),
+        })}
+      </p>
     </div>
   )
 }

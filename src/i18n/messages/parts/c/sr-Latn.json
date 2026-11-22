@@ -72,7 +72,24 @@
     },
     "postsEmpty": "Nema objava sa metrikama u periodu.",
     "onNetwork": "na mreži",
-    "refresh": "Osveži"
+    "refresh": "Osveži",
+    "locations": {
+      "title": "Google poslovni profil",
+      "hint": "Brojevi koje Google daje za lokaciju u izabranom periodu, svaki posebno.",
+      "days": "{count, plural, one {# dan sa podacima} few {# dana sa podacima} other {# dana sa podacima}}",
+      "metric": "Metrika",
+      "value": "Ukupno za period",
+      "metrics": {
+        "BUSINESS_IMPRESSIONS_DESKTOP_SEARCH": "Prikazi u Google pretrazi, računar",
+        "BUSINESS_IMPRESSIONS_MOBILE_SEARCH": "Prikazi u Google pretrazi, telefon",
+        "BUSINESS_IMPRESSIONS_DESKTOP_MAPS": "Prikazi na Google mapama, računar",
+        "BUSINESS_IMPRESSIONS_MOBILE_MAPS": "Prikazi na Google mapama, telefon",
+        "WEBSITE_CLICKS": "Klikovi na sajt",
+        "CALL_CLICKS": "Klikovi na poziv",
+        "BUSINESS_DIRECTION_REQUESTS": "Zahtevi za putanju",
+        "MESSAGING_CLICKS": "Klikovi na poruku"
+      }
+    }
   },
   "reports": {
     "title": "Mesečni izveštaj (PDF)",

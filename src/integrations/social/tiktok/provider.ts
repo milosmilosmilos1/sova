@@ -1,7 +1,13 @@
 import 'server-only'
 
 import { validateText } from '@/config/platforms'
-import { readTikTokOptions, tiktokOptionProblems, type TikTokPrivacy } from '@/config/tiktok'
+import {
+  readTikTokOptions,
+  TIKTOK_MAX_DURATION_KEY,
+  tiktokDurationProblem,
+  tiktokOptionProblems,
+  type TikTokPrivacy,
+} from '@/config/tiktok'
 import { env } from '@/lib/env'
 import { ProviderError } from '@/integrations/social/errors'
 import type {
@@ -285,7 +291,7 @@ export class TikTokProvider implements SocialProvider {
     return this.caps(!scopes.length || scopes.includes('video.publish'))
   }
 
-  validatePost(input: NormalizedPost): ValidationResult {
+  validatePost(input: NormalizedPost, account?: AccountRef): ValidationResult {
     const problems = [...validateText('tiktok', input.text).problems]
     const videos = input.media.filter((m) => m.mimeType.startsWith('video/'))
     const images = input.media.filter((m) => m.mimeType.startsWith('image/'))
@@ -298,6 +304,9 @@ export class TikTokProvider implements SocialProvider {
       if (v.sizeBytes && v.sizeBytes > 4 * 1024 ** 3) problems.push('Video je veći od 4 GB.')
     }
     if (images.length > 35) problems.push('TikTok foto objava može imati najviše 35 fotografija.')
+    // granica naloga iz poslednjeg creator_info (čuva je panel u editoru), pre zakazivanja (D-188)
+    const tooLong = tiktokDurationProblem(videos[0]?.durationMs, account?.metadata?.[TIKTOK_MAX_DURATION_KEY])
+    if (tooLong) problems.push(tooLong)
     problems.push(...tiktokOptionProblems(readTikTokOptions(input.options?.tiktok)))
     return { ok: problems.length === 0, problems }
   }
@@ -360,7 +369,7 @@ export class TikTokProvider implements SocialProvider {
               disable_duet: !opts.allowDuet || info.duetDisabled,
               disable_stitch: !opts.allowStitch || info.stitchDisabled,
               ...brand,
-              ...(input.isAiGenerated ? { is_aigc: true } : {}),
+              ...(input.isAiGenerated || opts.aiGenerated ? { is_aigc: true } : {}),
             },
             source_info: {
               source: 'FILE_UPLOAD',
@@ -431,7 +440,7 @@ export class TikTokProvider implements SocialProvider {
         source_info: { source: 'PULL_FROM_URL', photo_cover_index: 0, photo_images: urls },
         post_mode: 'DIRECT_POST',
         media_type: 'PHOTO',
-        ...(input.isAiGenerated ? { is_aigc: true } : {}),
+        ...(input.isAiGenerated || opts.aiGenerated ? { is_aigc: true } : {}),
       },
     })
     if (!init.publish_id) throw new ProviderError('UNKNOWN', { message: 'TikTok nije vratio publish_id.' })

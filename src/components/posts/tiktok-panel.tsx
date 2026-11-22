@@ -7,6 +7,7 @@ import type { ReactNode } from 'react'
 import {
   TIKTOK_BRANDED_POLICY_URL,
   TIKTOK_MUSIC_POLICY_URL,
+  tiktokDurationProblem,
   tiktokOptionProblems,
   type TikTokPostOptions,
   type TikTokPrivacy,
@@ -53,12 +54,15 @@ export function TikTokPanel({
   onChange,
   disabled,
   isVideo,
+  videoDurationMs,
 }: {
   accountId: string
   value: TikTokPostOptions
   onChange: (next: TikTokPostOptions) => void
   disabled: boolean
   isVideo: boolean
+  /** dužina izabranog videa; poredi se sa granicom naloga pre zakazivanja (D-188) */
+  videoDurationMs?: number | null
 }) {
   const t = useTranslations('postPanels.tiktok')
   const creator = useQuery({
@@ -81,6 +85,10 @@ export function TikTokPanel({
     )
   }
 
+  const tooLong =
+    isVideo && tiktokDurationProblem(videoDurationMs, info.maxVideoPostDurationSec)
+      ? { seconds: Math.ceil((videoDurationMs ?? 0) / 1000), max: info.maxVideoPostDurationSec ?? 0 }
+      : null
   const name = info.nickname ?? info.username ?? 'TikTok'
   const bold = (chunks: ReactNode) => <strong>{chunks}</strong>
 
@@ -181,6 +189,14 @@ export function TikTokPanel({
         ) : null}
       </fieldset>
 
+      <Check
+        label={t('aiGenerated')}
+        checked={value.aiGenerated}
+        disabled={disabled}
+        note={t('aiGeneratedHint')}
+        onChange={(v) => set({ aiGenerated: v })}
+      />
+
       <label className="flex items-start gap-2 text-xs">
         <input
           type="checkbox"
@@ -208,8 +224,9 @@ export function TikTokPanel({
       </label>
 
       <p className="text-xs text-muted-foreground">{t('processing')}</p>
-      {problems.length ? (
+      {problems.length || tooLong ? (
         <ul className="list-disc pl-5 text-xs text-amber-800">
+          {tooLong ? <li>{t('problems.tooLong', tooLong)}</li> : null}
           {problems.map((p) => {
             const key = PROBLEM_KEYS[p]
             return <li key={p}>{key ? t(`problems.${key}`) : p.replace(/^TikTok: /, '')}</li>

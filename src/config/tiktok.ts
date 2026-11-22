@@ -35,6 +35,8 @@ export interface TikTokPostOptions {
   brandedContent: boolean
   consent: boolean
   consentAt: string | null
+  /** ručni prekidač „Sadržaj napravljen uz AI”: TikTok uz objavu prikazuje oznaku (`is_aigc`, D-188) */
+  aiGenerated: boolean
 }
 
 export const EMPTY_TIKTOK_OPTIONS: TikTokPostOptions = {
@@ -47,6 +49,7 @@ export const EMPTY_TIKTOK_OPTIONS: TikTokPostOptions = {
   brandedContent: false,
   consent: false,
   consentAt: null,
+  aiGenerated: false,
 }
 
 /** Čitanje iz `post_targets.options.tiktok` (nepoznato ili neispravno → prazno, bez pretpostavki). */
@@ -66,6 +69,7 @@ export function readTikTokOptions(raw: unknown): TikTokPostOptions {
     brandedContent: o.commercial === true && o.brandedContent === true,
     consent: o.consent === true,
     consentAt: typeof o.consentAt === 'string' ? o.consentAt : null,
+    aiGenerated: o.aiGenerated === true,
   }
 }
 
@@ -79,4 +83,18 @@ export function tiktokOptionProblems(o: TikTokPostOptions): string[] {
     problems.push('TikTok: brendirani sadržaj ne može biti vidljiv samo vama.')
   if (!o.consent) problems.push('TikTok: potvrdite saglasnost sa TikTok pravilima o korišćenju muzike.')
   return problems
+}
+
+/** Najduži video koji TikTok nalog sme da objavi (creator_info), sačuvan uz nalog pri čitanju panela. */
+export const TIKTOK_MAX_DURATION_KEY = 'max_video_post_duration_sec'
+
+/**
+ * Video duži nego što nalog dozvoljava (TikTok smernice: provera pre objave, D-188). Bez podatka o
+ * dužini ili granici nema provere; objava tada proverava ponovo sa svežim creator_info.
+ */
+export function tiktokDurationProblem(durationMs: number | null | undefined, maxSec: unknown): string | null {
+  if (!durationMs || typeof maxSec !== 'number' || maxSec <= 0) return null
+  const seconds = Math.ceil(durationMs / 1000)
+  if (seconds <= maxSec) return null
+  return `TikTok: video traje ${seconds} s, a ovaj nalog dozvoljava najviše ${maxSec} s.`
 }

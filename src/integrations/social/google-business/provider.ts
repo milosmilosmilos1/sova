@@ -3,6 +3,7 @@ import 'server-only'
 import { gbpDateTime, gbpOptionProblems, readGbpOptions } from '@/config/google-business'
 import { validateText } from '@/config/platforms'
 import { ProviderError } from '@/integrations/social/errors'
+import { GBP_METRICS } from '@/lib/analytics/gbp'
 import {
   GoogleApiClient,
   googleAuthUrl,
@@ -41,13 +42,6 @@ const INFO_API = 'https://mybusinessbusinessinformation.googleapis.com/v1'
 const POSTS_API = 'https://mybusiness.googleapis.com/v4'
 const PERF_API = 'https://businessprofileperformance.googleapis.com/v1'
 const READ_MASK = 'name,title,storefrontAddress,websiteUri,metadata'
-const IMPRESSIONS = [
-  'BUSINESS_IMPRESSIONS_DESKTOP_MAPS',
-  'BUSINESS_IMPRESSIONS_DESKTOP_SEARCH',
-  'BUSINESS_IMPRESSIONS_MOBILE_MAPS',
-  'BUSINESS_IMPRESSIONS_MOBILE_SEARCH',
-] as const
-const ACTIONS = ['WEBSITE_CLICKS', 'CALL_CLICKS', 'BUSINESS_DIRECTION_REQUESTS', 'MESSAGING_CLICKS'] as const
 
 export interface GoogleBusinessProviderOptions {
   fetchImpl?: typeof fetch
@@ -330,11 +324,11 @@ export class GoogleBusinessProvider implements SocialProvider {
     }
   }
 
-  /** Dnevne metrike lokacije: prikazi u pretrazi i mapama, klikovi na sajt, pozivi, putanje, poruke. */
+  /** Dnevne metrike lokacije, svaka posebno: prikazi u pretrazi i mapama, klikovi na sajt, pozivi, putanje, poruke. */
   async fetchAccountMetrics(account: AccountRef, accessToken: string, date: string): Promise<AccountMetrics> {
     const [y, m, d] = date.split('-').map(Number)
     const u = new URL(`${PERF_API}/locations/${account.externalId}:fetchMultiDailyMetricsTimeSeries`)
-    for (const metric of [...IMPRESSIONS, ...ACTIONS]) u.searchParams.append('dailyMetrics', metric)
+    for (const metric of GBP_METRICS) u.searchParams.append('dailyMetrics', metric)
     for (const [k, v] of [
       ['dailyRange.start_date.year', y],
       ['dailyRange.start_date.month', m],
@@ -360,13 +354,15 @@ export class GoogleBusinessProvider implements SocialProvider {
         const total = (s.timeSeries?.datedValues ?? []).reduce((sum, v) => sum + Number(v.value ?? 0), 0)
         values[s.dailyMetric] = (values[s.dailyMetric] ?? 0) + total
       }
-    const sum = (keys: readonly string[]) => keys.reduce((n, k) => n + (values[k] ?? 0), 0)
+    // svaka metrika ostaje posebno u `raw`; pravila API-ja ne dozvoljavaju zbir različitih metrika,
+    // pa nema ukupnih prikaza ni radnji (D-188)
+    for (const metric of GBP_METRICS) values[metric] ??= 0
     return {
       date,
       followers: null,
       reach: null,
-      impressions: sum(IMPRESSIONS),
-      engagement: sum(ACTIONS),
+      impressions: null,
+      engagement: null,
       profileViews: null,
       websiteClicks: values.WEBSITE_CLICKS ?? 0,
       raw: values as unknown as Record<string, Json>,

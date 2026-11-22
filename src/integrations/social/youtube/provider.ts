@@ -390,18 +390,18 @@ export class YouTubeProvider implements SocialProvider {
     const s = (await this.statistics(accessToken, [externalId])).get(externalId)
     if (!s)
       throw new ProviderError('UNKNOWN', { message: `YouTube video ${externalId} not found`, status: 404 })
+    // samo brojevi koje YouTube daje; izvedene metrike („impresije = pregledi”, zbir lajkova i
+    // komentara) YouTube pravila zabranjuju (D-188)
     const views = Number(s.viewCount ?? 0)
-    const likes = Number(s.likeCount ?? 0)
-    const comments = Number(s.commentCount ?? 0)
     return {
-      impressions: views,
+      impressions: null,
       reach: null,
-      likes,
-      comments,
+      likes: s.likeCount === undefined ? null : Number(s.likeCount),
+      comments: s.commentCount === undefined ? null : Number(s.commentCount),
       shares: null,
       saves: null,
       clicks: null,
-      engagement: likes + comments,
+      engagement: null,
       videoViews: views,
       raw: s as unknown as Record<string, Json>,
     }

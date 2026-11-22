@@ -26,6 +26,8 @@ import { setFeatureFlagForTests } from '@/lib/flags'
 import { resetMemoryRateLimit } from '@/lib/ratelimit'
 import { setGoogleBusinessProviderForTests } from '@/integrations/social/registry'
 import { captureAccountMetrics, capturePostMetrics } from '@/services/analytics/metrics'
+import { computeOverview } from '@/services/analytics/overview'
+import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { runPublishTarget, type PublishContext } from '@/services/posts/publisher'
 import { loadAccountRow, tokensFor } from '@/services/social/account-rows'
 import { importAccountHistory } from '@/services/social/history'
@@ -355,7 +357,38 @@ describe('Tokeni, metrike, istorija i odvajanje', () => {
       .eq('social_account_id', novisadId)
       .eq('date', '2026-10-22')
       .single()
-    expect(m).toMatchObject({ impressions: 12 + 30 + 41, website_clicks: 5, raw: { engagement: 5 + 2 + 1 } })
+    // svaka metrika posebno, bez zbira prikaza i radnji (pravila API-ja, D-188); izostala vrednost = 0
+    expect(m).toMatchObject({
+      impressions: null,
+      website_clicks: 5,
+      raw: {
+        engagement: null,
+        BUSINESS_IMPRESSIONS_DESKTOP_MAPS: 12,
+        BUSINESS_IMPRESSIONS_DESKTOP_SEARCH: 30,
+        BUSINESS_IMPRESSIONS_MOBILE_MAPS: 41,
+        BUSINESS_IMPRESSIONS_MOBILE_SEARCH: 0,
+        WEBSITE_CLICKS: 5,
+        CALL_CLICKS: 2,
+        BUSINESS_DIRECTION_REQUESTS: 0,
+        MESSAGING_CLICKS: 1,
+      },
+    })
+    // Analitika pokazuje metrike lokacije odvojeno
+    const overview = await computeOverview(
+      createSupabaseAdminClient(),
+      brandId,
+      '2026-10-01T00:00:00.000Z',
+      '2026-10-31T23:59:59.999Z',
+    )
+    const loc = overview.locations.find((l) => l.accountId === novisadId)
+    expect(loc).toMatchObject({
+      days: 1,
+      metrics: {
+        BUSINESS_IMPRESSIONS_DESKTOP_MAPS: 12,
+        BUSINESS_IMPRESSIONS_MOBILE_MAPS: 41,
+        CALL_CLICKS: 2,
+      },
+    })
 
     const { data: published } = await admin
       .from('post_targets')
