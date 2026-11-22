@@ -3,7 +3,7 @@ import { getLocale, getTranslations } from 'next-intl/server'
 
 import { AuthCard } from '@/components/auth/auth-card'
 import { RegisterForm } from '@/components/auth/register-form'
-import { configured } from '@/lib/env'
+import { googleSignInEnabled } from '@/lib/auth/providers'
 import { nextPathSchema } from '@/lib/schemas/auth'
 import { publicMetadata } from '@/lib/seo'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
@@ -25,11 +25,15 @@ async function registrationOpen(): Promise<boolean> {
 export default async function RegisterPage({ searchParams }: PageProps<'/register'>) {
   const params = await searchParams
   const next = nextPathSchema.parse(typeof params.next === 'string' ? params.next : undefined)
-  const [open, t] = await Promise.all([registrationOpen(), getTranslations('auth.register')])
+  const [open, google, t] = await Promise.all([
+    registrationOpen(),
+    googleSignInEnabled(),
+    getTranslations('auth.register'),
+  ])
   return (
     <AuthCard title={t('title')} description={t('description')}>
       {open ? (
-        <RegisterForm next={next} googleEnabled={configured.google} />
+        <RegisterForm next={next} googleEnabled={google} />
       ) : (
         <p className="text-sm text-muted-foreground">{t('closed')}</p>
       )}

@@ -7,12 +7,12 @@
     {{ if eq .Data.locale "en" }}
     <h2 style="font-size:20px;margin:0 0 12px">Reset your password</h2>
     <p style="font-size:15px;line-height:24px;margin:0 0 16px">Click the button to choose a new password for your Sova account.</p>
-    <p style="margin:0 0 16px"><a href="{{ .ConfirmationURL }}" style="background:#2563eb;color:#ffffff;border-radius:8px;padding:12px 20px;font-size:15px;font-weight:600;text-decoration:none;display:inline-block">Choose a new password</a></p>
+    <p style="margin:0 0 16px"><a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery&redirect_to={{ .RedirectTo }}" style="background:#2563eb;color:#ffffff;border-radius:8px;padding:12px 20px;font-size:15px;font-weight:600;text-decoration:none;display:inline-block">Choose a new password</a></p>
     <p style="font-size:13px;line-height:20px;color:#6b7280;margin:0">If you didn't ask for a reset, ignore this email; your password stays the same.</p>
     {{ else }}
     <h2 style="font-size:20px;margin:0 0 12px">Promena lozinke</h2>
     <p style="font-size:15px;line-height:24px;margin:0 0 16px">Kliknite na dugme da izaberete novu lozinku za nalog u Sovi.</p>
-    <p style="margin:0 0 16px"><a href="{{ .ConfirmationURL }}" style="background:#2563eb;color:#ffffff;border-radius:8px;padding:12px 20px;font-size:15px;font-weight:600;text-decoration:none;display:inline-block">Izaberi novu lozinku</a></p>
+    <p style="margin:0 0 16px"><a href="{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=recovery&redirect_to={{ .RedirectTo }}" style="background:#2563eb;color:#ffffff;border-radius:8px;padding:12px 20px;font-size:15px;font-weight:600;text-decoration:none;display:inline-block">Izaberi novu lozinku</a></p>
     <p style="font-size:13px;line-height:20px;color:#6b7280;margin:0">Ako niste vi tražili promenu, zanemarite poruku; lozinka ostaje ista.</p>
     {{ end }}
     <hr style="border:0;border-top:1px solid #e5e7eb;margin:24px 0 12px" />

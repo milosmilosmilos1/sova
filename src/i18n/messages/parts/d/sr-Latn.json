@@ -750,6 +750,7 @@
       "deleted": "Nalog je obrisan zajedno sa vašim podacima. Hvala što ste koristili Sovu.",
       "errors": {
         "link": "Link je nevažeći ili je istekao. Prijavite se ili zatražite nov link.",
+        "browser": "Link je otvoren u drugom pregledaču. Ako ste potvrđivali email, adresa je potvrđena. Prijavite se ovde.",
         "provider": "Prijava preko spoljnog naloga nije uspela. Pokušajte ponovo.",
         "google": "Google prijava trenutno nije dostupna."
       },

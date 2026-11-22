@@ -4,7 +4,7 @@ import { getLocale, getTranslations } from 'next-intl/server'
 import { SignedOutBroadcast } from '@/components/app/auth-sync'
 import { AuthCard } from '@/components/auth/auth-card'
 import { LoginForm } from '@/components/auth/login-form'
-import { configured } from '@/lib/env'
+import { googleSignInEnabled } from '@/lib/auth/providers'
 import { nextPathSchema } from '@/lib/schemas/auth'
 import { publicMetadata } from '@/lib/seo'
 
@@ -14,12 +14,16 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /** Greške iz adrese (`?error=`); nepoznata greška se prikazuje kao nevažeći link. */
-const ERRORS = ['link', 'provider', 'google'] as const
+const ERRORS = ['link', 'browser', 'provider', 'google'] as const
 type LoginError = (typeof ERRORS)[number]
 const isLoginError = (value: string): value is LoginError => (ERRORS as readonly string[]).includes(value)
 
 export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
-  const [params, t] = await Promise.all([searchParams, getTranslations('auth.login')])
+  const [params, google, t] = await Promise.all([
+    searchParams,
+    googleSignInEnabled(),
+    getTranslations('auth.login'),
+  ])
   const next = nextPathSchema.parse(typeof params.next === 'string' ? params.next : undefined)
   const errorKey = typeof params.error === 'string' ? params.error : undefined
   const deleted = params.nalog === 'obrisan'
@@ -34,7 +38,7 @@ export default async function LoginPage({ searchParams }: PageProps<'/login'>) {
       ) : null}
       <LoginForm
         next={next}
-        googleEnabled={configured.google}
+        googleEnabled={google}
         initialError={errorKey ? t(`errors.${isLoginError(errorKey) ? errorKey : 'link'}`) : undefined}
       />
     </AuthCard>

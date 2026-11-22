@@ -750,6 +750,7 @@
       "deleted": "Your account has been deleted along with your data. Thank you for using Sova.",
       "errors": {
         "link": "The link is invalid or has expired. Log in or request a new link.",
+        "browser": "The link opened in a different browser. If you were confirming your email, your address is confirmed. Log in here.",
         "provider": "Logging in with an external account didn't work. Please try again.",
         "google": "Google sign-in isn't available right now."
       },

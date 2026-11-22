@@ -1710,3 +1710,15 @@ ODOBRENJA.md odeljak 2 (LinkedIn, Canva, Figma).
 - Vlasnik u portalima: Canva javna integracija, MFA, bez localhost redirecta, probni nalog i snimak; Figma javna aplikacija, naziv bez reči „Figma”, logo 512×512.
 
 Razlog: uslovi pregleda LinkedIn-a, Canve i Figme.
+
+## D-185 · 22.11.2026 · usvojeno · Linkovi iz mejlova bez PKCE-a, Google dugme samo kad je Google uključen
+
+Problem na produkciji 22.11.: link za potvrdu iz mejla vodio je na `/login?error=link`, a Google prijava na Supabase grešku „provider is not enabled”.
+
+- Uzrok linka: podrazumevani Supabase šablon (`{{ .ConfirmationURL }}`) koristi PKCE. Supabase potvrdi adresu i vrati `code`, ali razmena koda traži verifier cookie iz pregledača u kom je nalog napravljen. Mejl otvoren u Gmail aplikaciji, na telefonu ili u drugom profilu nema taj cookie, pa sesija ne nastaje iako je adresa potvrđena.
+- Šabloni u `supabase/templates/` sada vode na `{{ .SiteURL }}/auth/callback?token_hash={{ .TokenHash }}&type=…&redirect_to={{ .RedirectTo }}` (tip `email` za potvrdu i magic link, `recovery`, `email_change`), po Supabase uputstvu za serverske tokove. Callback radi `verifyOtp` i čita `next` iz `redirect_to` (to je naš callback sa `?next=`), pa i pozivnice i reset lozinke stižu na pravu stranu. Važi tek kad vlasnik nalepi nove šablone.
+- Stari linkovi i PKCE bez verifier-a: callback prepoznaje `pkce_code_verifier_not_found` i šalje na `/login?error=browser` sa porukom da je adresa potvrđena i da se korisnik prijavi, umesto „link je nevažeći”.
+- Google: `configured.google` (GOOGLE_CLIENT_ID i SECRET) postoji zbog YouTube i Business veze i ne znači da je Google uključen u Supabase Auth. Dugme na prijavi i registraciji sada zavisi od javnog `GET /auth/v1/settings` (`external.google`), sa pamćenjem 5 minuta (`lib/auth/providers.ts`). Kad vlasnik uključi Google u Supabase-u, dugme se pojavi samo.
+- Testovi: `tests/e2e/auth-links.spec.ts` (token_hash u novom pregledaču vodi na `next` i potvrđuje adresu, nevažeći token, PKCE bez verifier-a).
+
+Razlog: registracija mora da radi bez obzira gde korisnik otvori mejl; dugme koje vodi na grešku je gore od dugmeta kog nema.
