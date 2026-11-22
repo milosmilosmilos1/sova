@@ -572,7 +572,8 @@ export async function schedulePost(viewer: Viewer, postId: string, input: Schedu
  * dozvoljeni uredniku). Sadržaj se proverava pre pauze, da neuspela provera ne ostavi objavu pauziranu.
  */
 export async function publishNow(viewer: Viewer, postId: string, version: number): Promise<PostView> {
-  const at = new Date(Math.ceil((Date.now() + 15_000) / 60_000) * 60_000).toISOString()
+  // „Objavi sada” kreće za nekoliko sekundi, ne na sledeći pun minut (do 75 s čekanja, 22.11.)
+  const at = new Date(Date.now() + 10_000).toISOString()
   const post = await loadPost(viewer, postId)
   if (post.status !== 'scheduled') return schedulePost(viewer, postId, { version, scheduledFor: at })
   await actor(viewer, postId, 'pause')

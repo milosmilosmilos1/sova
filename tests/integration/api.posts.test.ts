@@ -452,8 +452,9 @@ describe('Zakazivanje', () => {
     expect(now.status).toBe(200)
     expect(now.json.data!.status).toBe('scheduled')
     const at = new Date(now.json.data!.scheduledFor!).getTime()
-    expect(at).toBeGreaterThan(Date.now())
-    expect(at - Date.now()).toBeLessThanOrEqual(90_000)
+    // kreće za nekoliko sekundi, ne na sledeći pun minut
+    expect(at).toBeGreaterThan(Date.now() - 60_000)
+    expect(at - Date.now()).toBeLessThanOrEqual(15_000)
     expect(now.json.data!.targets[0]).toMatchObject({ status: 'scheduled' })
     expect(new Date(now.json.data!.targets[0]!.scheduledAt!).getTime()).toBe(at)
     expect(vi.mocked(enqueueTargetUnscheduled).mock.calls.length).toBe(unscheduledBefore + 1)
