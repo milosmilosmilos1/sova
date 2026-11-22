@@ -23,6 +23,7 @@ import {
 import { useTranslations } from 'next-intl'
 import { Fragment, useState, type CSSProperties, type ReactNode } from 'react'
 
+import type { PhotoCredit } from '@/lib/media/unsplash'
 import { readGbpOptions } from '@/config/google-business'
 import { linkedinAsDocument, linkedinDocumentTitle, readLinkedInOptions } from '@/config/linkedin'
 import { readPoll, type PollOptions } from '@/config/poll'
@@ -61,6 +62,8 @@ export interface MockMedia {
   poster?: boolean
   /** slajd koji je nacrtala Sova (LinkedIn ih prikazuje kao PDF dokument, D-149) */
   designed?: boolean
+  /** autor i Unsplash sa linkovima (D-190) */
+  credit?: PhotoCredit | null
 }
 
 interface Props {

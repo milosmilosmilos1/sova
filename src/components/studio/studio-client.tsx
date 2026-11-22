@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 import { useEffect, useRef, useState } from 'react'
 
 import { previewUrl, StylePicker } from '@/components/design/style-picker'
+import { PhotoCreditLine } from '@/components/media/photo-credit'
 import { NetworkName } from '@/components/shared/network-badge'
 import { ComposeKind, type ComposeKindValue } from '@/components/studio/compose-kind'
 import { FigmaImportPanel } from '@/components/studio/figma-import'
@@ -32,6 +33,7 @@ import {
 } from '@/lib/visuals/design/catalog'
 import type { DesignColors } from '@/lib/visuals/design/types'
 import { uploadMediaFile } from '@/lib/media/client-upload'
+import type { PhotoCredit } from '@/lib/media/unsplash'
 
 /**
  * Ručni alati Studija: forma „Nova objava” i alati iz prve verzije (brif, faza 5). Od D-116 je
@@ -731,7 +733,6 @@ function VisualPanel({
   const [aspect, setAspect] = useState<(typeof TEMPLATE_ASPECTS)[number]>('1:1')
   const [template, setTemplate] = useState<(typeof TEMPLATES)[number]>('auto')
   const [source, setSource] = useState<'unsplash' | 'asset' | 'none'>('unsplash')
-  const [unsplashQuery, setUnsplashQuery] = useState('')
   const [picked, setPicked] = useState<{ id: string; attribution: string } | null>(null)
   const [photo, setPhoto] = useState<UploadResult | null>(null)
   const [jobId, setJobId] = useState<string | null>(null)
@@ -753,11 +754,7 @@ function VisualPanel({
               ? { kind: 'none' }
               : source === 'asset'
                 ? { kind: 'asset', mediaAssetId: photo?.id }
-                : {
-                    kind: 'unsplash',
-                    photoId: picked?.id,
-                    query: picked ? undefined : unsplashQuery || headline,
-                  },
+                : { kind: 'unsplash', photoId: picked?.id },
         },
       }),
     onSuccess: (d) => {
@@ -784,7 +781,12 @@ function VisualPanel({
     }
   }, [job.data, onDone])
 
-  const canStart = headline.trim().length >= 3 && !start.isPending && (source !== 'asset' || photo)
+  // Unsplash fotografiju korisnik bira sam (D-190), pa bez izbora nema slanja
+  const canStart =
+    headline.trim().length >= 3 &&
+    !start.isPending &&
+    (source !== 'asset' || photo) &&
+    (source !== 'unsplash' || picked)
 
   return (
     <Card>
@@ -874,13 +876,6 @@ function VisualPanel({
             <div className="space-y-2">
               <p className="text-xs text-muted-foreground">{t('visual.unsplashHint')}</p>
               <UnsplashPicker value={picked} onChange={setPicked} />
-              {!picked ? (
-                <Input
-                  value={unsplashQuery}
-                  onChange={(e) => setUnsplashQuery(e.target.value)}
-                  placeholder={t('visual.queryPlaceholder')}
-                />
-              ) : null}
             </div>
           ) : null}
           {source === 'asset' ? <PhotoUpload brandId={brandId} value={photo} onChange={setPhoto} /> : null}
@@ -1506,7 +1501,13 @@ interface ComposeView {
   format: PostFormat
   locale: string
   variants: Array<{ platform: string; text: string; firstComment: string | null }>
-  media: Array<{ id: string; kind: string; url: string; attribution: string | null }>
+  media: Array<{
+    id: string
+    kind: string
+    url: string
+    attribution: string | null
+    credit?: PhotoCredit | null
+  }>
   targets: number
   notes: string[]
   tokensCharged: number
@@ -1544,7 +1545,7 @@ function ComposePanel({
   const [platforms, setPlatforms] = useState<SocialPlatform[]>(['instagram', 'facebook'])
   const [locale, setLocale] = useState(brandLocale)
   const [format, setFormat] = useState<PostFormatChoice | 'poll'>('auto')
-  const [source, setSource] = useState<'auto' | 'unsplash' | 'pexels' | 'template'>('auto')
+  const [source, setSource] = useState<'auto' | 'pexels' | 'template'>('auto')
   const [topic, setTopic] = useState('')
   const [goal, setGoal] = useState('engagement')
   const [cta, setCta] = useState('')
@@ -1693,7 +1694,6 @@ function ComposePanel({
                 className={selectClass}
               >
                 <option value="auto">{t('compose.sourceAuto')}</option>
-                <option value="unsplash">Unsplash</option>
                 <option value="pexels">Pexels</option>
                 <option value="template">
                   {t('compose.sourceTemplate', { count: prices?.visual_template ?? 2 })}
@@ -1834,10 +1834,8 @@ function ComposePanel({
                 ? t('compose.autoAmong', { list: allowed.map((f) => t(`formats.${f}.label`)).join(', ') })
                 : t('compose.noCommon')
               : t(`formats.${chosen}.hint`)}
-          {wantsVideo && !sources.pexels && source !== 'template' && source !== 'unsplash'
-            ? ` ${t('compose.noPexels')}`
-            : ''}
-          {needsVisual && source === 'unsplash' && !sources.unsplash ? ` ${t('compose.noUnsplash')}` : ''}
+          {wantsVideo && !sources.pexels && source !== 'template' ? ` ${t('compose.noPexels')}` : ''}
+          {needsVisual && !designed && !ownPhotos && sources.unsplash ? ` ${t('compose.unsplashHint')}` : ''}
         </p>
 
         <ComposeKind
@@ -1944,7 +1942,11 @@ function ComposePanel({
                         className="w-full rounded-md border object-cover"
                       />
                     )}
-                    {m.attribution ? (
+                    {m.credit ? (
+                      <figcaption>
+                        <PhotoCreditLine credit={m.credit} />
+                      </figcaption>
+                    ) : m.attribution ? (
                       <figcaption className="text-[11px] text-muted-foreground">{m.attribution}</figcaption>
                     ) : null}
                   </figure>

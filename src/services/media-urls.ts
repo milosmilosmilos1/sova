@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { ApiError } from '@/lib/api/errors'
+import { unsplashDisplayUrl } from '@/lib/media/unsplash'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 
 export interface StoredObject {
@@ -18,6 +19,8 @@ export interface StoredObject {
  * korisnika sa pristupom vredi isto kao dva nova potpisa.
  */
 export const PREVIEW_URL_SEC = 2 * 3600
+/** širina Unsplash sličice u listama (lista nacrta, kalendar, objave) */
+export const THUMB_WIDTH = 400
 const REUSE_MS = (PREVIEW_URL_SEC * 1000) / 2
 const MEMO_MAX = 5000
 
@@ -82,6 +85,34 @@ function flush(): void {
   const batches = [...queue.values()]
   queue.clear()
   for (const batch of batches) void signBatch(batch)
+}
+
+export interface DisplayedObject extends StoredObject {
+  source?: string | null
+  source_data?: unknown
+  width?: number | null
+  height?: number | null
+}
+
+/**
+ * Adresa za prikaz u aplikaciji i na strani za odobrenje (D-190): Unsplash fotografija se prikazuje sa
+ * Unsplash adrese (hotlink, po pravilima API-ja), sve ostalo potpisanim linkom iz skladišta. Za objavu
+ * na mreži ide uvek `signedUrl` (kopija u skladištu). Sličice u listama traže manju širinu (`THUMB_WIDTH`).
+ */
+export function previewUrl(
+  asset: DisplayedObject,
+  expiresSec = PREVIEW_URL_SEC,
+  maxWidth = 1080,
+): Promise<string> {
+  if (asset.source === 'unsplash') {
+    const hotlink = unsplashDisplayUrl(
+      asset.source_data,
+      { width: asset.width ?? null, height: asset.height ?? null },
+      maxWidth,
+    )
+    if (hotlink) return Promise.resolve(hotlink)
+  }
+  return signedUrl(asset, expiresSec)
 }
 
 /** Potpisan URL; podrazumevano za pregled u aplikaciji (2 h). Mreže traže duži rok. */

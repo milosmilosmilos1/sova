@@ -6,7 +6,6 @@ import { configureFontLoader } from '@/lib/visuals/fonts'
 import { resolveDesign } from '@/services/design/brand-design'
 import { renderDesignSlides } from '@/services/design/render-post'
 import { pickPexelsPhotos, pickPexelsVideo } from '@/services/visuals/pexels'
-import { pickUnsplashPhotos } from '@/services/visuals/unsplash'
 
 import { geminiServer, resetGeminiMock } from './gemini-mock'
 import { admin, call, createTestUser, deleteTestUser, type TestUser } from './helpers'
@@ -94,12 +93,8 @@ describe('fotografije i snimci bez ponavljanja', () => {
   it('sledeće objave ne dobijaju fotografije koje je brend već dobio; kad ih nema, ne vraćaju stare', async () => {
     const before = await stockRefs()
     const picked: string[] = []
-    for (let i = 0; i < 6; i++) {
-      const batch = await pickUnsplashPhotos({ ...ctx(), query: 'coffee', count: 3, crop: 'square' })
-      picked.push(...batch.map((p) => `u:${(p.asset.source_data as { photoId: string }).photoId}`))
-      if (!batch.length) break
-    }
-    for (let i = 0; i < 3; i++) {
+    // lažni Pexels ima dvanaest fotografija: dve po objavi, dok ih ne nestane
+    for (let i = 0; i < 8; i++) {
       const batch = await pickPexelsPhotos({ ...ctx(), query: 'coffee', count: 2, crop: 'square' })
       picked.push(...batch.map((p) => `p:photo:${(p.asset.source_data as { pexelsId: number }).pexelsId}`))
       if (!batch.length) break
@@ -108,7 +103,6 @@ describe('fotografije i snimci bez ponavljanja', () => {
     expect(new Set(picked).size).toBe(picked.length)
     expect(picked.filter((r) => before.includes(r))).toEqual([])
     // sve je potrošeno: nova pretraga ne vraća ništa umesto stare fotografije
-    expect(await pickUnsplashPhotos({ ...ctx(), query: 'coffee', count: 1, crop: 'square' })).toEqual([])
     expect(await pickPexelsPhotos({ ...ctx(), query: 'coffee', count: 1, crop: 'square' })).toEqual([])
   })
 

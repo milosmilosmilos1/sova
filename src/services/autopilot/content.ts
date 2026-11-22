@@ -22,7 +22,6 @@ import { failGeneration, startGeneration } from '@/services/ai/generations'
 import { buildBrandContext } from '@/services/ai/text'
 import { pickPexelsPhotos, pickPexelsVideo } from '@/services/visuals/pexels'
 import { runVisualTemplate } from '@/services/visuals/template'
-import { pickUnsplashPhotos } from '@/services/visuals/unsplash'
 import type { Database, Json } from '@/types/database'
 
 /**
@@ -173,7 +172,7 @@ export async function generateDraftText(
 
 /**
  * Vizual iz šablona (boje, fontovi i logo brenda) kao JPEG; vraća media asset. Bez fotografije za
- * Autopilot (D-068), sa već izabranom Unsplash fotografijom za „Novu objavu” (bez rangiranja, D-107).
+ * Autopilot (D-068), sa fotografijom iz biblioteke (Pexels) za „Novu objavu” (D-107, D-190).
  */
 export async function generateTemplateVisual(
   brand: BrandRow,
@@ -186,7 +185,8 @@ export async function generateTemplateVisual(
     /** korisnik iz Studija; Autopilot radi bez korisnika */
     userId?: string | null
     aspectRatio?: '1:1' | '9:16'
-    photoId?: string | null
+    /** fotografija iz biblioteke brenda za pozadinu (Unsplash Sova ne bira sama, D-190) */
+    photoAssetId?: string | null
   },
 ): Promise<{ assetId: string; tokens: number } | null> {
   const price = await getTokenPrice('visual_template')
@@ -207,7 +207,7 @@ export async function generateTemplateVisual(
       cta: input.cta ? input.cta.slice(0, 40) : undefined,
       aspectRatio: input.aspectRatio ?? '1:1',
       template: 'auto',
-      image: input.photoId ? { kind: 'unsplash', photoId: input.photoId } : { kind: 'none' },
+      image: input.photoAssetId ? { kind: 'asset', mediaAssetId: input.photoAssetId } : { kind: 'none' },
       format: 'jpeg',
     } as unknown as NonNullable<Json>,
     status: 'queued',
@@ -232,7 +232,7 @@ export interface DraftMedia {
 }
 
 /**
- * Vizual nacrta po vrsti (D-107): video sa Pexels-a, fotografije sa Unsplash-a pa Pexels-a, bez
+ * Vizual nacrta po vrsti (D-107): video i fotografije sa Pexels-a (Unsplash ne, D-190), bez
  * Gemini-ja i bez tokena. Kad izvori nemaju rezultat ili nisu podešeni, rezerva je vizual iz šablona
  * (2 tokena), kao ranije (D-068); `required` znači da mreža bez vizuala ne prima objavu.
  */
@@ -270,20 +270,10 @@ export async function draftMedia(
     }
     const crop = format === 'story' ? 'portrait' : 'square'
     const count = format === 'carousel' ? 3 : 1
-    // Unsplash koliko limit prima (D-122), ostatak Pexels; pad Unsplash-a ne preskače Pexels
-    let photos: string[] = []
-    try {
-      photos = (await pickUnsplashPhotos({ ...ctx, query: input.query, count, crop })).map((p) => p.asset.id)
-    } catch (error) {
-      logger.warn('autopilot_unsplash_failed', { postId: input.postId, error })
-    }
-    if (photos.length < count)
-      photos = [
-        ...photos,
-        ...(await pickPexelsPhotos({ ...ctx, query: input.query, count: count - photos.length, crop })).map(
-          (p) => p.asset.id,
-        ),
-      ]
+    // fotografije sa Pexels-a: Unsplash API je za izbor korisnika, ne za automatski (D-190)
+    const photos = (await pickPexelsPhotos({ ...ctx, query: input.query, count, crop })).map(
+      (p) => p.asset.id,
+    )
     if (photos.length) {
       if (format === 'carousel' && photos.length < 2) format = 'image'
       return {

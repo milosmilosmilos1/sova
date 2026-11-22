@@ -2,6 +2,7 @@
   "common": {
     "appName": "Sova",
     "tagline": "Enter your website, Sova runs your social media.",
+    "photoCredit": "Photo by <photographer>{name}</photographer> on <unsplash>Unsplash</unsplash>",
     "retry": "Try again",
     "back": "Back",
     "backHome": "Back to home",
@@ -115,7 +116,7 @@
       "none": "No photos",
       "noneHint": "Clean typographic design.",
       "stock": "Free photos",
-      "stockHint": "Unsplash and Pexels, no cost.",
+      "stockHint": "Pexels, no cost.",
       "gallery": "My gallery",
       "galleryHint": "Photos you added to the library."
     },

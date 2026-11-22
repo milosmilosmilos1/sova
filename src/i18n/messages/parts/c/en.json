@@ -212,7 +212,7 @@
     },
     "content": {
       "title": "Content",
-      "description": "The language and post types Autopilot creates. Gemini writes the text with hashtags, photos come from Unsplash and videos from Pexels.",
+      "description": "The language and post types Autopilot creates. Gemini writes the text with hashtags; photos and videos come from Pexels.",
       "formats": "Post types",
       "mix": "AI mixes types",
       "mixHint": "The chosen types take turns through the week, with images and carousels more often. Off: always the first chosen type the network accepts.",
@@ -608,7 +608,7 @@
     },
     "visual": {
       "title": "Template visual",
-      "description": "Colours, fonts and the logo come from the Brand Brain profile. A photo from Unsplash (AI picks the best one), your own photo or no image. 2 tokens.",
+      "description": "Colours, fonts and the logo come from the Brand Brain profile. A photo from Unsplash that you pick, your own photo or no image. 2 tokens.",
       "headline": "Headline on the image",
       "headlinePlaceholder": "E.g. Air conditioner service from £49",
       "subtext": "Subheading (optional)",
@@ -620,8 +620,7 @@
         "asset": "My photo",
         "none": "No image"
       },
-      "unsplashHint": "Pick a photo or leave it empty: Sova searches by the headline and AI picks the best one.",
-      "queryPlaceholder": "Term for the automatic search (optional)",
+      "unsplashHint": "Search and pick a photo. Sova does not pick Unsplash photos on its own.",
       "submit": "CREATE VISUAL",
       "failed": "The visual was not created.",
       "templateUsed": "Template {template}"
@@ -688,7 +687,7 @@
       "format": "Post type",
       "formatAuto": "AI chooses (mixes types)",
       "source": "Photo or video",
-      "sourceAuto": "AI chooses (Unsplash for photos, Pexels for video)",
+      "sourceAuto": "AI chooses (Pexels for photos and video)",
       "sourceTemplate": "Template visual ({count, plural, one {# token} other {# tokens}})",
       "look": "Look",
       "lookDesign": "Design in the brand style",
@@ -700,7 +699,7 @@
       "autoAmong": "AI chooses the type that suits the topic best, from: {list}.",
       "noCommon": "The chosen networks have no post type in common. Create separate posts.",
       "noPexels": "Pexels is not switched on yet, so add video from Canva or the library.",
-      "noUnsplash": "Unsplash is not switched on yet.",
+      "unsplashHint": "You pick Unsplash photos yourself in the Unsplash photos tool, then add them to the post in the editor.",
       "topicPlaceholder": "E.g. Friday at the club: guest DJ, free entry until midnight",
       "ctaPlaceholder": "Message us to book a table",
       "link": "Link (empty = brand website)",

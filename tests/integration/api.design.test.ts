@@ -314,7 +314,7 @@ describe('Nova objava sa dizajnom (D-108)', () => {
     expect(r.json.data!.tokensCharged).toBe(2)
   })
 
-  it('stil sa fotografijom uzima fotografije sa Unsplash-a, kvadrat 1:1 po izboru', async () => {
+  it('stil sa fotografijom uzima fotografije sa Pexels-a (Unsplash ne, D-190), kvadrat 1:1 po izboru', async () => {
     enqueueReply(carouselReply(3))
     const r = await compose({
       format: 'carousel',
@@ -327,7 +327,8 @@ describe('Nova objava sa dizajnom (D-108)', () => {
     const media = await mediaOf(r.json.data!.postId)
     expect(media).toHaveLength(3)
     expect(media.every((m) => m.width === 1080 && m.height === 1080)).toBe(true)
-    expect(visualsState.unsplashSearches).toBe(1)
+    expect(visualsState.unsplashSearches).toBe(0)
+    expect(visualsState.pexelsSearches.filter((x) => x.startsWith('photo:')).length).toBeGreaterThan(0)
     expect(media.every((m) => typeof m.source_data.photoAssetId === 'string')).toBe(true)
   })
 

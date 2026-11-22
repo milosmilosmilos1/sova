@@ -1,7 +1,6 @@
 import 'server-only'
 
 import { toApiError } from '@/lib/ai/errors'
-import { costFor } from '@/lib/ai/orchestrator'
 import { ApiError } from '@/lib/api/errors'
 import type { Viewer } from '@/lib/auth/viewer'
 import { EDIT_ROLES, requireMembership } from '@/lib/auth/workspace'
@@ -29,8 +28,8 @@ import { pickPhotoForTemplate } from '@/services/visuals/unsplash'
 import type { Json } from '@/types/database'
 
 /**
- * „Vizual iz šablona” (brif 6.2): 2 tokena, 202 + posao. Slika: Unsplash (pretraga + vision
- * rangiranje), fotografija iz biblioteke ili bez slike; boje, fontovi i logo iz profila brenda.
+ * „Vizual iz šablona” (brif 6.2): 2 tokena, 202 + posao. Slika: Unsplash fotografija koju je korisnik
+ * izabrao (D-190), fotografija iz biblioteke ili bez slike; boje, fontovi i logo iz profila brenda.
  */
 export interface VisualJobAccepted {
   generationId: string
@@ -171,8 +170,6 @@ export async function runVisualTemplate(
     let imageDataUri: string | null = null
     let attribution: string | null = null
     let imageInfo: Record<string, Json> = { kind: job.image.kind }
-    let rankModel: string | null = null
-    let rankUsage = { inputTokens: 0, outputTokens: 0, thoughtTokens: 0 }
     const notes: string[] = []
     if (job.image.kind === 'asset') {
       const { data: asset } = await admin
@@ -186,31 +183,17 @@ export async function runVisualTemplate(
       const attr = asset.attribution as { text?: string } | null
       if (asset.source === 'unsplash' && attr?.text) attribution = attr.text
     } else if (job.image.kind === 'unsplash') {
-      const picked = await pickPhotoForTemplate({
-        photoId: job.image.photoId ?? null,
-        query: job.image.query ?? null,
-        aspect: job.aspectRatio,
-        headline: job.headline,
-        brandName: job.brandName,
-        photoStyle: visuals.photoStyle,
-      })
+      // samo fotografija koju je korisnik izabrao iz pretrage (D-190); stari posao sa upitom ide bez slike
+      const picked = await pickPhotoForTemplate({ photoId: job.image.photoId ?? null })
       if (!picked) {
-        notes.push('Unsplash nije vratio fotografiju; napravljen je šablon bez slike.')
+        notes.push('Unsplash fotografija nije izabrana; napravljen je šablon bez slike.')
       } else {
         imageDataUri = await prepareImageForTemplate(picked.bytes)
         attribution = picked.attribution.text
-        rankModel = picked.rank?.model ?? null
-        if (picked.rank) rankUsage = picked.rank.usage
-        if (picked.rank?.skipped) notes.push(picked.rank.skipped)
         imageInfo = {
           kind: 'unsplash',
           photoId: picked.photo.id,
           attribution: picked.attribution as unknown as Json,
-          rankModel,
-          candidates:
-            picked.rank?.ordered
-              .slice(0, 8)
-              .map((c) => ({ id: c.photo.id, score: c.score, reason: c.reason })) ?? [],
         }
       }
     }
@@ -279,11 +262,11 @@ export async function runVisualTemplate(
       generationId,
       uploadedBy: gen.user_id,
     })
-    const cost = rankModel ? await costFor(rankModel, rankUsage) : 0
+    // šablon ne zove model (D-180): bez modela, tokena provajdera i troška
     await admin
       .from('ai_generations')
       .update({
-        model: rankModel,
+        model: null,
         output: {
           assetId: asset.id,
           mimeType: asset.mime_type,
@@ -297,9 +280,9 @@ export async function runVisualTemplate(
         } as unknown as NonNullable<Json>,
         output_asset_id: asset.id,
         duration_ms: Date.now() - started,
-        provider_input_tokens: rankUsage.inputTokens,
-        provider_output_tokens: rankUsage.outputTokens + rankUsage.thoughtTokens,
-        cost_usd: cost,
+        provider_input_tokens: 0,
+        provider_output_tokens: 0,
+        cost_usd: 0,
         progress: null,
       })
       .eq('id', generationId)

@@ -372,8 +372,8 @@ export interface PhotoRefreshSteps {
 }
 
 /**
- * Pauza između nacrta i čekanje kad izvori potroše limit sata: Unsplash demo prima 50 zahteva na
- * sat, Pexels 200, a dele ih svi brendovi platforme.
+ * Pauza između nacrta i čekanje kad izvor potroši limit sata: Pexels prima 200 zahteva na sat, a
+ * dele ih svi brendovi platforme.
  */
 export const PHOTO_REFRESH_PAUSE_MS = 20_000
 export const PHOTO_REFRESH_LIMIT_WAIT_MS = 60 * 60_000

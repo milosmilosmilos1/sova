@@ -17,7 +17,9 @@ import { variantFor } from '@/lib/visuals/design/variants'
 import { assertDailyQuota } from '@/services/ai/generations'
 import { buildBrandContext } from '@/services/ai/text'
 import type { BrandRow } from '@/services/brands'
+import type { PhotoCredit } from '@/lib/media/unsplash'
 import { getAsset, signedUrl } from '@/services/media'
+import { creditsFor } from '@/services/media-credit'
 import { createPost } from '@/services/posts/posts'
 import { listSocialAccounts } from '@/services/social/accounts'
 
@@ -35,14 +37,22 @@ import { renderDesignSlides } from './render-post'
 
 /**
  * „Nova objava” sa dizajnom (D-108): Gemini piše slajdove i opis, stil brenda crta slajdove, a
- * fotografije su besplatne (Unsplash, Pexels) ili iz galerije. 2 tokena za tekst, slajdovi 0.
+ * fotografije su besplatne (Pexels; Unsplash samo kad ga korisnik izabere, D-190) ili iz galerije.
+ * 2 tokena za tekst, slajdovi 0.
  */
 export interface DesignedComposeResult {
   postId: string
   format: PostFormat
   locale: string
   variants: Array<{ platform: string; text: string; firstComment: string | null }>
-  media: Array<{ id: string; kind: string; url: string; attribution: string | null }>
+  media: Array<{
+    id: string
+    kind: string
+    url: string
+    attribution: string | null
+    /** autor i Unsplash za slajd preko fotografije koju je korisnik izabrao sa Unsplash-a (D-190) */
+    credit: PhotoCredit | null
+  }>
   targets: number
   notes: string[]
   tokensCharged: number
@@ -196,11 +206,16 @@ export async function composeDesigned(
     .from('posts')
     .update({ design: designContext as unknown as Json })
     .eq('id', post.id)
+  const slideAssets = await Promise.all(rendered.assetIds.map((id) => getAsset(viewer, id)))
+  const credits = await creditsFor(slideAssets)
   const media = await Promise.all(
-    rendered.assetIds.map(async (id) => {
-      const asset = await getAsset(viewer, id)
-      return { id, kind: asset.kind, url: await signedUrl(asset), attribution: null }
-    }),
+    slideAssets.map(async (asset) => ({
+      id: asset.id,
+      kind: asset.kind,
+      url: await signedUrl(asset),
+      attribution: null,
+      credit: credits.get(asset.id) ?? null,
+    })),
   )
   return {
     postId: post.id,

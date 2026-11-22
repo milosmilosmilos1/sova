@@ -370,6 +370,9 @@ export function pexelsVideo(id: number, overrides: Record<string, unknown> = {},
   }
 }
 
+/** ID-jevi fotografija u lažnoj Pexels pretrazi (301 do 312) */
+export const PEXELS_PHOTO_IDS = Array.from({ length: 12 }, (_, i) => 301 + i)
+
 export function pexelsPhoto(id: number, alt = `fotografija ${id}`) {
   return {
     id,
@@ -412,10 +415,13 @@ export const pexelsHandlers = [
     visualsState.pexelsSearches.push(
       `photo:${url.searchParams.get('query')}:${url.searchParams.get('orientation') ?? ''}`,
     )
-    if (visualsState.pexelsEmpty) return HttpResponse.json({ photos: [] })
     const q = url.searchParams.get('query') ?? ''
+    // „nista” nema rezultata, kao i u lažnom Unsplash-u
+    if (visualsState.pexelsEmpty || q === 'nista') return HttpResponse.json({ photos: [] })
+    // dvanaest fotografija na jednoj strani: automatski izbor ide na Pexels (D-190), a karusel sa
+    // fotografijom na svakom slajdu i objave bez ponavljanja (D-121) traže više različitih
     return HttpResponse.json({
-      photos: [301, 302, 303].map((id) => pexelsPhoto(id, visualsState.pexelsAlts[id] ?? `${q} ${id}`)),
+      photos: PEXELS_PHOTO_IDS.map((id) => pexelsPhoto(id, visualsState.pexelsAlts[id] ?? `${q} ${id}`)),
     })
   }),
   http.get('https://api.pexels.com/v1/photos/:id', ({ params }) =>

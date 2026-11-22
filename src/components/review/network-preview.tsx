@@ -3,6 +3,7 @@
 import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
+import { PhotoCreditLine } from '@/components/media/photo-credit'
 import { NetworkMockup, type MockMedia, type MockTarget } from '@/components/review/network-mockups'
 import { NetworkIcon } from '@/components/shared/network-badge'
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog'
@@ -39,6 +40,12 @@ export function NetworkPreviewDialog({
   const [picked, setPicked] = useState<string | null>(null)
   const active = targets.find((x) => x.id === (picked ?? initial)) ?? targets[0]
   const twice = (x: PreviewTarget) => targets.filter((y) => y.platform === x.platform).length > 1
+  // autor i Unsplash za svaku fotografiju sa Unsplash-a u objavi, jednom po autoru (D-190)
+  const credits = [
+    ...new Map(
+      media.flatMap((m) => (m.credit ? [[m.credit.photographerUrl, m.credit] as const] : [])),
+    ).values(),
+  ]
   return (
     <Dialog
       open={open}
@@ -83,6 +90,13 @@ export function NetworkPreviewDialog({
             >
               <NetworkMockup key={active.id} target={active} media={media} />
             </div>
+            {credits.map((c) => (
+              <PhotoCreditLine
+                key={c.photographerUrl}
+                credit={c}
+                className="text-center text-xs text-muted-foreground"
+              />
+            ))}
             {placementOf(active.platform, active.options, media) === 'story' ? (
               <p className="text-center text-xs text-muted-foreground">{t('netPreview.storyNoCaption')}</p>
             ) : null}

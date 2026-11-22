@@ -212,7 +212,7 @@
     },
     "content": {
       "title": "Sadržaj",
-      "description": "Jezik i vrste objava koje Autopilot pravi. Tekst sa heštegovima piše Gemini, fotografije dolaze sa Unsplash-a, a video sa Pexels-a.",
+      "description": "Jezik i vrste objava koje Autopilot pravi. Tekst sa heštegovima piše Gemini, a fotografije i video dolaze sa Pexels-a.",
       "formats": "Vrste objava",
       "mix": "AI meša vrste",
       "mixHint": "Kroz nedelju se smenjuju izabrane vrste, a slika i karusel dolaze češće. Isključeno: uvek prva izabrana vrsta koju mreža prima.",
@@ -608,7 +608,7 @@
     },
     "visual": {
       "title": "Vizual iz šablona",
-      "description": "Boje, fontovi i logo dolaze iz Brand Brain profila. Fotografija sa Unsplash-a (AI bira najbolju), vaša fotografija ili bez slike. 2 tokena.",
+      "description": "Boje, fontovi i logo dolaze iz Brand Brain profila. Fotografija sa Unsplash-a koju sami izaberete, vaša fotografija ili bez slike. 2 tokena.",
       "headline": "Naslov na slici",
       "headlinePlaceholder": "Npr. Servis klime od 2.990 din.",
       "subtext": "Podnaslov (opciono)",
@@ -620,8 +620,7 @@
         "asset": "Moja fotografija",
         "none": "Bez slike"
       },
-      "unsplashHint": "Izaberite fotografiju ili ostavite prazno: Sova pretražuje po naslovu i AI bira najbolju.",
-      "queryPlaceholder": "Pojam za automatsku pretragu (opciono)",
+      "unsplashHint": "Potražite i izaberite fotografiju. Sova ne bira Unsplash fotografije sama.",
       "submit": "NAPRAVI VIZUAL",
       "failed": "Vizual nije napravljen.",
       "templateUsed": "Šablon {template}"
@@ -688,7 +687,7 @@
       "format": "Vrsta objave",
       "formatAuto": "AI bira (meša vrste)",
       "source": "Fotografija ili video",
-      "sourceAuto": "AI bira (Unsplash za fotografije, Pexels za video)",
+      "sourceAuto": "AI bira (Pexels za fotografije i video)",
       "sourceTemplate": "Vizual iz šablona ({count, plural, one {# token} few {# tokena} other {# tokena}})",
       "look": "Izgled",
       "lookDesign": "Dizajn u stilu brenda",
@@ -700,7 +699,7 @@
       "autoAmong": "AI bira vrstu koja najbolje nosi temu, među: {list}.",
       "noCommon": "Izabrane mreže nemaju zajedničku vrstu objave. Napravite posebne objave.",
       "noPexels": "Pexels još nije uključen, pa video dodajte iz Canve ili biblioteke.",
-      "noUnsplash": "Unsplash još nije uključen.",
+      "unsplashHint": "Fotografiju sa Unsplash-a birate sami u alatu „Unsplash fotografije”, pa je dodate u objavu u editoru.",
       "topicPlaceholder": "Npr. petak u klubu: gostujući DJ, ulaz do ponoći besplatan",
       "ctaPlaceholder": "Rezervišite sto porukom",
       "link": "Link (prazno = sajt brenda)",

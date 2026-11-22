@@ -30,6 +30,7 @@ import { ThemeVideoQueue } from '@/components/review/theme-video-queue'
 import { api, bulkRequest } from '@/components/shared/api-client'
 import { BulkBar, SelectAllBox, SelectBox, useSelection } from '@/components/shared/bulk'
 import { ErrorBox } from '@/components/shared/error-box'
+import { PhotoCreditLine } from '@/components/media/photo-credit'
 import { MediaLightbox } from '@/components/shared/media-lightbox'
 import { MediaThumb } from '@/components/shared/media-thumb'
 import { VideoDialog } from '@/components/review/video-dialog'
@@ -41,6 +42,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { PLATFORMS, type SocialPlatform } from '@/config/platforms'
+import type { PhotoCredit } from '@/lib/media/unsplash'
 import { wallClock, zonedToUtc } from '@/lib/zoned-time'
 import { cn } from '@/lib/utils'
 
@@ -90,6 +92,8 @@ interface Detail {
       width: number | null
       height: number | null
       source?: string | null
+      /** autor i Unsplash sa linkovima (D-190) */
+      credit?: PhotoCredit | null
     }>
   }
   flowName: string | null
@@ -541,6 +545,7 @@ function DetailForm({
         width: m.width,
         height: m.height,
         designed: m.source === 'template',
+        credit: m.credit ?? null,
       }))
     : detail.video?.posterUrl
       ? [{ url: detail.video.posterUrl, video: true, width: null, height: null, poster: true }]
@@ -671,6 +676,7 @@ function DetailForm({
                 {t('preview.noMedia')}
               </p>
             )}
+            {media[slide]?.credit ? <PhotoCreditLine credit={media[slide]!.credit!} /> : null}
             {media.length > 1 ? (
               <div className="flex gap-2 overflow-x-auto pb-1">
                 {media.map((m, i) => (

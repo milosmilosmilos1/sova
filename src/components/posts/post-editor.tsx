@@ -12,6 +12,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { PhotoCreditLine } from '@/components/media/photo-credit'
 import { GoogleBusinessPanel } from '@/components/posts/google-business-panel'
 import { LinkedInPanel } from '@/components/posts/linkedin-panel'
 import { PollPanel } from '@/components/posts/poll-panel'
@@ -31,6 +32,7 @@ import { readTikTokOptions } from '@/config/tiktok'
 import { INTL_UI, type AppLocale } from '@/i18n/config'
 import type { ApiResponse } from '@/lib/api/response'
 import type { WorkspaceRole } from '@/lib/auth/workspace'
+import type { PhotoCredit } from '@/lib/media/unsplash'
 import { formatDuration, uploadMediaFile } from '@/lib/media/client-upload'
 import {
   aspectFits,
@@ -63,6 +65,8 @@ interface MediaItem {
   height: number | null
   durationMs?: number | null
   altText: string | null
+  /** autor i Unsplash sa linkovima (D-190) */
+  credit?: PhotoCredit | null
 }
 interface Target {
   id: string
@@ -102,6 +106,7 @@ interface PostView {
     mimeType: string | null
     altText: string | null
     socialAccountId: string | null
+    credit?: PhotoCredit | null
   }>
   actions: string[]
 }
@@ -967,6 +972,7 @@ function EditorForm({
                           <img src={m.url} alt={m.altText ?? ''} className="size-10 rounded object-cover" />
                         ) : null}
                         <span className="text-xs text-muted-foreground">{i + 1}.</span>
+                        {m.credit ? <PhotoCreditLine credit={m.credit} /> : null}
                         <Button
                           size="sm"
                           variant={on ? 'default' : 'outline'}
@@ -1021,52 +1027,61 @@ function EditorForm({
               {library.data?.map((m) => {
                 const idx = form.mediaIds.indexOf(m.id)
                 return (
-                  <button
-                    key={m.id}
-                    type="button"
-                    disabled={replacing ? form.mediaIds.includes(m.id) || replaceMedia.isPending : !editable}
-                    onClick={() =>
-                      replacing
-                        ? replaceMedia.mutate(m.id)
-                        : set(
-                            'mediaIds',
-                            form.mediaIds.includes(m.id)
-                              ? form.mediaIds.filter((x) => x !== m.id)
-                              : [...form.mediaIds, m.id],
-                          )
-                    }
-                    className={`relative overflow-hidden rounded-md border ${idx >= 0 ? 'ring-2 ring-primary' : ''}`}
-                    title={m.altText ?? ''}
-                  >
-                    {m.kind === 'video' || m.mimeType?.startsWith('video/') ? (
-                      <>
-                        <video
+                  <div key={m.id} className="space-y-0.5">
+                    <button
+                      type="button"
+                      disabled={
+                        replacing ? form.mediaIds.includes(m.id) || replaceMedia.isPending : !editable
+                      }
+                      onClick={() =>
+                        replacing
+                          ? replaceMedia.mutate(m.id)
+                          : set(
+                              'mediaIds',
+                              form.mediaIds.includes(m.id)
+                                ? form.mediaIds.filter((x) => x !== m.id)
+                                : [...form.mediaIds, m.id],
+                            )
+                      }
+                      className={`relative block w-full overflow-hidden rounded-md border ${idx >= 0 ? 'ring-2 ring-primary' : ''}`}
+                      title={m.altText ?? ''}
+                    >
+                      {m.kind === 'video' || m.mimeType?.startsWith('video/') ? (
+                        <>
+                          <video
+                            src={m.url}
+                            muted
+                            playsInline
+                            preload="metadata"
+                            className="aspect-square w-full bg-black object-cover"
+                            aria-label={m.altText || t('media.video')}
+                          />
+                          <span className="absolute right-1 bottom-1 rounded bg-black/70 px-1 text-[10px] text-white">
+                            ▶ {formatDuration(m.durationMs)}
+                          </span>
+                        </>
+                      ) : (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
                           src={m.url}
-                          muted
-                          playsInline
-                          preload="metadata"
-                          className="aspect-square w-full bg-black object-cover"
-                          aria-label={m.altText || t('media.video')}
+                          alt={m.altText ?? ''}
+                          className="aspect-square w-full object-cover"
+                          loading="lazy"
                         />
-                        <span className="absolute right-1 bottom-1 rounded bg-black/70 px-1 text-[10px] text-white">
-                          ▶ {formatDuration(m.durationMs)}
+                      )}
+                      {idx >= 0 ? (
+                        <span className="absolute top-1 left-1 rounded bg-primary px-1.5 text-xs text-primary-foreground">
+                          {idx + 1}
                         </span>
-                      </>
-                    ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
-                        src={m.url}
-                        alt={m.altText ?? ''}
-                        className="aspect-square w-full object-cover"
-                        loading="lazy"
+                      ) : null}
+                    </button>
+                    {m.credit ? (
+                      <PhotoCreditLine
+                        credit={m.credit}
+                        className="text-[10px] leading-tight break-words text-muted-foreground"
                       />
-                    )}
-                    {idx >= 0 ? (
-                      <span className="absolute top-1 left-1 rounded bg-primary px-1.5 text-xs text-primary-foreground">
-                        {idx + 1}
-                      </span>
                     ) : null}
-                  </button>
+                  </div>
                 )
               })}
             </div>

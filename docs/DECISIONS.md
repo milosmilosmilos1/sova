@@ -1774,3 +1774,14 @@ Vlasnik je odobrio („da”) dodavanje dozvole za prvi komentar.
 - Ako je u Netlify-ju podešen `META_LOGIN_CONFIG_ID`, dozvole dolaze iz konfiguracije u Meta panelu i tamo treba štiklirati i `pages_manage_engagement`.
 
 Razlog: prva Meta prijava (11 dozvola) mora da radi na snimku, a Facebook prijava ne sme da padne zbog dozvola koje još nisu u aplikaciji.
+
+## D-190 · 22.11.2026 · usvojeno · Unsplash po pravilima API-ja: hotlinking, potpis, bez automatskog izbora
+
+Vlasnik je odobrio („da”) da Autopilot i mesečni plan više ne biraju Unsplash fotografije sami. Cilj je prijava „Apply for Production” (ODOBRENJA.md, Unsplash).
+
+- Prikaz sa Unsplash adrese: `previewUrl` (`services/media-urls.ts`) za Unsplash fotografiju vraća `images.unsplash.com` adresu iz API-ja (`urls.raw` sa `ixid`) sa imgix parametrima (`w`, `fit`, `q=80`, `auto=format`; `lib/media/unsplash.ts`). Tako se prikazuje u biblioteci, editoru, listi objava, kalendaru, Odobravanju, Studiju i na javnoj strani za odobrenje. Sličice u listama traže širinu 400 (`THUMB_WIDTH`). Kopija u skladištu služi samo za objavu na mreži (`signedUrl` u publisher-u). Isečak iz editora čuva veličinu izvora i `fromFull`, pa hotlink pokazuje isti kadar (`fit=crop` sa tačkom fokusa); isečak isečka i stari zapisi bez veličine izvora prikazuju se iz skladišta. CSP i `remotePatterns` već dozvoljavaju `images.unsplash.com`.
+- Potpis: „Foto: autor, Unsplash” („Photo by … on Unsplash”) sa linkovima na profil autora i na Unsplash (`utm_source=sova&utm_medium=referral`, `components/media/photo-credit.tsx`) stoji uz fotografiju u biblioteci editora, listi za zamenu, Odobravanju, pregledu na mreži, Studiju i na javnoj strani. Slajd u temi preuzima potpis fotografije koju nosi (`source_data.photoAssetId`, `services/media-credit.ts`). Potpis prihvata samo `https://unsplash.com/` linkove.
+- Bez automatskog izbora: Autopilot, mesečni plan, tokovi, „Generiši ponovo”, „AI bira” i Studio uzimaju fotografije sa Pexels-a i iz galerije brenda. Izvor „Unsplash” u „Novoj objavi” više se ne nudi; ako ga zahtev ipak pošalje, objava nastaje bez fotografije uz napomenu kako se bira ručno. „Vizual iz šablona” sa Unsplash-om traži izabranu fotografiju (`photoId`); upit bez izbora vraća 400. Uklonjeni `pickUnsplashPhotos` i rangiranje kandidata. `download_location` se šalje samo kad korisnik izabere fotografiju (pretraga u Studiju, šablon). Unsplash fotografije i dalje ne idu AI-ju (D-180).
+- Bez migracije.
+
+Razlog: Unsplash API traži hotlinking, potpis uz svaku prikazanu fotografiju i da aplikacija ne bira fotografije umesto korisnika; bez toga prijava za produkciju (više od 50 zahteva na sat) bi bila odbijena.

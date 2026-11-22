@@ -16,25 +16,35 @@ import { generatePostText } from '@/services/ai/text'
 import { generateTemplateVisual } from '@/services/autopilot/content'
 import { getBrand } from '@/services/brands'
 import { composeDesigned, designedFormatFor } from '@/services/design/compose-designed'
-import { getAsset, signedUrl, type MediaAssetRow } from '@/services/media'
+import type { PhotoCredit } from '@/lib/media/unsplash'
+import { getAsset, type MediaAssetRow } from '@/services/media'
+import { creditsFor } from '@/services/media-credit'
+import { previewUrl } from '@/services/media-urls'
 import { createPost } from '@/services/posts/posts'
 import { listSocialAccounts } from '@/services/social/accounts'
 import { pickPexelsPhotos, pickPexelsVideo } from '@/services/visuals/pexels'
-import { pickUnsplashPhotos } from '@/services/visuals/unsplash'
 import { toContentLocale } from '@/config/locales'
 
 /**
  * „Nova objava” u Studiju (D-107): jezik, vrsta objave (ili AI bira) i izvor vizuala. Gemini piše
- * tekst sa heštegovima i pojmove za pretragu; fotografije dolaze sa Unsplash-a ili Pexels-a, video
- * sa Pexels-a, a šablon i Canva dizajn ostaju po izboru. Rezultat je nacrt objave sa targetima za
- * povezane naloge, koji korisnik pregleda i zakazuje. Tokeni: tekst 2, šablon 2, Unsplash i Pexels 0.
+ * tekst sa heštegovima i pojmove za pretragu; fotografije i video dolaze sa Pexels-a (Unsplash
+ * fotografiju korisnik bira sam, D-190), a šablon i Canva dizajn ostaju po izboru. Rezultat je nacrt
+ * objave sa targetima za povezane naloge, koji korisnik pregleda i zakazuje. Tokeni: tekst 2, šablon 2,
+ * Pexels 0.
  */
 export interface ComposeResult {
   postId: string
   format: PostFormat
   locale: string
   variants: Array<{ platform: string; text: string; firstComment: string | null }>
-  media: Array<{ id: string; kind: string; url: string; attribution: string | null }>
+  media: Array<{
+    id: string
+    kind: string
+    url: string
+    attribution: string | null
+    /** autor i Unsplash sa linkovima, za fotografiju koju je korisnik izabrao sa Unsplash-a (D-190) */
+    credit: PhotoCredit | null
+  }>
   targets: number
   notes: string[]
   tokensCharged: number
@@ -184,8 +194,19 @@ export async function composePost(
       )
   } else if (need.kind === 'image') {
     const crop = need.orientation === 'portrait' ? 'portrait' : 'square'
+    const fromPexels = async (count: number) =>
+      (await pickPexelsPhotos({ ...ctx, query, count, crop })).map((p) => ({
+        asset: p.asset,
+        attribution: p.attribution.text,
+      }))
     if (input.source === 'template') {
-      const photo = (await pickUnsplashPhotos({ ...ctx, query, count: 1, crop: 'square' }))[0]
+      // pozadina šablona sa Pexels-a: Unsplash fotografiju Sova ne bira sama (D-190)
+      let photo: Picked | null = null
+      try {
+        photo = (await fromPexels(1))[0] ?? null
+      } catch (error) {
+        logger.warn('compose_template_photo_failed', { brandId: brand.id, error })
+      }
       const visual = await generateTemplateVisual(brand, {
         headline: first.hook.slice(0, 80) || input.topic.slice(0, 80),
         subtext: null,
@@ -194,36 +215,21 @@ export async function composePost(
         runId: null,
         userId: viewer.user.id,
         aspectRatio: format === 'story' ? '9:16' : '1:1',
-        photoId: photo ? ((photo.asset.source_data as { photoId?: string } | null)?.photoId ?? null) : null,
+        photoAssetId: photo?.asset.id ?? null,
       })
       if (visual) {
         tokens += visual.tokens
         const asset = await getAsset(viewer, visual.assetId)
-        media = [{ asset, attribution: photo?.attribution.text ?? null }]
+        media = [{ asset, attribution: photo?.attribution ?? null }]
       } else notes.push('Vizual iz šablona nije napravljen.')
+    } else if (input.source === 'unsplash') {
+      // Unsplash API je za izbor korisnika, ne za automatski izbor (D-190)
+      notes.push(
+        'Fotografiju sa Unsplash-a birate sami: AI Studio → Unsplash fotografije, pa je dodajte u objavu u editoru.',
+      )
     } else {
-      const fromUnsplash = async () =>
-        (await pickUnsplashPhotos({ ...ctx, query, count: need.count, crop })).map((p) => ({
-          asset: p.asset,
-          attribution: p.attribution.text,
-        }))
-      const fromPexels = async (count: number) =>
-        (await pickPexelsPhotos({ ...ctx, query, count, crop })).map((p) => ({
-          asset: p.asset,
-          attribution: p.attribution.text,
-        }))
-      if (input.source === 'pexels') media = await fromPexels(need.count)
-      else {
-        try {
-          media = await fromUnsplash()
-        } catch (error) {
-          // „auto”: limit ili pad Unsplash-a ne ostavlja objavu bez fotografije (D-122)
-          if (input.source !== 'auto') throw error
-          logger.warn('compose_unsplash_failed', { brandId: brand.id, error })
-        }
-        if (input.source === 'auto' && media.length < need.count)
-          media = [...media, ...(await fromPexels(need.count - media.length))]
-      }
+      // „auto” i Pexels: fotografije sa Pexels-a (D-190: bez automatskog izbora sa Unsplash-a)
+      media = await fromPexels(need.count)
       if (!media.length)
         notes.push('Fotografija nije nađena za ovu temu. Dodajte je iz biblioteke ili Canve.')
       else if (media.length < need.count)
@@ -264,6 +270,7 @@ export async function composePost(
     media: media.map((m, i) => ({ mediaAssetId: m.asset.id, sortOrder: i })),
     source: 'ai',
   })
+  const credits = await creditsFor(media.map((m) => m.asset))
 
   return {
     postId: post.id,
@@ -278,8 +285,9 @@ export async function composePost(
       media.map(async (m) => ({
         id: m.asset.id,
         kind: m.asset.kind,
-        url: await signedUrl(m.asset),
+        url: await previewUrl(m.asset),
         attribution: m.attribution,
+        credit: credits.get(m.asset.id) ?? null,
       })),
     ),
     targets: targets.length,

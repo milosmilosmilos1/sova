@@ -1,7 +1,8 @@
 import { assertViewer, createHandler } from '@/lib/api/handler'
 import { cropMediaSchema } from '@/lib/schemas/posts'
 import { uuidParamSchema } from '@/lib/schemas/workspace'
-import { cropImage, signedUrl } from '@/services/media'
+import { cropImage } from '@/services/media'
+import { previewUrl } from '@/services/media-urls'
 
 /** Sečenje i ponovno kodiranje slike. */
 export const maxDuration = 60
@@ -25,7 +26,7 @@ export const POST = createHandler(
       durationMs: asset.duration_ms,
       sizeBytes: asset.size_bytes,
       altText: asset.alt_text,
-      url: await signedUrl(asset),
+      url: await previewUrl(asset),
     }
   },
 )

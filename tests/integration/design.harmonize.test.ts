@@ -152,6 +152,10 @@ async function themedBrand(name: string): Promise<{ ws: string; brand: string }>
   return target
 }
 
+/** upiti i oblici Pexels pretrage fotografija iz lažnog servisa („photo:upit:oblik”) */
+const photoSearches = () => visualsState.pexelsSearches.filter((x) => x.startsWith('photo:'))
+const photoQueries = () => photoSearches().map((x) => x.split(':')[1]!)
+const photoOrientations = () => photoSearches().map((x) => x.split(':')[2] ?? '')
 beforeAll(async () => {
   geminiServer.listen({ onUnhandledFrame: 'bypass' })
   geminiServer.use(...unsplashHandlers, ...pexelsHandlers)
@@ -335,9 +339,11 @@ describe('jedna tema za sve objave (D-125)', () => {
 
     expect(photoQueryCalls).toHaveLength(1)
     expect(photoQueryCalls[0]!.text).toContain('Noć u Beogradu: gde za vikend')
-    const english = visualsState.unsplashQueries[0]!
+    // automatski izbor ide na Pexels (D-190); zapis pretrage je „photo:upit:oblik”
+    const english = photoQueries()[0]!
     expect(english.startsWith('night club neon lights ')).toBe(true)
-    expect(visualsState.unsplashQueries.every((q) => !q.includes('Beogradu'))).toBe(true)
+    expect(photoQueries().every((q) => !q.includes('Beogradu'))).toBe(true)
+    expect(visualsState.unsplashSearches).toBe(0)
     // stok fotografije ne idu modelu (D-180)
     expect(photoCalls).toHaveLength(0)
     const { data: after } = await admin.from('posts').select('design').eq('id', id).single()
@@ -429,9 +435,9 @@ describe('nove fotografije za nacrte koji čekaju (D-170)', () => {
     expect(design.copy.photoAssetIds.some((p) => oldDesign.copy.photoAssetIds.includes(p))).toBe(false)
     // pretraga u obliku okvira, a izabrane pamte da su izabrane po opisu (D-180)
     expect((after!.design as { photoQuery?: string }).photoQuery).toBe(query)
-    expect(visualsState.unsplashQueries.every((q) => q === query)).toBe(true)
-    expect(visualsState.unsplashOrientations.length).toBeGreaterThan(0)
-    expect(visualsState.unsplashOrientations.every((o) => o !== '')).toBe(true)
+    expect(photoQueries().every((q) => q === query)).toBe(true)
+    expect(photoOrientations().length).toBeGreaterThan(0)
+    expect(photoOrientations().every((o) => o !== '')).toBe(true)
     const { data: photos } = await admin
       .from('media_assets')
       .select('source_data')
@@ -453,7 +459,7 @@ describe('nove fotografije za nacrte koji čekaju (D-170)', () => {
   it('kad nov izbor nađe manje fotografija, nacrt ostaje kakav je bio', async () => {
     const { id, photoIds } = await draft('in_review', 'theme')
     await forgetSubjects(photoIds)
-    // ni Unsplash ni Pexels nemaju ništa za ovaj upit
+    // Pexels nema ništa za ovaj upit
     await patchDesign(id, { photoQuery: 'nista' })
     resetVisualsState()
     visualsState.pexelsEmpty = true
@@ -477,11 +483,10 @@ describe('nove fotografije za nacrte koji čekaju (D-170)', () => {
     const target = await themedBrand('Nove fotografije')
     const made: string[] = []
     for (let i = 0; i < 4; i++) made.push((await draft('in_review', 'theme', true, 'none', target)).id)
-    // prva tri ne nalaze ništa ni na Unsplash-u ni na Pexels-u (limit sata), četvrti nalazi
+    // prva tri ne nalaze ništa na Pexels-u (kao kad je limit sata potrošen), četvrti nalazi
     for (const id of made.slice(0, 3)) await patchDesign(id, { photoQuery: 'nista' })
     await patchDesign(made[3]!, { photoQuery: `rooftop terrace sunset ${crypto.randomUUID().slice(0, 8)}` })
     resetVisualsState()
-    visualsState.pexelsEmpty = true
     const names: string[] = []
     const sleeps: Array<[string, number]> = []
     const counts = await refreshBrandPhotos(target.brand, {

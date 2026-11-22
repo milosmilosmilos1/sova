@@ -145,16 +145,19 @@ afterAll(async () => {
 })
 
 describe('Nova objava (POST /api/ai/compose)', () => {
-  it('AI bira vrstu: Gemini predlaže karusel, tri fotografije sa Unsplash-a, nacrt za Facebook i Instagram, 2 tokena', async () => {
+  it('AI bira vrstu: Gemini predlaže karusel, tri fotografije sa Pexels-a (Unsplash ne, D-190), nacrt za Facebook i Instagram, 2 tokena', async () => {
     enqueueReply(reply('carousel', 'air conditioner service'))
     const before = await balance()
     const r = await compose({ format: 'auto' })
     expect(r.status).toBe(200)
     expect(r.json.data).toMatchObject({ format: 'carousel', locale: 'sr-Latn', targets: 2, tokensCharged: 2 })
     expect(r.json.data!.media).toHaveLength(3)
-    expect(
-      r.json.data!.media.every((m) => m.kind === 'image' && m.attribution?.endsWith('on Unsplash')),
-    ).toBe(true)
+    expect(r.json.data!.media.every((m) => m.kind === 'image' && m.attribution?.endsWith('on Pexels'))).toBe(
+      true,
+    )
+    // automatski izbor ne pita Unsplash (D-190)
+    expect(visualsState.unsplashSearches).toBe(0)
+    expect(visualsState.unsplashDownloads).toEqual([])
     expect(await balance()).toBe(before - 2)
     const prompt = JSON.stringify(calls[0]!.body)
     expect(prompt).toContain('Vrstu objave izaberi sam')
@@ -168,11 +171,7 @@ describe('Nova objava (POST /api/ai/compose)', () => {
       .single()
     expect(post).toMatchObject({ status: 'draft', source: 'ai' })
     expect(post!.master_text).toContain('#klima')
-    expect((await mediaOf(r.json.data!.postId)).map((m) => m.source)).toEqual([
-      'unsplash',
-      'unsplash',
-      'unsplash',
-    ])
+    expect((await mediaOf(r.json.data!.postId)).map((m) => m.source)).toEqual(['pexels', 'pexels', 'pexels'])
     expect((await targetsOf(r.json.data!.postId)).map((t) => t.platform).sort()).toEqual([
       'facebook',
       'instagram',
@@ -181,7 +180,7 @@ describe('Nova objava (POST /api/ai/compose)', () => {
 
   it('priča na engleskom: uspravna fotografija, oba naloga dobijaju options.format = story', async () => {
     enqueueReply(reply('story', 'neon city night'))
-    const r = await compose({ format: 'story', locale: 'en', source: 'unsplash' })
+    const r = await compose({ format: 'story', locale: 'en', source: 'pexels' })
     expect(r.status).toBe(200)
     expect(r.json.data).toMatchObject({ format: 'story', locale: 'en', targets: 2, tokensCharged: 2 })
     expect(r.json.data!.notes.join(' ')).toContain('Priča nema opis')
@@ -226,25 +225,32 @@ describe('Nova objava (POST /api/ai/compose)', () => {
     expect(none.json.data!.notes.join(' ')).toContain('Video nije nađen')
   })
 
-  it('Unsplash bez rezultata: fotografija sa Pexels-a, kvadrat za objavu', async () => {
-    enqueueReply(reply('image', 'nista'))
+  it('AI bira: fotografija sa Pexels-a, kvadrat za objavu; izvor „unsplash” ne bira sam nego daje uputstvo (D-190)', async () => {
+    enqueueReply(reply('image', 'office chair'), reply('image', 'office desk'))
     const r = await compose({ format: 'image' })
     expect(r.status).toBe(200)
     expect(r.json.data!.media).toHaveLength(1)
     // fotografija koju je brend već dobio se ne ponavlja (D-121), pa je ovo prva sledeća sa Pexels-a
-    expect(r.json.data!.media[0]!.attribution).toMatch(/^Photo by Fotograf 30\d on Pexels$/)
+    expect(r.json.data!.media[0]!.attribution).toMatch(/^Photo by Fotograf 3\d\d on Pexels$/)
     const [m] = await mediaOf(r.json.data!.postId)
     expect(m).toMatchObject({ source: 'pexels', width: m!.height })
+
+    const own = await compose({ format: 'image', source: 'unsplash' })
+    expect(own.status).toBe(200)
+    expect(own.json.data!.media).toEqual([])
+    expect(own.json.data!.notes.join(' ')).toContain('Fotografiju sa Unsplash-a birate sami')
+    expect(visualsState.unsplashSearches).toBe(0)
   })
 
-  it('šablon: vizual iz šablona preko fotografije sa Unsplash-a, tekst 2 + šablon 2 tokena', async () => {
+  it('šablon: vizual iz šablona preko fotografije sa Pexels-a, tekst 2 + šablon 2 tokena', async () => {
     enqueueReply(reply('image', 'modern office'))
     const before = await balance()
     const r = await compose({ format: 'image', source: 'template' })
     expect(r.status).toBe(200)
     expect(r.json.data!.tokensCharged).toBe(4)
     expect(r.json.data!.media).toHaveLength(1)
-    expect(r.json.data!.media[0]!.attribution).toMatch(/on Unsplash$/)
+    expect(r.json.data!.media[0]!.attribution).toMatch(/on Pexels$/)
+    expect(visualsState.unsplashSearches).toBe(0)
     expect(await balance()).toBe(before - 4)
     expect((await mediaOf(r.json.data!.postId))[0]).toMatchObject({ source: 'template' })
   })

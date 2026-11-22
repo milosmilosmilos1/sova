@@ -8,7 +8,7 @@ import type { QueueSlotInput } from '@/lib/schemas/posts'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
 import { zonedToUtc } from '@/lib/zoned-time'
 import { getBrand } from '@/services/brands'
-import { signedUrl } from '@/services/media-urls'
+import { PREVIEW_URL_SEC, previewUrl, THUMB_WIDTH } from '@/services/media-urls'
 
 /**
  * Kalendar (brif 9): objave i targeti u opsegu; UTC u bazi, zona brenda na klijentu (K2).
@@ -36,7 +36,7 @@ export interface CalendarItem {
 
 /** Objava u kalendaru sa slikama (redosled i vrsta), da se sličica izabere bez posebnog upita. */
 const CALENDAR_POST_SELECT =
-  'id, title, master_text, status, scheduled_for, post_media(sort_order, media_assets(kind, bucket, storage_path))'
+  'id, title, master_text, status, scheduled_for, post_media(sort_order, media_assets(kind, bucket, storage_path, source, source_data, width, height))'
 
 interface CalendarPostRow {
   id: string
@@ -46,7 +46,15 @@ interface CalendarPostRow {
   scheduled_for: string | null
   post_media: Array<{
     sort_order: number
-    media_assets: { kind: string; bucket: string; storage_path: string } | null
+    media_assets: {
+      kind: string
+      bucket: string
+      storage_path: string
+      source: string
+      source_data: unknown
+      width: number | null
+      height: number | null
+    } | null
   }>
 }
 
@@ -96,7 +104,7 @@ export async function listCalendar(
   }
   const mediaCount = new Map<string, number>()
   const thumbs = new Map<string, string>()
-  const first = new Map<string, { bucket: string; storage_path: string }>()
+  const first = new Map<string, NonNullable<CalendarPostRow['post_media'][number]['media_assets']>>()
   for (const p of posts) {
     const media = [...(p.post_media ?? [])].sort((a, b) => a.sort_order - b.sort_order)
     if (media.length) mediaCount.set(p.id, media.length)
@@ -108,7 +116,8 @@ export async function listCalendar(
     // svi potpisi iz istog koraka idu u jedan poziv po bucket-u (media-urls)
     await Promise.all(
       [...first].map(async ([postId, asset]) => {
-        const url = await signedUrl(asset).catch(() => null)
+        // Unsplash fotografija sa Unsplash adrese (D-190), ostalo potpisanim linkom
+        const url = await previewUrl(asset, PREVIEW_URL_SEC, THUMB_WIDTH).catch(() => null)
         if (url) thumbs.set(postId, url)
       }),
     )

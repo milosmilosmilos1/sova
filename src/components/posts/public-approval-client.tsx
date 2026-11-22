@@ -4,6 +4,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { useLocale, useTranslations } from 'next-intl'
 import { useState } from 'react'
 
+import { PhotoCreditLine } from '@/components/media/photo-credit'
 import { NetworkBadge } from '@/components/shared/network-badge'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,7 @@ import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import { INTL_UI } from '@/i18n/config'
 import type { ApiResponse } from '@/lib/api/response'
+import type { PhotoCredit } from '@/lib/media/unsplash'
 
 interface PublicPost {
   id: string
@@ -23,7 +25,7 @@ interface PublicPost {
   linkUrl: string | null
   scheduledFor: string | null
   platforms: string[]
-  media: Array<{ url: string; alt: string | null }>
+  media: Array<{ url: string; alt: string | null; credit?: PhotoCredit | null }>
   comments: Array<{ id: string; author: string; body: string; createdAt: string }>
   decided: { decision: string; comment: string | null; at: string } | null
 }
@@ -133,13 +135,15 @@ export function PublicApprovalClient({ token }: { token: string }) {
             {p.media.length ? (
               <div className="grid grid-cols-2 gap-2">
                 {p.media.map((m, i) => (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    key={i}
-                    src={m.url}
-                    alt={m.alt ?? ''}
-                    className="w-full rounded-md border object-cover"
-                  />
+                  <figure key={i} className="space-y-1">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={m.url} alt={m.alt ?? ''} className="w-full rounded-md border object-cover" />
+                    {m.credit ? (
+                      <figcaption>
+                        <PhotoCreditLine credit={m.credit} />
+                      </figcaption>
+                    ) : null}
+                  </figure>
                 ))}
               </div>
             ) : null}

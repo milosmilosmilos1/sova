@@ -23,7 +23,7 @@ Zajedničke prepreke iz odeljka 1 su rešene (domen, firma, pravni tekstovi, bri
 | LinkedIn stranice        | ne postoji                    | aplikacija „Sova Pages” napravljena 22.11. (stranica Sova potvrđena, poslovni email potvrđen), zahtev za Community Management API (Development tier, Platform; Page management i Page analytics) poslat 22.11.; čeka Microsoft Vetting mejl i odluku | drugi par ključeva (`LINKEDIN_PAGES_CLIENT_ID/SECRET`) posle odobrenja                                                                          |
 | Canva                    | postoji (javna, nije poslata) | slanje na pregled                                                                                                                                                                                                                                    | nema (D-184)                                                                                                                                    |
 | Figma                    | nacrt                         | objava kao javne aplikacije                                                                                                                                                                                                                          | nema (D-184); prekidač `figma` za nalog recenzenta                                                                                              |
-| Unsplash                 | Demo                          | Apply for Production                                                                                                                                                                                                                                 | hotlinking, potpis uz svaku fotografiju, bez automatskog izbora (odluka vlasnika)                                                               |
+| Unsplash                 | Demo                          | Apply for Production                                                                                                                                                                                                                                 | urađeno (D-190, 22.11.): hotlinking, potpis uz svaku fotografiju, bez automatskog izbora; čeka „dizi”, pa snimci i prijava                      |
 | Pinterest                | ne postoji                    | nalog za firmu „Sova” (podrska@sovaai.rs) i sovaai.rs potvrđen 22.11.; aplikacija „Sova Scheduler” (App ID 1642925) poslata 22.11., Trial access pending                                                                                             | nema (D-085)                                                                                                                                    |
 | X                        | ne postoji                    | odluka vlasnika (pay-per-use se plaća)                                                                                                                                                                                                               | nema (D-086)                                                                                                                                    |
 
@@ -145,12 +145,12 @@ Google poslovni profil: metrike se više ne sabiraju u jedan broj; svaka se čuv
 
 ### Unsplash
 
-- **Stanje:** verovatno Demo (50 zahteva na sat). Prijava za produkciju bi danas verovatno bila odbijena.
-- **Šta fali:**
-  - u aplikaciji izabrane fotografije prikazivati sa Unsplash adresa (hotlinking), a ne kopiju iz našeg skladišta; kopija služi samo za objavu na mreži;
-  - autor i Unsplash uz svaku prikazanu fotografiju, ne samo u pretrazi;
-  - bez automatskog izbora (Autopilot, plan) i bez AI obrade fotografija, ili uz pisano odobrenje Unsplash-a.
-- **Vlasnik:** posle ispravki „Apply for Production” sa snimcima ekrana.
+- **Stanje:** verovatno Demo (50 zahteva na sat).
+- **Urađeno u kodu (D-190, 22.11.2026, čeka „dizi”):**
+  - izabrana fotografija se u aplikaciji i na strani za odobrenje prikazuje sa Unsplash adrese (hotlinking, `images.unsplash.com` sa `ixid`); kopija iz skladišta ide samo na mrežu;
+  - autor i Unsplash sa linkovima (`utm_source=sova&utm_medium=referral`) uz fotografiju u biblioteci, editoru, Odobravanju, pregledu na mreži, Studiju i na javnoj strani za odobrenje;
+  - Autopilot, mesečni plan, tokovi, „AI bira” i Studio ne biraju Unsplash fotografije sami (Pexels i galerija brenda); Unsplash fotografiju bira korisnik iz pretrage, i tek tada se šalje `download_location`; bez AI obrade (D-180).
+- **Vlasnik:** posle „dizi” snimci ekrana sa produkcije, pa „Apply for Production” (tekst u materijalu za mreže, `Unsplash produkcija/tekst.txt`).
 
 ### Pexels
 

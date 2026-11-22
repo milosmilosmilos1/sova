@@ -7,7 +7,7 @@ import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError } from '@/lib/supabase/errors'
 import { getBrand } from '@/services/brands'
 import { parsePostDesign } from '@/services/design/post-design'
-import { signedUrl } from '@/services/media-urls'
+import { PREVIEW_URL_SEC, previewUrl, signedUrl, THUMB_WIDTH } from '@/services/media-urls'
 import { listQueueSlots, nextFreeSlotFor } from '@/services/posts/calendar'
 import { getPostView, type PostView } from '@/services/posts/posts'
 
@@ -77,7 +77,7 @@ export async function listReviewDesk(
     viewer.supabase
       .from('posts')
       .select(
-        'id, title, master_text, status, scheduled_for, created_at, flow_id, content_flows(name), post_targets(platform, options), post_media(sort_order, media_assets(kind, bucket, storage_path, mime_type)), video:design->video, designFormat:design->>format',
+        'id, title, master_text, status, scheduled_for, created_at, flow_id, content_flows(name), post_targets(platform, options), post_media(sort_order, media_assets(kind, bucket, storage_path, mime_type, source, source_data, width, height)), video:design->video, designFormat:design->>format',
       )
       .eq('brand_id', input.brandId)
       .is('deleted_at', null)
@@ -112,7 +112,16 @@ export async function listReviewDesk(
       const media = (
         (r.post_media ?? []) as unknown as Array<{
           sort_order: number
-          media_assets: { kind: string; bucket: string; storage_path: string; mime_type: string } | null
+          media_assets: {
+            kind: string
+            bucket: string
+            storage_path: string
+            mime_type: string
+            source: string
+            source_data: unknown
+            width: number | null
+            height: number | null
+          } | null
         }>
       )
         .filter((m) => m.media_assets)
@@ -156,7 +165,7 @@ export async function listReviewDesk(
         format,
         slides: video ? 1 : media.length,
         thumb: media[0]?.media_assets
-          ? await signedUrl(media[0].media_assets as never).catch(() => null)
+          ? await previewUrl(media[0].media_assets, PREVIEW_URL_SEC, THUMB_WIDTH).catch(() => null)
           : poster
             ? await signedUrl(poster).catch(() => null)
             : null,

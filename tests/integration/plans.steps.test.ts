@@ -1,4 +1,3 @@
-import { http, HttpResponse } from 'msw'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 
 import { POST as regeneratePost } from '@/app/api/approvals/[id]/regenerate/route'
@@ -9,17 +8,10 @@ import { resetMemoryRateLimit } from '@/lib/ratelimit'
 import { configureFontLoader } from '@/lib/visuals/fonts'
 import type { StepRunner } from '@/services/autopilot/runner'
 import { interruptPlan, pendingItems, runPlanItem } from '@/services/plans/runner'
-import { pickUnsplashPhotos } from '@/services/visuals/unsplash'
 
 import { enqueueReply, geminiServer, resetGeminiMock, type MockReply } from './gemini-mock'
 import { admin, call, createTestUser, deleteTestUser, type TestUser } from './helpers'
-import {
-  pexelsHandlers,
-  resetVisualsState,
-  unsplashHandlers,
-  unsplashPhoto,
-  visualsState,
-} from './visuals-mock'
+import { pexelsHandlers, resetVisualsState, unsplashHandlers, visualsState } from './visuals-mock'
 
 /**
  * Plan u koracima (D-122): Netlify prekida svaki zahtev posle 30 sekundi, pa karusel sa fotografijom
@@ -180,43 +172,6 @@ afterAll(async () => {
   geminiServer.close()
   await admin.from('workspaces').delete().eq('id', wsId)
   await deleteTestUser(user)
-})
-
-describe('Unsplash limit (D-122)', () => {
-  it('uzima samo onoliko fotografija koliko limit još prima; sa potrošenim limitom ne pita Unsplash', async () => {
-    // jedna pretraga sa zadatim ostatkom limita; posle nje važi običan lažni Unsplash
-    const searchWithRemaining = (remaining: string) =>
-      http.get(
-        'https://api.unsplash.com/search/photos',
-        ({ request }) => {
-          visualsState.unsplashSearches++
-          // opis rečima upita, kao pravi servis (D-180: stok se bira po opisu)
-          const q = new URL(request.url).searchParams.get('query') ?? ''
-          const results = ['a1', 'b2', 'c3', 'd4'].map((id) =>
-            unsplashPhoto(id, { alt_description: `${q} ${id}` }),
-          )
-          return HttpResponse.json(
-            { total: 4, total_pages: 1, results },
-            { headers: { 'x-ratelimit-remaining': remaining } },
-          )
-        },
-        { once: true },
-      )
-    const ctx = { workspaceId: wsId, brandId, uploadedBy: null, crop: 'square' as const }
-    geminiServer.use(searchWithRemaining('2'))
-    const two = await pickUnsplashPhotos({ ...ctx, query: 'night club', count: 4 })
-    expect(two).toHaveLength(2)
-    expect(visualsState.unsplashDownloads).toHaveLength(2)
-
-    resetUnsplashCacheForTests()
-    geminiServer.use(searchWithRemaining('1'))
-    // upit od jedne reči: jedna pretraga, bez kraćih oblika upita
-    expect(await pickUnsplashPhotos({ ...ctx, query: 'club', count: 4 })).toHaveLength(1)
-    const searches = visualsState.unsplashSearches
-    // ostao je jedan zahtev: ni pretraga ni preuzimanje ne staju, izbor odmah ide dalje (na Pexels)
-    expect(await pickUnsplashPhotos({ ...ctx, query: 'night club bar', count: 4 })).toEqual([])
-    expect(visualsState.unsplashSearches).toBe(searches)
-  })
 })
 
 describe('plan u koracima (D-122)', () => {

@@ -2,6 +2,7 @@
   "common": {
     "appName": "Sova",
     "tagline": "Unesite sajt, Sova vodi vaše mreže.",
+    "photoCredit": "Foto: <photographer>{name}</photographer>, <unsplash>Unsplash</unsplash>",
     "retry": "Pokušajte ponovo",
     "back": "Nazad",
     "backHome": "Na početnu",
@@ -115,7 +116,7 @@
       "none": "Bez fotografija",
       "noneHint": "Čist tipografski dizajn.",
       "stock": "Besplatne fotografije",
-      "stockHint": "Unsplash i Pexels, bez troška.",
+      "stockHint": "Pexels, bez troška.",
       "gallery": "Moja galerija",
       "galleryHint": "Fotografije koje ste dodali u biblioteku."
     },

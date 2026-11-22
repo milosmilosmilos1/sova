@@ -11,7 +11,9 @@ import { logger } from '@/lib/logger'
 import type { CreateApprovalLinkInput } from '@/lib/schemas/posts'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
-import { signedUrl } from '@/services/media'
+import type { PhotoCredit } from '@/lib/media/unsplash'
+import { creditsFor } from '@/services/media-credit'
+import { previewUrl } from '@/services/media-urls'
 import { notifyUsers } from '@/services/notifications'
 import { getBrand } from '@/services/brands'
 import type { Database } from '@/types/database'
@@ -154,7 +156,14 @@ export interface PublicPostView {
   linkUrl: string | null
   scheduledFor: string | null
   platforms: string[]
-  media: Array<{ url: string; alt: string | null; width: number | null; height: number | null }>
+  media: Array<{
+    url: string
+    alt: string | null
+    width: number | null
+    height: number | null
+    /** autor i Unsplash sa linkovima (D-190) */
+    credit: PhotoCredit | null
+  }>
   comments: Array<{ id: string; author: string; body: string; createdAt: string }>
   decided: { decision: string; comment: string | null; at: string } | null
 }
@@ -182,7 +191,9 @@ export async function getPublicApproval(token: string): Promise<PublicApprovalVi
     admin.from('post_targets').select('post_id, platform').in('post_id', ids),
     admin
       .from('post_media')
-      .select('post_id, sort_order, media_assets(bucket, storage_path, alt_text, width, height)')
+      .select(
+        'post_id, sort_order, media_assets(id, bucket, storage_path, alt_text, width, height, source, source_data, attribution)',
+      )
       .in('post_id', ids)
       .order('sort_order', { ascending: true }),
     admin
@@ -198,16 +209,19 @@ export async function getPublicApproval(token: string): Promise<PublicApprovalVi
       .not('decision', 'is', null)
       .order('decided_at', { ascending: false }),
   ])
+  const credits = await creditsFor((media ?? []).flatMap((x) => (x.media_assets ? [x.media_assets] : [])))
   const views: PublicPostView[] = []
   for (const p of posts ?? []) {
     const m = await Promise.all(
       (media ?? [])
         .filter((x) => x.post_id === p.id && x.media_assets)
         .map(async (x) => ({
-          url: await signedUrl(x.media_assets!, 24 * 3600),
+          // Unsplash fotografija sa Unsplash adrese, ostalo potpisanim linkom na 24 h (D-190)
+          url: await previewUrl(x.media_assets!, 24 * 3600),
           alt: x.media_assets!.alt_text,
           width: x.media_assets!.width,
           height: x.media_assets!.height,
+          credit: credits.get(x.media_assets!.id) ?? null,
         })),
     )
     const decided = (approvals ?? []).find((a) => a.post_id === p.id)

@@ -14,7 +14,9 @@ import { parseMp4, stripVideoMetadata, type VideoInfo } from '@/lib/media/mp4'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
 import { getBrand } from '@/services/brands'
-import { signedUrl } from '@/services/media-urls'
+import type { PhotoCredit } from '@/lib/media/unsplash'
+import { creditsFor } from '@/services/media-credit'
+import { previewUrl, signedUrl } from '@/services/media-urls'
 import type { Database, Json } from '@/types/database'
 
 export type MediaAssetRow = Database['public']['Tables']['media_assets']['Row']
@@ -445,12 +447,9 @@ export async function cropImage(
   if (!meta.width || !meta.height) throw new ApiError('VALIDATION', 'Slika nije čitljiva.')
   // EXIF orijentacija 5–8 zamenjuje širinu i visinu (AI slike nisu prošle `processImage`)
   const turned = (meta.orientation ?? 1) >= 5
-  const rect = cropRect(
-    turned ? meta.height : meta.width,
-    turned ? meta.width : meta.height,
-    input.aspect,
-    input.position,
-  )
+  const sourceWidth = turned ? meta.height : meta.width
+  const sourceHeight = turned ? meta.width : meta.height
+  const rect = cropRect(sourceWidth, sourceHeight, input.aspect, input.position)
   if (rect.width < MIN_CROP_SIDE || rect.height < MIN_CROP_SIDE)
     throw new ApiError('VALIDATION', 'Slika je premala za ovaj odnos stranica.')
   // rotate() pre extract(): sharp prvo okreće po EXIF-u, pa seče
@@ -484,7 +483,18 @@ export async function cropImage(
       ai_generation_id: asset.ai_generation_id,
       exif_stripped: true,
       uploaded_by: viewer.user.id,
-      source_data: { ...original, cropped_from: asset.id, crop: { aspect: input.aspect, ...rect } },
+      // veličina i ceo kadar izvora: Unsplash isečak se prikazuje sa Unsplash adrese istim kadrom (D-190)
+      source_data: {
+        ...original,
+        cropped_from: asset.id,
+        crop: {
+          aspect: input.aspect,
+          ...rect,
+          sourceWidth,
+          sourceHeight,
+          fromFull: !original.crop || original.crop === 'full',
+        },
+      },
     },
     image.data,
   )
@@ -556,9 +566,14 @@ export interface MediaListItem {
   altText: string | null
   source: string
   createdAt: string
+  /** autor i Unsplash sa linkovima, za fotografiju sa Unsplash-a i slajd preko nje (D-190) */
+  credit: PhotoCredit | null
 }
 
-/** Biblioteka medija brenda (najnovije prve) sa potpisanim URL-ovima za pregled. */
+/**
+ * Biblioteka medija brenda (najnovije prve) sa adresama za pregled: Unsplash fotografija sa Unsplash
+ * adrese, ostalo potpisanim linkom (D-190).
+ */
 export async function listMedia(
   viewer: Viewer,
   brandId: string,
@@ -570,17 +585,18 @@ export async function listMedia(
   let query = viewer.supabase
     .from('media_assets')
     .select(
-      'id, kind, bucket, storage_path, width, height, duration_ms, mime_type, alt_text, source, created_at',
+      'id, kind, bucket, storage_path, width, height, duration_ms, mime_type, alt_text, source, created_at, source_data, attribution',
     )
     .eq('brand_id', brandId)
     .is('deleted_at', null)
   if (kind) query = query.eq('kind', kind)
   const { data, error } = await query.order('created_at', { ascending: false }).limit(limit)
   if (error) throw mapDbError(error)
+  const credits = await creditsFor(data ?? [])
   return Promise.all(
     (data ?? []).map(async (m) => ({
       id: m.id,
-      url: await signedUrl(m),
+      url: await previewUrl(m),
       kind: m.kind,
       width: m.width,
       height: m.height,
@@ -589,6 +605,7 @@ export async function listMedia(
       altText: m.alt_text,
       source: m.source,
       createdAt: m.created_at,
+      credit: credits.get(m.id) ?? null,
     })),
   )
 }

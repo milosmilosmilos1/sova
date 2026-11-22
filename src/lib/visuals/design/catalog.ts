@@ -56,7 +56,7 @@ export const PHOTO_STYLE_IDS: ReadonlySet<StyleId> = new Set([
   'event',
 ])
 
-/** Izvor fotografija za dizajn: bez, besplatne (Unsplash pa Pexels) ili galerija brenda. Bez AI-ja (D-108). */
+/** Izvor fotografija za dizajn: bez, besplatne (Pexels; Unsplash samo po izboru korisnika, D-190) ili galerija brenda. Bez AI-ja (D-108). */
 export const PHOTO_SOURCES = ['none', 'stock', 'gallery'] as const
 export type PhotoSource = (typeof PHOTO_SOURCES)[number]
 

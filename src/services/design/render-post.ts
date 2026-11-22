@@ -19,13 +19,12 @@ import { downloadAsset, type MediaAssetRow } from '@/services/media'
 import { pickPexelsPhotos } from '@/services/visuals/pexels'
 import { checkPhotos } from '@/services/visuals/photo-check'
 import { storeServerImage } from '@/services/visuals/store'
-import { pickUnsplashPhotos } from '@/services/visuals/unsplash'
 import type { Json } from '@/types/database'
 
 import { brandLogo, type ResolvedDesign } from './brand-design'
 
 /**
- * Slajdovi dizajnirane objave u biblioteci (D-108): fotografije po izvoru (Unsplash pa Pexels, ili
+ * Slajdovi dizajnirane objave u biblioteci (D-108): fotografije po izvoru (Pexels, D-190, ili
  * galerija brenda, nikad AI), obrada za stil, render svakog slajda i čuvanje kao `template` medij.
  * Fotografija koja ne stigne ne obara objavu: slajd pada na preliv u bojama brenda, uz napomenu.
  */
@@ -45,10 +44,10 @@ const GALLERY_CHECK_MS = 12_000
 /**
  * Rok za sve pretrage i provere fotografija jedne objave (D-171). Korak na Netlify-u traje najviše
  * 30 s, a posle provera idu još preuzimanje i čuvanje izabranih; bez roka je karusel sa fotografijom
- * na svakom slajdu (Unsplash pa Pexels, više oblika okvira) prelazio 30 s i obarao ceo posao.
+ * na svakom slajdu (više izvora i oblika okvira) prelazio 30 s i obarao ceo posao.
  */
 const PHOTO_PICK_MS = 14_000
-/** Kad Unsplash ne da dovoljno, Pexels se pita samo ako je do roka ostalo bar ovoliko. */
+/** Pexels se pita samo ako je do roka ostalo bar ovoliko (pretraga i provera). */
 const PEXELS_MIN_LEFT_MS = 3_000
 
 /** Fokus i okvir predmeta u `source_data` medija, uz ono što već ima. */
@@ -180,22 +179,14 @@ async function pickPhotos(input: {
     frame: input.frame,
     deadline: input.deadline,
   }
-  // Unsplash koji ne odgovori (limit, mreža) ne ostavlja objavu bez slike: ostatak daje Pexels
-  let fromUnsplash: MediaAssetRow[] = []
+  // stok za slajdove je sa Pexels-a: Unsplash API je za izbor korisnika, ne za automatski (D-190);
+  // bez vremena za pretragu i proveru objava ide bez fotografija (D-171)
+  if (input.deadline && input.deadline - Date.now() < PEXELS_MIN_LEFT_MS) return []
   try {
-    fromUnsplash = (await pickUnsplashPhotos({ ...ctx, count: input.count })).map((p) => p.asset)
-  } catch (error) {
-    logger.warn('design_unsplash_failed', { brandId: input.brandId, error })
-  }
-  if (fromUnsplash.length >= input.count) return fromUnsplash
-  // bez vremena za još jednu pretragu i proveru objava ide sa onim što ima (D-171)
-  if (input.deadline && input.deadline - Date.now() < PEXELS_MIN_LEFT_MS) return fromUnsplash
-  try {
-    const rest = await pickPexelsPhotos({ ...ctx, count: input.count - fromUnsplash.length })
-    return [...fromUnsplash, ...rest.map((p) => p.asset)]
+    return (await pickPexelsPhotos({ ...ctx, count: input.count })).map((p) => p.asset)
   } catch (error) {
     logger.warn('design_pexels_failed', { brandId: input.brandId, error })
-    return fromUnsplash
+    return []
   }
 }
 

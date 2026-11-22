@@ -1,13 +1,14 @@
 import { assertViewer, createHandler } from '@/lib/api/handler'
 import { uuidParamSchema } from '@/lib/schemas/workspace'
-import { getAsset, signedUrl } from '@/services/media'
+import { getAsset } from '@/services/media'
+import { previewUrl } from '@/services/media-urls'
 
-/** Potpisan URL za pregled medija (1 h). */
+/** Adresa za pregled medija: Unsplash sa Unsplash adrese (D-190), ostalo potpisan URL. */
 export const GET = createHandler({ auth: 'user', params: uuidParamSchema }, async ({ viewer, params }) => {
   const asset = await getAsset(assertViewer(viewer), params.id)
   return {
     id: asset.id,
-    url: await signedUrl(asset),
+    url: await previewUrl(asset),
     mimeType: asset.mime_type,
     width: asset.width,
     height: asset.height,

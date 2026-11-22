@@ -23,7 +23,9 @@ import { accountAvatarUrl } from '@/lib/social/avatar'
 import { createSupabaseAdminClient } from '@/lib/supabase/admin'
 import { mapDbError, unwrap } from '@/lib/supabase/errors'
 import { getBrand, type BrandRow } from '@/services/brands'
-import { signedUrl } from '@/services/media-urls'
+import type { PhotoCredit } from '@/lib/media/unsplash'
+import { creditsFor } from '@/services/media-credit'
+import { PREVIEW_URL_SEC, previewUrl, THUMB_WIDTH } from '@/services/media-urls'
 import type { Database, Json } from '@/types/database'
 import type { ContentLocale } from '@/config/locales'
 
@@ -70,6 +72,8 @@ export interface PostMediaView {
   altText: string | null
   source: string | null
   attributionText: string | null
+  /** autor i Unsplash sa linkovima, prikazuju se uz sliku (D-190) */
+  credit: PhotoCredit | null
 }
 
 export interface PostView {
@@ -162,7 +166,7 @@ export async function getPostView(viewer: Viewer, postId: string): Promise<PostV
     viewer.supabase
       .from('post_media')
       .select(
-        'id, media_asset_id, sort_order, target_id, media_assets(id, bucket, storage_path, width, height, mime_type, duration_ms, size_bytes, alt_text, source, attribution)',
+        'id, media_asset_id, sort_order, target_id, media_assets(id, bucket, storage_path, width, height, mime_type, duration_ms, size_bytes, alt_text, source, attribution, source_data)',
       )
       .eq('post_id', postId)
       .order('sort_order', { ascending: true }),
@@ -171,8 +175,8 @@ export async function getPostView(viewer: Viewer, postId: string): Promise<PostV
   if (targetsRes.error) throw mapDbError(targetsRes.error)
   if (mediaRes.error) throw mapDbError(mediaRes.error)
   const targetByAccount = new Map((targetsRes.data ?? []).map((t) => [t.id, t.social_account_id]))
-  // nalozi brenda i potpisi slika u drugom krugu, zajedno
-  const [accounts, media] = await Promise.all([
+  // nalozi brenda, potpisi slika i potpisi autora (Unsplash, D-190) u drugom krugu, zajedno
+  const [accounts, media, credits] = await Promise.all([
     accountMap(viewer, post.brand_id),
     Promise.all(
       (mediaRes.data ?? []).map(async (m): Promise<PostMediaView> => {
@@ -183,7 +187,7 @@ export async function getPostView(viewer: Viewer, postId: string): Promise<PostV
           mediaAssetId: m.media_asset_id,
           sortOrder: m.sort_order,
           socialAccountId: m.target_id ? (targetByAccount.get(m.target_id) ?? null) : null,
-          url: a ? await signedUrl(a) : null,
+          url: a ? await previewUrl(a) : null,
           width: a?.width ?? null,
           height: a?.height ?? null,
           mimeType: a?.mime_type ?? null,
@@ -192,10 +196,13 @@ export async function getPostView(viewer: Viewer, postId: string): Promise<PostV
           altText: a?.alt_text ?? null,
           source: a?.source ?? null,
           attributionText: attr?.text ?? null,
+          credit: null,
         }
       }),
     ),
+    creditsFor((mediaRes.data ?? []).flatMap((m) => (m.media_assets ? [m.media_assets] : []))),
   ])
+  for (const m of media) m.credit = credits.get(m.mediaAssetId) ?? null
   const targets: PostTargetView[] = (targetsRes.data ?? []).map((t) => {
     const acc = accounts.get(t.social_account_id)
     return {
@@ -296,14 +303,27 @@ export async function listPosts(
   const targetsBy = new Map<string, Array<{ platform: TargetRow['platform']; status: TargetRow['status'] }>>()
   const mediaBy = new Map<
     string,
-    { count: number; first: { kind: string; bucket: string; storage_path: string } | null }
+    {
+      count: number
+      first: {
+        kind: string
+        bucket: string
+        storage_path: string
+        source: string
+        source_data: unknown
+        width: number | null
+        height: number | null
+      } | null
+    }
   >()
   if (ids.length) {
     const [t, m] = await Promise.all([
       viewer.supabase.from('post_targets').select('post_id, platform, status').in('post_id', ids),
       viewer.supabase
         .from('post_media')
-        .select('post_id, sort_order, media_assets(kind, bucket, storage_path)')
+        .select(
+          'post_id, sort_order, media_assets(kind, bucket, storage_path, source, source_data, width, height)',
+        )
         .in('post_id', ids)
         .order('sort_order', { ascending: true }),
     ])
@@ -337,7 +357,7 @@ export async function listPosts(
         platforms: [...new Set(t.map((x) => x.platform))],
         targetStatuses: t.map((x) => x.status),
         mediaCount: m?.count ?? 0,
-        thumbnailUrl: m?.first ? await signedUrl(m.first) : null,
+        thumbnailUrl: m?.first ? await previewUrl(m.first, PREVIEW_URL_SEC, THUMB_WIDTH) : null,
         thumbnailKind: m?.first?.kind === 'video' ? ('video' as const) : ('image' as const),
       }
     }),

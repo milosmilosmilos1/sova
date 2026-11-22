@@ -2,7 +2,7 @@ import { inngest } from '@/inngest/client'
 import { events } from '@/inngest/events'
 import { runVisualTemplate } from '@/services/visuals/template'
 
-/** Vizual iz šablona u pozadini (Unsplash + rangiranje + Satori render); idempotentno po generationId. */
+/** Vizual iz šablona u pozadini (izabrana fotografija + Satori render); idempotentno po generationId. */
 export const aiVisualTemplate = inngest.createFunction(
   {
     id: 'ai-visual-template',

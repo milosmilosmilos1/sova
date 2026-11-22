@@ -50,10 +50,14 @@ export const templateAspectSchema = z.enum(['1:1', '4:5', '9:16', '16:9', '3:4']
 export const templateIdSchema = z.enum(TEMPLATE_IDS as [string, ...string[]])
 
 export const visualImageSourceSchema = z.discriminatedUnion('kind', [
+  // Unsplash fotografiju bira korisnik iz pretrage; Sova je ne bira sama po upitu (D-190)
   z.object({
     kind: z.literal('unsplash'),
-    query: z.string().trim().min(2).max(100).optional(),
-    photoId: z.string().trim().max(60).optional(),
+    photoId: z
+      .string({ error: 'Izaberite fotografiju sa Unsplash-a.' })
+      .trim()
+      .min(2, { error: 'Izaberite fotografiju sa Unsplash-a.' })
+      .max(60),
   }),
   z.object({ kind: z.literal('asset'), mediaAssetId: z.uuid() }),
   z.object({ kind: z.literal('none') }),

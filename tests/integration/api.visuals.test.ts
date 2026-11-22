@@ -199,7 +199,7 @@ describe('Unsplash', () => {
 })
 
 describe('Vizual iz šablona', () => {
-  it('Unsplash pretraga + render → 2 tokena, atribucija i prva fotografija čiji opis odgovara upitu (D-180)', async () => {
+  it('Unsplash fotografija koju je korisnik izabrao + render → 2 tokena, atribucija i praćeno preuzimanje (D-190)', async () => {
     const start = await balance()
     const r = await call<{ generationId: string; tokensReserved: number }>(
       templatePost,
@@ -213,7 +213,7 @@ describe('Vizual iz šablona', () => {
           subtext: 'Servis klime od 2.990 din.',
           cta: 'Zakažite',
           aspectRatio: '4:5',
-          image: { kind: 'unsplash', query: 'klima uređaj' },
+          image: { kind: 'unsplash', photoId: 'a1' },
         },
       },
     )
@@ -225,8 +225,9 @@ describe('Vizual iz šablona', () => {
     expect(j.status).toBe('succeeded')
     expect(j.tokensCharged).toBe(2)
     expect(j.assetUrl).toMatch(/^http/)
-    // Unsplash fotografije ne idu modelu (D-180): redosled je Unsplash-ov
+    // izabrana fotografija, bez modela (D-180) i bez pretrage (D-190)
     expect(j.output?.image?.photoId).toBe('a1')
+    expect(visualsState.unsplashSearches).toBe(0)
     expect(j.output?.attribution).toBe('Photo by Fotograf a1 on Unsplash')
     expect(j.output?.template).toBe('photo-overlay')
     expect(calls).toHaveLength(0)
@@ -246,7 +247,7 @@ describe('Vizual iz šablona', () => {
     expect(await balance()).toBe(start - 2)
   })
 
-  it('šablon bez slike, sa otpremljenom fotografijom i sa Unsplash-a bez modela (D-180)', async () => {
+  it('šablon bez slike i sa otpremljenom fotografijom; Unsplash samo sa izabranom fotografijom (D-190)', async () => {
     const start = await balance()
     const solid = await call<{ generationId: string }>(templatePost, '/api/ai/visual/template', {
       token: user.token,
@@ -284,8 +285,8 @@ describe('Vizual iz šablona', () => {
     expect(ja.output?.image?.kind).toBe('asset')
     expect(['photo-overlay', 'split']).toContain(ja.output?.template)
 
-    // Unsplash bez rangiranja modelom: prvi rezultat čiji opis odgovara upitu, bez napomene
-    const degraded = await call<{ generationId: string }>(templatePost, '/api/ai/visual/template', {
+    // Sova ne bira Unsplash fotografiju sama po upitu: bez izabrane fotografije zahtev se odbija
+    const byQuery = await call(templatePost, '/api/ai/visual/template', {
       token: user.token,
       headers: { 'idempotency-key': crypto.randomUUID() },
       body: {
@@ -294,11 +295,9 @@ describe('Vizual iz šablona', () => {
         image: { kind: 'unsplash', query: 'prodavnica' },
       },
     })
-    expect((await runVisualTemplate(degraded.json.data!.generationId)).status).toBe('succeeded')
-    const jd = await job(degraded.json.data!.generationId)
-    expect(jd.output?.image?.photoId).toBe('a1')
-    expect(jd.output?.notes?.join(' ') ?? '').not.toMatch(/Rangiranje/)
-    expect(await balance()).toBe(start - 6)
+    expect(byQuery.status).toBe(400)
+    expect(visualsState.unsplashSearches).toBe(0)
+    expect(await balance()).toBe(start - 4)
   }, 60_000)
 
   it('bez Idempotency-Key 400; nepostojeća fotografija → posao failed i tokeni vraćeni', async () => {
@@ -682,7 +681,8 @@ describe('Pexels (D-107)', () => {
       token: user.token,
       query: { query: 'kafić noću', kind: 'photo' },
     })
-    expect(photos.json.data!.results.map((x) => x.kind)).toEqual(['photo', 'photo', 'photo'])
+    expect(photos.json.data!.results).toHaveLength(12)
+    expect(new Set(photos.json.data!.results.map((x) => x.kind))).toEqual(new Set(['photo']))
     expect(photos.json.data!.results[0]!.attribution.text).toBe('Photo by Fotograf 301 on Pexels')
     const short = await call(pexelsSearchGet, '/api/pexels/search', {
       token: user.token,
