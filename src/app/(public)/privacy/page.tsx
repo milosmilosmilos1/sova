@@ -13,22 +13,29 @@ export async function generateMetadata(): Promise<Metadata> {
   return publicMetadata({ locale, path: '/privacy', title: t('title'), description: t('metaDescription') })
 }
 
-const DATA = ['account', 'brand', 'social', 'content', 'payment', 'technical', 'team'] as const
+const DATA = ['account', 'brand', 'social', 'inbox', 'content', 'payment', 'technical', 'team'] as const
 const PURPOSES = ['service', 'security', 'billing', 'emails', 'analytics'] as const
+/** samo servisi koji u produkciji zaista rade (22.11.2026: Netlify umesto Vercel-a; bez Upstash-a, Sentry-ja, PostHog-a i Turnstile-a) */
 const PROCESSORS = [
   'supabase',
-  'vercel',
+  'netlify',
   'gemini',
-  'stripe',
   'resend',
-  'upstash',
   'inngest',
-  'sentry',
-  'posthog',
-  'turnstile',
-  'media',
+  'stripe',
+  'stock',
+  'design',
 ] as const
-const RETENTION = ['account', 'tokens', 'logs', 'invoices'] as const
+const RETENTION = ['account', 'tokens', 'imported', 'inbox', 'support', 'logs', 'invoices'] as const
+
+const external = (href: string) =>
+  function ExternalLink(chunks: ReactNode) {
+    return (
+      <a href={href} rel="noreferrer" target="_blank">
+        {chunks}
+      </a>
+    )
+  }
 
 const strong = (chunks: ReactNode) => <strong>{chunks}</strong>
 
@@ -75,17 +82,18 @@ export default async function PrivacyPage() {
         <p>{t('s4.p1')}</p>
         <p>
           {t.rich('s4.p2', {
-            policy: (chunks) => (
-              <a
-                href="https://developers.google.com/terms/api-services-user-data-policy"
-                rel="noreferrer"
-                target="_blank"
-              >
-                {chunks}
-              </a>
-            ),
+            policy: external('https://developers.google.com/terms/api-services-user-data-policy'),
           })}
         </p>
+        <p>
+          {t.rich('s4.p3', {
+            yt: external('https://www.youtube.com/t/terms'),
+            gpp: external('https://policies.google.com/privacy'),
+            revoke: external('https://security.google.com/settings/security/permissions'),
+          })}
+        </p>
+        <p>{t.rich('s4.p4', { deletion })}</p>
+        <p>{t('s4.p5')}</p>
       </LegalSection>
 
       <LegalSection title={t('s5.title')}>
@@ -111,7 +119,7 @@ export default async function PrivacyPage() {
       </LegalSection>
 
       <LegalSection title={t('s10.title')}>
-        <p>{t('s10.text')}</p>
+        <p>{t.rich('s10.text', { mail, email: company.privacyEmail })}</p>
       </LegalSection>
 
       <LegalSection title={t('s11.title')}>
@@ -138,8 +146,10 @@ export default async function PrivacyPage() {
                   <strong>Data we process:</strong> account data (name, email, hashed password, preferences);
                   brand data (your website URL and its public content); data from social accounts you connect
                   (account IDs and names, access tokens, your past posts and public metrics, metrics of posts
-                  published by Sova); content you create in Sova; billing identifiers (card details stay with
-                  Stripe); technical logs; team members&apos; and clients&apos; emails and approval decisions.
+                  published by Sova); Inbox comments, messages and reviews when you turn Inbox on; content you
+                  create in Sova and questions to the support chatbot; billing identifiers (card details stay
+                  with Stripe); technical logs; team members&apos; and clients&apos; emails and approval
+                  decisions.
                 </>,
                 <>
                   <strong>Purposes and legal bases:</strong> providing the service (contract), security and
@@ -151,22 +161,43 @@ export default async function PrivacyPage() {
                   (publishing on your behalf, importing history, showing metrics). Never sold, never used for
                   advertising. Tokens are stored encrypted (AES-256-GCM) and deleted when you disconnect.
                   Sova&apos;s use of information received from Google APIs adheres to the Google API Services
-                  User Data Policy, including the Limited Use requirements.
+                  User Data Policy, including the Limited Use requirements. Sova uses YouTube API Services; by
+                  connecting a channel you agree to the{' '}
+                  <a href="https://www.youtube.com/t/terms" rel="noreferrer" target="_blank">
+                    YouTube Terms of Service
+                  </a>{' '}
+                  and the{' '}
+                  <a href="https://policies.google.com/privacy" rel="noreferrer" target="_blank">
+                    Google Privacy Policy
+                  </a>{' '}
+                  applies; you can revoke access on the{' '}
+                  <a
+                    href="https://security.google.com/settings/security/permissions"
+                    rel="noreferrer"
+                    target="_blank"
+                  >
+                    Google security settings page
+                  </a>
+                  . TikTok and LinkedIn posts go out only after you approve each one.
                 </>,
                 <>
-                  <strong>Processors:</strong> Supabase, Vercel, Google Gemini API, Stripe, Resend, Upstash,
-                  Inngest, Sentry, PostHog, Cloudflare Turnstile, Unsplash and Canva (only when you choose
-                  them). Transfers to the US rely on Standard Contractual Clauses or the EU-US Data Privacy
-                  Framework.
+                  <strong>Processors:</strong> Supabase (EU), Netlify, Google Gemini API, Resend, Inngest,
+                  Stripe (when online payment is enabled), Unsplash and Pexels (search queries only), Canva
+                  and Figma (only when you connect them). Transfers to the US rely on Standard Contractual
+                  Clauses or the EU-US Data Privacy Framework.
                 </>,
                 <>
-                  <strong>AI:</strong> your website content, brand description, inputs and uploaded photos are
-                  sent to the Google Gemini API to generate content. Paid Gemini API data is not used to train
-                  Google&apos;s models. AI-generated visuals are labelled.
+                  <strong>AI:</strong> your website content, brand description, inputs, gallery photos,
+                  imported posts, Inbox messages (when you ask for a suggested reply) and support chatbot
+                  questions are sent to the Google Gemini API. Unsplash and Pexels photos are not sent, and
+                  people&apos;s appearance or origin is never assessed. Paid Gemini API data is not used to
+                  train Google&apos;s models. Sova does not create AI photos.
                 </>,
                 <>
                   <strong>Retention:</strong> account and brand data while the account exists plus up to 30
-                  days; tokens until disconnection; logs up to 90 days; invoices as required by law.
+                  days; tokens until disconnection; YouTube and Google Business Profile data up to 30 days
+                  from the last refresh; Inbox up to 12 months from the last message; support chatbot 90 days;
+                  logs up to 90 days; invoices as required by law.
                 </>,
                 <>
                   <strong>Your rights:</strong> access, rectification, erasure, restriction, portability,

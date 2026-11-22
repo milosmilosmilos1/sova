@@ -535,7 +535,8 @@
           "account": "<b>Account data:</b> name, email address, password (stored only as a hash by our authentication processor), language, time zone, notification settings.",
           "brand": "<b>Brand data:</b> your website URL and the publicly available content on it (text, logo, colours, fonts, images, information about your services), descriptions you enter yourself, information about competitors you add.",
           "social": "<b>Data from connected social networks:</b> the ID and name of the account or page, profile picture, access tokens the network issues to us when you approve the connection, your past posts with public metrics (reach, reactions, comments), metrics for posts Sova publishes on your behalf.",
-          "content": "<b>Content you create in Sova:</b> post text, photos and videos you upload, generated images, strategies, comments and approval decisions.",
+          "inbox": "<b>Comments, messages and reviews (Inbox):</b> when you turn on Inbox, Sova fetches comments on posts, private messages and reviews from the connected accounts (the name and account of the person writing, the text and the time) and your replies. For DM automation we remember the person who sent the message and which flow they went through.",
+          "content": "<b>Content you create in Sova:</b> post text, photos and videos you upload, slides Sova draws, strategies, comments and approval decisions, and the questions you ask the support chatbot.",
           "payment": "<b>Payment data:</b> processed by Stripe. We store only the customer ID, plan, subscription status and token history. Your card number never reaches us.",
           "technical": "<b>Technical data:</b> IP address, browser and device type, access times, error logs, cookies needed for your session.",
           "team": "<b>Team member and client data:</b> the email addresses of people you invite to your workspace and their decisions on approving posts."
@@ -548,40 +549,43 @@
           "security": "Account security, preventing abuse and fixing errors: legitimate interest.",
           "billing": "Billing and accounting records: performance of a contract and legal obligation.",
           "emails": "Emails about your account status, failed posts and approvals: performance of a contract. Marketing emails only with your consent, which you can withdraw at any time.",
-          "analytics": "Product usage analytics and non-essential cookies: consent."
+          "analytics": "Product usage analytics and non-essential cookies, if we introduce them: only with your consent."
         }
       },
       "s4": {
         "title": "4. Data from third-party platforms",
-        "p1": "When you connect Facebook, Instagram, LinkedIn, TikTok, X, YouTube, Pinterest or Google Business Profile, Sova gets access only to the data you approved during the connection. We use that data only for the features you asked for: publishing content on your behalf, importing past posts to learn about your brand, and showing metrics. We do not sell platform data, use it for advertising or share it with third parties other than the processors listed in section 5. Access tokens are stored encrypted (AES-256-GCM) and deleted as soon as you disconnect the account.",
-        "p2": "Sova's use of information received from Google APIs (YouTube, Google Business Profile, Google sign-in) adheres to the <policy>Google API Services User Data Policy</policy>, including the Limited Use requirements. Our use of data from Meta platforms complies with the Meta Platform Terms, and our use of data from TikTok complies with the TikTok Developer Terms."
+        "p1": "When you connect Facebook, Instagram, LinkedIn, TikTok, X, YouTube, Pinterest or Google Business Profile, Sova gets access only to the data you approved during the connection. We use that data only for the features you asked for: publishing content on your behalf, importing past posts to learn about your brand, showing metrics and, when you turn on Inbox, showing comments, messages and reviews and sending your replies. We do not sell platform data, use it for advertising or share it with third parties other than the processors listed in section 5. Access tokens are stored encrypted (AES-256-GCM) and deleted as soon as you disconnect the account.",
+        "p2": "Sova's use of information received from Google APIs (YouTube, Google Business Profile, Google sign-in) adheres to the <policy>Google API Services User Data Policy</policy>, including the Limited Use requirements. Our use of data from Meta platforms complies with the Meta Platform Terms, from TikTok with the TikTok Developer Terms, from LinkedIn with the LinkedIn API Terms of Use, and from X with the X Developer Agreement.",
+        "p3": "Sova uses YouTube API Services to publish videos and show your channel's metrics. By connecting a YouTube channel you agree to the <yt>YouTube Terms of Service</yt>, and the <gpp>Google Privacy Policy</gpp> also applies. You can revoke Sova's access at any time on the <revoke>Google account security page</revoke>. We keep data received from YouTube and Google Business Profile for no more than 30 days from the last refresh.",
+        "p4": "When Facebook or Instagram sends a data deletion request (for example, when you remove Sova in your account settings), Sova deletes the connected accounts, their tokens and all data imported from them. You can check the status of the request on the <deletion>Data deletion</deletion> page.",
+        "p5": "Sova publishes to TikTok and LinkedIn only after you approve each post, and to X without approval only when you confirm that the \"Automated\" label is turned on for the account. From these networks we use basic profile data and the metrics of posts Sova publishes."
       },
       "s5": {
         "title": "5. Processors we entrust with data",
         "processors": {
-          "supabase": "<b>Supabase</b>: database, authentication, file storage",
-          "vercel": "<b>Vercel</b>: application hosting and content delivery",
-          "gemini": "<b>Google (Gemini API)</b>: generating text and images, analysing website content and images",
-          "stripe": "<b>Stripe</b>: billing for subscriptions and token packs",
-          "resend": "<b>Resend</b>: sending transactional emails",
-          "upstash": "<b>Upstash</b>: rate limiting and temporary caching",
-          "inngest": "<b>Inngest</b>: background jobs (website analysis, publishing, metrics)",
-          "sentry": "<b>Sentry</b>: technical error tracking",
-          "posthog": "<b>PostHog</b>: product usage analytics",
-          "turnstile": "<b>Cloudflare Turnstile</b>: bot protection at sign-up",
-          "media": "<b>Unsplash and Canva</b>: photos and designs, only when you choose them"
+          "supabase": "<b>Supabase</b>: database, authentication and file storage (Frankfurt, EU)",
+          "netlify": "<b>Netlify</b>: application hosting, content delivery and server functions",
+          "gemini": "<b>Google (Gemini API)</b>: writing text and analysing your website, your photos, imported posts and messages (section 6)",
+          "resend": "<b>Resend</b>: sending emails (confirmations, notifications, invitations)",
+          "inngest": "<b>Inngest</b>: background jobs (website analysis, publishing, metrics, deleting old data)",
+          "stripe": "<b>Stripe</b>: billing for subscriptions and token packs, when online payment is enabled",
+          "stock": "<b>Unsplash and Pexels</b>: searching free photos and videos; we send them only the search query",
+          "design": "<b>Canva and Figma</b>: importing and exporting designs, only when you connect your account"
         },
         "text": "We have a data processing agreement with each processor. Some of them process data in the United States; these transfers rely on Standard Contractual Clauses or the EU-US Data Privacy Framework."
       },
       "s6": {
         "title": "6. Artificial intelligence",
-        "text": "We use the Google Gemini API to generate text and images and to analyse websites. We send Gemini the public content of your website, your brand description, your inputs and any photos you attach yourself. Under the terms of the paid Gemini API, Google does not use this data to train its models. Visuals made by artificial intelligence are labelled as AI-generated in the app, and where a network supports it, Sova also adds a label to the post itself."
+        "text": "We use the Google Gemini API to write post text, analyse websites and make suggestions. We send Gemini the public content of your website (text and images), your brand description, your inputs, photos from your gallery (to describe them and check that a photo fits the topic of a post), past posts imported from your networks (to learn your brand's tone and prepare analysis), Inbox comments and messages when you ask for a suggested reply, and the questions you ask the support chatbot. We do not send photos from Unsplash or Pexels to Gemini, and Gemini does not assess the appearance, origin or other characteristics of people in photos. Under the terms of the paid Gemini API, Google does not use this data to train its models. Sova does not create photos with artificial intelligence: images in posts are your photos, free photos from Unsplash and Pexels, and slides Sova draws from templates."
       },
       "s7": {
         "title": "7. How long we keep data",
         "items": {
           "account": "Account and brand data: while the account exists, and then for no more than 30 days after the account is deleted.",
           "tokens": "Network access tokens: while the account is connected; they are deleted as soon as you disconnect.",
+          "imported": "Imported posts and metrics: from YouTube and Google Business Profile for no more than 30 days from the last refresh, from other networks while the account is connected.",
+          "inbox": "Inbox comments, messages and reviews: no more than 12 months from the last message in the conversation; they are also deleted when you disconnect the account.",
+          "support": "Conversations with the support chatbot: 90 days.",
           "logs": "Technical records (logs): up to 90 days.",
           "invoices": "Payment data and invoices: for the period required by accounting regulations."
         }
@@ -597,7 +601,7 @@
       },
       "s10": {
         "title": "10. Security",
-        "text": "Data travels encrypted (TLS). Access tokens are encrypted in the database, access to data is restricted by database-level policies so that each user sees only their own workspace, and staff access is logged. No system is completely secure; in the event of a data breach, we will notify you and the competent authority within the legal deadline."
+        "text": "Data travels encrypted (TLS). Access tokens are encrypted in the database, access to data is restricted by database-level policies so that each user sees only their own workspace, and staff access is logged. No system is completely secure; in the event of a data breach, we will notify you and the competent authority within the legal deadline. Report security vulnerabilities to <mail>{email}</mail>."
       },
       "s11": {
         "title": "11. Children",
@@ -617,7 +621,7 @@
       },
       "s2": {
         "title": "2. What Sova is",
-        "text": "Sova is software that helps you run social media: it analyses your website, suggests a strategy, generates text and visuals with the help of artificial intelligence, schedules and publishes content on the networks you connect, and shows the results. Sova is a tool; you decide what gets published."
+        "text": "Sova is software that helps you run social media: it analyses your website, suggests a strategy, writes text with the help of artificial intelligence, draws visuals from templates using your own and free photos, schedules and publishes content on the networks you connect, and shows the results. Sova is a tool; you decide what gets published."
       },
       "s3": {
         "title": "3. Your account",
@@ -630,7 +634,16 @@
       },
       "s4": {
         "title": "4. Connected social networks",
-        "text": "By connecting an account on a network, you authorise Sova to publish on your behalf content you have approved or content created in Autopilot mode that you switched on yourself, to import your past posts and to read metrics. You can withdraw this authorisation at any time in the app (Networks → Disconnect) or in the network's own settings. You must follow the rules of each network; we are not responsible for restrictions, rejections or suspensions a network applies to your account."
+        "text": "By connecting an account on a network, you authorise Sova to publish on your behalf content you have approved or content created in Autopilot mode that you switched on yourself (on TikTok and LinkedIn only after you approve each post), to import your past posts, to read metrics and, when you turn on Inbox, comments, messages and reviews, and to send your replies. You can withdraw this authorisation at any time in the app (Networks → Disconnect) or in the network's own settings. You confirm that you have the right to manage the accounts you connect.",
+        "rulesIntro": "You must follow the rules of each network, in particular:",
+        "rules": {
+          "youtube": "YouTube: the YouTube Terms of Service (youtube.com/t/terms) and the Google Privacy Policy (policies.google.com/privacy).",
+          "meta": "Facebook and Instagram: Meta's terms and community standards; you reply to private messages only within the window Meta allows and do not send unsolicited promotional messages.",
+          "linkedin": "LinkedIn: the LinkedIn User Agreement and, for company pages, the LinkedIn Pages Terms; you approve every post.",
+          "tiktok": "TikTok: the TikTok Terms of Service and Community Guidelines; you confirm every post, its visibility and its labels (for example, paid partnership).",
+          "x": "X: the X Rules and automation rules; for automated posts the \"Automated\" label must be turned on for the account."
+        },
+        "after": "We are not responsible for restrictions, rejections or suspensions a network applies to your account."
       },
       "s5": {
         "title": "5. Your content and artificial intelligence",
@@ -638,8 +651,8 @@
           "yours": "Content you upload or create in Sova remains yours. You only give us permission to process, store and publish it on your behalf as far as the service needs in order to work.",
           "accuracy": "Content generated by artificial intelligence may be inaccurate or inappropriate. Review it before publishing. Sova checks facts only against the information in your brand profile and does not guarantee accuracy.",
           "responsibility": "You are responsible for everything you publish: copyright in photos, the accuracy of prices and claims, compliance with advertising regulations and network rules.",
-          "forbidden": "The following are prohibited: unlawful, offensive, misleading or discriminatory content; spam; content that infringes other people's rights; attempts to get around security measures or the limits of AI services.",
-          "thirdParty": "Photos from Unsplash and designs from Canva are subject to those services' terms, which you accept when you use them."
+          "forbidden": "The following are prohibited: unlawful, offensive, misleading or discriminatory content; spam and bulk unsolicited messages; fake engagement (bought or automated likes, followers and comments) and automation a network forbids; acting on behalf of a person or business without authorisation; content that infringes other people's rights; attempts to get around security measures or the limits of AI services.",
+          "thirdParty": "Photos and videos from Unsplash and Pexels and designs from Canva and Figma are subject to those services' terms, which you accept when you use them."
         }
       },
       "s6": {

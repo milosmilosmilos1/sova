@@ -1689,3 +1689,13 @@ Odluka vlasnika (22.11., ODOBRENJA.md odeljak 4, tačka 3): TikTok, LinkedIn i X
 - Ekran Autopilota: te mreže su na spisku za nivo 3 isključene uz objašnjenje, potvrda za X se pojavljuje kad je X povezan, a ispod izbora za neodobrene objave stoji napomena. Pomoć dopunjena.
 
 Razlog: odluka vlasnika i pravila TikTok-a, LinkedIn-a i X-a, bez kojih prijave za odobrenje ne prolaze.
+
+## D-183 · 22.11.2026 · usvojeno · Pravni tekstovi usklađeni sa stvarnim radom Sove
+
+ODOBRENJA.md odeljak 1, tačka 3: tekstovi nisu bili tačni ni potpuni, a mreže pri pregledu porede politiku sa onim što aplikacija radi.
+
+- Politika privatnosti (sr-Latn i en, i engleski sažetak na srpskoj strani): hosting Netlify umesto Vercel-a; obrađivači samo oni koji u produkciji rade (Supabase u EU, Netlify, Gemini, Resend, Inngest, Stripe kad je plaćanje uključeno, Unsplash i Pexels samo upit, Canva i Figma kad ih korisnik poveže; bez Upstash-a, Sentry-ja, PostHog-a i Turnstile-a dok se ne uključe); novi podatak Inbox (komentari, poruke, recenzije, DM kontakti); šta tačno ide Gemini-ju (sajt, galerija, uvezene objave, Inbox na zahtev, chatbot), da stok fotografije ne idu i da se izgled ljudi ne procenjuje (D-180), da Sova ne pravi AI fotografije (D-104, ranije je pisalo da označava AI vizuale); posebni pasusi za YouTube (YouTube Terms of Service, Google Privacy Policy, opoziv na stranici Google bezbednosti, 30 dana), Metu (zahtev za brisanje) i TikTok, LinkedIn i X (odobrenje svake objave, oznaka „Automated”); rokovi D-181 i chatbot 90 dana; adresa za prijavu bezbednosnog propusta.
+- Uslovi korišćenja (sr-Latn i en): Sova piše tekst uz AI, a vizuale crta po šablonu; obaveze po mrežama (YouTube, Meta i poruke, LinkedIn i Pages Terms, TikTok, X i automatizacija); zabranjeno lažno angažovanje, masovne neželjene poruke i automatizacija koju mreža zabranjuje; Pexels i Figma uz Unsplash i Canvu.
+- Strana za brisanje podataka je već odgovarala D-176 i nije menjana. Datum pravnih dokumenata 22.11.2026 (`company.legalUpdatedAt`).
+
+Razlog: preduslov za prijave Meti, Google-u, TikTok-u i LinkedIn-u.

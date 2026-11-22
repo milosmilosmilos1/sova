@@ -535,7 +535,8 @@
           "account": "<b>Podaci o nalogu:</b> ime, email adresa, lozinka (čuva se samo kao heš kod našeg obrađivača za autentifikaciju), jezik, vremenska zona, podešavanja obaveštenja.",
           "brand": "<b>Podaci o brendu:</b> URL sajta i javno dostupan sadržaj sa njega (tekstovi, logo, boje, fontovi, slike, podaci o uslugama), opisi koje sami unesete, podaci o konkurentima koje dodate.",
           "social": "<b>Podaci sa povezanih društvenih mreža:</b> identifikator i naziv naloga ili stranice, slika profila, pristupni tokeni koje nam mreža izda kad odobrite povezivanje, vaše ranije objave sa javnim metrikama (doseg, reakcije, komentari), metrike objava koje Sova objavi u vaše ime.",
-          "content": "<b>Sadržaj koji kreirate u Sovi:</b> tekstovi objava, fotografije i video koje otpremite, generisane slike, strategije, komentari i odluke o odobravanju.",
+          "inbox": "<b>Komentari, poruke i recenzije (Inbox):</b> kad uključite Inbox, Sova sa povezanih naloga preuzima komentare na objave, privatne poruke i recenzije (ime i nalog osobe koja piše, tekst i vreme) i vaše odgovore. Za DM automatizaciju pamtimo osobu koja je poslala poruku i kojim tokom je prošla.",
+          "content": "<b>Sadržaj koji kreirate u Sovi:</b> tekstovi objava, fotografije i video koje otpremite, slajdovi koje Sova nacrta, strategije, komentari i odluke o odobravanju, kao i pitanja koja postavite chatbotu podrške.",
           "payment": "<b>Podaci o plaćanju:</b> obrađuje ih Stripe. Mi čuvamo samo identifikator kupca, plan, status pretplate i istoriju tokena. Broj kartice nikad ne dolazi do nas.",
           "technical": "<b>Tehnički podaci:</b> IP adresa, tip pregledača i uređaja, vreme pristupa, zapisi o greškama, kolačići neophodni za sesiju.",
           "team": "<b>Podaci članova tima i klijenata:</b> email adrese osoba koje pozovete u radni prostor i njihove odluke o odobravanju objava."
@@ -548,40 +549,43 @@
           "security": "Bezbednost naloga, sprečavanje zloupotrebe i otklanjanje grešaka: legitimni interes.",
           "billing": "Naplata i računovodstvena evidencija: izvršenje ugovora i zakonska obaveza.",
           "emails": "Emailovi o stanju naloga, neuspelim objavama i odobrenjima: izvršenje ugovora. Marketinški emailovi samo uz vašu saglasnost, koju možete povući u svakom trenutku.",
-          "analytics": "Analitika korišćenja proizvoda i kolačići koji nisu neophodni: saglasnost."
+          "analytics": "Analitika korišćenja proizvoda i kolačići koji nisu neophodni, ako ih uvedemo: samo uz vašu saglasnost."
         }
       },
       "s4": {
         "title": "4. Podaci sa platformi trećih strana",
-        "p1": "Kad povežete Facebook, Instagram, LinkedIn, TikTok, X, YouTube, Pinterest ili Google poslovni profil, Sova dobija pristup isključivo onim podacima koje ste odobrili u toku povezivanja. Te podatke koristimo samo za funkcije koje ste tražili: objavljivanje sadržaja u vaše ime, uvoz ranijih objava radi učenja o brendu i prikaz metrika. Podatke sa platformi ne prodajemo, ne koristimo za oglašavanje i ne delimo sa trećim stranama osim obrađivača iz odeljka 5. Pristupni tokeni se čuvaju šifrovani (AES-256-GCM) i brišu se čim prekinete vezu sa nalogom.",
-        "p2": "Korišćenje podataka dobijenih preko Google API-ja (YouTube, Google poslovni profil, Google prijava) u skladu je sa <policy>Google API Services User Data Policy</policy>, uključujući zahteve o ograničenoj upotrebi (Limited Use). Korišćenje podataka sa Meta platformi u skladu je sa Meta Platform Terms, a sa TikToka sa TikTok Developer Terms."
+        "p1": "Kad povežete Facebook, Instagram, LinkedIn, TikTok, X, YouTube, Pinterest ili Google poslovni profil, Sova dobija pristup isključivo onim podacima koje ste odobrili u toku povezivanja. Te podatke koristimo samo za funkcije koje ste tražili: objavljivanje sadržaja u vaše ime, uvoz ranijih objava radi učenja o brendu, prikaz metrika i, kad uključite Inbox, prikaz komentara, poruka i recenzija i slanje vaših odgovora. Podatke sa platformi ne prodajemo, ne koristimo za oglašavanje i ne delimo sa trećim stranama osim obrađivača iz odeljka 5. Pristupni tokeni se čuvaju šifrovani (AES-256-GCM) i brišu se čim prekinete vezu sa nalogom.",
+        "p2": "Korišćenje podataka dobijenih preko Google API-ja (YouTube, Google poslovni profil, Google prijava) u skladu je sa <policy>Google API Services User Data Policy</policy>, uključujući zahteve o ograničenoj upotrebi (Limited Use). Korišćenje podataka sa Meta platformi u skladu je sa Meta Platform Terms, sa TikTok-a sa TikTok Developer Terms, sa LinkedIn-a sa LinkedIn API Terms of Use, a sa X-a sa X Developer Agreement.",
+        "p3": "Sova koristi YouTube API Services za objavljivanje videa i prikaz metrika vašeg kanala. Povezivanjem YouTube kanala prihvatate <yt>YouTube uslove korišćenja</yt>, a na obradu se primenjuje i <gpp>Google politika privatnosti</gpp>. Pristup Sove možete u svakom trenutku opozvati na <revoke>strani za bezbednost Google naloga</revoke>. Podatke dobijene sa YouTube-a i Google poslovnog profila čuvamo najviše 30 dana od poslednjeg osvežavanja.",
+        "p4": "Kad Facebook ili Instagram pošalju zahtev za brisanje podataka (na primer kad uklonite Sovu u podešavanjima svog naloga), Sova briše povezane naloge, njihove tokene i sve podatke uvezene sa njih. Status zahteva proveravate na strani <deletion>Brisanje podataka</deletion>.",
+        "p5": "Na TikTok i LinkedIn Sova objavljuje tek posle vašeg odobrenja svake objave, a na X bez odobrenja samo kad potvrdite da je na nalogu uključena oznaka „Automated”. Sa ovih mreža koristimo osnovne podatke profila i metrike objava koje Sova objavi."
       },
       "s5": {
         "title": "5. Obrađivači kojima poveravamo podatke",
         "processors": {
-          "supabase": "<b>Supabase</b>: baza podataka, autentifikacija, skladište fajlova",
-          "vercel": "<b>Vercel</b>: hosting aplikacije i isporuka sadržaja",
-          "gemini": "<b>Google (Gemini API)</b>: generisanje teksta i slika, analiza sadržaja sajta i slika",
-          "stripe": "<b>Stripe</b>: naplata pretplata i paketa tokena",
-          "resend": "<b>Resend</b>: slanje transakcionih emailova",
-          "upstash": "<b>Upstash</b>: ograničavanje broja zahteva i privremeni keš",
-          "inngest": "<b>Inngest</b>: pozadinski poslovi (analiza sajta, objavljivanje, metrike)",
-          "sentry": "<b>Sentry</b>: praćenje tehničkih grešaka",
-          "posthog": "<b>PostHog</b>: analitika korišćenja proizvoda",
-          "turnstile": "<b>Cloudflare Turnstile</b>: zaštita od botova pri registraciji",
-          "media": "<b>Unsplash i Canva</b>: fotografije i dizajni, samo kad ih vi izaberete"
+          "supabase": "<b>Supabase</b>: baza podataka, autentifikacija i skladište fajlova (Frankfurt, EU)",
+          "netlify": "<b>Netlify</b>: hosting aplikacije, isporuka sadržaja i serverske funkcije",
+          "gemini": "<b>Google (Gemini API)</b>: pisanje tekstova i analiza sajta, vaših fotografija, uvezenih objava i poruka (odeljak 6)",
+          "resend": "<b>Resend</b>: slanje emailova (potvrde, obaveštenja, pozivnice)",
+          "inngest": "<b>Inngest</b>: pozadinski poslovi (analiza sajta, objavljivanje, metrike, brisanje starih podataka)",
+          "stripe": "<b>Stripe</b>: naplata pretplata i paketa tokena, kad je online plaćanje uključeno",
+          "stock": "<b>Unsplash i Pexels</b>: pretraga besplatnih fotografija i snimaka; šaljemo im samo upit za pretragu",
+          "design": "<b>Canva i Figma</b>: uvoz i izvoz dizajna, samo kad povežete svoj nalog"
         },
         "text": "Sa svakim obrađivačem imamo ugovor o obradi podataka. Neki od njih obrađuju podatke u Sjedinjenim Američkim Državama; prenos se zasniva na standardnim ugovornim klauzulama ili EU-US Data Privacy Framework-u."
       },
       "s6": {
         "title": "6. Veštačka inteligencija",
-        "text": "Za generisanje teksta i slika i za analizu sajta koristimo Google Gemini API. Gemini-ju šaljemo javni sadržaj vašeg sajta, opis brenda, vaše unose i fotografije koje sami priložite. Po uslovima plaćenog Gemini API-ja, Google te podatke ne koristi za treniranje svojih modela. Vizuali koje napravi veštačka inteligencija su u aplikaciji označeni kao AI generisani, a tamo gde mreža to podržava, Sova postavlja i oznaku na samoj objavi."
+        "text": "Za pisanje tekstova objava, analizu sajta i predloge koristimo Google Gemini API. Gemini-ju šaljemo javni sadržaj vašeg sajta (tekst i slike), opis brenda, vaše unose, fotografije iz vaše galerije (da napiše opis i proveri da fotografija odgovara temi objave), ranije objave uvezene sa mreža (da nauči ton brenda i napravi analizu), komentare i poruke iz Inbox-a kad tražite predlog odgovora i pitanja koja postavite chatbotu podrške. Fotografije sa Unsplash-a i Pexels-a ne šaljemo Gemini-ju, a Gemini ne procenjuje izgled, poreklo ni druge osobine ljudi na fotografijama. Po uslovima plaćenog Gemini API-ja, Google te podatke ne koristi za treniranje svojih modela. Sova ne pravi fotografije veštačkom inteligencijom: slike u objavama su vaše fotografije, besplatne fotografije sa Unsplash-a i Pexels-a i slajdovi koje Sova nacrta po šablonu."
       },
       "s7": {
         "title": "7. Koliko dugo čuvamo podatke",
         "items": {
           "account": "Podatke naloga i brenda: dok nalog postoji, a zatim najviše 30 dana posle brisanja naloga.",
           "tokens": "Pristupne tokene mreža: dok je nalog povezan; brišu se odmah po prekidu veze.",
+          "imported": "Uvezene objave i metrike: sa YouTube-a i Google poslovnog profila najviše 30 dana od poslednjeg osvežavanja, sa ostalih mreža dok je nalog povezan.",
+          "inbox": "Komentare, poruke i recenzije iz Inbox-a: najviše 12 meseci od poslednje poruke u razgovoru; brišu se i kad prekinete vezu sa nalogom.",
+          "support": "Razgovore sa chatbotom podrške: 90 dana.",
           "logs": "Tehničke zapise (logove): do 90 dana.",
           "invoices": "Podatke o plaćanju i fakture: u roku koji propisuju računovodstveni propisi."
         }
@@ -597,7 +601,7 @@
       },
       "s10": {
         "title": "10. Bezbednost",
-        "text": "Podaci putuju šifrovano (TLS). Pristupni tokeni su šifrovani u bazi, pristup podacima je ograničen politikama na nivou baze tako da svaki korisnik vidi samo svoj radni prostor, a pristup osoblja je zabeležen u evidenciji. Ni jedan sistem nije potpuno bezbedan; u slučaju povrede podataka obavestićemo vas i nadležni organ u zakonskom roku."
+        "text": "Podaci putuju šifrovano (TLS). Pristupni tokeni su šifrovani u bazi, pristup podacima je ograničen politikama na nivou baze tako da svaki korisnik vidi samo svoj radni prostor, a pristup osoblja je zabeležen u evidenciji. Ni jedan sistem nije potpuno bezbedan; u slučaju povrede podataka obavestićemo vas i nadležni organ u zakonskom roku. Bezbednosni propust prijavite na <mail>{email}</mail>."
       },
       "s11": {
         "title": "11. Deca",
@@ -617,7 +621,7 @@
       },
       "s2": {
         "title": "2. Šta je Sova",
-        "text": "Sova je softver koji pomaže u vođenju društvenih mreža: analizira vaš sajt, predlaže strategiju, generiše tekstove i vizuale uz pomoć veštačke inteligencije, zakazuje i objavljuje sadržaj na mrežama koje povežete i prikazuje rezultate. Sova je alat; odluke o tome šta se objavljuje donosite vi."
+        "text": "Sova je softver koji pomaže u vođenju društvenih mreža: analizira vaš sajt, predlaže strategiju, piše tekstove uz pomoć veštačke inteligencije, crta vizuale po šablonima od vaših i besplatnih fotografija, zakazuje i objavljuje sadržaj na mrežama koje povežete i prikazuje rezultate. Sova je alat; odluke o tome šta se objavljuje donosite vi."
       },
       "s3": {
         "title": "3. Nalog",
@@ -630,7 +634,16 @@
       },
       "s4": {
         "title": "4. Povezane društvene mreže",
-        "text": "Povezivanjem naloga na nekoj mreži ovlašćujete Sovu da u vaše ime objavljuje sadržaj koji ste odobrili ili koji nastaje u režimu Autopilota koji ste sami uključili, da uvozi vaše ranije objave i da čita metrike. Ovlašćenje možete povući u svakom trenutku u aplikaciji (Mreže → Prekini vezu) ili u podešavanjima same mreže. Dužni ste da poštujete pravila svake mreže; mi ne odgovaramo za ograničenja, odbijanja ili suspenzije koje mreža primeni na vaš nalog."
+        "text": "Povezivanjem naloga na nekoj mreži ovlašćujete Sovu da u vaše ime objavljuje sadržaj koji ste odobrili ili koji nastaje u režimu Autopilota koji ste sami uključili (na TikTok i LinkedIn tek posle vašeg odobrenja svake objave), da uvozi vaše ranije objave, da čita metrike i, kad uključite Inbox, komentare, poruke i recenzije i da šalje vaše odgovore. Ovlašćenje možete povući u svakom trenutku u aplikaciji (Mreže → Prekini vezu) ili u podešavanjima same mreže. Potvrđujete da imate pravo da upravljate nalozima koje povežete.",
+        "rulesIntro": "Dužni ste da poštujete pravila svake mreže, a posebno:",
+        "rules": {
+          "youtube": "YouTube: YouTube uslove korišćenja (youtube.com/t/terms) i Google politiku privatnosti (policies.google.com/privacy).",
+          "meta": "Facebook i Instagram: Meta uslove i pravila zajednice; na privatne poruke odgovarate samo u roku koji Meta dozvoljava i ne šaljete neželjene promotivne poruke.",
+          "linkedin": "LinkedIn: LinkedIn ugovor o korisniku, a za stranice firmi i LinkedIn Pages Terms; svaku objavu odobravate vi.",
+          "tiktok": "TikTok: TikTok uslove korišćenja i smernice zajednice; svaku objavu, njenu vidljivost i oznake (na primer plaćenu saradnju) potvrđujete vi.",
+          "x": "X: X pravila i pravila o automatizaciji; za automatske objave na nalogu mora biti uključena oznaka „Automated”."
+        },
+        "after": "Ne odgovaramo za ograničenja, odbijanja ili suspenzije koje mreža primeni na vaš nalog."
       },
       "s5": {
         "title": "5. Vaš sadržaj i veštačka inteligencija",
@@ -638,8 +651,8 @@
           "yours": "Sadržaj koji otpremite ili kreirate u Sovi ostaje vaš. Dajete nam samo dozvolu da ga obrađujemo, čuvamo i objavljujemo u vaše ime, koliko je potrebno za rad usluge.",
           "accuracy": "Sadržaj koji generiše veštačka inteligencija može biti netačan ili neprikladan. Pre objave ga pregledajte. Sova proverava činjenice samo naspram podataka iz vašeg profila brenda i ne garantuje tačnost.",
           "responsibility": "Odgovorni ste za sve što objavite: autorska prava na fotografije, tačnost cena i tvrdnji, poštovanje propisa o oglašavanju i pravila mreža.",
-          "forbidden": "Zabranjeno je: nezakonit, uvredljiv, obmanjujući ili diskriminatorski sadržaj; spam; sadržaj koji krši tuđa prava; pokušaji zaobilaženja bezbednosnih mera ili ograničenja AI servisa.",
-          "thirdParty": "Fotografije sa Unsplasha i dizajni iz Canve podležu uslovima tih servisa, koje prihvatate kad ih koristite."
+          "forbidden": "Zabranjeno je: nezakonit, uvredljiv, obmanjujući ili diskriminatorski sadržaj; spam i masovne neželjene poruke; lažno angažovanje (kupljeni ili automatski lajkovi, pratioci i komentari) i automatizacija koju mreža zabranjuje; predstavljanje u ime osobe ili firme bez ovlašćenja; sadržaj koji krši tuđa prava; pokušaji zaobilaženja bezbednosnih mera ili ograničenja AI servisa.",
+          "thirdParty": "Fotografije i snimci sa Unsplash-a i Pexels-a i dizajni iz Canve i Figme podležu uslovima tih servisa, koje prihvatate kad ih koristite."
         }
       },
       "s6": {
