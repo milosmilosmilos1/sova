@@ -8,6 +8,7 @@ import { brandAnalyze } from './brand-analyze'
 import { brandDocumentIndex } from './brand-document-index'
 import { brandSiteCheck } from './brand-site-check'
 import { canvaExportVideo } from './canva-export-video'
+import { dataRetention } from './data-retention'
 import { designHarmonize } from './design-harmonize'
 import { designPhotosRefresh } from './design-photos-refresh'
 import { flowRun, flowsTick } from './flows'
@@ -57,6 +58,7 @@ export const functions = [
   mediaCleanupDaily,
   mediaCleanupNow,
   supportMessagesCleanup,
+  dataRetention,
   billingProcessEvent,
   billingDaily,
   reportsMonthly,

@@ -1668,3 +1668,13 @@ Odluka vlasnika (22.11., ODOBRENJA.md odeljak 4, tačka 4): provera ljudi samo n
 - Posledica: za teme gde su ljudi važni (noćni život, događaji, usluge) automatski izbor češće ostavlja slajd u bojama brenda. Preporuka korisniku (pomoć): svoje fotografije u Galeriju.
 
 Razlog: uslovi Unsplash-a i Pexels-a i GDPR; preduslov za prijave mreža, jer se na pitanje o AI obradi mora odgovoriti istinito.
+
+## D-181 · 22.11.2026 · usvojeno · Rokovi čuvanja podataka sa mreža
+
+Odluka vlasnika (22.11., ODOBRENJA.md odeljak 4, tačka 2).
+
+- YouTube i Google poslovni profil: uvezene objave (`historical_posts`), snimci metrika (`post_metrics_snapshots`) i dnevne metrike naloga (`account_metrics_daily`) brišu se kad 30 dana nisu osveženi (`imported_at`, `captured_at`). Sinhronizacija osvežava uvezene objave i dodaje nove snimke, pa ostaje samo ono što je mreža potvrdila u poslednjih 30 dana (YouTube API Services i Google API politika).
+- Inbox: razgovor bez nove poruke 12 meseci briše se sa porukama. Podaci odvezanog naloga brišu se već pri odvezivanju i na zahtev Mete (D-176).
+- Noćni Inngest posao `data-retention` u 05:30 UTC (`services/data-retention.ts`). Ostale mreže zasad nemaju rok osim brisanja naloga; politika privatnosti navodi rokove.
+
+Razlog: odluka vlasnika i uslov Google-a za YouTube i Business Profile API.
