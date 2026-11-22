@@ -1,3 +1,6 @@
+import { readFileSync } from 'node:fs'
+import { join } from 'node:path'
+
 import { fileTypeFromBuffer } from 'file-type'
 import { describe, expect, it } from 'vitest'
 
@@ -35,6 +38,13 @@ describe('parseMp4', () => {
 
   it('mvhd sa trajanjem 0: trajanje se čita iz video trake (mdhd)', () => {
     expect(parseMp4(buildMp4({ durationInTrackOnly: true, durationMs: 12_400 })).durationMs).toBe(12_400)
+  })
+
+  it('fragmentisan MP4 sa nulama u mvhd i mdhd: trajanje je zbir fragmenata (Pexels, 22.11.)', () => {
+    // ffmpeg -movflags frag_keyframe+empty_moov+default_base_moof, 2,5 s
+    const info = parseMp4(readFileSync(join(__dirname, '../../../tests/fixtures/fragmented.mp4')))
+    expect(info.durationMs).toBe(2500)
+    expect(info).toMatchObject({ width: 64, height: 112, videoCodec: 'avc1' })
   })
 
   it('MOV (QuickTime) ima istu strukturu; video bez zvuka', () => {

@@ -85,6 +85,51 @@ function readMehd(buf: Buffer, moov: Box): number {
   return buf.readUInt32BE(mehd.body + 4)
 }
 
+/** `track_ID` iz `tkhd` (posle FullBox zaglavlja i dva vremena). */
+function trackIdOf(buf: Buffer, tkhd: Box): number | null {
+  const at = tkhd.body + 4 + (buf.readUInt8(tkhd.body) === 1 ? 16 : 8)
+  return at + 4 <= tkhd.end ? buf.readUInt32BE(at) : null
+}
+
+/**
+ * Trajanje trake u fragmentisanom MP4 (`moof` → `traf` → `trun`), u vremenskoj skali trake. Zbir
+ * trajanja uzoraka: iz `trun` kad ga ima, inače podrazumevano iz `tfhd`, pa iz `trex` u `mvex`.
+ * Takve fajlove pravi deo enkodera i Pexels; u `mvhd` i `mdhd` je tada 0, a `mehd` često fali.
+ */
+function fragmentedTrackDuration(buf: Buffer, top: Box[], moov: Box, trackId: number): number {
+  let trexDefault = 0
+  const mvex = child(buf, moov, 'mvex')
+  for (const trex of mvex ? children(buf, mvex, 'trex') : []) {
+    if (trex.body + 16 <= trex.end && buf.readUInt32BE(trex.body + 4) === trackId)
+      trexDefault = buf.readUInt32BE(trex.body + 12)
+  }
+  let total = 0
+  for (const moof of top.filter((b) => b.type === 'moof')) {
+    for (const traf of children(buf, moof, 'traf')) {
+      const tfhd = child(buf, traf, 'tfhd')
+      if (!tfhd || tfhd.body + 8 > tfhd.end || buf.readUInt32BE(tfhd.body + 4) !== trackId) continue
+      const tfFlags = buf.readUInt32BE(tfhd.body) & 0xffffff
+      let p = tfhd.body + 8
+      if (tfFlags & 0x01) p += 8
+      if (tfFlags & 0x02) p += 4
+      const defaultDuration = tfFlags & 0x08 && p + 4 <= tfhd.end ? buf.readUInt32BE(p) : trexDefault
+      for (const trun of children(buf, traf, 'trun')) {
+        if (trun.body + 8 > trun.end) continue
+        const flags = buf.readUInt32BE(trun.body) & 0xffffff
+        const count = buf.readUInt32BE(trun.body + 4)
+        if (!(flags & 0x100)) {
+          total += count * defaultDuration
+          continue
+        }
+        let q = trun.body + 8 + (flags & 0x01 ? 4 : 0) + (flags & 0x04 ? 4 : 0)
+        const step = 4 * [0x100, 0x200, 0x400, 0x800].filter((f) => flags & f).length
+        for (let i = 0; i < count && q + 4 <= trun.end; i++, q += step) total += buf.readUInt32BE(q)
+      }
+    }
+  }
+  return total
+}
+
 function readTkhd(
   buf: Buffer,
   box: Box,
@@ -144,7 +189,12 @@ export function parseMp4(buf: Buffer): VideoInfo {
       if (tkhd && tkhd.width > 0 && tkhd.height > 0) video = { ...tkhd, codec: codecOf(buf, mdia) }
       const mdhdBox = child(buf, mdia, 'mdhd')
       const mdhd = mdhdBox ? readMdhd(buf, mdhdBox) : null
-      if (mdhd?.timescale) trackMs = Math.round((mdhd.duration / mdhd.timescale) * 1000)
+      if (mdhd?.timescale) {
+        trackMs = Math.round((mdhd.duration / mdhd.timescale) * 1000)
+        const trackId = tkhdBox ? trackIdOf(buf, tkhdBox) : null
+        if (!trackMs && trackId !== null)
+          trackMs = Math.round((fragmentedTrackDuration(buf, top, moov, trackId) / mdhd.timescale) * 1000)
+      }
     } else if (handler === 'soun' && !audioCodec) {
       audioCodec = codecOf(buf, mdia)
     }
@@ -152,7 +202,8 @@ export function parseMp4(buf: Buffer): VideoInfo {
   if (!video) throw new Error('Video nema video traku.')
   const movieMs = mvhd?.timescale ? Math.round((mvhd.duration / mvhd.timescale) * 1000) : 0
   const fragmentMs = mvhd?.timescale ? Math.round((readMehd(buf, moov) / mvhd.timescale) * 1000) : 0
-  // neki enkoderi (i deo snimaka sa Pexels-a) upišu 0 u mvhd: tada važi trajanje video trake ili mehd
+  // neki enkoderi (i deo snimaka sa Pexels-a) upišu 0 u mvhd: tada važi trajanje video trake
+  // (mdhd ili zbir fragmenata) ili mehd
   const durationMs = movieMs || trackMs || fragmentMs
   if (!durationMs && !mvhd?.timescale) throw new Error('Video nema trajanje u zaglavlju.')
   const swap = video.rotation === 90 || video.rotation === 270
