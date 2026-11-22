@@ -170,6 +170,14 @@ Nijedna od ovih dozvola se ne dodaje u prijavu pre odobrenja: neodobrena dozvola
 4. Provera ljudi na fotografijama (D-154): zadržati je samo na fotografijama koje nisu sa Unsplash-a i Pexels-a, zameniti je izborom po upitu i ručnim izborom, ili tražiti pisano odobrenje. Uz GDPR rizik.
 5. Inbox poruke (Messenger, Instagram DM): u prvoj Meta prijavi ili kasnije (preporuka: kasnije).
 
+**Odgovori vlasnika (22.11.2026):**
+
+1. sovaai.rs je na Netlify-ju, DNS i mejl na SuperHosting-u (D-179).
+2. Uvezene objave i metrike sa YouTube-a i Google-a najviše 30 dana; Inbox poruke dok je nalog povezan, najviše 12 meseci.
+3. TikTok, LinkedIn i X ostaju u automatskom objavljivanju, uz napomene i ono što mreža traži od korisnika: za X potvrda da je na nalogu uključena oznaka „Automated”; za TikTok i LinkedIn, čija pravila traže da korisnik lično potvrdi svaku objavu, Autopilot priprema i zakazuje, a objava ide posle jednog klika „Odobri” (sa obaveštenjem). Facebook, Instagram, Google i YouTube objavljuju potpuno automatski.
+4. Provera ljudi (D-154) ostaje samo na fotografijama koje je korisnik sam postavio; za Unsplash i Pexels izbor ide po upitu i ručnim izborom, bez AI obrade njihovih fotografija.
+5. Inbox ide u drugu Meta prijavu.
+
 ## Izvori
 
 - Meta:
