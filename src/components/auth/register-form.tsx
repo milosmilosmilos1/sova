@@ -70,7 +70,8 @@ export function RegisterForm({ next, googleEnabled }: { next?: string; googleEna
               aria-describedby="acceptTerms-error"
               className="mt-1 size-4 shrink-0 rounded border-input accent-primary"
             />
-            <Label htmlFor="acceptTerms" className="text-sm leading-5 font-normal">
+            {/* block: Label je inače flex sa razmakom, pa bi tekst i linkovi bili odvojeni blokovi */}
+            <Label htmlFor="acceptTerms" className="block text-sm leading-5 font-normal">
               {t.rich('register.terms', {
                 terms: (chunks) => (
                   <Link href={href('/terms')} className="underline" target="_blank">
