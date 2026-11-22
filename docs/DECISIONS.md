@@ -1699,3 +1699,14 @@ ODOBRENJA.md odeljak 1, tačka 3: tekstovi nisu bili tačni ni potpuni, a mreže
 - Strana za brisanje podataka je već odgovarala D-176 i nije menjana. Datum pravnih dokumenata 22.11.2026 (`company.legalUpdatedAt`).
 
 Razlog: preduslov za prijave Meti, Google-u, TikTok-u i LinkedIn-u.
+
+## D-184 · 22.11.2026 · usvojeno · LinkedIn saglasnost, Canva i Figma po pravilima pregleda
+
+ODOBRENJA.md odeljak 2 (LinkedIn, Canva, Figma).
+
+- LinkedIn: pre povezivanja i pri obnovi na 60 dana („Poveži ponovo”) dijalog saglasnosti (podaci, svrha, odobrenje svake objave, opoziv, brisanje, obnova; `components/accounts/connect-link.tsx`); dozvola `email` skinuta jer se ne koristi; u Odobravanju napomena da je tekst predlog Sove uz AI i da na LinkedIn ide tek posle odobrenja; u uslovima zabrana kockanja, sadržaja za odrasle i duvana ili alkohola za maloletne na LinkedIn-u; tekst o brisanju kaže da LinkedIn nema opoziv preko API-ja.
+- Canva: skinute dozvole `brandtemplate:meta:read` i `brandtemplate:content:read` i provera šablona brenda koja je besplatnim korisnicima vraćala 403; pri prekidu veze token se opoziva kod Canve (`/oauth/revoke`); kartica pokazuje ime povezanog Canva naloga (`profile:read`, `/users/me/profile`) i „Powered by Canva”, kao i ulazi u Canvu u Studiju.
+- Figma: samo `file_content:read` (`file_metadata:read` se ne koristi); politika privatnosti kaže da je za podatke iz Canve i Figme odgovorna Sova.
+- Vlasnik u portalima: Canva javna integracija, MFA, bez localhost redirecta, probni nalog i snimak; Figma javna aplikacija, naziv bez reči „Figma”, logo 512×512.
+
+Razlog: uslovi pregleda LinkedIn-a, Canve i Figme.

@@ -14,6 +14,8 @@ interface CanvaStatus {
   connected: boolean
   status: string | null
   autofillAvailable: boolean
+  /** ime povezanog Canva naloga */
+  accountName: string | null
   expiresAt: string | null
 }
 
@@ -66,12 +68,15 @@ export function CanvaCard({
         {status.isError ? <p className="text-destructive">{t('loadFailed')}</p> : null}
         {s && !s.configured ? <p className="text-muted-foreground">{t('notConfigured')}</p> : null}
         {s && s.configured && !s.enabled ? <p className="text-muted-foreground">{t('disabled')}</p> : null}
+        <p className="text-xs text-muted-foreground">{t('poweredBy')}</p>
         {s && s.configured && s.enabled ? (
           <div className="flex flex-wrap items-center gap-2">
             {s.connected ? (
               <>
                 <Badge>{t('connected')}</Badge>
-                <Badge variant="outline">{s.autofillAvailable ? t('autofill') : t('noAutofill')}</Badge>
+                {s.accountName ? (
+                  <span className="text-muted-foreground">{t('account', { name: s.accountName })}</span>
+                ) : null}
                 {canEdit ? (
                   <Button
                     size="sm"

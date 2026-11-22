@@ -18,7 +18,8 @@ export const visualsState = {
   canvaUploads: 0,
   canvaDesigns: [] as Record<string, unknown>[],
   canvaExports: [] as Record<string, unknown>[],
-  canvaAutofill: false,
+  /** tokeni koje je Sova opozvala kod Canve pri prekidu veze */
+  canvaRevoked: [] as string[],
   canvaRefreshFails: false,
   /** query string svakog `GET /designs` */
   canvaDesignLists: [] as string[],
@@ -49,7 +50,7 @@ export function resetVisualsState(): void {
   visualsState.canvaUploads = 0
   visualsState.canvaDesigns = []
   visualsState.canvaExports = []
-  visualsState.canvaAutofill = false
+  visualsState.canvaRevoked = []
   visualsState.canvaRefreshFails = false
   visualsState.canvaDesignLists = []
   visualsState.canvaVideoPolls = 0
@@ -208,11 +209,15 @@ export const canvaHandlers = [
       return HttpResponse.json({ code: 'unauthorized' }, { status: 401 })
     return HttpResponse.json({ team_user: { user_id: 'canva-user-1', team_id: 'team-1' } })
   }),
-  http.get('https://api.canva.com/rest/v1/brand-templates', () =>
-    visualsState.canvaAutofill
-      ? HttpResponse.json({ items: [] })
-      : HttpResponse.json({ code: 'permission_denied', message: 'no' }, { status: 403 }),
-  ),
+  http.get('https://api.canva.com/rest/v1/users/me/profile', ({ request }) => {
+    if (!request.headers.get('authorization')?.startsWith('Bearer access-'))
+      return HttpResponse.json({ code: 'unauthorized' }, { status: 401 })
+    return HttpResponse.json({ profile: { display_name: 'Pekara Zrno' } })
+  }),
+  http.post('https://api.canva.com/rest/v1/oauth/revoke', async ({ request }) => {
+    visualsState.canvaRevoked.push(new URLSearchParams(await request.text()).get('token') ?? '')
+    return new HttpResponse(null, { status: 200 })
+  }),
   http.post('https://api.canva.com/rest/v1/asset-uploads', async ({ request }) => {
     visualsState.canvaUploads++
     const meta = request.headers.get('asset-upload-metadata')

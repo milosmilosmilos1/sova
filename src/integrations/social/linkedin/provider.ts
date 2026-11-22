@@ -43,7 +43,8 @@ import { toLittleText } from './little'
  * Images API, commentary u `little` formatu. Token traje 60 dana; refresh samo za partnere sa
  * programskim refresh-om, ostali se povezuju ponovo pre isteka (D-076).
  */
-export const LINKEDIN_BASE_SCOPES = ['openid', 'profile', 'email', 'w_member_social'] as const
+/** bez `email`: Sova ga ne koristi (LinkedIn pregled, 22.11.2026) */
+export const LINKEDIN_BASE_SCOPES = ['openid', 'profile', 'w_member_social'] as const
 /** Community Management API: stranice firmi i komentari (`*_feed` za prvi komentar, i za lični profil) */
 export const LINKEDIN_PAGE_SCOPES = [
   'rw_organization_admin',
@@ -73,7 +74,6 @@ interface UserInfo {
   sub: string
   name?: string
   picture?: string
-  email?: string
 }
 
 interface PostElement {

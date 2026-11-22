@@ -5,6 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 
 import { CONNECT_TILES } from '@/components/accounts/accounts-client'
+import { ConnectLink } from '@/components/accounts/connect-link'
 import { PlatformTile } from '@/components/landing/platform-tile'
 import { byKey } from '@/components/landing/platforms'
 import { api } from '@/components/shared/api-client'
@@ -136,12 +137,13 @@ export function StepNetworks({
           return (
             <li key={tile.platform}>
               {state === 'ready' ? (
-                <a
+                <ConnectLink
+                  platform={tile.platform}
                   href={href(tile.provider)}
-                  className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:border-primary hover:bg-primary/5"
+                  className="flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:border-primary hover:bg-primary/5"
                 >
                   {body}
-                </a>
+                </ConnectLink>
               ) : (
                 <div
                   aria-disabled="true"

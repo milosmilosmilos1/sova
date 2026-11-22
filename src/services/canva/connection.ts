@@ -17,7 +17,8 @@ import {
   exchangeCode,
   getMe,
   isCanvaConfigured,
-  probeAutofill,
+  getProfileName,
+  revokeToken,
   refreshAccessToken,
   type TokenSet,
 } from '@/integrations/canva/client'
@@ -34,6 +35,8 @@ export interface CanvaStatus {
   connected: boolean
   status: 'active' | 'needs_reauth' | 'disabled' | 'revoked' | null
   autofillAvailable: boolean
+  /** ime povezanog Canva naloga (Canva traži da korisnik vidi koji je nalog povezan) */
+  accountName: string | null
   canvaUserId: string | null
   expiresAt: string | null
 }
@@ -51,12 +54,20 @@ export async function getCanvaStatus(viewer: Viewer, workspaceId: string): Promi
     .eq('workspace_id', workspaceId)
     .eq('user_id', viewer.user.id)
     .maybeSingle()
+  const connected = Boolean(data && data.status === 'active')
+  // ime naloga se pita kod Canve; ako ne stigne, kartica pokazuje samo da je Canva povezana
+  const accountName = connected
+    ? await getCanvaAccessToken(workspaceId, viewer.user.id)
+        .then(getProfileName)
+        .catch(() => null)
+    : null
   return {
     configured: isCanvaConfigured(),
     enabled,
-    connected: Boolean(data && data.status === 'active'),
+    connected,
     status: (data?.status as CanvaStatus['status']) ?? null,
     autofillAvailable: Boolean(data?.autofill_available),
+    accountName,
     canvaUserId: data?.canva_user_id ?? null,
     expiresAt: data?.token_expires_at ?? null,
   }
@@ -125,16 +136,14 @@ export async function completeCanvaConnect(
   )
   const tokens = await exchangeCode({ code: params.code, codeVerifier: verifier, redirectUri: callbackUrl() })
   const me = await getMe(tokens.accessToken)
-  const autofill = await probeAutofill(tokens.accessToken)
   await saveTokens({
     workspaceId: row.workspace_id,
     userId: viewer.user.id,
     tokens,
     canvaUserId: me.userId,
     teamId: me.teamId,
-    autofillAvailable: autofill,
   })
-  logger.info('canva_connected', { workspaceId: row.workspace_id, autofill })
+  logger.info('canva_connected', { workspaceId: row.workspace_id })
   return { redirectTo }
 }
 
@@ -205,6 +214,26 @@ export async function getCanvaAccessToken(workspaceId: string, userId: string): 
 export async function disconnectCanva(viewer: Viewer, workspaceId: string): Promise<void> {
   await requireMembership(viewer, workspaceId, EDIT_ROLES)
   const admin = createSupabaseAdminClient()
+  // opoziv kod Canve pre brisanja veze (Canva pregled); greška ne zaustavlja prekid
+  const { data: row } = await admin
+    .from('canva_connections')
+    .select('refresh_token_enc, key_version')
+    .eq('workspace_id', workspaceId)
+    .eq('user_id', viewer.user.id)
+    .maybeSingle()
+  if (row?.refresh_token_enc) {
+    try {
+      await revokeToken(
+        decryptSecret(
+          row.refresh_token_enc as unknown as string,
+          row.key_version,
+          `canva:${workspaceId}:${viewer.user.id}`,
+        ),
+      )
+    } catch (error) {
+      logger.warn('canva_revoke_skipped', { error })
+    }
+  }
   const { error } = await admin
     .from('canva_connections')
     .delete()

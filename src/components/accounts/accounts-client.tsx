@@ -8,7 +8,8 @@ import { PlatformTile } from '@/components/landing/platform-tile'
 import { byKey } from '@/components/landing/platforms'
 import { NetworkBadge, NetworkName } from '@/components/shared/network-badge'
 import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
+import { ConnectLink } from '@/components/accounts/connect-link'
+import { Button, buttonVariants } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { PLATFORMS } from '@/config/platforms'
 import { INTL_UI } from '@/i18n/config'
@@ -261,12 +262,13 @@ export function AccountsClient({
               return (
                 <li key={tile.platform}>
                   {state === 'ready' ? (
-                    <a
+                    <ConnectLink
+                      platform={tile.platform}
                       href={connectHref(tile.provider)}
-                      className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:border-primary hover:bg-primary/5"
+                      className="flex w-full items-center gap-3 rounded-lg border p-3 text-left transition-colors hover:border-primary hover:bg-primary/5"
                     >
                       {body}
-                    </a>
+                    </ConnectLink>
                   ) : (
                     <div
                       aria-disabled="true"
@@ -419,14 +421,13 @@ export function AccountsClient({
                 {(a.status !== 'active' || a.platform === 'linkedin') &&
                 canAdmin &&
                 providerReady(a.platform) ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    nativeButton={false}
-                    render={<a href={connectHref(providerOf(a.platform))} />}
+                  <ConnectLink
+                    platform={a.platform}
+                    href={connectHref(providerOf(a.platform))}
+                    className={buttonVariants({ size: 'sm', variant: 'outline' })}
                   >
                     {t('reconnect')}
-                  </Button>
+                  </ConnectLink>
                 ) : null}
                 {canAdmin ? (
                   <Button

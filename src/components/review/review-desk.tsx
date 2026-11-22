@@ -801,6 +801,10 @@ function DetailForm({
                   {t('panel.fromFlow', { name: detail.flowName })}
                 </p>
               ) : null}
+              {/* LinkedIn API Terms: korisnik zna da je tekst predlog Sove i lično odobrava objavu (D-182) */}
+              {post.targets.some((tg) => tg.platform === 'linkedin') ? (
+                <p className="text-xs text-muted-foreground">{t('panel.linkedinNote')}</p>
+              ) : null}
             </div>
 
             <div className="space-y-2">

@@ -381,6 +381,18 @@
     "disconnect": "Prekini vezu",
     "historyLoading": "Učitavam…",
     "historyEmpty": "Još nema uvezenih objava (uvoz traje do minut posle povezivanja).",
-    "metrics": "{likes} sviđanja, {comments} komentara"
+    "metrics": "{likes} sviđanja, {comments} komentara",
+    "linkedinConsent": {
+      "title": "Povezivanje LinkedIn-a",
+      "intro": "Pre povezivanja, ukratko šta Sova radi sa vašim LinkedIn nalogom:",
+      "data": "Podaci: ime, slika profila i identifikator naloga, i pristupni token koji LinkedIn izda. Email adresu ne tražimo.",
+      "purpose": "Svrha: objavljivanje objava koje odobrite na vašem profilu i prikaz njihovih rezultata. LinkedIn podatke ne koristimo ni za šta drugo.",
+      "approval": "Na LinkedIn ne ide ništa bez vašeg odobrenja: svaku objavu, i onu koju pripremi Autopilot, odobravate vi.",
+      "revoke": "Opoziv: vezu prekidate u Sovi (Mreže → Prekini vezu) i u podešavanjima LinkedIn-a (Podešavanja → Dozvole aplikacija).",
+      "deletion": "Brisanje: prekidom veze Sova briše token i podatke tog naloga; ceo nalog brišete na strani Brisanje podataka.",
+      "renew": "LinkedIn traži novo povezivanje na 60 dana; tada vas pitamo ponovo.",
+      "cancel": "Odustani",
+      "agree": "Slažem se, poveži LinkedIn"
+    }
   }
 }

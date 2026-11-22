@@ -570,7 +570,7 @@
           "inngest": "<b>Inngest</b>: pozadinski poslovi (analiza sajta, objavljivanje, metrike, brisanje starih podataka)",
           "stripe": "<b>Stripe</b>: naplata pretplata i paketa tokena, kad je online plaćanje uključeno",
           "stock": "<b>Unsplash i Pexels</b>: pretraga besplatnih fotografija i snimaka; šaljemo im samo upit za pretragu",
-          "design": "<b>Canva i Figma</b>: uvoz i izvoz dizajna, samo kad povežete svoj nalog"
+          "design": "<b>Canva i Figma</b>: uvoz i izvoz dizajna, samo kad povežete svoj nalog; za podatke koje Sova dobije iz njih odgovorna je Sova, a ne Canva ni Figma"
         },
         "text": "Sa svakim obrađivačem imamo ugovor o obradi podataka. Neki od njih obrađuju podatke u Sjedinjenim Američkim Državama; prenos se zasniva na standardnim ugovornim klauzulama ili EU-US Data Privacy Framework-u."
       },
@@ -639,7 +639,7 @@
         "rules": {
           "youtube": "YouTube: YouTube uslove korišćenja (youtube.com/t/terms) i Google politiku privatnosti (policies.google.com/privacy).",
           "meta": "Facebook i Instagram: Meta uslove i pravila zajednice; na privatne poruke odgovarate samo u roku koji Meta dozvoljava i ne šaljete neželjene promotivne poruke.",
-          "linkedin": "LinkedIn: LinkedIn ugovor o korisniku, a za stranice firmi i LinkedIn Pages Terms; svaku objavu odobravate vi.",
+          "linkedin": "LinkedIn: LinkedIn ugovor o korisniku, a za stranice firmi i LinkedIn Pages Terms; svaku objavu odobravate vi. Na LinkedIn se preko Sove ne objavljuje sadržaj o kockanju i igrama na sreću, sadržaj za odrasle, ni duvan i alkohol namenjen maloletnima.",
           "tiktok": "TikTok: TikTok uslove korišćenja i smernice zajednice; svaku objavu, njenu vidljivost i oznake (na primer plaćenu saradnju) potvrđujete vi.",
           "x": "X: X pravila i pravila o automatizaciji; za automatske objave na nalogu mora biti uključena oznaka „Automated”."
         },
@@ -708,7 +708,7 @@
           "login": "Prijavite se u Sovu.",
           "open": "Otvorite Brend i nalog → Nalog → Privatnost i podaci → Obriši nalog….",
           "confirm": "Upišite svoju email adresu i lozinku radi potvrde (nalog bez lozinke, na primer preko Google-a, traži novu prijavu) i kliknite „Obriši nalog”.",
-          "result": "Sova odmah opoziva pristupne tokene svih povezanih mreža, otkazuje zakazane objave i briše podatke. Brisanje iz rezervnih kopija završava se najkasnije za 30 dana."
+          "result": "Sova odmah opoziva pristupne tokene povezanih mreža gde mreža to dozvoljava, otkazuje zakazane objave i briše podatke. LinkedIn ne dozvoljava opoziv preko svog API-ja, pa Sova briše LinkedIn token kod sebe, a pristup Sovi uklanjate i u podešavanjima LinkedIn-a (Podešavanja → Dozvole aplikacija). Brisanje iz rezervnih kopija završava se najkasnije za 30 dana."
         },
         "note": "Ako ste jedini vlasnik radnog prostora sa drugim članovima, prvo prenesite vlasništvo ili obrišite radni prostor; aplikacija vas vodi kroz taj korak."
       },

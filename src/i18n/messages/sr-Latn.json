@@ -622,7 +622,8 @@
       "timezone": "Vreme po zoni brenda ({tz})",
       "noApprove": "Vaša uloga menja tekst, a odobrava vlasnik, administrator ili odobravalac.",
       "done": "Sačuvano.",
-      "scheduled": "Zakazano za {when}."
+      "scheduled": "Zakazano za {when}.",
+      "linkedinNote": "LinkedIn: tekst je predložila Sova uz pomoć veštačke inteligencije. Pročitajte ga i po potrebi izmenite; na LinkedIn ide tek posle vašeg odobrenja."
     },
     "video": {
       "title": "Video od slajdova",

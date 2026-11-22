@@ -993,6 +993,8 @@ function CanvaActions({
           {exp.isPending ? t('canva.importing') : t('canva.importDesign')}
         </Button>
       ) : null}
+      {/* Canva pregled: oznaka uz ulaz u Canvu */}
+      <span className="text-muted-foreground">Powered by Canva</span>
       <ErrorBox error={design.error ?? exp.error} />
       {exp.data ? (
         // eslint-disable-next-line @next/next/no-img-element
@@ -1153,7 +1155,9 @@ function CanvaImportPanel({
     <Card>
       <CardHeader>
         <CardTitle>{t('canvaImport.title')}</CardTitle>
-        <CardDescription>{t('canvaImport.description', { price })}</CardDescription>
+        <CardDescription>
+          {t('canvaImport.description', { price })} <span className="text-xs">Powered by Canva</span>
+        </CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         {status.isPending ? (

@@ -16,8 +16,8 @@ export const FIGMA_TOKEN_URL = 'https://api.figma.com/v1/oauth/token'
 export const FIGMA_REFRESH_URL = 'https://api.figma.com/v1/oauth/refresh'
 export const FIGMA_API = 'https://api.figma.com/v1'
 
-/** Samo čitanje: sadržaj fajla (i izvoz slika) i podaci o fajlu. */
-export const FIGMA_SCOPES = ['file_content:read', 'file_metadata:read'] as const
+/** Samo čitanje sadržaja fajla (i izvoz slika); podaci o fajlu (`file_metadata:read`) se ne koriste (Figma pregled). */
+export const FIGMA_SCOPES = ['file_content:read'] as const
 
 export function isFigmaConfigured(): boolean {
   return Boolean(env.FIGMA_CLIENT_ID && env.FIGMA_CLIENT_SECRET)

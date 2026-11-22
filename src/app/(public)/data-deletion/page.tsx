@@ -78,7 +78,7 @@ export default async function DataDeletionPage({ searchParams }: PageProps<'/dat
           <LegalSection title="Data Deletion (English)">
             <LegalList
               items={[
-                'Delete your whole account in the app: Brand and account → Account → Privacy and data → Delete account, then confirm with your email and password. Tokens for all connected networks are revoked immediately, scheduled posts are cancelled and data is deleted; backups are purged within 30 days.',
+                'Delete your whole account in the app: Brand and account → Account → Privacy and data → Delete account, then confirm with your email and password. Tokens are revoked immediately where the network allows it (LinkedIn does not offer revocation through its API, so remove Sova in LinkedIn’s Settings → App permissions too), scheduled posts are cancelled and data is deleted; backups are purged within 30 days.',
                 'Disconnect a single network: Networks → Disconnect. The token, imported posts and metrics for that account are deleted. Content already published stays on the network.',
                 <>
                   Request by email: write from your registered address to{' '}

@@ -570,7 +570,7 @@
           "inngest": "<b>Inngest</b>: background jobs (website analysis, publishing, metrics, deleting old data)",
           "stripe": "<b>Stripe</b>: billing for subscriptions and token packs, when online payment is enabled",
           "stock": "<b>Unsplash and Pexels</b>: searching free photos and videos; we send them only the search query",
-          "design": "<b>Canva and Figma</b>: importing and exporting designs, only when you connect your account"
+          "design": "<b>Canva and Figma</b>: importing and exporting designs, only when you connect your account; Sova, not Canva or Figma, is responsible for the data Sova receives from them"
         },
         "text": "We have a data processing agreement with each processor. Some of them process data in the United States; these transfers rely on Standard Contractual Clauses or the EU-US Data Privacy Framework."
       },
@@ -639,7 +639,7 @@
         "rules": {
           "youtube": "YouTube: the YouTube Terms of Service (youtube.com/t/terms) and the Google Privacy Policy (policies.google.com/privacy).",
           "meta": "Facebook and Instagram: Meta's terms and community standards; you reply to private messages only within the window Meta allows and do not send unsolicited promotional messages.",
-          "linkedin": "LinkedIn: the LinkedIn User Agreement and, for company pages, the LinkedIn Pages Terms; you approve every post.",
+          "linkedin": "LinkedIn: the LinkedIn User Agreement and, for company pages, the LinkedIn Pages Terms; you approve every post. Content about gambling and games of chance, adult content, and tobacco or alcohol aimed at minors must not be posted to LinkedIn through Sova.",
           "tiktok": "TikTok: the TikTok Terms of Service and Community Guidelines; you confirm every post, its visibility and its labels (for example, paid partnership).",
           "x": "X: the X Rules and automation rules; for automated posts the \"Automated\" label must be turned on for the account."
         },
@@ -708,7 +708,7 @@
           "login": "Log in to Sova.",
           "open": "Open Brand and account → Account → Privacy and data → Delete account….",
           "confirm": "Enter your email address and password to confirm (an account without a password, for example one using Google, asks you to log in again) and click “Delete account”.",
-          "result": "Sova immediately revokes the access tokens for all connected networks, cancels scheduled posts and deletes your data. Deletion from backups is completed within 30 days at the latest."
+          "result": "Sova immediately revokes the access tokens of connected networks where the network allows it, cancels scheduled posts and deletes your data. LinkedIn does not allow revocation through its API, so Sova deletes the LinkedIn token on its side, and you also remove Sova's access in your LinkedIn settings (Settings → App permissions). Deletion from backups is completed within 30 days at the latest."
         },
         "note": "If you are the only owner of a workspace that has other members, first transfer ownership or delete the workspace; the app walks you through this step."
       },

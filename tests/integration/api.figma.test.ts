@@ -79,7 +79,7 @@ describe('uvoz iz Figme (D-161)', () => {
     const location = new URL(res.headers.get('location')!)
     expect(location.origin + location.pathname).toBe('https://www.figma.com/oauth')
     expect(location.searchParams.get('client_id')).toBe('test-figma-client')
-    expect(location.searchParams.get('scope')).toBe('file_content:read file_metadata:read')
+    expect(location.searchParams.get('scope')).toBe('file_content:read')
     expect(location.searchParams.get('code_challenge_method')).toBe('S256')
     expect(location.searchParams.get('response_type')).toBe('code')
     expect(location.searchParams.get('redirect_uri')).toBe(`${APP}/api/integrations/figma/callback`)
@@ -94,7 +94,7 @@ describe('uvoz iz Figme (D-161)', () => {
     expect(conn).toMatchObject({
       figma_user_id: '1234567890',
       status: 'active',
-      scopes: ['file_content:read', 'file_metadata:read'],
+      scopes: ['file_content:read'],
     })
     expect(String(conn!.access_token_enc)).not.toContain('figma-access-1')
     const s = await call<{ connected: boolean }>(statusGet, '/api/figma/status', {

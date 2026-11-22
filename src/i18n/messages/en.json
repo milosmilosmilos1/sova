@@ -622,7 +622,8 @@
       "timezone": "Time in the brand time zone ({tz})",
       "noApprove": "Your role can edit the copy; the owner, an admin or an approver approves it.",
       "done": "Saved.",
-      "scheduled": "Scheduled for {when}."
+      "scheduled": "Scheduled for {when}.",
+      "linkedinNote": "LinkedIn: this text was suggested by Sova with the help of artificial intelligence. Read it and edit it if needed; it goes to LinkedIn only after you approve it."
     },
     "video": {
       "title": "Video from slides",

@@ -205,12 +205,12 @@
       "notConfigured": "Canva integracija još nije podešena na serveru (ključevi aplikacije).",
       "disabled": "Canva integracija je privremeno isključena.",
       "connected": "povezano",
-      "autofill": "Autofill dostupan",
-      "noAutofill": "bez Autofill-a (besplatan plan)",
       "disconnect": "Prekini vezu",
       "expired": "veza je istekla",
       "notConnected": "nije povezano",
-      "connect": "Poveži Canvu"
+      "connect": "Poveži Canvu",
+      "account": "nalog: {name}",
+      "poweredBy": "Powered by Canva"
     },
     "figma": {
       "description": "Okvire iz Figma fajla uvozite kao slike i slajdove, a boje, fontove i logo kao temu brenda. Veza je lična (po korisniku), Sova samo čita fajlove.",

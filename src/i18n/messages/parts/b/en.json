@@ -381,6 +381,18 @@
     "disconnect": "Disconnect",
     "historyLoading": "Loading…",
     "historyEmpty": "No imported posts yet (the import takes up to a minute after connecting).",
-    "metrics": "{likes, plural, one {# like} other {# likes}}, {comments, plural, one {# comment} other {# comments}}"
+    "metrics": "{likes, plural, one {# like} other {# likes}}, {comments, plural, one {# comment} other {# comments}}",
+    "linkedinConsent": {
+      "title": "Connecting LinkedIn",
+      "intro": "Before you connect, here is briefly what Sova does with your LinkedIn account:",
+      "data": "Data: your name, profile picture and account ID, and the access token LinkedIn issues. We do not ask for your email address.",
+      "purpose": "Purpose: publishing posts you approve to your profile and showing their results. We do not use LinkedIn data for anything else.",
+      "approval": "Nothing goes to LinkedIn without your approval: you approve every post, including those prepared by Autopilot.",
+      "revoke": "Revoking: disconnect in Sova (Networks → Disconnect) and in your LinkedIn settings (Settings → App permissions).",
+      "deletion": "Deletion: disconnecting makes Sova delete the token and data of that account; you can delete your whole account on the Data deletion page.",
+      "renew": "LinkedIn asks for a new connection every 60 days; we will ask you again then.",
+      "cancel": "Cancel",
+      "agree": "I agree, connect LinkedIn"
+    }
   }
 }

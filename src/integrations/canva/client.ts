@@ -13,14 +13,17 @@ export const CANVA_AUTHORIZE_URL = 'https://www.canva.com/api/oauth/authorize'
 export const CANVA_TOKEN_URL = 'https://api.canva.com/rest/v1/oauth/token'
 export const CANVA_API = 'https://api.canva.com/rest/v1'
 
+/**
+ * Samo dozvole koje Sova koristi (Canva pregled, 22.11.2026): dizajni (pravljenje, izvoz, spisak),
+ * fajlovi (otpremanje fotografija) i ime naloga za prikaz povezanog naloga. Šabloni brenda
+ * (brandtemplate:*) se ne koriste, a provera koja ih je pitala besplatnim korisnicima je vraćala 403.
+ */
 export const CANVA_SCOPES = [
   'design:content:read',
   'design:content:write',
   'design:meta:read',
   'asset:read',
   'asset:write',
-  'brandtemplate:meta:read',
-  'brandtemplate:content:read',
   'profile:read',
 ] as const
 
@@ -150,13 +153,32 @@ export async function getMe(accessToken: string): Promise<{ userId: string; team
   return { userId: body.team_user.user_id, teamId: body.team_user.team_id ?? null }
 }
 
-/** Autofill postoji samo na planovima sa brand template-ima: 403 znači nema. */
-export async function probeAutofill(accessToken: string): Promise<boolean> {
+/** Ime povezanog Canva naloga za prikaz u podešavanjima (`profile:read`); `null` kad ne stigne. */
+export async function getProfileName(accessToken: string): Promise<string | null> {
   try {
-    const { status } = await api(accessToken, '/brand-templates?limit=1')
-    return status !== 403
+    const { body } = await api<{ profile?: { display_name?: string } }>(accessToken, '/users/me/profile')
+    return body.profile?.display_name?.trim() || null
   } catch {
-    return false
+    return null
+  }
+}
+
+/**
+ * Opoziv tokena kod Canve pri prekidu veze (Canva pregled): refresh token poništava i pristupni.
+ * Greška se samo beleži, jer veza u Sovi ionako prestaje.
+ */
+export async function revokeToken(token: string): Promise<void> {
+  if (!isCanvaConfigured()) return
+  try {
+    const res = await fetch(`${CANVA_API}/oauth/revoke`, {
+      method: 'POST',
+      headers: { authorization: basicAuth(), 'content-type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({ token }).toString(),
+      signal: AbortSignal.timeout(10_000),
+    })
+    if (!res.ok) logger.warn('canva_revoke_failed', { status: res.status })
+  } catch (error) {
+    logger.warn('canva_revoke_failed', { error })
   }
 }
 

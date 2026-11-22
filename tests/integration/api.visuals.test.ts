@@ -383,12 +383,13 @@ describe('Canva Connect', () => {
       key_version: 1,
     })
     expect(String(conn!.access_token_enc)).not.toContain('access-1')
-    const s = await call<{ connected: boolean; autofillAvailable: boolean }>(
+    const s = await call<{ connected: boolean; accountName: string | null }>(
       canvaStatusGet,
       '/api/canva/status',
       { token: user.token, query: { workspaceId: wsId } },
     )
-    expect(s.json.data).toMatchObject({ connected: true, autofillAvailable: false })
+    // povezani Canva nalog se vidi po imenu (Canva pregled), bez provere šablona brenda
+    expect(s.json.data).toMatchObject({ connected: true, accountName: 'Pekara Zrno' })
     const replay = await canvaCallbackGet(
       new NextRequest(new URL(`/api/integrations/canva/callback?state=${state}&code=good-code`, APP), {
         headers: { authorization: `Bearer ${user.token}` },
@@ -616,6 +617,9 @@ describe('Canva Connect', () => {
       query: { workspaceId: wsId },
     })
     expect(del.json.data!.disconnected).toBe(true)
+    // token se opoziva i kod Canve (refresh token iz poslednjeg izdavanja)
+    expect(visualsState.canvaRevoked).toHaveLength(1)
+    expect(visualsState.canvaRevoked[0]).toMatch(/^refresh-/)
     const after = await call<{ connected: boolean; status: string | null }>(
       canvaStatusGet,
       '/api/canva/status',
